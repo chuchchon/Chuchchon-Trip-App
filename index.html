@@ -1,0 +1,1226 @@
+<title>Hokkaido Momiji Drive</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b1f1d">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one-screen app — sticky trip header, scrolling panel, bottom tab bar like a car head unit */
+:root{
+  --bg:#EEF2F0; --surface:#FFFFFF; --surface-2:#F6F8F7; --ink:#16201C; --muted:#5A6862; --line:#D6DED9;
+  --accent:#C2361F; --accent-ink:#FFFFFF; --gold:#B9820F; --gold-soft:#FBF0D6;
+  --sea:#CADCE3; --land:#E7ECE3; --land-line:#B9C7BE; --lake:#B4CFDB;
+  --route-blue:#1F5FA8; --exp-green:#18794E; --ok:#1F8A4C; --warn:#B26A00;
+  --d1:#2F6FB3; --d2:#7E4BAA; --d3:#C2361F; --d4:#16806A; --d5:#C77400; --d6:#AE3770; --d7:#53606B;
+  --font-display:"Chakra Petch", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --font-body:"IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --shadow:0 6px 24px rgba(10,20,16,.12);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E1412; --surface:#172019; --surface-2:#1C2622; --ink:#E5ECE8; --muted:#95A49D; --line:#2A3631;
+  --accent:#E35A40; --accent-ink:#FFFFFF; --gold:#E2AE3E; --gold-soft:#3A2E12;
+  --sea:#0D2128; --land:#1A2420; --land-line:#33433C; --lake:#16323D;
+  --route-blue:#4A8BD6; --exp-green:#2FA36E; --ok:#3DBB72; --warn:#E39A2E;
+  --d1:#5B95D6; --d2:#A77BD2; --d3:#E35A40; --d4:#2FAE90; --d5:#E89A2E; --d6:#D5609A; --d7:#8D9AA6;
+  --shadow:0 6px 24px rgba(0,0,0,.45); color-scheme:dark; }}
+:root[data-theme="dark"]{
+  --bg:#0E1412; --surface:#172019; --surface-2:#1C2622; --ink:#E5ECE8; --muted:#95A49D; --line:#2A3631;
+  --accent:#E35A40; --accent-ink:#FFFFFF; --gold:#E2AE3E; --gold-soft:#3A2E12;
+  --sea:#0D2128; --land:#1A2420; --land-line:#33433C; --lake:#16323D;
+  --route-blue:#4A8BD6; --exp-green:#2FA36E; --ok:#3DBB72; --warn:#E39A2E;
+  --d1:#5B95D6; --d2:#A77BD2; --d3:#E35A40; --d4:#2FAE90; --d5:#E89A2E; --d6:#D5609A; --d7:#8D9AA6;
+  --shadow:0 6px 24px rgba(0,0,0,.45); color-scheme:dark; }
+
+ .leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; left: 0; top: 0; } .leaflet-container { overflow: hidden; } .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-user-drag: none; } .leaflet-tile::selection { background: transparent; } .leaflet-safari .leaflet-tile { image-rendering: -webkit-optimize-contrast; } .leaflet-safari .leaflet-tile-container { width: 1600px; height: 1600px; -webkit-transform-origin: 0 0; } .leaflet-marker-icon, .leaflet-marker-shadow { display: block; } .leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; } .leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-shadow-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-image-layer, .leaflet-container .leaflet-tile { max-width: none !important; max-height: none !important; width: auto; padding: 0; } .leaflet-container img.leaflet-tile { mix-blend-mode: plus-lighter; } .leaflet-container.leaflet-touch-zoom { -ms-touch-action: pan-x pan-y; touch-action: pan-x pan-y; } .leaflet-container.leaflet-touch-drag { -ms-touch-action: pinch-zoom; touch-action: none; touch-action: pinch-zoom; } .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { -ms-touch-action: none; touch-action: none; } .leaflet-container { -webkit-tap-highlight-color: transparent; } .leaflet-container a { -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4); } .leaflet-tile { filter: inherit; visibility: hidden; } .leaflet-tile-loaded { visibility: inherit; } .leaflet-zoom-box { width: 0; height: 0; -moz-box-sizing: border-box; box-sizing: border-box; z-index: 800; } .leaflet-overlay-pane svg { -moz-user-select: none; } .leaflet-pane { z-index: 400; } .leaflet-tile-pane { z-index: 200; } .leaflet-overlay-pane { z-index: 400; } .leaflet-shadow-pane { z-index: 500; } .leaflet-marker-pane { z-index: 600; } .leaflet-tooltip-pane { z-index: 650; } .leaflet-popup-pane { z-index: 700; } .leaflet-map-pane canvas { z-index: 100; } .leaflet-map-pane svg { z-index: 200; } .leaflet-vml-shape { width: 1px; height: 1px; } .leaflet-control { position: relative; z-index: 800; pointer-events: visiblePainted; pointer-events: auto; } .leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; } .leaflet-top { top: 0; } .leaflet-right { right: 0; } .leaflet-bottom { bottom: 0; } .leaflet-left { left: 0; } .leaflet-control { float: left; clear: both; } .leaflet-right .leaflet-control { float: right; } .leaflet-top .leaflet-control { margin-top: 10px; } .leaflet-bottom .leaflet-control { margin-bottom: 10px; } .leaflet-left .leaflet-control { margin-left: 10px; } .leaflet-right .leaflet-control { margin-right: 10px; } .leaflet-fade-anim .leaflet-popup { opacity: 0; -webkit-transition: opacity 0.2s linear; -moz-transition: opacity 0.2s linear; transition: opacity 0.2s linear; } .leaflet-fade-anim .leaflet-map-pane .leaflet-popup { opacity: 1; } .leaflet-zoom-animated { -webkit-transform-origin: 0 0; -ms-transform-origin: 0 0; transform-origin: 0 0; } svg.leaflet-zoom-animated { will-change: transform; } .leaflet-zoom-anim .leaflet-zoom-animated { -webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1); -moz-transition: -moz-transform 0.25s cubic-bezier(0,0,0.25,1); transition: transform 0.25s cubic-bezier(0,0,0.25,1); } .leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { -webkit-transition: none; -moz-transition: none; transition: none; } .leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; } .leaflet-interactive { cursor: pointer; } .leaflet-grab { cursor: -webkit-grab; cursor: -moz-grab; cursor: grab; } .leaflet-crosshair, .leaflet-crosshair .leaflet-interactive { cursor: crosshair; } .leaflet-popup-pane, .leaflet-control { cursor: auto; } .leaflet-dragging .leaflet-grab, .leaflet-dragging .leaflet-grab .leaflet-interactive, .leaflet-dragging .leaflet-marker-draggable { cursor: move; cursor: -webkit-grabbing; cursor: -moz-grabbing; cursor: grabbing; } .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-image-layer, .leaflet-pane > svg path, .leaflet-tile-container { pointer-events: none; } .leaflet-marker-icon.leaflet-interactive, .leaflet-image-layer.leaflet-interactive, .leaflet-pane > svg path.leaflet-interactive, svg.leaflet-image-layer.leaflet-interactive path { pointer-events: visiblePainted; pointer-events: auto; } .leaflet-container { background: #ddd; outline-offset: 1px; } .leaflet-container a { color: #0078A8; } .leaflet-zoom-box { border: 2px dotted #38f; background: rgba(255,255,255,0.5); } .leaflet-container { font-family: "Helvetica Neue", Arial, Helvetica, sans-serif; font-size: 12px; font-size: 0.75rem; line-height: 1.5; } .leaflet-bar { box-shadow: 0 1px 5px rgba(0,0,0,0.65); border-radius: 4px; } .leaflet-bar a { background-color: #fff; border-bottom: 1px solid #ccc; width: 26px; height: 26px; line-height: 26px; display: block; text-align: center; text-decoration: none; color: black; } .leaflet-bar a, .leaflet-control-layers-toggle { background-position: 50% 50%; background-repeat: no-repeat; display: block; } .leaflet-bar a:hover, .leaflet-bar a:focus { background-color: #f4f4f4; } .leaflet-bar a:first-child { border-top-left-radius: 4px; border-top-right-radius: 4px; } .leaflet-bar a:last-child { border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; border-bottom: none; } .leaflet-bar a.leaflet-disabled { cursor: default; background-color: #f4f4f4; color: #bbb; } .leaflet-touch .leaflet-bar a { width: 30px; height: 30px; line-height: 30px; } .leaflet-touch .leaflet-bar a:first-child { border-top-left-radius: 2px; border-top-right-radius: 2px; } .leaflet-touch .leaflet-bar a:last-child { border-bottom-left-radius: 2px; border-bottom-right-radius: 2px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { font: bold 18px 'Lucida Console', Monaco, monospace; text-indent: 1px; } .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out { font-size: 22px; } .leaflet-control-layers { box-shadow: 0 1px 5px rgba(0,0,0,0.4); background: #fff; border-radius: 5px; } .leaflet-touch .leaflet-control-layers-toggle { width: 44px; height: 44px; } .leaflet-control-layers .leaflet-control-layers-list, .leaflet-control-layers-expanded .leaflet-control-layers-toggle { display: none; } .leaflet-control-layers-expanded .leaflet-control-layers-list { display: block; position: relative; } .leaflet-control-layers-expanded { padding: 6px 10px 6px 6px; color: #333; background: #fff; } .leaflet-control-layers-scrollbar { overflow-y: scroll; overflow-x: hidden; padding-right: 5px; } .leaflet-control-layers-selector { margin-top: 2px; position: relative; top: 1px; } .leaflet-control-layers label { display: block; font-size: 13px; font-size: 1.08333em; } .leaflet-control-layers-separator { height: 0; border-top: 1px solid #ddd; margin: 5px -10px 5px -6px; } .leaflet-container .leaflet-control-attribution { background: #fff; background: rgba(255, 255, 255, 0.8); margin: 0; } .leaflet-control-attribution, .leaflet-control-scale-line { padding: 0 5px; color: #333; line-height: 1.4; } .leaflet-control-attribution a { text-decoration: none; } .leaflet-control-attribution a:hover, .leaflet-control-attribution a:focus { text-decoration: underline; } .leaflet-attribution-flag { display: inline !important; vertical-align: baseline !important; width: 1em; height: 0.6669em; } .leaflet-left .leaflet-control-scale { margin-left: 5px; } .leaflet-bottom .leaflet-control-scale { margin-bottom: 5px; } .leaflet-control-scale-line { border: 2px solid #777; border-top: none; line-height: 1.1; padding: 2px 5px 1px; white-space: nowrap; -moz-box-sizing: border-box; box-sizing: border-box; background: rgba(255, 255, 255, 0.8); text-shadow: 1px 1px #fff; } .leaflet-control-scale-line:not(:first-child) { border-top: 2px solid #777; border-bottom: none; margin-top: -2px; } .leaflet-control-scale-line:not(:first-child):not(:last-child) { border-bottom: 2px solid #777; } .leaflet-touch .leaflet-control-attribution, .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { box-shadow: none; } .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { border: 2px solid rgba(0,0,0,0.2); background-clip: padding-box; } .leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; } .leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 12px; } .leaflet-popup-content { margin: 13px 24px 13px 20px; line-height: 1.3; font-size: 13px; font-size: 1.08333em; min-height: 1px; } .leaflet-popup-content p { margin: 17px 0; margin: 1.3em 0; } .leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-top: -1px; margin-left: -20px; overflow: hidden; pointer-events: none; } .leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; pointer-events: auto; -webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -ms-transform: rotate(45deg); transform: rotate(45deg); } .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: white; color: #333; box-shadow: 0 3px 14px rgba(0,0,0,0.4); } .leaflet-container a.leaflet-popup-close-button { position: absolute; top: 0; right: 0; border: none; text-align: center; width: 24px; height: 24px; font: 16px/24px Tahoma, Verdana, sans-serif; color: #757575; text-decoration: none; background: transparent; } .leaflet-container a.leaflet-popup-close-button:hover, .leaflet-container a.leaflet-popup-close-button:focus { color: #585858; } .leaflet-popup-scrolled { overflow: auto; } .leaflet-oldie .leaflet-popup-content-wrapper { -ms-zoom: 1; } .leaflet-oldie .leaflet-popup-tip { width: 24px; margin: 0 auto; -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)"; filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678); } .leaflet-oldie .leaflet-control-zoom, .leaflet-oldie .leaflet-control-layers, .leaflet-oldie .leaflet-popup-content-wrapper, .leaflet-oldie .leaflet-popup-tip { border: 1px solid #999; } .leaflet-div-icon { background: #fff; border: 1px solid #666; } .leaflet-tooltip { position: absolute; padding: 6px; background-color: #fff; border: 1px solid #fff; border-radius: 3px; color: #222; white-space: nowrap; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); } .leaflet-tooltip.leaflet-interactive { cursor: pointer; pointer-events: auto; } .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { position: absolute; pointer-events: none; border: 6px solid transparent; background: transparent; content: ""; } .leaflet-tooltip-bottom { margin-top: 6px; } .leaflet-tooltip-top { margin-top: -6px; } .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before { left: 50%; margin-left: -6px; } .leaflet-tooltip-top:before { bottom: 0; margin-bottom: -12px; border-top-color: #fff; } .leaflet-tooltip-bottom:before { top: 0; margin-top: -12px; margin-left: -6px; border-bottom-color: #fff; } .leaflet-tooltip-left { margin-left: -6px; } .leaflet-tooltip-right { margin-left: 6px; } .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { top: 50%; margin-top: -6px; } .leaflet-tooltip-left:before { right: 0; margin-right: -12px; border-left-color: #fff; } .leaflet-tooltip-right:before { left: 0; margin-left: -12px; border-right-color: #fff; } @media print { .leaflet-control { -webkit-print-color-adjust: exact; print-color-adjust: exact; } } 
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:50;background:var(--surface)}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit}
+a{color:inherit}
+.app{display:flex;flex-direction:column;height:100%;min-height:0}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* header */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px 10px;position:relative;z-index:20}
+.top-row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.brand{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:.01em;line-height:1.1;margin:0;text-wrap:balance}
+.brand small{display:block;font-family:var(--font-body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.02em}
+.clock{font-family:var(--font-mono);font-size:12px;text-align:right;color:var(--muted);line-height:1.3;white-space:nowrap}
+.clock b{display:block;font-size:17px;color:var(--ink);font-weight:600}
+.days{display:flex;gap:6px;overflow-x:auto;padding-block:10px 2px;scrollbar-width:none;margin-inline:-4px;padding-inline:4px}
+.days::-webkit-scrollbar{display:none}
+.day-chip{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface-2);border-radius:10px;padding:5px 10px;cursor:pointer;text-align:left;min-width:58px}
+.day-chip .dn{font-family:var(--font-display);font-weight:700;font-size:15px;display:block;line-height:1.1}
+.day-chip .dd{font-size:11px;color:var(--muted);display:block;white-space:nowrap}
+.day-chip[aria-pressed="true"]{border-color:var(--dc);background:var(--dc);color:#fff}
+.day-chip[aria-pressed="true"] .dd{color:rgba(255,255,255,.85)}
+.day-chip .today-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-left:4px;vertical-align:middle}
+
+/* panels */
+.panels{flex:1;min-height:0;position:relative}
+.panel{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-block:14px 28px}
+.panel[hidden]{display:none!important}
+.panel.map-panel{padding:0;overflow:hidden}
+
+/* bottom nav */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);position:relative;z-index:20}
+.tab{background:none;border:0;padding:8px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--muted);font-size:11.5px;font-weight:500}
+.tab svg{width:22px;height:22px}
+.tab[aria-selected="true"]{color:var(--accent)}
+.tab:focus-visible,.btn:focus-visible,.day-chip:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* day header */
+.day-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.day-num{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:.9;color:var(--dc)}
+.day-title{margin:0;font-family:var(--font-display);font-weight:600;font-size:18px;line-height:1.25;text-wrap:balance}
+.day-meta{font-size:13px;color:var(--muted);margin-top:2px}
+.hotel-line{display:flex;align-items:center;gap:8px;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:10px}
+.hotel-line b{font-weight:600}
+.row-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn svg{width:15px;height:15px;flex:0 0 auto}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.go{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.small{padding:4px 10px;font-size:12.5px}
+
+/* timeline */
+.tl{list-style:none;margin:0;padding:0;position:relative}
+.tl::before{content:"";position:absolute;left:52px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.ti{display:grid;grid-template-columns:44px 18px minmax(0,1fr);gap:0 8px;padding-bottom:12px;position:relative}
+.ti .tm{font-family:var(--font-mono);font-size:12.5px;font-weight:600;text-align:right;padding-top:3px;color:var(--ink);line-height:1.2}
+.ti .tm small{display:block;color:var(--muted);font-weight:500;font-size:11px}
+.ti .dot{width:12px;height:12px;border-radius:50%;background:var(--surface);border:2.5px solid var(--dc);margin:5px 0 0 3px;position:relative;z-index:1}
+.ti.k-drive .dot{border-style:dashed;background:var(--bg)}
+.ti.k-bf .dot{border-color:var(--gold);background:var(--gold)}
+.ti.k-opt{opacity:.92}
+.ti.k-opt .dot{border-color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.ti.k-drive .card{background:transparent;border-style:dashed}
+.ti.k-bf .card{background:var(--gold-soft);border-color:color-mix(in srgb,var(--gold) 35%,var(--line))}
+.ti.is-now .card{box-shadow:0 0 0 2px var(--dc)}
+.c-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.c-kind{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.c-name{font-weight:600;font-size:15.5px;line-height:1.35;margin:1px 0 2px}
+.c-note{font-size:13.5px;color:var(--muted);margin:0}
+.c-warn{font-size:13px;color:var(--warn);margin:4px 0 0}
+.c-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;border:1px solid currentColor;line-height:1.5}
+.pill.new{color:var(--ok)} .pill.opt{color:var(--muted)} .pill.chg{color:var(--warn)}
+.rt{display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:11.5px;color:#fff;background:var(--route-blue);border-radius:3px 3px 9px 9px;padding:1px 6px;min-width:30px;letter-spacing:.02em}
+.rt.exp{background:var(--exp-green);border-radius:4px}
+.rt.pref{background:#fff;color:var(--route-blue);border:1.5px solid var(--route-blue);border-radius:50%;min-width:24px;height:24px;padding:0}
+.scenic-mini{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.scenic-mini li{font-size:12.5px;color:var(--muted);display:flex;gap:6px}
+.scenic-mini li b{color:var(--ink);font-weight:600;font-family:var(--font-mono);font-size:11.5px;min-width:44px}
+
+.section-h{font-family:var(--font-display);font-weight:700;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+.note-box{border-left:3px solid var(--accent);background:var(--surface);padding:8px 12px;border-radius:0 10px 10px 0;font-size:13.5px;margin-bottom:12px}
+
+/* map */
+#map{position:absolute;inset:0;background:var(--sea)}
+.leaflet-container{background:var(--sea);font-family:var(--font-body)}
+.map-ui{position:absolute;z-index:500;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));top:10px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.map-ui > *{pointer-events:auto}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:500;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.daychip[aria-pressed="true"]{background:var(--dc);border-color:var(--dc);color:#fff}
+.map-legend{position:absolute;z-index:500;left:max(10px,env(safe-area-inset-left,0px));bottom:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:11.5px;color:var(--muted);box-shadow:var(--shadow);max-width:calc(100% - 90px)}
+.leaflet-control-zoom a{background:var(--surface)!important;color:var(--ink)!important;border-color:var(--line)!important}
+.leaflet-bar{border:1px solid var(--line)!important;box-shadow:var(--shadow)!important}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.leaflet-popup-content{margin:10px 12px;font-size:13.5px;line-height:1.45;min-width:180px}
+.pp-k{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+.pp-n{font-weight:600;font-size:15px;margin:1px 0 3px}
+.pp-a{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.mk{display:flex;align-items:center;justify-content:center;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);font-size:14px;line-height:1}
+.mk.stop{color:#fff;font-family:var(--font-display);font-weight:700;font-size:12px}
+.mk.food{background:var(--surface);border-color:var(--land-line)}
+.mk.food.inplan{border:2.5px solid var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 35%,transparent),0 1px 4px rgba(0,0,0,.35)}
+.mk.scenic{background:var(--accent);color:#fff;font-size:13px}
+.lbl{font-family:var(--font-display);font-weight:600;font-size:12px;color:var(--muted);white-space:nowrap;text-shadow:0 0 3px var(--land),0 0 3px var(--land)}
+.lbl.sea{font-style:italic;color:color-mix(in srgb,var(--route-blue) 60%,var(--muted));text-shadow:none;font-weight:500}
+
+/* lists */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.story{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;display:flex;flex-direction:column;gap:4px}
+.story .s-k{font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--accent);text-transform:uppercase}
+.story .s-t{font-weight:600;font-size:15.5px;line-height:1.3}
+.story .s-x{font-size:13px;color:var(--muted)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.food-row{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;align-items:start}
+.food-row.inplan{border-color:var(--gold);background:linear-gradient(0deg,var(--gold-soft),var(--gold-soft))}
+.food-ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface-2);font-size:18px}
+.food-list{display:flex;flex-direction:column;gap:8px}
+.star{color:var(--gold);font-weight:700}
+
+/* info */
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.box h3{margin:0 0 8px;font-family:var(--font-display);font-size:16px;font-weight:700}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:14px}
+.kv dt{font-weight:600}
+.kv dd{margin:0;color:var(--muted)}
+.mono{font-family:var(--font-mono)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.check:last-child{border-bottom:0}
+.check input{width:20px;height:20px;margin-top:1px;accent-color:var(--accent);flex:0 0 auto}
+.check.done span{color:var(--muted);text-decoration:line-through}
+.phrase{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}
+.phrase:last-child{border-bottom:0}
+.phrase .jp{font-size:17px;font-weight:600;font-family:"Hiragino Sans","Noto Sans JP",var(--font-body)}
+.phrase .ro{font-size:12.5px;color:var(--muted);grid-column:1}
+.phrase .th{font-size:13px;grid-column:1}
+.phrase button{grid-row:1 / span 3;grid-column:2}
+.conv{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.conv input{width:120px;font:inherit;font-family:var(--font-mono);font-size:18px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
+.conv .out{font-family:var(--font-mono);font-size:22px;font-weight:600}
+.tipl{margin:0;padding-left:18px;font-size:14px}
+.tipl li{margin-bottom:5px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(5,10,8,.45);z-index:900}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:901;background:var(--surface);border-radius:18px 18px 0 0;max-height:86%;overflow-y:auto;box-shadow:var(--shadow);padding-block:6px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet .grab{width:42px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 10px}
+.sheet h2{font-family:var(--font-display);font-weight:700;font-size:21px;margin:0 0 4px;line-height:1.2;text-wrap:balance}
+.sheet .sk{font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--accent);text-transform:uppercase}
+.sheet p{margin:8px 0;max-width:65ch}
+.sheet .facts{list-style:none;padding:0;margin:10px 0;display:flex;flex-direction:column;gap:6px}
+.sheet .facts li{font-size:14px;padding-left:16px;position:relative}
+.sheet .facts li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.sheet-close{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:12px;border:0;background:var(--surface-2);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;line-height:1}
+
+/* drive mode */
+#driveRoot{flex:none;position:relative;z-index:25}
+.drive{background:var(--ink);color:var(--bg);padding-block:10px;box-shadow:0 -8px 24px rgba(0,0,0,.25);border-radius:16px 16px 0 0;max-height:46vh;overflow-y:auto}
+.drive .d-min{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);background:transparent;color:var(--bg);font-size:16px;cursor:pointer}
+.drive .d-gps{font-size:12px;opacity:.85;margin-top:4px}
+.drive .gps{font-weight:600}.drive .gps.on{color:#7BD88F}.drive .gps.off{color:var(--gold)}.drive .gps.wait{opacity:.8}
+.drive .linkbtn{background:none;border:0;color:inherit;text-decoration:underline;font:inherit;padding:0;cursor:pointer}
+.drive.min ul{margin-top:6px}
+.drive .d-top{display:flex;justify-content:space-between;align-items:center;gap:10px}.drive .d-top>div:first-child{flex:1}
+.drive .d-t{font-family:var(--font-display);font-weight:700;font-size:16px;line-height:1.2}
+.drive .d-s{font-size:12.5px;opacity:.75}
+.drive .d-el{font-family:var(--font-mono);font-size:22px;font-weight:600}
+.drive ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.drive li{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;font-size:13.5px;align-items:baseline}
+.drive li .cd{font-family:var(--font-mono);font-weight:600;white-space:nowrap}
+.drive li.passed{opacity:.45}
+.drive li.due .cd{color:var(--gold)}
+.drive .d-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.drive .btn{background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 35%,transparent)}
+.drive .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.alert{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(12px + env(safe-area-inset-top,0px));z-index:950;background:var(--accent);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);animation:pop .35s ease}
+.alert .a-k{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.9}
+.alert .a-t{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.2;margin:2px 0 4px}
+.alert .a-x{font-size:14px;margin:0}
+.alert .a-act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.alert .btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4);color:#fff}
+@keyframes pop{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.alert{animation:none}}
+
+.bk-alert{background:color-mix(in srgb,var(--warn) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));color:var(--ink);border-radius:10px;padding:8px 10px;font-size:13.5px;margin:8px 0}
+.front{background:var(--ink);color:var(--bg);border-radius:14px;padding:14px;margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.front-k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+.front-jp{font-size:18px;font-weight:600;font-family:"Hiragino Sans","Noto Sans JP",var(--font-body)}
+.front-name{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:.03em}
+.front-ids{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.front-ids b{font-size:19px;letter-spacing:.04em}
+.front-h{font-size:14px;opacity:.85;font-family:"Hiragino Sans","Noto Sans JP",var(--font-body)}
+.bk-room{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--surface-2)}
+.bk-top{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+.bk-id{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.bk-id b{font-size:18px;letter-spacing:.03em}
+.bk-kv{margin:8px 0 0;font-size:13.5px}
+
+.me{position:relative;width:28px;height:28px}
+.me b{position:absolute;left:6px;top:6px;width:16px;height:16px;border-radius:50%;background:#2F80ED;border:3px solid #fff;box-sizing:border-box;animation:mepulse 1.8s infinite}
+.me.est b{background:#fff;border:3px dashed #2F80ED;animation:none}
+.me i{position:absolute;left:9px;top:-6px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:11px solid #2F80ED;transform-origin:5px 20px}
+@keyframes mepulse{0%{box-shadow:0 0 0 0 rgba(47,128,237,.55)}70%{box-shadow:0 0 0 16px rgba(47,128,237,0)}100%{box-shadow:0 0 0 0 rgba(47,128,237,0)}}
+@media (prefers-reduced-motion: reduce){.me b{animation:none}}
+.leg-pin{width:30px;height:30px;border-radius:50%;background:var(--surface);border:2px solid #2F80ED;display:grid;place-items:center;font-size:15px;box-shadow:var(--shadow)}
+.loc-ctl button{width:36px;height:36px;display:grid;place-items:center;background:var(--surface);color:var(--ink);border:0;cursor:pointer;border-radius:4px}
+.loc-ctl.on button{color:#2F80ED}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.7)}}
+:root[data-theme="dark"] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.7)}
+.muted{color:var(--muted)}
+.tiny{font-size:12px;color:var(--muted)}
+.spacer-drive{height:0}
+
+</style>
+
+<div class="app">
+  <header class="top wrap">
+    <div class="top-row">
+      <h1 class="brand">ฮอกไกโด ใบไม้แดง 2026<small>18–24 ต.ค. · ขับรถ 7 วัน · 3 คน</small></h1>
+      <div class="clock" aria-live="polite"><span id="clkLabel">เวลาญี่ปุ่น</span><b id="clk">--:--</b><span id="clkTh"></span></div>
+    </div>
+    <div class="days" id="days" role="toolbar" aria-label="เลือกวัน"></div>
+  </header>
+
+  <main class="panels">
+    <section class="panel wrap" id="p-plan" role="tabpanel" aria-label="แผนวันนี้"></section>
+    <section class="panel map-panel" id="p-map" role="tabpanel" aria-label="แผนที่" hidden>
+      <div id="map" aria-label="แผนที่ฮอกไกโด"></div>
+      <div class="map-ui">
+        <div class="chips" id="mapDays"></div>
+        <div class="chips" id="mapLayers"></div>
+      </div>
+      <div class="map-legend" id="mapLegend">เส้นทางโดยประมาณ · นำทางจริงกดปุ่ม "นำทาง"<br><span style="font-size:10px">แผนที่ฐาน: 国土数値情報 (dataofjapan/land)</span></div>
+    </section>
+    <section class="panel wrap" id="p-stories" role="tabpanel" aria-label="เรื่องน่ารู้" hidden></section>
+    <section class="panel wrap" id="p-food" role="tabpanel" aria-label="ร้านอาหาร" hidden></section>
+    <section class="panel wrap" id="p-info" role="tabpanel" aria-label="ข้อมูลจำเป็น" hidden></section>
+  </main>
+  <div id="driveRoot"></div>
+
+  <nav class="tabs" role="tablist" aria-label="เมนู">
+    <button class="tab" role="tab" data-tab="plan" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2.5v3M16 2.5v3M4 9.5h16M8 13.5h4M8 17h7"/></svg>แผนรายวัน</button>
+    <button class="tab" role="tab" data-tab="map" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/><path d="M9 4v14M15 6v14"/></svg>แผนที่</button>
+    <button class="tab" role="tab" data-tab="stories" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V6a2 2 0 0 1 2-2h12v15H6a2 2 0 0 0-2 2Z"/><path d="M18 19v2H6M9 8h6M9 11.5h4"/></svg>เรื่องน่ารู้</button>
+    <button class="tab" role="tab" data-tab="food" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2 1.5-3 4-3 7v3h3"/></svg>ร้านอาหาร</button>
+    <button class="tab" role="tab" data-tab="info" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.1"/></svg>จำเป็น</button>
+  </nav>
+</div>
+
+<div id="sheetRoot"></div>
+<div id="alertRoot"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const HOKKAIDO = {"type":"MultiPolygon","coordinates":[[[[148.343,45.291],[148.343,45.3],[148.355,45.309],[148.393,45.32],[148.41,45.332],[148.421,45.331],[148.418,45.337],[148.426,45.348],[148.444,45.353],[148.451,45.363],[148.459,45.361],[148.455,45.369],[148.459,45.377],[148.477,45.38],[148.482,45.389],[148.473,45.4],[148.488,45.42],[148.511,45.431],[148.519,45.445],[148.56,45.461],[148.577,45.488],[148.611,45.493],[148.64,45.508],[148.641,45.523],[148.658,45.54],[148.723,45.545],[148.754,45.557],[148.84,45.552],[148.841,45.545],[148.872,45.535],[148.895,45.513],[148.888,45.484],[148.837,45.462],[148.831,45.454],[148.832,45.428],[148.855,45.42],[148.877,45.393],[148.853,45.356],[148.843,45.352],[148.848,45.346],[148.844,45.34],[148.807,45.335],[148.781,45.324],[148.746,45.338],[148.629,45.333],[148.61,45.321],[148.566,45.311],[148.516,45.279],[148.506,45.279],[148.511,45.274],[148.501,45.272],[148.504,45.263],[148.494,45.256],[148.479,45.262],[148.459,45.25],[148.439,45.253],[148.406,45.231],[148.305,45.216],[148.28,45.202],[148.279,45.195],[148.273,45.197],[148.265,45.185],[148.259,45.191],[148.247,45.187],[148.216,45.17],[148.218,45.165],[148.196,45.15],[148.169,45.147],[148.16,45.137],[148.148,45.138],[148.091,45.107],[148.056,45.068],[148.042,45.065],[148.007,45.027],[147.995,45.024],[147.997,45.016],[147.99,45.015],[147.988,45.007],[147.941,44.988],[147.908,44.961],[147.899,44.96],[147.897,44.969],[147.886,44.963],[147.853,44.966],[147.785,44.948],[147.747,44.966],[147.73,44.98],[147.728,45.003],[147.705,45.006],[147.663,44.998],[147.626,44.972],[147.615,44.95],[147.614,44.94],[147.652,44.925],[147.653,44.92],[147.618,44.89],[147.586,44.842],[147.552,44.817],[147.516,44.812],[147.499,44.801],[147.497,44.788],[147.489,44.782],[147.441,44.773],[147.435,44.765],[147.425,44.766],[147.387,44.746],[147.37,44.723],[147.349,44.721],[147.347,44.714],[147.337,44.715],[147.302,44.668],[147.287,44.662],[147.267,44.639],[147.261,44.614],[147.252,44.607],[147.255,44.602],[147.245,44.6],[147.206,44.567],[147.191,44.57],[147.145,44.559],[147.106,44.569],[147.081,44.56],[147.03,44.519],[146.997,44.472],[146.994,44.455],[146.953,44.427],[146.878,44.439],[146.865,44.446],[146.861,44.467],[146.872,44.481],[146.872,44.496],[146.891,44.518],[146.926,44.526],[146.955,44.554],[146.933,44.587],[146.934,44.61],[146.949,44.634],[146.965,44.594],[146.985,44.578],[146.997,44.579],[147.026,44.599],[147.032,44.616],[147.033,44.638],[147.004,44.656],[147.009,44.66],[147.048,44.661],[147.049,44.655],[147.061,44.656],[147.06,44.649],[147.079,44.638],[147.095,44.639],[147.126,44.649],[147.182,44.689],[147.192,44.707],[147.2,44.753],[147.193,44.765],[147.13,44.769],[147.117,44.779],[147.101,44.813],[147.111,44.824],[147.131,44.83],[147.156,44.825],[147.201,44.798],[147.237,44.807],[147.247,44.813],[147.267,44.868],[147.376,44.909],[147.476,44.985],[147.503,44.989],[147.509,44.993],[147.504,44.997],[147.518,44.999],[147.513,45.033],[147.523,45.042],[147.527,45.071],[147.534,45.071],[147.532,45.09],[147.527,45.1],[147.5,45.112],[147.51,45.117],[147.537,45.106],[147.57,45.107],[147.577,45.102],[147.572,45.097],[147.587,45.086],[147.636,45.076],[147.657,45.082],[147.69,45.095],[147.699,45.105],[147.694,45.144],[147.705,45.151],[147.706,45.169],[147.729,45.176],[147.74,45.196],[147.767,45.195],[147.774,45.208],[147.803,45.21],[147.821,45.219],[147.846,45.208],[147.872,45.226],[147.869,45.233],[147.886,45.258],[147.869,45.264],[147.873,45.296],[147.859,45.318],[147.858,45.352],[147.851,45.365],[147.873,45.399],[147.891,45.408],[147.909,45.429],[147.925,45.438],[147.965,45.422],[147.967,45.396],[147.977,45.389],[147.971,45.385],[147.977,45.368],[148.006,45.335],[147.997,45.334],[147.997,45.325],[148.008,45.311],[148.009,45.292],[148.02,45.291],[148.02,45.28],[148.028,45.282],[148.031,45.272],[148.041,45.267],[148.119,45.258],[148.171,45.26],[148.267,45.272],[148.343,45.291]]],[[[141.723,44.92],[141.57,45.199],[141.572,45.235],[141.612,45.277],[141.621,45.297],[141.612,45.313],[141.622,45.314],[141.655,45.35],[141.658,45.368],[141.637,45.401],[141.635,45.42],[141.646,45.451],[141.684,45.421],[141.678,45.407],[141.682,45.404],[141.68,45.41],[141.686,45.411],[141.687,45.405],[141.698,45.406],[141.707,45.397],[141.73,45.399],[141.744,45.404],[141.747,45.415],[141.771,45.405],[141.796,45.408],[141.858,45.435],[141.879,45.462],[141.874,45.475],[141.88,45.496],[141.893,45.503],[141.893,45.512],[141.943,45.522],[141.96,45.513],[141.973,45.481],[142.024,45.449],[142.025,45.437],[142.036,45.431],[142.036,45.418],[142.051,45.403],[142.17,45.341],[142.264,45.247],[142.389,45.138],[142.476,45.068],[142.487,45.061],[142.505,45.061],[142.5,45.054],[142.509,45.041],[142.536,45.029],[142.533,45.013],[142.542,45.003],[142.538,44.999],[142.544,44.988],[142.585,44.962],[142.58,44.956],[142.591,44.941],[142.586,44.935],[142.589,44.92],[142.635,44.885],[142.66,44.842],[142.68,44.831],[142.731,44.769],[142.776,44.732],[142.801,44.713],[142.819,44.71],[142.816,44.705],[142.832,44.692],[142.929,44.628],[142.946,44.602],[142.997,44.558],[143.045,44.531],[143.063,44.533],[143.063,44.522],[143.092,44.503],[143.225,44.44],[143.23,44.427],[143.24,44.42],[143.349,44.372],[143.366,44.352],[143.358,44.354],[143.367,44.337],[143.417,44.309],[143.56,44.253],[143.785,44.181],[143.9,44.154],[144.077,44.125],[144.102,44.13],[144.123,44.117],[144.19,44.105],[144.214,44.103],[144.247,44.113],[144.258,44.087],[144.253,44.063],[144.262,44.058],[144.256,44.041],[144.274,44.025],[144.289,44.021],[144.291,44.017],[144.282,44.016],[144.282,44.011],[144.3,43.993],[144.299,43.984],[144.407,43.945],[144.497,43.929],[144.622,43.918],[144.711,43.92],[144.795,43.932],[144.806,43.943],[144.835,43.952],[144.85,43.975],[144.909,44.004],[144.937,44.044],[144.944,44.04],[144.979,44.069],[144.993,44.07],[144.992,44.077],[145.004,44.078],[145.016,44.1],[145.07,44.125],[145.08,44.137],[145.122,44.159],[145.122,44.164],[145.192,44.196],[145.231,44.253],[145.281,44.29],[145.293,44.311],[145.304,44.311],[145.317,44.335],[145.333,44.346],[145.346,44.339],[145.343,44.326],[145.353,44.317],[145.348,44.313],[145.35,44.296],[145.367,44.272],[145.367,44.259],[145.349,44.244],[145.349,44.225],[145.331,44.193],[145.288,44.153],[145.265,44.139],[145.256,44.126],[145.242,44.092],[145.246,44.069],[145.24,44.059],[145.145,43.97],[145.095,43.893],[145.1,43.862],[145.091,43.837],[145.084,43.822],[145.062,43.808],[145.061,43.787],[145.068,43.753],[145.093,43.728],[145.146,43.646],[145.326,43.597],[145.341,43.587],[145.35,43.567],[145.345,43.559],[145.324,43.551],[145.291,43.552],[145.302,43.555],[145.281,43.563],[145.328,43.564],[145.34,43.572],[145.339,43.581],[145.321,43.577],[145.324,43.581],[145.315,43.586],[145.33,43.586],[145.332,43.59],[145.309,43.6],[145.28,43.592],[145.287,43.602],[145.271,43.594],[145.263,43.597],[145.272,43.602],[145.245,43.593],[145.268,43.606],[145.267,43.61],[145.197,43.625],[145.202,43.61],[145.197,43.6],[145.221,43.587],[145.215,43.578],[145.247,43.522],[145.249,43.495],[145.275,43.41],[145.309,43.36],[145.389,43.298],[145.386,43.292],[145.408,43.293],[145.492,43.267],[145.532,43.314],[145.551,43.317],[145.555,43.321],[145.551,43.325],[145.564,43.326],[145.587,43.341],[145.583,43.347],[145.624,43.364],[145.651,43.391],[145.721,43.384],[145.734,43.394],[145.751,43.39],[145.753,43.397],[145.763,43.4],[145.766,43.392],[145.817,43.386],[145.809,43.379],[145.808,43.371],[145.813,43.37],[145.756,43.338],[145.739,43.34],[145.732,43.33],[145.721,43.337],[145.688,43.327],[145.677,43.32],[145.679,43.313],[145.646,43.322],[145.622,43.317],[145.611,43.311],[145.61,43.298],[145.598,43.296],[145.59,43.278],[145.582,43.287],[145.57,43.284],[145.55,43.228],[145.558,43.22],[145.529,43.205],[145.535,43.195],[145.53,43.187],[145.512,43.19],[145.507,43.184],[145.524,43.175],[145.522,43.166],[145.497,43.159],[145.494,43.167],[145.504,43.174],[145.487,43.187],[145.406,43.186],[145.343,43.179],[145.319,43.168],[145.298,43.173],[145.283,43.17],[145.203,43.137],[145.185,43.14],[145.171,43.151],[145.147,43.145],[145.115,43.123],[145.11,43.104],[145.118,43.081],[145.1,43.078],[145.089,43.067],[145.088,43.047],[145.062,43.041],[145.051,43.031],[145.032,43.03],[145.025,43.022],[145.031,43.013],[145.024,43.0],[144.996,42.994],[144.974,42.982],[144.928,42.991],[144.924,42.981],[144.906,42.99],[144.877,42.987],[144.872,42.996],[144.856,43.002],[144.86,43.007],[144.853,43.014],[144.834,43.014],[144.836,43.032],[144.847,43.043],[144.844,43.046],[144.854,43.05],[144.822,43.06],[144.8,43.059],[144.782,43.054],[144.747,43.025],[144.723,42.98],[144.749,42.956],[144.785,42.939],[144.775,42.934],[144.676,42.94],[144.632,42.951],[144.53,42.952],[144.486,42.94],[144.452,42.944],[144.387,42.97],[144.365,42.972],[144.372,42.976],[144.372,42.987],[144.362,42.988],[144.36,43.0],[144.341,42.995],[144.341,43.0],[144.324,42.998],[144.318,43.006],[144.27,43.003],[144.169,42.985],[144.049,42.942],[143.92,42.875],[143.598,42.642],[143.458,42.503],[143.389,42.416],[143.325,42.31],[143.341,42.303],[143.325,42.309],[143.328,42.296],[143.322,42.298],[143.32,42.291],[143.326,42.289],[143.31,42.261],[143.308,42.246],[143.32,42.225],[143.321,42.21],[143.336,42.203],[143.336,42.191],[143.317,42.122],[143.323,42.118],[143.309,42.081],[143.312,42.055],[143.26,42.003],[143.243,41.953],[143.25,41.926],[143.164,41.983],[143.158,42.003],[143.136,42.027],[143.097,42.05],[143.011,42.081],[142.965,42.119],[142.931,42.126],[142.922,42.121],[142.911,42.133],[142.818,42.142],[142.773,42.162],[142.762,42.175],[142.673,42.192],[142.636,42.219],[142.586,42.244],[142.485,42.271],[142.447,42.304],[142.408,42.31],[142.372,42.325],[142.278,42.377],[142.196,42.447],[142.154,42.464],[142.076,42.472],[142.071,42.478],[142.029,42.485],[142.01,42.506],[141.986,42.514],[141.94,42.55],[141.919,42.557],[141.9,42.578],[141.872,42.59],[141.823,42.606],[141.818,42.602],[141.811,42.611],[141.801,42.602],[141.8,42.613],[141.747,42.623],[141.673,42.631],[141.631,42.629],[141.699,42.653],[141.696,42.658],[141.631,42.637],[141.626,42.645],[141.625,42.631],[141.615,42.63],[141.618,42.624],[141.602,42.627],[141.497,42.604],[141.351,42.543],[141.208,42.455],[141.159,42.442],[141.125,42.42],[141.093,42.396],[141.053,42.358],[141.055,42.353],[141.045,42.351],[141.035,42.337],[141.027,42.337],[141.008,42.313],[141.01,42.306],[141.002,42.302],[140.948,42.318],[140.931,42.337],[140.951,42.348],[140.961,42.337],[140.971,42.335],[140.973,42.325],[140.982,42.324],[140.987,42.333],[140.981,42.344],[141.008,42.348],[140.977,42.349],[140.987,42.355],[140.917,42.37],[140.908,42.38],[140.9,42.42],[140.872,42.461],[140.839,42.471],[140.802,42.499],[140.781,42.5],[140.779,42.514],[140.786,42.519],[140.772,42.522],[140.773,42.53],[140.777,42.529],[140.774,42.537],[140.724,42.574],[140.712,42.575],[140.71,42.584],[140.643,42.587],[140.584,42.568],[140.535,42.589],[140.469,42.587],[140.412,42.544],[140.372,42.503],[140.316,42.42],[140.293,42.372],[140.277,42.311],[140.277,42.282],[140.287,42.253],[140.307,42.239],[140.34,42.227],[140.384,42.224],[140.399,42.216],[140.408,42.204],[140.497,42.149],[140.516,42.129],[140.546,42.115],[140.589,42.109],[140.66,42.129],[140.69,42.127],[140.707,42.139],[140.76,42.117],[140.774,42.087],[140.802,42.078],[140.804,42.057],[140.821,42.036],[140.908,41.985],[140.941,41.935],[140.951,41.937],[140.959,41.918],[141.012,41.894],[141.074,41.888],[141.148,41.855],[141.147,41.832],[141.182,41.818],[141.186,41.803],[141.158,41.786],[141.113,41.787],[141.094,41.764],[141.083,41.76],[141.075,41.743],[141.051,41.733],[141.054,41.727],[141.038,41.728],[141.031,41.719],[141.016,41.723],[140.968,41.711],[140.953,41.715],[140.931,41.737],[140.899,41.748],[140.775,41.775],[140.734,41.767],[140.719,41.753],[140.723,41.746],[140.702,41.741],[140.693,41.764],[140.702,41.785],[140.711,41.781],[140.706,41.775],[140.717,41.772],[140.715,41.767],[140.727,41.781],[140.717,41.807],[140.69,41.82],[140.664,41.823],[140.641,41.817],[140.619,41.798],[140.621,41.789],[140.605,41.763],[140.602,41.743],[140.551,41.722],[140.527,41.701],[140.481,41.701],[140.458,41.696],[140.445,41.685],[140.435,41.66],[140.429,41.587],[140.431,41.563],[140.439,41.555],[140.43,41.536],[140.409,41.517],[140.365,41.516],[140.348,41.506],[140.338,41.508],[140.259,41.482],[140.258,41.47],[140.247,41.464],[140.216,41.411],[140.199,41.399],[140.185,41.402],[140.145,41.429],[140.12,41.43],[140.094,41.425],[140.089,41.418],[140.041,41.448],[140.029,41.462],[140.013,41.508],[139.986,41.552],[139.984,41.606],[140.002,41.651],[140.009,41.692],[140.062,41.753],[140.072,41.774],[140.072,41.806],[140.095,41.81],[140.105,41.805],[140.122,41.822],[140.126,41.856],[140.12,41.867],[140.111,41.864],[140.115,41.872],[140.12,41.867],[140.13,41.871],[140.139,41.895],[140.141,41.922],[140.128,41.967],[140.133,41.976],[140.12,42.004],[140.105,42.007],[140.1,42.029],[140.083,42.037],[140.087,42.042],[140.057,42.083],[140.026,42.113],[139.99,42.129],[139.923,42.134],[139.896,42.184],[139.882,42.193],[139.881,42.208],[139.864,42.219],[139.815,42.222],[139.813,42.23],[139.797,42.232],[139.775,42.26],[139.786,42.274],[139.767,42.311],[139.782,42.354],[139.8,42.361],[139.817,42.379],[139.818,42.39],[139.829,42.394],[139.844,42.428],[139.844,42.457],[139.852,42.463],[139.849,42.493],[139.843,42.499],[139.847,42.527],[139.824,42.595],[139.829,42.597],[139.823,42.614],[139.842,42.627],[139.869,42.666],[139.897,42.68],[139.926,42.689],[139.989,42.693],[140.003,42.687],[140.046,42.695],[140.065,42.707],[140.074,42.728],[140.142,42.753],[140.161,42.795],[140.186,42.828],[140.205,42.81],[140.235,42.797],[140.247,42.769],[140.281,42.77],[140.305,42.779],[140.306,42.829],[140.344,42.856],[140.377,42.896],[140.391,42.923],[140.4,42.924],[140.43,42.95],[140.522,42.992],[140.529,43.007],[140.526,43.032],[140.507,43.037],[140.509,43.043],[140.495,43.064],[140.487,43.076],[140.465,43.087],[140.46,43.105],[140.45,43.11],[140.442,43.128],[140.429,43.137],[140.43,43.143],[140.361,43.181],[140.326,43.222],[140.337,43.255],[140.328,43.259],[140.341,43.266],[140.344,43.276],[140.337,43.283],[140.345,43.284],[140.36,43.316],[140.347,43.334],[140.379,43.33],[140.406,43.336],[140.425,43.33],[140.46,43.346],[140.471,43.366],[140.463,43.372],[140.497,43.373],[140.514,43.358],[140.529,43.359],[140.541,43.34],[140.581,43.311],[140.604,43.303],[140.607,43.297],[140.63,43.298],[140.635,43.287],[140.645,43.286],[140.637,43.276],[140.641,43.267],[140.718,43.251],[140.735,43.243],[140.74,43.234],[140.777,43.226],[140.776,43.204],[140.792,43.195],[140.849,43.199],[140.858,43.204],[140.855,43.217],[140.862,43.219],[140.873,43.206],[140.914,43.212],[140.927,43.228],[140.95,43.228],[140.982,43.24],[141.017,43.24],[141.014,43.234],[141.021,43.225],[141.002,43.205],[141.016,43.194],[141.011,43.192],[141.162,43.145],[141.233,43.17],[141.289,43.198],[141.291,43.206],[141.296,43.211],[141.307,43.214],[141.299,43.215],[141.316,43.219],[141.353,43.253],[141.424,43.329],[141.432,43.389],[141.429,43.42],[141.359,43.519],[141.362,43.54],[141.386,43.587],[141.383,43.605],[141.365,43.619],[141.352,43.645],[141.349,43.67],[141.331,43.709],[141.33,43.725],[141.36,43.761],[141.372,43.791],[141.388,43.807],[141.457,43.837],[141.497,43.839],[141.509,43.855],[141.521,43.86],[141.538,43.853],[141.549,43.862],[141.562,43.86],[141.596,43.885],[141.626,43.92],[141.634,43.943],[141.629,43.946],[141.632,43.96],[141.638,43.947],[141.648,43.945],[141.638,43.954],[141.646,43.971],[141.642,43.976],[141.658,44.003],[141.663,44.038],[141.654,44.156],[141.658,44.239],[141.649,44.315],[141.674,44.327],[141.695,44.369],[141.703,44.37],[141.71,44.392],[141.747,44.433],[141.757,44.457],[141.768,44.555],[141.78,44.566],[141.787,44.587],[141.792,44.644],[141.778,44.753],[141.755,44.837],[141.723,44.92]]],[[[141.032,45.275],[141.016,45.285],[141.025,45.291],[141.024,45.31],[141.004,45.33],[140.984,45.384],[140.991,45.387],[140.986,45.399],[140.992,45.407],[140.984,45.416],[140.994,45.42],[140.994,45.427],[140.967,45.439],[140.977,45.448],[140.968,45.465],[140.989,45.442],[141.009,45.434],[141.036,45.442],[141.033,45.462],[141.052,45.449],[141.068,45.424],[141.057,45.408],[141.06,45.355],[141.05,45.342],[141.057,45.318],[141.046,45.3],[141.044,45.275],[141.032,45.275]]],[[[141.133,45.213],[141.156,45.235],[141.199,45.26],[141.233,45.247],[141.228,45.239],[141.235,45.235],[141.265,45.231],[141.274,45.235],[141.318,45.198],[141.331,45.152],[141.281,45.108],[141.276,45.112],[141.24,45.099],[141.229,45.1],[141.168,45.137],[141.142,45.163],[141.14,45.183],[141.128,45.186],[141.141,45.19],[141.133,45.213]]],[[[145.747,44.065],[145.744,44.104],[145.79,44.151],[145.832,44.178],[145.885,44.246],[145.944,44.279],[145.992,44.325],[146.011,44.371],[146.007,44.382],[146.053,44.42],[146.08,44.472],[146.129,44.509],[146.174,44.516],[146.17,44.51],[146.226,44.483],[146.249,44.456],[146.25,44.447],[146.28,44.443],[146.281,44.435],[146.315,44.429],[146.333,44.419],[146.497,44.425],[146.529,44.432],[146.578,44.456],[146.554,44.43],[146.535,44.38],[146.518,44.368],[146.502,44.366],[146.491,44.354],[146.451,44.378],[146.434,44.377],[146.381,44.353],[146.368,44.337],[146.368,44.319],[146.347,44.318],[146.342,44.309],[146.328,44.303],[146.33,44.298],[146.306,44.29],[146.299,44.278],[146.116,44.265],[146.069,44.235],[146.053,44.213],[146.049,44.202],[146.055,44.195],[146.045,44.191],[146.046,44.184],[145.989,44.173],[145.966,44.153],[145.948,44.154],[145.924,44.137],[145.904,44.116],[145.903,44.096],[145.892,44.096],[145.882,44.087],[145.881,44.075],[145.872,44.071],[145.864,44.053],[145.865,44.03],[145.878,44.021],[145.856,44.022],[145.855,44.031],[145.842,44.033],[145.814,44.017],[145.806,43.993],[145.791,43.979],[145.788,43.962],[145.793,43.959],[145.781,43.933],[145.718,43.912],[145.676,43.905],[145.654,43.91],[145.641,43.904],[145.626,43.884],[145.619,43.885],[145.606,43.869],[145.593,43.871],[145.577,43.845],[145.569,43.753],[145.554,43.67],[145.545,43.658],[145.538,43.659],[145.536,43.676],[145.55,43.725],[145.546,43.732],[145.497,43.734],[145.435,43.719],[145.419,43.753],[145.427,43.774],[145.424,43.786],[145.411,43.819],[145.4,43.829],[145.407,43.842],[145.438,43.85],[145.447,43.856],[145.466,43.891],[145.484,43.904],[145.53,43.92],[145.537,43.932],[145.561,43.945],[145.59,43.953],[145.598,43.973],[145.646,43.994],[145.651,44.005],[145.674,44.012],[145.68,44.017],[145.676,44.027],[145.731,44.045],[145.747,44.065]]],[[[146.645,43.703],[146.641,43.709],[146.65,43.715],[146.634,43.719],[146.622,43.734],[146.62,43.75],[146.626,43.757],[146.608,43.753],[146.616,43.744],[146.613,43.735],[146.595,43.736],[146.596,43.747],[146.586,43.744],[146.591,43.759],[146.608,43.77],[146.585,43.802],[146.586,43.808],[146.666,43.829],[146.699,43.832],[146.709,43.825],[146.712,43.831],[146.727,43.832],[146.749,43.819],[146.747,43.83],[146.722,43.837],[146.725,43.847],[146.774,43.876],[146.786,43.875],[146.79,43.869],[146.801,43.86],[146.788,43.878],[146.806,43.872],[146.814,43.878],[146.814,43.87],[146.826,43.869],[146.82,43.881],[146.826,43.89],[146.845,43.89],[146.853,43.884],[146.851,43.877],[146.862,43.877],[146.895,43.848],[146.915,43.848],[146.911,43.841],[146.921,43.839],[146.903,43.829],[146.907,43.812],[146.903,43.814],[146.899,43.807],[146.882,43.815],[146.86,43.807],[146.841,43.81],[146.827,43.801],[146.829,43.796],[146.851,43.788],[146.839,43.783],[146.812,43.792],[146.808,43.781],[146.799,43.786],[146.789,43.781],[146.79,43.772],[146.795,43.772],[146.788,43.76],[146.772,43.767],[146.774,43.76],[146.761,43.75],[146.751,43.757],[146.754,43.752],[146.747,43.748],[146.729,43.747],[146.733,43.738],[146.727,43.735],[146.697,43.747],[146.682,43.731],[146.69,43.723],[146.678,43.716],[146.676,43.708],[146.645,43.703]]],[[[146.116,43.459],[146.119,43.47],[146.109,43.478],[146.107,43.492],[146.088,43.503],[146.074,43.522],[146.061,43.523],[146.131,43.549],[146.174,43.534],[146.208,43.534],[146.18,43.505],[146.187,43.496],[146.197,43.495],[146.195,43.489],[146.116,43.459]]],[[[139.45,42.052],[139.444,42.064],[139.422,42.072],[139.423,42.136],[139.406,42.165],[139.411,42.17],[139.407,42.18],[139.439,42.217],[139.467,42.218],[139.536,42.234],[139.549,42.239],[139.559,42.253],[139.561,42.229],[139.546,42.204],[139.517,42.177],[139.52,42.139],[139.504,42.097],[139.482,42.073],[139.452,42.064],[139.45,42.052]]]]};
+const TRIP_START = "2026-10-18";
+const RATE_DEFAULT = 0.2064; // บาท ต่อ ¥1 จากชีตงบเดิม (8,790 บาท ÷ ¥42,581)
+
+// จุดสำคัญ: [ชื่อ, lat, lng, google place_id (ถ้ามี), คำค้นรูป, story id]
+const P = {
+  cts:["สนามบินชิโตเสะ (CTS)",42.7791,141.6866,"ChIJ3RpcnUUgdV8R9oH25Xxguho","New Chitose Airport","cts"],
+  yuni:["Yuni Garden",42.9973,141.7722,"ChIJrRheRQbPdF8Rxoi4bJ6GOCM","ゆにガーデン コキア 紅葉","yuni"],
+  doremo:["Doremo LeTAO",42.8207,141.6559,"ChIJ1_rtS6EgdV8RB9jnndJosWQ","Doremo LeTAO 千歳","letao"],
+  nidom:["Hotel Nidom",42.7155,141.6555,"ChIJXaI9U9gYdV8RaMJYX7CN1No","ホテルニドム コテージ","nidom"],
+  aeon:["AEON Mall Tomakomai",42.6558,141.6408,"ChIJ1RMMhBoadV8RkyX9P0Z-iwA","イオンモール苫小牧",null],
+  marutoma:["Marutoma Shokudo",42.6294,141.6169,"ChIJnxyjauwQdV8RR5-TmWAJEDg","マルトマ食堂 ホッキカレー","hokki"],
+  jigoku:["Jigokudani (หุบเขานรก)",42.4976,141.1487,"ChIJ___jisJmdV8RzL7_3Cqwtcc","登別 地獄谷 紅葉","jigoku"],
+  oyunuma:["Oyunuma (大湯沼)",42.5024,141.1472,"ChIJqXw_ZeZmdV8RVGtXEdHTFXg","大湯沼 登別","oyunuma"],
+  hikaru:["Hikaru Umi (白老)",42.4748,141.2377,"ChIJ_3AURgtldV8RzB474UM9Huw","Hikaru Umi Shiraoi 海鮮","shiraoi"],
+  toyaonsen:["เมือง Toyako Onsen",42.5654,140.8212,"ChIJD8YbU7zin18ROBmpoxi6q20","洞爺湖温泉 湖畔","toya"],
+  wakasaimo:["Wakasaimo Honpo",42.5654,140.8153,"ChIJe1D5gb7in18RLHRcjLoBfzU","わかさいも本舗 洞爺湖本店","wakasaimo"],
+  fireworks:["จุดชมพลุ Toyako Onsen",42.5662,140.8240,null,"洞爺湖ロングラン花火","fireworks","Toyako Onsen lakeside"],
+  cocoa:["Hotel Cocoa",42.6133,140.7802,"ChIJD77BEyxWdV8RHLx9aiNJa-Y","Hotel Cocoa Toyako view",null],
+  silo:["Silo Observatory",42.6262,140.7996,"ChIJwVanrk9WdV8Rl0Q6ktSJrPk","サイロ展望台 洞爺湖 紅葉","usu"],
+  lakehill:["Lake Hill Farm",42.6155,140.7865,"ChIJt84zVDJWdV8RiDubucSznAM","レークヒルファーム 羊蹄山","yotei"],
+  panorama:["Niseko Panorama Line",42.8886,140.6071,"ChIJeYVsHvauCl8Rq1oDLC8-jA4","ニセコパノラマライン 紅葉","panorama"],
+  takahashi:["Niseko Takahashi Dairy Farm",42.8368,140.6754,"ChIJO72qL8CvCl8RCD79oSW_yOE","ニセコ高橋牧場 羊蹄山","yotei"],
+  boyo:["Michi-no-Eki Bōyō Nakayama",42.8563,141.0972,"ChIJYShH3s40dV8RC96B0xVQySM","道の駅 望羊中山 羊蹄山","nakayama"],
+  hanamomiji:["Hanamomiji (定山渓)",42.9660,141.1618,"ChIJ90A7cSLSCl8Rgyf2R9uiVV4","定山渓 花もみじ","jozankei"],
+  futami:["สะพาน Futami",42.9639,141.1581,"ChIJH3hLJRTTCl8R-T4DCRkDNxM","二見吊橋 紅葉","jozankei"],
+  hoheikyo:["Hoheikyo Dam",42.9157,141.1535,"ChIJrzWa_wrSCl8RrNzBjBCusGc","豊平峡ダム 紅葉","hoheikyo"],
+  otaru:["คลองโอตารุ",43.1990,141.0021,"ChIJ0UxVV2ThCl8RIZdpda0H7gQ","小樽運河","otaru"],
+  sakaimachi:["ถนน Sakaimachi",43.1915,141.0068,"ChIJ6XWWhVrgCl8Rf9vktzxsHI0","小樽 堺町通り","otaru"],
+  naruto:["Naruto (สาขาหลัก)",43.2004,140.9951,"ChIJq6padq3hCl8RdAJymA13dXs","なると屋 若鶏半身揚げ","otaru"],
+  mystays:["Hotel MyStays Sapporo Aspen",43.0704,141.3489,"ChIJCfSgCQspC18RE7HvgD9w6fs","Hotel MyStays Sapporo Aspen",null],
+  station:["สถานีซัปโปโร",43.0687,141.3508,null,"札幌駅","sapporo","Sapporo Station"],
+  susukino:["ย่าน Susukino",43.0554,141.3530,null,"すすきの 交差点 夜","susukino","Susukino Station"],
+  ginkgo:["ถนนแปะก๊วย ม.ฮอกไกโด",43.0756,141.3460,"ChIJRRhoSg8pC18RCInTm2uFLfY","北大 イチョウ並木","hokudai"],
+  stellar:["Stellar Place",43.0681,141.3518,"ChIJa_KH3HQpC18RuO2-tNVySg0","札幌ステラプレイス",null],
+  daimaru:["ห้าง Daimaru Sapporo",43.0676,141.3493,"ChIJMZf131MpC18RQsBQf7NM92s","大丸札幌",null],
+  moiwa:["Mt. Moiwa Ropeway",43.0384,141.3224,null,"藻岩山 夜景","moiwa","Mt. Moiwa Ropeway Sanroku Station"],
+  komeda:["Komeda's Coffee (Odori Nishi 2)",43.0606,141.3520,null,"コメダ珈琲 モーニング",null,"Komeda's Coffee Odori Nishi 2-chome Sapporo"],
+  ooiso:["Ooiso ตลาดนิโจ",43.0582,141.3577,null,"二条市場 大磯","nijo","Oiso Nijo Market Sapporo"],
+  nakajima:["สวนนากาจิมะ",43.0440,141.3540,null,"中島公園 紅葉 豊平館","nakajima","Nakajima Park Sapporo"],
+  tvtower:["สวนโอโดริ + TV Tower",43.0611,141.3564,null,"大通公園 紅葉 テレビ塔","odori","Sapporo TV Tower"],
+  clock:["หอนาฬิกาซัปโปโร",43.0626,141.3535,"ChIJR3JQJ3YpC18R680ES0qomxs","札幌市時計台","clock"],
+  donguri:["Donguri (Odori)",43.0604,141.3556,null,"どんぐり ちくわパン",null,"Donguri Odori Sapporo"],
+  tanuki:["ถนน Tanukikoji",43.0577,141.3530,null,"狸小路商店街","tanuki","Tanukikoji Shopping Street Sapporo"],
+  beergarden:["Sapporo Beer Garden",43.0713,141.3691,"ChIJ__9PCWwpC18RpHEvsAli2gg","サッポロビール園","beer"]
+};
+
+// เรื่องน่ารู้ / ประวัติ
+const S = {
+  cts:{k:"ด่านแรก",t:"สนามบินชิโตเสะใหม่",x:"ประตูหลักของฮอกไกโด มีของกินและของฝากแทบครบทั้งเกาะ",
+    body:["อาคารผู้โดยสารเชื่อมระหว่างประเทศกับในประเทศ ชั้น 3 ฝั่งในประเทศมีโซนร้านอาหาร (Gourmet World) และซอยราเมน (Ramen Dojo) ที่ร้านในลิสต์ของคุณหลายร้านอยู่ เช่น Ebisoba Ichigen, Soup Curry Lavi, Matsuo Jingisukan","ก่อนบินกลับวันที่ 24 มีเวลาซื้อของฝาก เช่น ช็อกโกแลต Royce, Shiroi Koibito และขนม LeTAO ได้ในที่เดียว"],
+    facts:["รับรถเช่า: เคาน์เตอร์อยู่ในอาคาร แล้วนั่งชัตเติลไปออฟฟิศ","ขากลับ: JR Rapid Airport จากซัปโปโร ¥1,230 (uSeat +¥840)"]},
+  yuni:{k:"สวน",t:"Yuni Garden — ทุ่งโคเชียสีแดง",x:"สวนสไตล์อังกฤษกลางทุ่งเกษตรของเมืองยูนิ",
+    body:["โคเชีย (kochia) เป็นพุ่มกลมที่เขียวช่วงฤดูร้อน แล้วค่อยๆ เปลี่ยนเป็นแดงเข้มในเดือนตุลาคม ก่อนจะซีดเป็นสีทองน้ำตาลช่วงปลายเดือน ทำให้ทุ่งเปลี่ยนสีได้ในเวลาแค่ไม่กี่สัปดาห์","ปี 2026 สวนเปิดถึง 3 พ.ย. เวลา 10:00–16:00 ค่าเข้าเดือนตุลาคม ¥1,000"],
+    facts:["อากาศในสวนโล่งและลมแรง ควรใส่เสื้อกันลม","มีร้านอาหาร Restaurant Chive อยู่ในสวน (อยู่ในลิสต์ร้านของคุณ)"]},
+  letao:{k:"ขนม",t:"LeTAO — ชีสเค้กจากโอตารุ",x:"ชื่อย่อจากภาษาฝรั่งเศส La Tour Amitié Otaru",
+    body:["LeTAO เป็นร้านขนมที่เริ่มต้นในโอตารุ ชื่อร้านย่อมาจาก La Tour Amitié Otaru ที่แปลว่า 'หอคอยแห่งมิตรภาพแห่งโอตารุ' เมนูที่ทำให้ดังคือชีสเค้กสองชั้น Double Fromage","Doremo LeTAO ที่ชิโตเสะเป็นสาขาใหญ่ที่มีคาเฟ่และเบเกอรี รีวิวบอกว่าเป็นสาขาเดียวที่มีแพนเค้กแบบซูเฟล่ และช่วงเที่ยงคิวยาว ควรจองโต๊ะออนไลน์ล่วงหน้า"],
+    facts:["วันที่ 18 เป็นวันอาทิตย์ คิวน่าจะยาว ถ้าไม่ได้จอง ให้รับบัตรคิวก่อนแล้วไปเดินร้านขนมระหว่างรอ","ที่จอดรถฟรี"]},
+  nidom:{k:"ที่พัก",t:"Hotel Nidom",x:"รีสอร์ตกลางป่าเบิร์ชของโทมาโคไม มีคอทเทจและสนามกอล์ฟ",
+    body:["คอทเทจกระจายอยู่ในป่า มีทางเดินรอบทะเลสาบในพื้นที่โรงแรม ช่วงเย็นที่เช็คอินถึงก่อนมืดเป็นเวลาเดินเล่นที่ดีที่สุด","พระอาทิตย์ตกช่วงนี้ราว 16:50–17:00 ถ้าอยากถ่ายรูปป่าให้เดินก่อนไป AEON"],
+    facts:["โทร +81 144-55-8000","เช็คในใบจองว่ารวมอาหารเช้าหรือไม่"]},
+  hokki:{k:"ของดีโทมาโคไม",t:"หอยฮกกิ (Hokki) แห่งโทมาโคไม",x:"โทมาโคไมขึ้นชื่อเรื่องหอยฮกกิที่จับได้มากที่สุดในญี่ปุ่น",
+    body:["หอยฮกกิ (surf clam) เป็นหอยประจำเมืองโทมาโคไม ร้าน Marutoma Shokudo อยู่ในตลาดขายส่งข้างท่าเรือ เปิดตั้งแต่ตีห้า ขึ้นชื่อเรื่องแกงกะหรี่หอยฮกกิ (ปรุงสุก) ชามใหญ่","รีวิวบอกว่าหลังเจ็ดโมงจะเริ่มมีคิว และมีเมนูอื่นอย่างข้าวผัดหรือคัตสึด้งสำหรับคนไม่ทานหอย"],
+    facts:["เปิด 05:00–14:00 ปิดวันอาทิตย์ (วันจันทร์ที่ 19 เปิด)","ใช้แทนอาหารเช้าที่ Nidom ได้"]},
+  jigoku:{k:"ภูเขาไฟ",t:"Jigokudani — หุบเขานรก",x:"ต้นน้ำของบ่อน้ำร้อนโนโบริเบ็ตสึ",
+    body:["หุบเขานี้คือปล่องระเบิดเก่าของภูเขาไฟ ไอน้ำและก๊าซกำมะถันพ่นขึ้นมาจากพื้นตลอดเวลา น้ำแร่จากที่นี่ส่งไปยังโรงแรมทั่วโนโบริเบ็ตสึออนเซ็น ซึ่งขึ้นชื่อว่ามีน้ำแร่หลายชนิดในเมืองเดียว","ชื่อ 'โนโบริเบ็ตสึ' มาจากภาษาไอนุ 'นุปุร-เปต' แปลว่า 'แม่น้ำสีขุ่น' เพราะน้ำแร่ที่ไหลลงแม่น้ำมีสีขาวขุ่น ในเมืองมีรูปปั้นยักษ์ (โอนิ) เพราะเชื่อกันว่ายักษ์อาศัยอยู่ในหุบเขา"],
+    facts:["ค่าจอด ¥500 ต่อคัน ใบเสร็จใช้จอดที่ Oyunuma ได้ฟรี","กลิ่นกำมะถันแรง ทางเดินไม้เดินง่าย"]},
+  oyunuma:{k:"ภูเขาไฟ",t:"Oyunuma — ทะเลสาบน้ำร้อน",x:"บ่อน้ำร้อนขนาดใหญ่สีเทาอมฟ้าใต้ภูเขาฮิโยริ",
+    body:["Oyunuma เป็นปล่องระเบิดของภูเขาไฟฮิโยริยามะที่มีน้ำร้อนขังอยู่ ผิวน้ำมีไอลอยตลอดเวลา และภูเขาฮิโยริที่อยู่ด้านหลังยังมีไอพ่นออกมาให้เห็น","ถ้ามีเวลา มีทางเดินป่าไปยังลำธารน้ำร้อน Oyunuma River ที่นั่งแช่เท้าในธรรมชาติได้"],
+    facts:["ห้ามลงไปใกล้น้ำ น้ำร้อนจัด","ทางเดินป่าอาจปิดถ้าอากาศไม่ดี"]},
+  shiraoi:{k:"มื้อเที่ยง + วัฒนธรรมไอนุ",t:"ชิราโออิ — Hikaru Umi และ Upopoy",x:"ร้านซีฟู้ดวิวทะเล และเมืองของพิพิธภัณฑ์ไอนุแห่งชาติ",
+    body:["Hikaru Umi อยู่ริมทะเลในชิราโออิ ทางตะวันออกของโนโบริเบ็ตสึ ตามรีวิวที่นั่งริมหน้าต่างมองทะเลได้ มีทั้งดงซีฟู้ดดิบ ปลาย่าง และปูต้ม (เลือกเมนูสุกได้) วันจันทร์เปิด 11:00–15:00 ปิดวันอังคาร","ชิราโออิเป็นที่ตั้งของ Upopoy (พิพิธภัณฑ์และอุทยานไอนุแห่งชาติ) ริมทะเลสาบโปโรโตะ ไอนุคือชนพื้นเมืองของฮอกไกโด ชื่อสถานที่หลายแห่งบนเกาะมาจากภาษาไอนุ"],
+    facts:["ไปถึงตอนร้านเปิดจะได้ที่นั่งริมหน้าต่าง","Upopoy อยู่ไม่ไกล ถ้าอยากแวะต้องเผื่อเวลาอย่างน้อย 2 ชม."]},
+  toya:{k:"ทะเลสาบ",t:"ทะเลสาบโทยะ",x:"ทะเลสาบในปล่องภูเขาไฟที่เกือบกลม และไม่แข็งตัวแม้ในฤดูหนาว",
+    body:["ทะเลสาบโทยะเกิดจากการยุบตัวของภูเขาไฟขนาดใหญ่เมื่อราวแสนปีก่อน กลางทะเลสาบมีกลุ่มเกาะ Nakajima ทางใต้มีภูเขาไฟที่ยังมีพลังอย่าง Usu และ Showa-Shinzan","ปี 2008 ที่นี่เป็นเจ้าภาพประชุมสุดยอด G8 ที่โรงแรม The Windsor บนสันเขา และพื้นที่ทั้งหมดอยู่ใน Toya–Usu UNESCO Global Geopark"],
+    facts:["โรงแรม Hotel Cocoa อยู่บนเนินฝั่งเหนือ ห่างเมืองราว 15 นาที ไม่มีร้านสะดวกซื้อใกล้ๆ","ซื้อของกินให้ครบก่อนขึ้นเนิน"]},
+  usu:{k:"ภูเขาไฟ",t:"Usu และ Showa-Shinzan",x:"ภูเขาที่เกิดขึ้นใหม่กลางทุ่งข้าวสาลีในช่วงสงครามโลก",
+    body:["Showa-Shinzan ดันตัวขึ้นจากทุ่งเกษตรระหว่างปี 1943–1945 ช่วงนั้นเป็นความลับทางทหาร นายไปรษณีย์ท้องถิ่น Masao Mimatsu จึงบันทึกความสูงที่เพิ่มขึ้นด้วยวิธีของตัวเอง แผนภาพของเขากลายเป็นข้อมูลอ้างอิงทางวิทยาศาสตร์","ภูเขา Usu ระเบิดครั้งล่าสุดในปี 2000 ทุกวันนี้ยังเดินชมซากถนนและอาคารที่เสียหายได้ จุดชมวิว Silo มองเห็นทั้งทะเลสาบและภูเขาทั้งสองลูก"],
+    facts:["Silo Observatory เปิด 08:30–18:00 มีคาเฟ่และร้านของฝาก","ป้ายเตือนหมีที่ลานจอด: อย่าเดินออกนอกเส้นทาง"]},
+  wakasaimo:{k:"ขนม",t:"Wakasaimo — มันหวานที่ไม่มีมัน",x:"ขนมประจำโทยะที่ทำจากถั่ว แต่หน้าตาเหมือนมันเผา",
+    body:["ฮอกไกโดสมัยก่อนปลูกมันหวานไม่ได้ ร้านในโทยะจึงคิดขนมที่ทำจากถั่วขาวและสาหร่ายคอมบุให้หน้าตาและรสคล้ายมันเผา จนกลายเป็นของฝากประจำโทยะ","ที่สาขาหลักมี 'อิโมเท็น' ขนมชุบแป้งทอดร้อนๆ และชั้นบนมีร้านอาหารวิวทะเลสาบ"],
+    facts:["เปิด 09:00–18:00","อิโมเท็น 3 ชิ้น ¥540"]},
+  fireworks:{k:"คืนนี้",t:"พลุทะเลสาบโทยะ (Long-run Fireworks)",x:"จุดทุกคืนตั้งแต่ปลายเมษาถึง 31 ต.ค. 2026 เวลา 20:45",
+    body:["ปี 2026 เป็นครั้งที่ 45 ของงานนี้ พลุยิงจากเรือที่แล่นเลียบชายฝั่งเมือง Toyako Onsen ราว 20 นาที ชมได้ฟรีจากริมทะเลสาบหรือจากโรงแรมในเมือง","งานจัดแม้ฝนตก แต่ยกเลิกถ้าลมแรง"],
+    facts:["ออกจาก Hotel Cocoa ราว 20:15 ขับลงเมือง 15 นาที","มีที่จอดฟรีราว 150 คันริมทะเลสาบ"]},
+  yotei:{k:"ภูเขา",t:"ภูเขาโยเท — ฟูจิแห่งฮอกไกโด",x:"ภูเขาไฟรูปกรวยสูง 1,898 ม. ฉายา Ezo-Fuji",
+    body:["ภูเขาโยเทมีรูปทรงสมมาตรเหมือนฟูจิ คนท้องถิ่นจึงเรียกว่า Ezo-Fuji (ฟูจิแห่งเอโซะ ซึ่งเป็นชื่อเก่าของฮอกไกโด) เป็นหนึ่งใน 100 ภูเขาชื่อดังของญี่ปุ่น","หิมะที่ละลายบนยอดซึมลงใต้ดินและผุดเป็นน้ำพุรอบตีนเขา ที่ดังที่สุดคือสวน Fukidashi ในเมืองเกียวโกกุ ซึ่งอยู่บนเส้นทางวันที่ 20","ช่วงเช้ามีโอกาสเห็นยอดชัดที่สุด ช่วงบ่ายมักมีเมฆคลุม ปลายตุลาคมยอดเขาอาจมีหิมะแรกแล้ว"],
+    facts:["มุมดัง: Lake Hill Farm, Niseko Takahashi Dairy Farm, จุดพัก Bōyō Nakayama","ถ้าฟ้าเปิดตอนเช้า ถ่ายรูปไว้ก่อนเลย"]},
+  panorama:{k:"เส้นทางชมวิว",t:"Niseko Panorama Line (ทางหลวงจังหวัด 66)",x:"ถนนบนเขาที่ผ่านป่าใบไม้แดงและบึงบนภูเขา",
+    body:["ถนนเชื่อมนิเซโกะกับอิวะไน ผ่านโซนบ่อน้ำร้อน Goshiki ที่มีไอกำมะถัน และบึง Oonuma กับ Shinsen-numa ช่วงที่ถนนอยู่สูงจะเห็นภูเขาโยเทเต็มลูกอยู่อีกฝั่งหุบเขา","ถนนปิดช่วงฤดูหนาว (ปกติปิดต้นพฤศจิกายนถึงปลายเมษายน) ปลายตุลาคมอาจมีน้ำแข็งบนถนนตอนเช้า"],
+    facts:["ขับช้าๆ ทางโค้งเยอะ","จุดจอดถ่ายรูปมีตามลานจอดข้างทาง อย่าจอดบนไหล่ทางโค้ง"]},
+  nakayama:{k:"ช่องเขา",t:"Nakayama Pass และ Bōyō Nakayama",x:"ช่องเขาบนทางหลวง 230 ระหว่างโยเทกับซัปโปโร",
+    body:["ชื่อจุดพัก 'Bōyō' (望羊) แปลตรงตัวว่า 'มองโยเท' ชั้น 2 ของอาคารเป็นมุมมองภูเขาโยเทที่คนแนะนำ","ของขึ้นชื่อคือ Age-imo มันฝรั่งชุบแป้งทอดเสียบไม้ เส้นนี้เป็นทางขึ้นเขาสูง ปลายตุลาคมอากาศเย็นกว่าในเมืองชัดเจน"],
+    facts:["เปิด 08:30–17:30","ช่องเขาอาจมีหิมะ/น้ำแข็งช่วงเช้าและเย็น"]},
+  jozankei:{k:"ออนเซ็น",t:"โจซังเค — หุบเขาออนเซ็นของซัปโปโร",x:"ตั้งชื่อตามพระ Miizumi Jozan ผู้บุกเบิกเมื่อปี 1866",
+    body:["พระ Miizumi Jozan เดินทางเข้ามาในหุบเขานี้ช่วงปลายสมัยเอโดะ และพัฒนาบ่อน้ำร้อนให้คนเดินทางได้แช่ เมืองจึงใช้ชื่อของท่าน","สัญลักษณ์ของเมืองคือ 'คัปปะ' ภูตน้ำในตำนานญี่ปุ่น ตามถนนมีรูปปั้นคัปปะหลายตัว ใกล้สะพาน Futami มีแอ่งน้ำ Kappa-buchi ที่ผูกกับตำนานนี้"],
+    facts:["Hanamomiji โทร +81 11-598-2311","สะพาน Futami เดินจากโรงแรมราว 10 นาที"]},
+  hoheikyo:{k:"ทางเลือก",t:"เขื่อนโฮเฮเคียว",x:"เขื่อนโค้งสูงราว 102 ม. กลางหุบเขาใบไม้เปลี่ยนสี",
+    body:["ต้องจอดรถด้านล่างแล้วนั่งรถบัสไฟฟ้าผ่านอุโมงค์ราว 2 กม. ไปที่ตัวเขื่อน เพราะห้ามรถยนต์เข้า","ปี 2026 เปิดถึง 3 พ.ย. 08:45–16:00 ค่ารถบัสไป-กลับเดือนตุลาคม ¥1,200 ช่วงใบไม้สวยที่สุดคือปลายกันยายนถึงกลางตุลาคม"],
+    facts:["ถ้าแวะ จะตัดเวลาที่โอตารุราว 1.5 ชม."]},
+  otaru:{k:"เมืองเก่า",t:"โอตารุ — เมืองท่ายุคปลาเฮร์ริ่ง",x:"คลองและโกดังหินจากยุคที่โอตารุเป็นศูนย์กลางการค้าของเกาะ",
+    body:["ต้นศตวรรษที่ 20 โอตารุร่ำรวยจากการค้าปลาเฮร์ริ่งและท่าเรือ ธนาคารใหญ่หลายแห่งตั้งสาขาจนย่านนี้ถูกเรียกว่า 'วอลล์สตรีทแห่งภาคเหนือ' คลองโอตารุสร้างเสร็จปี 1923 เพื่อขนสินค้าจากเรือเข้าโกดัง","ช่วงทศวรรษ 1980 มีแผนถมคลองทำถนน คนในเมืองรณรงค์คัดค้านจนรักษาคลองไว้ได้ส่วนหนึ่ง กลายเป็นจุดท่องเที่ยวที่เห็นกันทุกวันนี้","ถนน Sakaimachi มีร้านแก้ว Kitaichi Glass ที่เริ่มจากการทำโคมตะเกียงน้ำมัน พิพิธภัณฑ์กล่องดนตรี และนาฬิกาไอน้ำ"],
+    facts:["มื้อเที่ยงแนะนำ: Naruto ไก่ทอดครึ่งตัว (11:00–21:00)","จอดที่ลานจอดเสียเงินใกล้คลอง"]},
+  sapporo:{k:"เมือง",t:"ซัปโปโร — เมืองผังตาราง",x:"ก่อตั้งปี 1869 เป็นศูนย์กลางการบุกเบิกฮอกไกโด",
+    body:["รัฐบาลเมจิตั้งสำนักงานบุกเบิก (Kaitakushi) ที่นี่ในปี 1869 และวางผังเมืองเป็นตาราง ที่อยู่จึงบอกเป็นพิกัด เช่น 'Kita 8 Nishi 4' คือ แถวที่ 8 ทางเหนือ ช่องที่ 4 ทางตะวันตก นับจากสวนโอโดริและแม่น้ำโซเซย์","ดูที่อยู่โรงแรม MyStays (Kita 8 Nishi 4) แล้วจะรู้ทันทีว่าอยู่เหนือสถานีซัปโปโร"],
+    facts:["รถไฟใต้ดินเที่ยวละ ¥210 ขึ้นไป","สาย Namboku เชื่อมสถานีซัปโปโร โอโดริ ซูซูกิโนะ และนากาจิมะโคเอ็น"]},
+  susukino:{k:"ย่านกิน",t:"ซูซูกิโนะ",x:"ย่านกินดื่มที่ใหญ่ที่สุดทางเหนือของโตเกียว",
+    body:["ร้านในลิสต์ของคุณหลายร้านอยู่ที่นี่ เช่น Daruma (เจงกิสข่าน), Suage+ (ซุปแกงกะหรี่), Shingen (ราเมน) และ Ramen Yokocho ซอยราเมนเก่าแก่","Daruma สาขาหลักเปิด 17:00 และคิวยาวตั้งแต่ร้านเปิด ถ้าไม่อยากรอนาน ไปให้ถึงก่อนเปิด"],
+    facts:["Shirakaba Sansou ย้ายมาอยู่ใน Ramen Yokocho (เปิด 18:00 ปิดอาทิตย์/จันทร์)"]},
+  hokudai:{k:"ใบไม้เปลี่ยนสี",t:"มหาวิทยาลัยฮอกไกโด",x:"สืบทอดจาก Sapporo Agricultural College ที่ตั้งปี 1876",
+    body:["William S. Clark อาจารย์ชาวอเมริกันมาช่วยก่อตั้งวิทยาลัยเกษตรซัปโปโร ประโยคอำลาของเขา 'Boys, be ambitious' กลายเป็นคำขวัญที่คนญี่ปุ่นรู้จักกันทั่วประเทศ","ถนนแปะก๊วยแถว Kita 13-jo เป็นจุดชมใบไม้เปลี่ยนสีที่ดังที่สุดในเมือง มักเหลืองเต็มที่ช่วงปลายตุลาคมถึงต้นพฤศจิกายน"],
+    facts:["เดินจากโรงแรมราว 15–20 นาที","วิทยาเขตเป็นที่เรียนจริง เดินเงียบๆ และไม่เข้าอาคาร"]},
+  clock:{k:"ประวัติศาสตร์",t:"หอนาฬิกาซัปโปโร",x:"หอนาฬิกาไม้ที่เก่าแก่ที่สุดในญี่ปุ่นที่ยังตั้งอยู่",
+    body:["สร้างปี 1878 เป็นโรงฝึกทหารของวิทยาลัยเกษตรซัปโปโร สไตล์บ้านไม้อเมริกัน ต่อมาติดนาฬิกาที่ยังเดินมาจนทุกวันนี้","ด้านในเป็นพิพิธภัณฑ์เล็กๆ ค่าเข้าราว ¥350 มีรูปปั้น William S. Clark บนชั้น 2"],
+    facts:["เปิด 08:45–17:10","คนมักบอกว่าเล็กกว่าที่คิด ถ่ายรูปจากฝั่งตรงข้ามถนนได้มุมดีกว่า"]},
+  nakajima:{k:"สวน",t:"สวนนากาจิมะ และ Hoheikan",x:"สวนริมแม่น้ำกลางเมือง มีโรงแรมแบบตะวันตกจากปี 1880",
+    body:["Hoheikan สร้างปี 1880 เป็นโรงแรมแบบตะวันตกของรัฐบาลเพื่อรับเสด็จจักรพรรดิเมจิ อาคารสีขาวขอบฟ้าย้ายมาตั้งในสวนนี้ภายหลัง","ในสวนยังมีเรือนชา Hasso-an และสระน้ำที่ใบไม้สะท้อนน้ำสวยในฤดูใบไม้ร่วง"],
+    facts:["สถานี Nakajima-koen (สาย Namboku) อยู่ติดสวน"]},
+  odori:{k:"สวน",t:"สวนโอโดริ และ TV Tower",x:"แนวกันไฟยาวราว 1.5 กม. ที่กลายเป็นหัวใจของเมือง",
+    body:["สวนโอโดริเดิมเป็นแนวกันไฟที่แบ่งเมืองเหนือ-ใต้ ทุกวันนี้เป็นที่จัดงานเทศกาลหิมะช่วงกุมภาพันธ์ ฤดูใบไม้ร่วงมีต้นไม้เปลี่ยนสีตลอดแนว","TV Tower ที่ปลายสวนสร้างปี 1957 มีจุดชมวิวด้านบน"],
+    facts:["Donguri สาขาโอโดริอยู่ใกล้ TV Tower เปิด 10:00"]},
+  tanuki:{k:"ช้อปปิ้ง",t:"ทานุกิโคจิ",x:"ถนนอาเขตช้อปปิ้งเก่าแก่ ยาว 7 บล็อก มีหลังคาตลอดทาง",
+    body:["ทานุกิโคจิเป็นย่านการค้ามาตั้งแต่ยุคต้นของเมือง ชื่อแปลว่า 'ซอยทานุกิ' มีศาลเจ้าทานุกิเล็กๆ อยู่กลางถนน","มีทั้ง Don Quijote ร้านยา ร้านของฝาก และร้านอาหาร เดินได้แม้ฝนตกเพราะมีหลังคา"],
+    facts:["ร้านยาและ Don Quijote ซื้อเกิน ¥5,000 (ไม่รวมภาษี) ขอ tax-free ได้ ใช้พาสปอร์ต"]},
+  moiwa:{k:"วิวกลางคืน",t:"ภูเขาโมอิวะ",x:"วิวกลางคืนที่ได้รับเลือกเป็นหนึ่งใน 'สามวิวกลางคืนใหม่ของญี่ปุ่น'",
+    body:["ขึ้นกระเช้าลอยฟ้าแล้วต่อมินิเคเบิลคาร์ไปถึงจุดชมวิวบนยอด มองเห็นแสงไฟของซัปโปโรทั้งเมืองไปถึงอ่าวอิชิการิ","ข้างบนลมแรงและเย็นกว่าในเมืองมาก ควรใส่เสื้อหนา"],
+    facts:["เปิด 10:30–22:00 ขึ้นรอบสุดท้าย 21:30","ไป-กลับ ¥2,100 · ปิดเมื่ออากาศไม่ดี"]},
+  nijo:{k:"ตลาด",t:"ตลาดนิโจ",x:"ตลาดปลาเก่าแก่กลางเมือง มีร้านอาหารเช้า",
+    body:["ร้านในตลาดเปิดตั้งแต่เช้า มีทั้งดงซีฟู้ดดิบ และชุดปลาย่างที่ปรุงสุก เช่น ร้าน Ooiso (07:30 ปิดวันพุธ) และ Kaisen Yakigoya Ooiso (08:00 ปิดวันอังคาร)"],
+    facts:["วันที่ 23 เป็นวันศุกร์ ทั้งสองร้านเปิด"]},
+  beer:{k:"ประวัติศาสตร์",t:"เบียร์ซัปโปโร",x:"แบรนด์เบียร์เก่าแก่ที่สุดในญี่ปุ่น เริ่มปี 1876",
+    body:["โรงเบียร์แรกตั้งโดยสำนักงานบุกเบิก Kaitakushi ดาวห้าแฉกบนกระป๋องคือสัญลักษณ์ของ Kaitakushi","Sapporo Beer Garden อยู่ในอาคารอิฐแดงเก่า มีเจงกิสข่านกินไม่อั้น และพิพิธภัณฑ์เบียร์ที่เข้าชมฟรี"],
+    facts:["เปิด 11:30–21:00"]}
+};
+
+// ร้านอาหารจาก Food List: [id, หมวด, ชื่อ, ย่าน, lat, lng, place_id, ประมาณตำแหน่ง?, หมายเหตุ]
+const CAT = {
+  1:{n:"ซุปแกงกะหรี่",e:"🍛"},2:{n:"เมนูหมู",e:"🐷"},3:{n:"เจงกิสข่าน",e:"🐑"},4:{n:"ราเมน",e:"🍜"},
+  5:{n:"ไก่ทอด/เมนูสุก",e:"🍗"},6:{n:"ซีฟู้ดสุก/ปู",e:"🦀"},7:{n:"ซูชิสายพาน",e:"🍣"},8:{n:"ยากินิคุ",e:"🥩"},
+  9:{n:"ซีฟู้ดรวม",e:"🐟"},0:{n:"อาหารเช้า",e:"☕"}
+};
+const FOOD = [
+ [1,1,"Suage+","ซัปโปโร (Susukino)",43.0557,141.3513,"ChIJv0HGVIQpC18Rc2m8zsIZwJE",0,"ซุปแกงกะหรี่ร้านดัง ผักย่างหวาน"],
+ [2,1,"Garaku","ซัปโปโร (Odori)",43.0584,141.3589,"ChIJQ21rhoMpC18RmzhfndITzug",0,"เปิดสองรอบ 11:30–15:00, 17:00–20:30 คิวก่อนเปิด"],
+ [3,1,"Rojiura Curry Samurai","ซัปโปโร (APIA ใต้สถานี)",43.0670,141.3493,"ChIJ95HrKowpC18RYNUV06Os-7Y",0,"ผัก 20 ชนิดในชามเดียว"],
+ [4,1,"Soup Curry Lavi","สนามบิน CTS",42.7873,141.6804,"ChIJ3QbbWWogdV8RW0owURDPDSk",0,"ชั้น 3 อาคารในประเทศ"],
+ [5,1,"Crazy Spice","โอตารุ",43.2048,140.9987,"ChIJz3boVLHhCl8R4qPJ3Zw9qvY",0,""],
+ [6,1,"Markie Curry","คุจจัง (นิเซโกะ)",42.9036,140.7526,"ChIJLcefrR26Cl8RKb__W3ZY0yA",0,""],
+ [7,1,"Soup Curry Yellow","ซัปโปโร (Odori)",43.0586,141.3514,"ChIJAeG5r4MpC18Rg6YfQxbfUlU",0,"ปิดวันพุธ · รับเงินสด"],
+ [8,1,"Soup Curry Treasure","ซัปโปโร (Odori)",43.0582,141.3569,"ChIJ__8_O54pC18RuVi6K01RIes",0,"ร้านพี่น้องของ Garaku คิวสั้นกว่า"],
+ [9,2,"Tokachi Butadon Ippin (Stellar Place)","ซัปโปโร (สถานี)",43.0681,141.3515,"ChIJq6qq2XQpC18RrciRxwugu1o",0,"ชั้น 6 Stellar Place"],
+ [10,2,"Tokachi Butadon Ippin (Susukino)","ซัปโปโร (Susukino)",43.0556,141.3537,null,1,""],
+ [11,2,"Drive-in Ito","สนามบิน CTS",42.7877,141.6807,"ChIJ962UXWogdV8R4A50ZHAMYb0",0,""],
+ [12,2,"Tonkatsu Wako","AEON โทมาโคไม",42.6567,141.6421,"ChIJvbhqhBoadV8RQ-30-f0EGk0",0,"เติมข้าว ซุป กะหล่ำได้"],
+ [13,2,"Tonkatsu Tamafuji","ซัปโปโร (Tokyu ชั้น 10)",43.0665,141.3529,"ChIJr0NmWQApC18RZcB46T6OVZo",0,""],
+ [14,2,"Butadon Polo Kuru","ซัปโปโร (Odori)",43.0598,141.3492,null,1,""],
+ [15,2,"Wakatei","โอตารุ",43.1962,140.9985,null,1,""],
+ [16,2,"Ippontei","โทยะ",42.5660,140.8195,null,1,""],
+ [17,3,"Daruma (สาขาหลัก)","ซัปโปโร (Susukino)",43.0538,141.3525,"ChIJbQQV34UpC18RgzQI7TQon1g",0,"เปิด 17:00 คิวยาวตั้งแต่เปิด"],
+ [18,3,"Sapporo Beer Garden","ซัปโปโร (Higashi)",43.0713,141.3691,"ChIJ__9PCWwpC18RpHEvsAli2gg",0,"เจงกิสข่านกินไม่อั้นในอาคารอิฐแดง"],
+ [19,3,"Matsuo Jingisukan (สถานี)","ซัปโปโร (สถานี)",43.0649,141.3501,"ChIJx49AJZ4pC18Rb3GBj1k8cpk",0,""],
+ [20,3,"Matsuo Jingisukan (CTS)","สนามบิน CTS",42.7880,141.6804,"ChIJcWIyYkAgdV8REge9mV-lxNg",0,""],
+ [21,3,"Otaru Jingisukan Club","โอตารุ",43.1922,141.0005,"ChIJhz3JKlfgCl8RODrLceNrygM",0,"เปิดเฉพาะเย็น 17:00"],
+ [22,3,"Niseko Genghis Khan","นิเซโกะ",42.8356,140.6535,"ChIJgQRUcpqvCl8RpL-dhE8UXlY",0,"เปิดเฉพาะเย็น · ควรจอง"],
+ [23,3,"Wakasaimo (ร้านอาหารชั้นบน)","โทยะ",42.5654,140.8153,"ChIJe1D5gb7in18RLHRcjLoBfzU",0,"วิวทะเลสาบ"],
+ [24,3,"Shirokuma","ซัปโปโร (Susukino)",43.0548,141.3540,null,1,""],
+ [25,4,"Menya Saimi","ซัปโปโร (Toyohira)",43.0353,141.3819,"ChIJ8QvxwkgqC18RzLwtQHUynbc",0,"ปิดวันจันทร์ · ต้องนั่งรถไปต่อ"],
+ [26,4,"Shirakaba Sansou","ซัปโปโร (Ramen Yokocho)",43.0547,141.3542,"ChIJUeKZJoQpC18R39LPkvesslk",0,"ย้ายมา Ramen Yokocho · เปิด 18:00 ปิดอา/จ"],
+ [27,4,"Ebisoba Ichigen","สนามบิน CTS",42.7877,141.6803,"ChIJr3B3MUchdV8Rv88QFe0lQ2E",0,"ราเมนซุปกุ้ง เปิด 09:00"],
+ [28,4,"Ramen Shingen","ซัปโปโร (Susukino)",43.0523,141.3475,"ChIJq6qlKY8pC18RozmCF8HX7Jw",0,"เปิดถึงตีหนึ่ง"],
+ [29,4,"Ramen Shodai","โอตารุ",43.1870,141.0109,"ChIJ7RCmQFzgCl8R7i5ltpRRsJU",0,"ปิดวันอังคาร (วันที่ 21 เปิด)"],
+ [30,4,"Aji no Daio","โนโบริเบ็ตสึ",42.4926,141.1433,"ChIJ6xaGlsZmdV8R4_UWoS7L2H8",0,"ราเมนแกงกะหรี่ 11:30–15:00"],
+ [31,4,"Okada-ya","โทยะ",42.5652,140.8185,"ChIJcYpZwL3in18R-FUHXpJvP7M",0,"จริงๆ เป็นร้านขนม (ซุปถั่วขาวโมจิ) ไม่ใช่ราเมน"],
+ [32,4,"Niseko Ramen Kazahana","มักการิ",42.7652,140.7779,"ChIJY7cLORKwCl8Rug-ijIFeN2s",0,"ปิดจันทร์/อาทิตย์ · เที่ยง 11:30–13:45"],
+ [33,5,"Naruto (สาขาหลัก)","โอตารุ",43.2004,140.9951,"ChIJq6padq3hCl8RdAJymA13dXs",0,"ไก่ทอดครึ่งตัว 11:00–21:00"],
+ [34,5,"Naruto Ya","ซัปโปโร (สถานี)",43.0672,141.3500,null,1,""],
+ [35,5,"Hotei","ซัปโปโร (Odori)",43.0595,141.3490,null,1,""],
+ [36,5,"Zangi Honpo","ซัปโปโร (Susukino)",43.0550,141.3535,null,1,""],
+ [37,5,"Doremo LeTAO","ชิโตเสะ",42.8207,141.6559,"ChIJ1_rtS6EgdV8RB9jnndJosWQ",0,"คาเฟ่คิวยาว ควรจอง"],
+ [38,5,"Restaurant Chive","Yuni Garden",42.9978,141.7716,null,1,""],
+ [39,5,"Lake Hill Farm","โทยะ",42.6155,140.7865,"ChIJt84zVDJWdV8RiDubucSznAM",0,"09:00–17:00 พิซซ่า เจลาโต้"],
+ [40,5,"Mandriano","Takahashi Farm นิเซโกะ",42.8381,140.6759,"ChIJh9OGd-qvCl8ROZLnl8CHC5o",0,"พิซซ่าชีสจากฟาร์ม วิวโยเท"],
+ [41,6,"Kani Honke","ซัปโปโร (สถานี)",43.0656,141.3527,"ChIJ6eyWv3UpC18Ry_6sUhChd5o",0,"ปูหม้อไฟ ควรจอง"],
+ [42,6,"Hyousetsu no Mon","ซัปโปโร (Susukino)",43.0549,141.3560,"ChIJi4jaWWogdV8Rq7F6WXurN14",0,"คอร์สปูคิงแครบ ควรจองล่วงหน้า"],
+ [43,6,"Kani Shogun","ซัปโปโร (Susukino)",43.0562,141.3552,"ChIJ7Z8ddYQpC18RFLWQcJbi4Mo",0,""],
+ [44,6,"Minato Machi Market","โอตารุ",43.1985,141.0035,null,1,""],
+ [45,6,"Hikaru Umi","ชิราโออิ",42.4748,141.2377,"ChIJ_3AURgtldV8RzB474UM9Huw",0,"11:00–15:00 ปิดวันอังคาร"],
+ [46,6,"Onsen Ichiba","โนโบริเบ็ตสึ",42.4942,141.1439,"ChIJWQly-cNmdV8RT2sOzUbja-E",0,"หอยนึ่ง ปูขน"],
+ [47,6,"ตลาดนิโจ","ซัปโปโร (Odori)",43.0583,141.3573,null,0,""],
+ [48,6,"Kani Hanadori","สนามบิน CTS",42.7876,141.6806,null,1,""],
+ [49,7,"Nemuro Hanamaru","ซัปโปโร (Stellar Place)",43.0682,141.3519,null,1,"คิวยาว รับบัตรคิวก่อน"],
+ [50,7,"Toriton","ซัปโปโร (Toyohira)",43.0480,141.3830,null,1,""],
+ [51,7,"Nagoyakatei","ซัปโปโร (Shiroishi)",43.0500,141.4250,null,1,""],
+ [52,7,"Kantaro","สนามบิน CTS",42.7878,141.6802,null,1,""],
+ [53,7,"Toppi","โอตารุ",43.1975,140.9990,null,1,""],
+ [54,7,"Matsuriya","ซัปโปโร (Kikusui)",43.0570,141.3780,null,1,""],
+ [55,7,"Uobei","ซัปโปโร (หลายสาขา)",43.0545,141.3528,null,1,""],
+ [56,7,"Kura Sushi","ซัปโปโร (Susukino)",43.0540,141.3522,null,1,""],
+ [57,8,"Tokuju","ซัปโปโร (Susukino)",43.0530,141.3518,null,1,""],
+ [58,8,"Yakiniku Gurumans Ito","ซัปโปโร (Susukino)",43.0534,141.3507,null,1,""],
+ [59,8,"Gyu-Kaku","ซัปโปโร (Odori)",43.0597,141.3504,null,1,""],
+ [60,8,"GAJA","ซัปโปโร (Susukino)",43.0543,141.3548,null,1,""],
+ [61,8,"Meat Lounge Tamura","ซัปโปโร (Odori)",43.0602,141.3487,null,1,""],
+ [62,8,"Yakiniku Tsubame","ซัปโปโร (Susukino)",43.0528,141.3542,null,1,""],
+ [63,8,"Yakiniku FAM","นิเซโกะ (Hirafu)",42.8600,140.7020,null,1,""],
+ [64,8,"Cowbell","ชิราโออิ",42.5490,141.3560,null,1,""],
+ [65,9,"Umi Hachikyo","ซัปโปโร (Susukino)",43.0560,141.3509,null,1,"อิคุระเทล้นชาม"],
+ [66,9,"Oiso (大磯)","ตลาดนิโจ",43.0582,141.3577,null,1,"07:30 ปิดวันพุธ · มีชุดปลาย่าง"],
+ [67,9,"Kitano Gourmet-tei","ตลาด Jogai",43.0645,141.3295,null,1,""],
+ [68,9,"Takeda (武田鮮魚店)","โอตารุ (ตลาด Sankaku)",43.1980,140.9945,null,1,""],
+ [69,9,"Otaru Masazushi","โอตารุ",43.1920,141.0020,null,1,""],
+ [70,9,"Sawasaki Suisan","โอตารุ (ตลาด Sankaku)",43.1977,140.9948,null,1,""],
+ [71,9,"Ezo Seafoods","นิเซโกะ (Hirafu)",42.8605,140.7012,null,1,""],
+ [72,9,"Sengyo Shokudo","โทยะ",42.5650,140.8175,null,1,""]
+];
+// ร้านที่ปักไว้ในทริป
+const INPLAN = {37:"18 ต.ค. มื้อเที่ยง",12:"18 ต.ค. มื้อเย็น (ตัวเลือก)",45:"19 ต.ค. มื้อเที่ยง",23:"19 ต.ค. ตัวเลือก",39:"20 ต.ค. มื้อเช้ามื้อที่สอง",40:"20 ต.ค. มื้อเที่ยง (ตัวเลือก)",33:"21 ต.ค. มื้อเที่ยง",17:"21 ต.ค. มื้อเย็น (ตัวเลือก)",1:"21 ต.ค. มื้อเย็น (ตัวเลือก)",9:"22 ต.ค. มื้อเที่ยง",66:"23 ต.ค. มื้อเช้า (ตัวเลือก)",18:"23 ต.ค. มื้อเย็น (ตัวเลือก)",27:"24 ต.ค. สนามบิน",4:"24 ต.ค. สนามบิน",20:"24 ต.ค. สนามบิน"};
+// ร้านอาหารเช้า (นอกลิสต์)
+const BREAKFAST = [
+  ["b1","Marutoma Shokudo","โทมาโคไม",42.6294,141.6169,"ChIJnxyjauwQdV8RR5-TmWAJEDg","19 ต.ค. (ทางเลือก) · 05:00–14:00 ปิดอาทิตย์ · แกงกะหรี่หอยฮกกิ"],
+  ["b2","Lake Hill Farm","โทยะ",42.6155,140.7865,"ChIJt84zVDJWdV8RiDubucSznAM","20 ต.ค. · 09:00 · คาเฟ่ + เจลาโต้"],
+  ["b3","บุฟเฟต์ MyStays Aspen (ชั้น 2)","ซัปโปโร",43.0704,141.3489,"ChIJCfSgCQspC18RE7HvgD9w6fs","22 และ 24 ต.ค. · 06:30–10:00 · ¥2,420 (จากอีเมลจอง)"],
+  ["b4","Marcei Coffee","โอโดริ",43.0592,141.3555,null,"07:30 (จ–ส) · ชุดขนมปังปิ้ง ¥550"],
+  ["b5","Sapporo Coffee Kan (Clock Tower)","หอนาฬิกา",43.0624,141.3537,null,"08:00 วันธรรมดา · มอร์นิ่งถึง 10:30"],
+  ["b6","Komeda's Coffee (Odori Nishi 2)","โอโดริ",43.0606,141.3520,null,"23 ต.ค. · สั่งเครื่องดื่มได้ขนมปังปิ้งฟรี"],
+  ["b7","Kaisen Yakigoya Ooiso","ตลาดนิโจ",43.0584,141.3574,null,"08:00 ปิดวันอังคาร · ชุดของย่าง จาก ¥1,400"],
+  ["b8","Onigiri Arinko (Aurora Town)","ใต้ดินโอโดริ",43.0600,141.3532,null,"08:00 · ข้าวปั้นทำสด ¥400–500"]
+];
+
+// แผนรายวัน
+const DAYS = [
+ {n:1,date:"2026-10-18",dow:"อา",title:"สนามบิน → ยูนิ → ชิโตเสะ → โทมาโคไม",hotel:"nidom",hotelName:"Hotel Nidom (Cottage)",
+  route:[[42.7791,141.6866],[42.835,141.705],[42.93,141.745],[42.9973,141.7722],[42.93,141.72],[42.86,141.68],[42.8207,141.6559],[42.77,141.66],[42.7155,141.6555],[42.68,141.65],[42.6558,141.6408]],
+  items:[
+   {t:"10:00",e:"11:15",k:"stop",p:"cts",n:"มาถึง CTS · รับรถเช่า",x:"รับกระเป๋า Starbucks รองท้อง แล้วไปเคาน์เตอร์รถเช่า นั่งชัตเติลไปออฟฟิศ",w:"เช็ค voucher ว่าเป็น Nissan หรือ Nippon Rent-A-Car · ขอ ETC card · ถามเรื่องยาง"},
+   {t:"11:15",k:"drive",from:"cts",to:"yuni",min:40,rd:[],sc:[]},
+   {t:"11:55",e:"13:25",k:"stop",p:"yuni",n:"Yuni Garden",x:"ทุ่งโคเชีย สวนดอกไม้ · ค่าเข้า ¥1,000",tag:"chg"},
+   {t:"13:25",k:"drive",from:"yuni",to:"doremo",min:40,rd:[],sc:[]},
+   {t:"14:05",e:"15:05",k:"meal",p:"doremo",n:"มื้อเที่ยง Doremo LeTAO",x:"พาสต้า แพนเค้กซูเฟล่ · คิวยาววันอาทิตย์",food:37},
+   {t:"15:05",k:"drive",from:"doremo",to:"nidom",min:30,rd:[],sc:[]},
+   {t:"15:35",e:"17:30",k:"hotel",p:"nidom",n:"เช็คอิน Hotel Nidom",x:"เช็คอินได้ตั้งแต่ 14:00 · เดินเล่นป่าเบิร์ชก่อนมืด (ตกราว 16:50)",w:"ใบจองระบุผู้ใหญ่ 1 คน แจ้งหน้าเคาน์เตอร์ว่าพัก 3 คน"},
+   {t:"17:30",k:"drive",from:"nidom",to:"aeon",min:20,rd:[],sc:[]},
+   {t:"17:50",e:"20:00",k:"meal",p:"aeon",n:"AEON Mall Tomakomai",x:"มื้อเย็น (Tonkatsu Wako) + ซื้อเสบียงมื้อเช้า 2 วัน และของกินคืนที่ Hotel Cocoa",food:12,w:"Hotel Cocoa ไม่มีร้านสะดวกซื้อใกล้ๆ"},
+   {t:"20:00",k:"drive",from:"aeon",to:"nidom",min:20,rd:[],sc:[]}
+  ]},
+ {n:2,date:"2026-10-19",dow:"จ",title:"โนโบริเบ็ตสึ → ชิราโออิ → ทะเลสาบโทยะ",hotel:"cocoa",hotelName:"Hotel Cocoa",
+  route:[[42.7155,141.6555],[42.67,141.58],[42.60,141.45],[42.56,141.36],[42.50,141.22],[42.49,141.17],[42.4976,141.1487],[42.5024,141.1472],[42.49,141.17],[42.4748,141.2377],[42.47,141.15],[42.45,141.05],[42.43,140.97],[42.47,140.87],[42.52,140.82],[42.5654,140.8153],[42.59,140.79],[42.6133,140.7802]],
+  items:[
+   {t:"08:30",e:"09:30",k:"bf",p:"nidom",n:"อาหารเช้าที่ Nidom",x:"ห้องอาหารโรงแรม หรือเสบียงจาก AEON"},
+   {t:"07:45",e:"08:45",k:"opt",p:"marutoma",n:"ทางเลือก: Marutoma Shokudo",x:"แกงกะหรี่หอยฮกกิ ร้านเปิด 05:00 (วันจันทร์เปิด) · ออกจาก Nidom ราว 07:15"},
+   {t:"09:30",k:"drive",from:"nidom",to:"jigoku",min:50,rd:[["exp","E5"]],sc:[
+     {m:20,t:"ทางด่วนเลียบมหาสมุทรแปซิฟิก",ll:[42.56,141.33],x:"ด้านซ้ายมือเป็นแนวชายฝั่ง ช่วงชิราโออิจะเห็นทะเลเป็นระยะ",img:"白老 太平洋 海岸"},
+     {m:42,t:"ถนนขึ้นเขาสู่ Noboribetsu Onsen",ll:[42.478,141.16],x:"ป่าบนเนินเริ่มเปลี่ยนเป็นแดงเหลือง และเริ่มได้กลิ่นกำมะถัน",img:"登別温泉 紅葉 道",story:"jigoku"}]},
+   {t:"10:20",e:"11:15",k:"stop",p:"jigoku",n:"Jigokudani",x:"ค่าจอด ¥500/คัน ใช้ร่วมกับ Oyunuma"},
+   {t:"11:20",e:"11:50",k:"stop",p:"oyunuma",n:"Oyunuma",x:"บ่อน้ำร้อนใต้ภูเขาฮิโยริ",tag:"new"},
+   {t:"11:50",k:"drive",from:"oyunuma",to:"hikaru",min:25,rd:[],sc:[]},
+   {t:"12:15",e:"13:30",k:"meal",p:"hikaru",n:"มื้อเที่ยง Hikaru Umi",x:"ซีฟู้ดวิวทะเล วันจันทร์เปิด 11:00–15:00",food:45},
+   {t:"13:30",k:"drive",from:"hikaru",to:"toyaonsen",min:80,rd:[["exp","E5"]],sc:[
+     {m:45,t:"ผ่านเมืองมุโรรัน",ll:[42.4,140.99],x:"เมืองท่าอุตสาหกรรมเหล็ก ทางซ้ายมือไกลๆ คืออ่าวอุจิอุระ (Uchiura)",img:"室蘭 白鳥大橋 夜景",story:null},
+     {m:68,t:"ภูเขา Usu และ Showa-Shinzan",ll:[42.53,140.85],x:"ภูเขาไฟสองลูกที่ยังมีพลังทางใต้ของทะเลสาบโทยะ",img:"昭和新山 有珠山",story:"usu"},
+     {m:76,t:"มุมแรกของทะเลสาบโทยะ",ll:[42.555,140.845],x:"ถนนลงเขาเข้าเมือง Toyako Onsen มองเห็นเกาะกลางทะเลสาบ ถ้าฟ้าเปิดจะเห็นโยเทอีกฝั่ง",img:"洞爺湖 中島 紅葉",story:"toya"}]},
+   {t:"14:50",e:"15:30",k:"stop",p:"wakasaimo",n:"เมือง Toyako Onsen",x:"Seicomart ซื้อเสบียง · Wakasaimo ลองอิโมเท็น"},
+   {t:"15:30",k:"drive",from:"toyaonsen",to:"cocoa",min:15,rd:[],sc:[]},
+   {t:"15:45",k:"hotel",p:"cocoa",n:"เช็คอิน Hotel Cocoa",x:"วิวทะเลสาบจากห้อง · ไม่มีอาหาร มีแพนทรีไมโครเวฟ",w:"แผนกต้อนรับปิด 22:00 เช็คอินก่อนออกไปดูพลุ"},
+   {t:"20:45",e:"21:05",k:"night",p:"fireworks",n:"พลุทะเลสาบโทยะ",x:"ออกจากโรงแรมราว 20:15 · ลมแรงยกเลิก",tag:"new"}
+  ]},
+ {n:3,date:"2026-10-20",dow:"อ",title:"โทยะ → นิเซโกะ → Nakayama Pass → โจซังเค",hotel:"hanamomiji",hotelName:"Hanamomiji (จ่ายที่โรงแรม 8,116 บาท)",
+  route:[[42.6133,140.7802],[42.6262,140.7996],[42.6155,140.7865],[42.68,140.80],[42.765,140.79],[42.80,140.72],[42.845,140.67],[42.872,140.645],[42.882,140.633],[42.8886,140.6071],[42.875,140.64],[42.8368,140.6754],[42.88,140.73],[42.901,140.757],[42.857,140.876],[42.81,140.93],[42.83,141.03],[42.8563,141.0972],[42.92,141.135],[42.966,141.1618]],
+  items:[
+   {t:"08:00",e:"08:30",k:"bf",p:"cocoa",n:"อาหารเช้าเบาๆ ที่ Hotel Cocoa",x:"เสบียงที่ซื้อไว้ แล้วไปต่อที่ Lake Hill Farm"},
+   {t:"08:30",k:"drive",from:"cocoa",to:"silo",min:10,rd:[],sc:[]},
+   {t:"08:45",e:"09:15",k:"stop",p:"silo",n:"Silo Observatory",x:"วิวทะเลสาบ ภูเขา Usu · เปิด 08:30"},
+   {t:"09:15",k:"drive",from:"silo",to:"lakehill",min:10,rd:[],sc:[]},
+   {t:"09:30",e:"10:20",k:"bf",p:"lakehill",n:"Lake Hill Farm",x:"มื้อเช้ามื้อที่สอง: พิซซ่า พุดดิ้ง เจลาโต้ · วิวโยเท",food:39},
+   {t:"10:20",k:"drive",from:"lakehill",to:"panorama",min:80,rd:[["pref","66"]],sc:[
+     {m:12,t:"ภูเขาโยเทเต็มลูก",ll:[42.68,140.8],x:"ถนนขึ้นเหนือไปมักการิ ภูเขาโยเทจะอยู่ด้านหน้าเยื้องขวา",img:"真狩 羊蹄山 紅葉",story:"yotei"},
+     {m:40,t:"ทุ่งนิเซโกะและ Niseko Annupuri",ll:[42.82,140.7],x:"ทุ่งเกษตรกว้าง ด้านหน้าเป็นเทือกเขานิเซโกะ",img:"ニセコアンヌプリ 紅葉"},
+     {m:58,t:"Goshiki Onsen — ไอกำมะถันบนเขา",ll:[42.87,140.642],x:"เริ่มเข้า Panorama Line ช่วงสูง ป่าแดงเหลืองทั้งสองข้าง",img:"五色温泉 ニセコ 紅葉",story:"panorama"},
+     {m:70,t:"จุดสูงของ Panorama Line",ll:[42.884,140.62],x:"มองย้อนกลับไปจะเห็นโยเทอยู่อีกฝั่งหุบเขา หาลานจอดข้างทางเพื่อถ่ายรูป",img:"ニセコパノラマライン 羊蹄山",story:"panorama"}]},
+   {t:"12:00",e:"13:15",k:"meal",p:"takahashi",n:"มื้อเที่ยง Takahashi Dairy Farm",x:"PRATIVO 11:00–16:00 หรือ Mandriano พิซซ่า · Milk Kobo ขนมนม",food:40},
+   {t:"13:15",k:"drive",from:"takahashi",to:"boyo",min:60,rd:[["nat","276"],["nat","230"]],sc:[
+     {m:22,t:"โยเทระยะใกล้ — เมืองเกียวโกกุ",ll:[42.857,140.876],x:"ถนนอ้อมตีนเขาโยเท ในเมืองนี้มีสวนน้ำพุ Fukidashi ที่น้ำจากหิมะบนยอดผุดขึ้นมา",img:"京極 ふきだし公園 羊蹄山",story:"yotei"},
+     {m:40,t:"หุบเขาคิโมเบ็ตสึ",ll:[42.81,140.96],x:"ถนนเลี้ยวขึ้นทางหลวง 230 ผ่านหุบเขาใบไม้แดง",img:"喜茂別 紅葉 国道230号"},
+     {m:57,t:"ใกล้ถึง Bōyō Nakayama",ll:[42.85,141.08],x:"ยอดช่องเขา มองย้อนกลับไปเห็นโยเท",img:"中山峠 羊蹄山",story:"nakayama"}]},
+   {t:"14:15",e:"14:35",k:"stop",p:"boyo",n:"Michi-no-Eki Bōyō Nakayama",x:"จุดมองโยเท · ลอง Age-imo",tag:"new"},
+   {t:"14:35",k:"drive",from:"boyo",to:"hanamomiji",min:30,rd:[["nat","230"]],sc:[
+     {m:20,t:"หุบเขาลงสู่โจซังเค",ll:[42.93,141.14],x:"ทางลงเขายาว ทั้งสองข้างเป็นป่าใบไม้แดง ขับช้าและใช้เกียร์ต่ำ",img:"定山渓 紅葉 国道230号",story:"jozankei"}]},
+   {t:"15:05",e:"15:30",k:"hotel",p:"hanamomiji",n:"เช็คอิน Hanamomiji",x:"จ่ายห้อง 1 คนที่โรงแรม ¥39,500 (ราว 8,116 บาท)",w:"สองห้องได้มื้อเย็นคนละแพลน ดูรายละเอียดในใบยืนยันการจอง"},
+   {t:"15:30",e:"16:30",k:"stop",p:"futami",n:"สะพาน Futami",x:"เดิน 10 นาที ใบไม้ริมแม่น้ำ"},
+   {t:"18:00",e:"19:30",k:"meal",p:"hanamomiji",n:"ไคเซกิที่โรงแรม",x:"คอร์สปรุงสุก งดเนื้อวัว"}
+  ]},
+ {n:4,date:"2026-10-21",dow:"พ",title:"โจซังเค → โอตารุ → ซัปโปโร (คืนรถ)",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
+  route:[[42.966,141.1618],[43.00,141.12],[43.06,141.07],[43.12,141.04],[43.17,141.01],[43.199,141.0021],[43.1915,141.0068],[43.2004,140.9951],[43.18,141.07],[43.14,141.18],[43.10,141.28],[43.0704,141.3489]],
+  items:[
+   {t:"08:00",e:"09:00",k:"bf",p:"hanamomiji",n:"บุฟเฟต์เช้า Hanamomiji",x:"รวมในค่าที่พัก"},
+   {t:"09:15",e:"10:45",k:"opt",p:"hoheikyo",n:"ทางเลือก: Hoheikyo Dam",x:"รถบัสไฟฟ้า ¥1,200 · อาจเลยพีคใบไม้แล้ว · ตัดเวลาโอตารุ"},
+   {t:"09:15",k:"drive",from:"hanamomiji",to:"otaru",min:60,rd:[["pref","1"]],sc:[
+     {m:25,t:"ถนนข้ามเขาอาซาริ",ll:[43.08,141.06],x:"ทางผ่านป่าและทะเลสาบเขื่อนบนเขา ใบไม้เปลี่ยนสีสองข้างทาง",img:"小樽定山渓線 紅葉 朝里"},
+     {m:50,t:"มองเห็นทะเลและเมืองโอตารุ",ll:[43.15,141.02],x:"ถนนลงเขา ด้านหน้าคืออ่าวอิชิการิและท่าเรือ",img:"小樽 港 眺望",story:"otaru"}]},
+   {t:"10:15",e:"13:30",k:"stop",p:"sakaimachi",n:"โอตารุ: Sakaimachi + คลอง",x:"LeTAO สาขาหลัก Kitaichi Glass กล่องดนตรี · มื้อเที่ยง Naruto",food:33},
+   {t:"13:30",k:"drive",from:"otaru",to:"mystays",min:60,rd:[["exp","E5A"]],sc:[
+     {m:12,t:"ทางด่วนเลียบอ่าวอิชิการิ",ll:[43.137,141.165],x:"ช่วงเซนิบาโกะ ทางซ้ายมือคือทะเลญี่ปุ่น",img:"銭函 石狩湾 海岸"}]},
+   {t:"14:30",e:"15:00",k:"hotel",p:"mystays",n:"ฝากกระเป๋าที่ MyStays",x:"ก่อนคืนรถ · ที่จอดโรงแรม ¥1,800/วัน (ฝากระยะสั้นถามหน้าเคาน์เตอร์)",tag:"chg"},
+   {t:"15:00",e:"15:45",k:"stop",p:"station",n:"คืนรถเช่า",x:"เติมน้ำมันเต็มถัง เคลียร์ ETC · ยืนยันสาขาคืนรถ"},
+   {t:"18:00",e:"20:00",k:"meal",p:"susukino",n:"มื้อเย็น Susukino",x:"Daruma (เปิด 17:00 คิวยาว) / Suage+ / Shingen",food:17}
+  ]},
+ {n:5,date:"2026-10-22",dow:"พฤ",title:"ซัปโปโร: ม.ฮอกไกโด · ช้อปปิ้ง · วิวกลางคืน",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
+  route:[[43.0704,141.3489],[43.0756,141.346],[43.0704,141.3489],[43.0681,141.3518],[43.0676,141.3493],[43.0611,141.3564],[43.0554,141.353],[43.045,141.335],[43.0384,141.3224]],
+  items:[
+   {t:"07:45",e:"08:45",k:"bf",p:"mystays",n:"บุฟเฟต์ MyStays (ชั้น 2)",x:"06:30–10:00 · ¥2,420 · อิคุระ ปลาย่าง เจงกิสข่าน",tag:"chg"},
+   {t:"09:00",e:"10:45",k:"stop",p:"ginkgo",n:"ถนนแปะก๊วย ม.ฮอกไกโด",x:"เดินจากโรงแรม 15–20 นาที"},
+   {t:"11:15",e:"12:45",k:"meal",p:"stellar",n:"มื้อเที่ยง Stellar Place",x:"Tokachi Butadon Ippin ชั้น 6",food:9},
+   {t:"12:45",e:"17:00",k:"stop",p:"daimaru",n:"ช้อปปิ้ง Daimaru / BIC Camera",x:"ดูนาฬิกาที่ Daimaru · ชั้นใต้ดินเป็นฟู้ดฮอลล์"},
+   {t:"18:00",e:"19:15",k:"meal",p:"susukino",n:"มื้อเย็นย่าน Odori/Susukino",x:"ทานก่อนขึ้นโมอิวะ"},
+   {t:"19:30",e:"21:15",k:"night",p:"moiwa",n:"วิวกลางคืน Mt. Moiwa",x:"รถรางลงป้าย Ropeway Iriguchi · ไป-กลับ ¥2,100",tag:"new"}
+  ]},
+ {n:6,date:"2026-10-23",dow:"ศ",title:"ซัปโปโร: สวนสาธารณะ · ทานุกิโคจิ",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
+  route:[[43.0704,141.3489],[43.0606,141.352],[43.0440,141.354],[43.0611,141.3564],[43.0626,141.3535],[43.0604,141.3556],[43.0577,141.353],[43.0704,141.3489]],
+  items:[
+   {t:"08:00",e:"09:00",k:"bf",p:"komeda",n:"Komeda's Coffee (Odori Nishi 2)",x:"มอร์นิ่ง ขนมปังปิ้ง+ไข่ฟรี"},
+   {t:"07:30",e:"08:30",k:"opt",p:"ooiso",n:"ทางเลือก: Ooiso ตลาดนิโจ",x:"ชุดปลาย่างจาก ¥1,200 · เปิด 07:30",food:66},
+   {t:"09:30",e:"10:30",k:"stop",p:"nakajima",n:"สวนนากาจิมะ",x:"Hoheikan · ใบไม้ริมสระ"},
+   {t:"10:45",e:"12:00",k:"stop",p:"tvtower",n:"สวนโอโดริ + หอนาฬิกา",x:"TV Tower · Clock Tower ¥350"},
+   {t:"12:00",e:"13:00",k:"meal",p:"donguri",n:"มื้อเที่ยง Donguri (Odori)",x:"ขนมปังชิคุวะ · เปิด 10:00",tag:"chg"},
+   {t:"13:00",e:"17:00",k:"stop",p:"tanuki",n:"ถนนทานุกิโคจิ",x:"Don Quijote ร้านยา ของฝาก · tax-free ใช้พาสปอร์ต"},
+   {t:"17:30",e:"19:30",k:"meal",p:"beergarden",n:"มื้อเย็นส่งท้ายทริป",x:"สุกี้ยากี้/ชาบู หรือ Sapporo Beer Garden",food:18}
+  ]},
+ {n:7,date:"2026-10-24",dow:"ส",title:"กลับไทย",hotel:null,hotelName:"—",
+  route:[[43.0704,141.3489],[43.0687,141.3508],[43.039,141.471],[42.98,141.56],[42.83,141.65],[42.7791,141.6866]],
+  items:[
+   {t:"08:15",e:"08:45",k:"bf",p:"station",n:"Ekiben ที่สถานีซัปโปโร",x:"หรือบุฟเฟต์โรงแรม 06:30"},
+   {t:"08:50",k:"train",from:"station",to:"cts",min:40,x:"JR Rapid Airport ¥1,230 · uSeat +¥840"},
+   {t:"09:30",e:"10:30",k:"stop",p:"cts",n:"เช็คอินสนามบิน",x:"ถึงก่อนเวลาบิน 2.5–3 ชม.",w:"ในแผนยังไม่มีเวลาเครื่องออก"},
+   {t:"10:30",k:"meal",p:"cts",n:"ของกินและของฝากที่ CTS",x:"Ebisoba Ichigen · Soup Curry Lavi · Royce",food:27}
+  ]}
+];
+
+const GM = () => "";
+const BOOKINGS = {
+ nidom:{n:"Hotel Nidom",jp:"ホテルニドム",night:"18 ต.ค. (1 คืน)",tel:"+81 144-55-8000",
+  addr:"430 Uenae, Tomakomai, Hokkaido 059-1365",addrJp:"北海道苫小牧市植苗430",
+  ci:"14:00–22:00",co:"ก่อน 11:00",
+  rooms:[{via:"Hotels.com",idL:"Itinerary #",id:"ดูในแอป Claude",room:"คอทเทจ 2 ห้องนอน วิวทะเลสาบ",guests:"ผู้ใหญ่ 1 (ตามใบจอง)",pay:"จ่ายแล้ว ฿7,405.49",payOk:true,meal:"ไม่รวมอาหาร",cancel:"ยกเลิกไม่ได้แล้ว (ฟรีถึง 11 ต.ค.)",mail:GM("thread-f:1868775748963263281|msg-f:1868775748963263281")}],
+  alerts:["ใบจองระบุผู้ใหญ่ 1 คน แต่พัก 3 คน ควรแจ้งหน้าเคาน์เตอร์ตอนเช็คอิน โรงแรมอาจเก็บค่าคนเพิ่ม"],
+  notes:["ภาษีที่พัก (city tax) จ่ายที่โรงแรม","ถ้าจะถึงหลัง 22:00 ต้องแจ้งโรงแรมล่วงหน้า"]},
+ cocoa:{n:"Hotel Cocoa",jp:"ホテル ココア",night:"19 ต.ค. (1 คืน)",tel:"+81 142-73-2011",
+  addr:"102-18 Tsukiura, Toyako, Abuta District, Hokkaido 049-5723",addrJp:"北海道虻田郡洞爺湖町月浦102-18",
+  ci:"15:00–22:00 (หลัง 22:00 เช็คอินไม่ได้)",co:"Self check-out ก่อน 10:00",
+  rooms:[
+   {via:"Agoda",idL:"Booking ID",id:"ดูในแอป Claude",room:"Standard Double (เตียงคิง)",guests:"ผู้ใหญ่ 2",pay:"¥12,740 ตัดบัตรอัตโนมัติ 16 ต.ค.",payOk:true,meal:"ไม่รวมอาหาร · ชา/กาแฟ ที่จอดรถฟรี",cancel:"ยกเลิกไม่ได้แล้ว",mail:GM("thread-f:1868593341045240560|msg-f:1868593341045240560")},
+   {via:"Agoda",idL:"Booking ID",id:"ดูในแอป Claude",room:"Twin Room",guests:"ผู้ใหญ่ 1",pay:"จ่ายแล้ว ฿2,375.85 (คืนเงินไม่ได้)",payOk:true,meal:"ไม่รวมอาหาร",cancel:"Non-refundable",mail:GM("thread-f:1870014587359752815|msg-f:1870014587359752815")}],
+  alerts:[],
+  notes:["แผนกต้อนรับปิด 22:00 ถ้าจะไปดูพลุ เช็คอินให้เรียบร้อยก่อนออก","ตอนเช็คเอาท์ คืนคีย์การ์ดใส่กล่องที่เคาน์เตอร์","ไม่มีร้านอาหาร/ร้านสะดวกซื้อใกล้ๆ มีแพนทรีไมโครเวฟ","ห้องละไม่เกิน 2 คน (คนเพิ่ม ¥5,000/คืน)"],
+  hostMail:GM("thread-f:1870015199085190948|msg-f:1870015199085190948")},
+ hanamomiji:{n:"Hana Momiji (Jozankei)",jp:"定山渓温泉 花もみじ",night:"20 ต.ค. (1 คืน)",tel:"+81 11-598-2311",
+  addr:"3-32 Jozankei Onsen Nishi, Minami-ku, Sapporo 061-2303",addrJp:"北海道札幌市南区定山渓温泉西3丁目32",
+  ci:"15:00 (แจ้งเวลาถึง 15:00–16:00)",co:"ก่อน 10:00",
+  rooms:[
+   {via:"Agoda",idL:"Booking ID",id:"ดูในแอป Claude",room:"Premier Twin + ออนเซ็นในห้อง (Urara, Special Floor)",guests:"ผู้ใหญ่ 1",pay:"จ่ายที่โรงแรมตอนเช็คอิน ¥39,500",payOk:false,meal:"Nishiki คอร์สไคเซกิพรีเมียม (ปกติมีปู ซาชิมิ และเนื้อวัววากิวเป็นจานหลัก) + บุฟเฟต์เช้า",cancel:"ยกเลิกตอนนี้เสีย 50%",mail:GM("thread-f:1869253854574197298|msg-f:1869253854574197298")},
+   {via:"Agoda",idL:"Booking ID",id:"ดูในแอป Claude",room:"Mountain View Twin, Club Floor",guests:"ผู้ใหญ่ 2",pay:"จ่ายผ่าน Agoda แล้ว (¥52,527 ตัดบัตร 10 ต.ค.)",payOk:true,meal:"แพลน Shiori (มื้อเย็น+เช้า)",cancel:"Non-refundable แล้ว",mail:GM("thread-f:1869254645622930667|msg-f:1869254645622930667")}],
+  alerts:["โรงแรมส่งอีเมล 17 ต.ค.: สองห้องได้มื้อเย็นคนละแพลน (Nishiki กับ Shiori) ถ้าอยากนั่งทานด้วยกัน ต้องอัปเกรดห้อง 2 คนเป็น Nishiki เพิ่มคนละ ¥3,500 (รวม ¥7,000) และต้องแจ้ง 3 วันก่อนเข้าพัก ซึ่งเลยกำหนดแล้ว ควรตอบอีเมลโดยเร็ว","ห้องอาจไม่อยู่ชั้นเดียวกัน เพราะเป็นห้องคนละประเภท","เรื่องอาหารแพ้/งดอาหาร ต้องแจ้งก่อน 17:00 ของวันที่ 19 ต.ค. (ส่งอีเมลไปแล้วเมื่อเช้า รอโรงแรมตอบ)"],
+  notes:["ภาษีอาบน้ำแร่ (Bathing tax) จ่ายที่โรงแรม","บุฟเฟต์เช้าราว 50 เมนูที่ห้องอาหาร Momijido"],
+  hostMail:GM("thread-f:1879264909167607594|msg-f:1879264909167607594")},
+ mystays:{n:"HOTEL MYSTAYS Sapporo Aspen",jp:"ホテルマイステイズ札幌アスペン",night:"21–23 ต.ค. (3 คืน)",tel:"+81 11-700-2111",
+  addr:"Kita 8 Nishi 4-5-5, Kita-ku, Sapporo 060-0808",addrJp:"北海道札幌市北区北8条西4丁目5-5",
+  ci:"15:00–24:00",co:"ก่อน 11:00 (วันที่ 24)",
+  rooms:[
+   {via:"Agoda",idL:"Booking ID",id:"ดูในแอป Claude",room:"Standard Twin (ห้องปลอดบุหรี่)",guests:"ผู้ใหญ่ 2",pay:"จ่ายแล้ว (ตัดบัตร 21 ก.ย.)",payOk:true,meal:"ไม่รวมอาหาร",cancel:"Non-refundable",mail:GM("thread-f:1869710251001481239|msg-f:1869710251001481239")},
+   {via:"Trip.com",idL:"Booking No.",id:"ดูในแอป Claude",room:"Superior Queen (ห้องปลอดบุหรี่)",guests:"ผู้ใหญ่ 2",pay:"จ่ายแล้ว ฿8,208.92",payOk:true,meal:"ไม่รวมอาหาร",cancel:"Non-refundable",mail:GM("thread-f:1869710677446084263|msg-f:1869710677446084263")}],
+  alerts:[],
+  notes:["บุฟเฟต์เช้า 06:30–10:00 ผู้ใหญ่ ¥2,420 (ไม่รวมในห้อง)","โรงแรมยืนยันทางอีเมลแล้วว่ารับพัสดุไว้ให้ได้ เขียนชื่อผู้จองและวันเช็คอินบนกล่อง","ภาษีที่พักจ่ายที่โรงแรมตามจำนวนคน","ถ้าจอดรถ ราว ¥1,800/วัน (จากรีวิว)"],
+  hostMail:GM("thread-a:r7656740432018918773")}
+};
+
+
+const PHRASES = [
+ ["レギュラー満タンでお願いします","Regyurā mantan de onegaishimasu","เติมเบนซินธรรมดาเต็มถังครับ"],
+ ["生ものは食べられません","Namamono wa taberaremasen","ทานของดิบไม่ได้"],
+ ["牛肉は食べられません","Gyūniku wa taberaremasen","ทานเนื้อวัวไม่ได้"],
+ ["火を通してもらえますか","Hi o tōshite moraemasu ka","ช่วยทำให้สุกได้ไหม"],
+ ["3人です","San-nin desu","มา 3 คน"],
+ ["予約した〇〇です","Yoyaku shita ___ desu","จองไว้ในชื่อ ___"],
+ ["英語のメニューはありますか","Eigo no menyū wa arimasu ka","มีเมนูภาษาอังกฤษไหม"],
+ ["おすすめは何ですか","Osusume wa nan desu ka","เมนูแนะนำคืออะไร"],
+ ["お会計お願いします","Okaikei onegaishimasu","เช็คบิลด้วย"],
+ ["カードは使えますか","Kādo wa tsukaemasu ka","ใช้บัตรได้ไหม"],
+ ["駐車場はありますか","Chūshajō wa arimasu ka","มีที่จอดรถไหม"],
+ ["免税できますか","Menzei dekimasu ka","ขอ tax-free ได้ไหม"]
+];
+
+const CHECKS = [
+ ["c1","แจ้ง Hanamomiji: ไม่ทานดิบ/ไม่ทานเนื้อวัว (ก่อน 17:00 วันที่ 19)"],
+ ["c11","ตอบอีเมล Hanamomiji เรื่องอัปเกรดมื้อเย็นเป็น Nishiki (+¥7,000) หรือไม่"],
+ ["c12","แจ้ง Hotel Nidom ตอนเช็คอินว่าพัก 3 คน"],
+ ["c2","เช็ค voucher รถเช่า: บริษัท สาขาคืนรถ ค่า drop-off"],
+ ["c3","ขอ ETC card ตอนรับรถ"],
+ ["c4","ถามเรื่องยางสำหรับ Nakayama Pass / Panorama Line"],
+ ["c5","ซื้อเสบียงที่ AEON สำหรับมื้อเช้า 19–20 ต.ค. และมื้อเย็นคืนที่ 19"],
+ ["c6","เตรียมจ่าย Pay at Property 8,116 บาท ที่ Hanamomiji"],
+ ["c7","จอง Doremo LeTAO หรือรับบัตรคิวทันทีที่ถึง"],
+ ["c8","เติมน้ำมันเต็มถังก่อนคืนรถ 21 ต.ค."],
+ ["c9","ใส่เวลาเครื่องกลับ 24 ต.ค. และออกจากซัปโปโรให้ทัน"],
+ ["c10","รับพัสดุกาแฟ Amazon ที่ MyStays"]
+];
+
+</script>
+<script>
+(function(){
+"use strict";
+const $ = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const enc = encodeURIComponent;
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem("hkd26:"+k); return v==null?d:JSON.parse(v);}catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem("hkd26:"+k,JSON.stringify(v)); }catch(e){} }
+};
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- time ---------- */
+function jst(){ const d=new Date(Date.now()+9*3600e3); return {y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate(),h:d.getUTCHours(),mi:d.getUTCMinutes(),date:d.toISOString().slice(0,10)}; }
+const pad = n => String(n).padStart(2,"0");
+function toMin(t){ const [h,m]=t.split(":").map(Number); return h*60+m; }
+function fmtMin(x){ x=((x%1440)+1440)%1440; return pad(Math.floor(x/60))+":"+pad(x%60); }
+function todayIndex(){ const t=jst().date; return DAYS.findIndex(d=>d.date===t); }
+
+/* ---------- links ---------- */
+const CITY = [["ซัปโปโร","Sapporo"],["นิโจ","Sapporo"],["Jogai","Sapporo"],["โอตารุ","Otaru"],["โทยะ","Toyako"],["นิเซโกะ","Niseko"],["Takahashi","Niseko"],["สนามบิน","New Chitose Airport"],["ชิราโออิ","Shiraoi"],["โนโบริเบ็ตสึ","Noboribetsu"],["ชิโตเสะ","Chitose"],["โทมาโคไม","Tomakomai"],["มักการิ","Makkari"],["คุจจัง","Kutchan"],["Yuni","Yuni"]];
+function cityOf(area){ for(const [k,v] of CITY) if(area.includes(k)) return v; return "Hokkaido"; }
+function latinName(n){ return n.replace(/\(([^)]*[฀-๿][^)]*)\)/g,"").replace(/[฀-๿]+/g,"").replace(/\s+/g," ").trim(); }
+function dirUrl({name,lat,lng,pid,q}){
+  let u="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=";
+  if(pid) u+=enc(q||name)+"&destination_place_id="+pid;
+  else if(q) u+=enc(q);
+  else u+=lat+","+lng;
+  return u;
+}
+const imgUrl = q => "https://www.google.com/search?tbm=isch&q="+enc(q);
+function pointTarget(pid){ const p=P[pid]; return {name:p[0],lat:p[1],lng:p[2],pid:p[3],q:p[6]||(p[3]?latinName(p[0])||p[4]:null)}; }
+function foodTarget(f){ return {name:f[2],lat:f[4],lng:f[5],pid:f[6],q:(latinName(f[2])||f[2])+" "+cityOf(f[3])}; }
+function dayRouteUrl(day){
+  const pts=[]; let last=null;
+  day.items.forEach(it=>{ if(!it.p||it.k==="opt"||it.k==="drive"||it.k==="train") return; if(it.p===last) return; last=it.p; pts.push(it.p); });
+  if(pts.length<2) return null;
+  const ll=id=>P[id][1]+","+P[id][2];
+  const o=pts[0], d=pts[pts.length-1], w=pts.slice(1,-1).slice(0,8);
+  return "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+ll(o)+"&destination="+ll(d)+(w.length?"&waypoints="+w.map(ll).join("%7C"):"");
+}
+
+/* ---------- icons ---------- */
+const I = {
+  nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 21 3l-8 18-2-8-8-2Z"/></svg>',
+  img:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V6a2 2 0 0 1 2-2h12v15H6a2 2 0 0 0-2 2Z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>',
+  map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'
+};
+const KIND = {stop:"เที่ยว",meal:"มื้ออาหาร",hotel:"ที่พัก",bf:"อาหารเช้า",night:"กลางคืน",opt:"ทางเลือก",drive:"ขับรถ",train:"รถไฟ"};
+function aBtn(href,label,icon,cls=""){ return `<a class="btn small ${cls}" href="${esc(href)}" target="_blank" rel="noopener">${icon||""}${esc(label)}</a>`; }
+function roadBadge([t,n]){ if(t==="exp") return `<span class="rt exp" title="ทางด่วน">${esc(n)}</span>`; if(t==="pref") return `<span class="rt pref" title="ทางหลวงจังหวัด">${esc(n)}</span>`; return `<span class="rt" title="ทางหลวงแผ่นดิน">${esc(n)}</span>`; }
+
+/* ---------- state ---------- */
+let curDay = (()=>{ const t=todayIndex(); if(t>=0) return t; const s=store.get("day",0); return (s>=0&&s<DAYS.length)?s:0; })();
+let curTab = store.get("tab","plan");
+
+/* ---------- header ---------- */
+function renderDays(){
+  const ti=todayIndex();
+  $("#days").innerHTML = DAYS.map((d,i)=>`<button class="day-chip" style="--dc:var(--d${d.n})" data-day="${i}" aria-pressed="${i===curDay}"><span class="dn">D${d.n}${i===ti?'<span class="today-dot" title="วันนี้"></span>':''}</span><span class="dd">${d.dow} ${Number(d.date.slice(8))} ต.ค.</span></button>`).join("");
+}
+function tickClock(){
+  const j=jst(); $("#clk").textContent=pad(j.h)+":"+pad(j.mi);
+  const th=(j.h+22)%24; $("#clkTh").textContent="ไทย "+pad(th)+":"+pad(j.mi);
+}
+
+/* ---------- plan ---------- */
+function nowItemIndex(day){
+  const i=DAYS.indexOf(day); if(i!==todayIndex()) return -1;
+  const j=jst(), now=j.h*60+j.mi; let best=-1;
+  day.items.forEach((it,k)=>{ if(it.k==="opt") return; const s=toMin(it.t); const e=it.e?toMin(it.e):s+(it.min||45); if(now>=s&&now<e) best=k; });
+  return best;
+}
+function renderPlan(){
+  const d=DAYS[curDay]; const el=$("#p-plan"); el.style.setProperty("--dc",`var(--d${d.n})`);
+  const nowK=nowItemIndex(d);
+  const hotel = d.hotel?P[d.hotel]:null;
+  const ru=dayRouteUrl(d);
+  let h=`<div class="day-head"><div class="day-num">D${d.n}</div><div><h2 class="day-title">${esc(d.title)}</h2><div class="day-meta">${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค. 2026${curDay===todayIndex()?" · วันนี้":""}</div></div></div>`;
+  if(hotel) h+=`<div class="hotel-line"><span>🛏</span><span style="flex:1;min-width:0">คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="btn small" data-act="booking" data-id="${d.hotel}">${I.doc}ใบจอง</button>${aBtn(dirUrl(pointTarget(d.hotel)),"นำทาง",I.nav)}</div>`;
+  h+=`<div class="row-actions">${ru?aBtn(ru,"เส้นทางทั้งวันใน Google Maps",I.nav,"go"):""}<button class="btn small" data-act="daymap">${I.map}ดูบนแผนที่</button></div>`;
+  h+=`<ol class="tl">`;
+  d.items.forEach((it,k)=>{
+    const cls=`ti k-${it.k}${k===nowK?" is-now":""}`;
+    const tm=`<div class="tm">${esc(it.t)}${it.e?`<small>${esc(it.e)}</small>`:""}</div><div class="dot"></div>`;
+    if(it.k==="drive"||it.k==="train"){
+      const to=P[it.to][0];
+      const sc=(it.sc||[]).map(s=>`<li><b>+${s.m} น.</b><span>${esc(s.t)}</span></li>`).join("");
+      const roads=(it.rd||[]).map(roadBadge).join(" ");
+      h+=`<li class="${cls}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?"🚆 รถไฟ":"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc?`<ul class="scenic-mini">${sc}</ul>`:""}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${k}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}</div></div></li>`;
+      return;
+    }
+    const p=it.p?P[it.p]:null;
+    const tag=it.tag==="new"?'<span class="pill new">เพิ่มใหม่</span>':it.tag==="chg"?'<span class="pill chg">ปรับ</span>':it.k==="opt"?'<span class="pill opt">ทางเลือก</span>':"";
+    const story=p&&p[5]?`<button class="btn small" data-act="story" data-id="${p[5]}">${I.book}เรื่องน่ารู้</button>`:"";
+    const bk=(it.k==="hotel"&&BOOKINGS[it.p])?`<button class="btn small primary" data-act="booking" data-id="${it.p}">${I.doc}ใบยืนยันการจอง</button>`:"";
+    const food=it.food?`<button class="btn small" data-act="food" data-id="${it.food}">★ ร้านในลิสต์</button>`:"";
+    h+=`<li class="${cls}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
+  });
+  h+=`</ol>`;
+  if(curDay===2) h+=`<div class="note-box">วันนี้ขับขึ้นเขาสูง ถ้าเช้ามีน้ำแข็งบนถนน ขับช้าและเว้นระยะ · พระอาทิตย์ตกราว 16:50 ควรถึงโจซังเคก่อนมืด</div>`;
+  el.innerHTML=h;
+}
+
+/* ---------- sheet ---------- */
+function openSheet(html){
+  const r=$("#sheetRoot");
+  r.innerHTML=`<div class="scrim" data-act="close"></div><div class="sheet wrap" role="dialog" aria-modal="true"><div class="grab"></div><button class="sheet-close" data-act="close" aria-label="ปิด">×</button>${html}</div>`;
+  const s=$(".sheet",r); s.focus&&s.setAttribute("tabindex","-1"); s.focus();
+}
+function closeSheet(){ $("#sheetRoot").innerHTML=""; }
+function storyHtml(id){
+  const s=S[id]; if(!s) return "";
+  const pts=Object.entries(P).filter(([k,p])=>p[5]===id);
+  const acts=pts.slice(0,2).map(([k,p])=>aBtn(dirUrl(pointTarget(k)),"นำทางไป "+p[0],I.nav)).join("")+(pts[0]?aBtn(imgUrl(pts[0][1][4]),"ดูรูป",I.img):"");
+  return `<div class="sk">${esc(s.k)}</div><h2>${esc(s.t)}</h2><p class="muted" style="margin-top:2px">${esc(s.x)}</p>${s.body.map(b=>`<p>${esc(b)}</p>`).join("")}${s.facts&&s.facts.length?`<ul class="facts">${s.facts.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>`:""}<div class="c-actions">${acts}</div>`;
+}
+function bookingHtml(k){
+  const b=BOOKINGS[k]; if(!b) return "";
+  const rooms=b.rooms.map((r,i)=>`<div class="bk-room"><div class="bk-top"><span class="pill ${r.payOk?"new":"chg"}">${r.payOk?"ชำระแล้ว":"จ่ายที่โรงแรม"}</span><span class="tiny">ห้อง ${i+1} · ${esc(r.via)}</span></div><div class="bk-id"><span class="tiny">${esc(r.idL)}</span><b class="mono">${esc(r.id)}</b><button class="btn small" data-copy="${esc(r.id)}">${I.copy}คัดลอก</button></div>${r.ref?`<div class="tiny mono">${esc(r.ref)}</div>`:""}<dl class="kv bk-kv"><dt>ห้อง</dt><dd>${esc(r.room)}</dd><dt>ผู้เข้าพัก</dt><dd>${esc(r.guests)}</dd><dt>อาหาร</dt><dd>${esc(r.meal)}</dd><dt>ชำระเงิน</dt><dd>${esc(r.pay)}</dd><dt>ยกเลิก</dt><dd>${esc(r.cancel)}</dd></dl><div class="c-actions">${r.mail?aBtn(r.mail,"เปิดอีเมลยืนยันใน Gmail",I.doc):""}</div></div>`).join("");
+  return `<div class="sk">ใบยืนยันการจอง · ${esc(b.night)}</div><h2>${esc(b.n)}</h2><p class="muted" style="margin-top:2px">${esc(b.jp)}</p>
+  ${b.alerts.map(x=>`<div class="bk-alert">⚠ ${esc(x)}</div>`).join("")}
+  <div class="front"><div class="front-k">แสดงหน้าจอนี้ที่เคาน์เตอร์</div><div class="front-jp">予約しています。チェックインをお願いします。</div><div class="front-name" style="font-size:16px">ชื่อผู้จองและเลขจอง ดูในแอป Claude</div><div class="front-ids">${b.rooms.map(r=>`<span>${esc(r.via)} <b class="mono">${esc(r.id)}</b></span>`).join("")}</div><div class="front-h">${esc(b.jp)}</div></div>
+  <dl class="kv" style="margin:12px 0"><dt>เช็คอิน</dt><dd>${esc(b.ci)}</dd><dt>เช็คเอาท์</dt><dd>${esc(b.co)}</dd><dt>โทร</dt><dd class="mono" style="user-select:all">${esc(b.tel)}</dd><dt>ที่อยู่</dt><dd><span style="user-select:all">${esc(b.addrJp)}</span><br>${esc(b.addr)}</dd></dl>
+  <div class="c-actions" style="margin-bottom:12px">${aBtn(dirUrl(pointTarget(k)),"นำทางไปโรงแรม",I.nav,"go")}<button class="btn small" data-copy="${esc(b.tel)}">${I.copy}คัดลอกเบอร์</button><button class="btn small" data-copy="${esc(b.addrJp)}">${I.copy}คัดลอกที่อยู่ญี่ปุ่น</button>${b.hostMail?aBtn(b.hostMail,"อีเมลจากโรงแรม",I.doc):""}</div>
+  ${rooms}
+  ${b.notes.length?`<ul class="facts">${b.notes.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+  <p class="tiny">เวอร์ชันเว็บสาธารณะ ไม่มีเลขจองและลิงก์อีเมล · ข้อมูลในหน้านี้สรุปจากอีเมลยืนยันการจอง</p>`;
+}
+function foodHtml(id){
+  const f=FOOD.find(x=>x[0]===+id); if(!f) return "";
+  const c=CAT[f[1]];
+  return `<div class="sk">${c.e} ${esc(c.n)}${INPLAN[f[0]]?" · ★ อยู่ในแผน":""}</div><h2>${esc(f[2])}</h2><p class="muted">${esc(f[3])}${INPLAN[f[0]]?" · "+esc(INPLAN[f[0]]):""}</p>${f[8]?`<p>${esc(f[8])}</p>`:""}${f[7]?`<p class="tiny">ตำแหน่งบนแผนที่เป็นค่าประมาณ ปุ่มนำทางจะค้นชื่อร้านใน Google Maps</p>`:""}<div class="c-actions">${aBtn(dirUrl(foodTarget(f)),"นำทาง",I.nav)}${aBtn(imgUrl(f[2]+" "+cityOf(f[3])),"ดูรูป",I.img)}<button class="btn small" data-act="foodmap" data-id="${f[0]}">${I.map}บนแผนที่</button></div>`;
+}
+
+/* ---------- map ---------- */
+const SCENIC_LL = {
+ "ทางด่วนเลียบมหาสมุทรแปซิฟิก":[42.55,141.36],"ถนนขึ้นเขาสู่ Noboribetsu Onsen":[42.488,141.165],"ผ่านเมืองมุโรรัน":[42.43,140.975],
+ "ภูเขา Usu และ Showa-Shinzan":[42.543,140.864],"มุมแรกของทะเลสาบโทยะ":[42.56,140.835],"ภูเขาโยเทเต็มลูก":[42.72,140.79],
+ "ทุ่งนิเซโกะและ Niseko Annupuri":[42.81,140.70],"Goshiki Onsen — ไอกำมะถันบนเขา":[42.882,140.633],"จุดสูงของ Panorama Line":[42.8886,140.6071],
+ "โยเทระยะใกล้ — เมืองเกียวโกกุ":[42.857,140.876],"หุบเขาคิโมเบ็ตสึ":[42.80,140.935],"ใกล้ถึง Bōyō Nakayama":[42.845,141.075],
+ "หุบเขาลงสู่โจซังเค":[42.93,141.14],"ถนนข้ามเขาอาซาริ":[43.08,141.06],"มองเห็นทะเลและเมืองโอตารุ":[43.17,141.015],"ทางด่วนเลียบอ่าวอิชิการิ":[43.145,141.17]
+};
+const TOWNS=[["ซัปโปโร",43.0687,141.3508],["โอตารุ",43.19,140.994],["ชิโตเสะ",42.82,141.65],["โทมาโคไม",42.634,141.605],["โนโบริเบ็ตสึ",42.459,141.106],["มุโรรัน",42.315,140.974],["ทะเลสาบโทยะ",42.60,140.86],["นิเซโกะ",42.805,140.687],["คุจจัง",42.901,140.757],["โจซังเค",42.968,141.165],["ยูนิ",42.99,141.79],["ชิราโออิ",42.55,141.355],["ทะเลสาบชิโกสึ",42.76,141.33]];
+const SEAS=[["ทะเลญี่ปุ่น",43.42,140.55],["มหาสมุทรแปซิฟิก",42.30,141.55],["อ่าวอุจิอุระ",42.30,140.55],["อ่าวอิชิการิ",43.30,141.15]];
+let map=null, L_land=null, layers={}, mapDay=-1, mapFlags=store.get("mapFlags",{stops:true,scenic:true,plan:true,all:false,bf:false}), foodCats=new Set([1,2,3,4,5,6,7,8,9]);
+function ellipse(lat,lng,ry,rx,n=40){ const a=[]; for(let i=0;i<n;i++){const t=i/n*2*Math.PI; a.push([lat+ry*Math.sin(t),lng+rx*Math.cos(t)]);} return a; }
+function divIcon(html,size,cls){ return L.divIcon({html,className:"",iconSize:[size,size],iconAnchor:[size/2,size/2],popupAnchor:[0,-size/2]}); }
+function initMap(){
+  if(map||typeof L==="undefined") return;
+  map=L.map("map",{zoomControl:true,attributionControl:false,minZoom:7,maxZoom:18,zoomSnap:.5,preferCanvas:false,maxBounds:[[41.2,139.2],[45.8,145.9]]});
+  map.zoomControl.setPosition("bottomright");
+  L_land=L.geoJSON({type:"Feature",geometry:HOKKAIDO},{style:()=>({color:cssVar("--land-line"),weight:1,fillColor:cssVar("--land"),fillOpacity:1}),interactive:false}).addTo(map);
+  layers.lakes=L.layerGroup([
+    L.polygon(ellipse(42.603,140.853,.043,.062),{interactive:false}),
+    L.polygon(ellipse(42.765,141.33,.04,.075),{interactive:false})
+  ]).addTo(map);
+  layers.labels=L.layerGroup().addTo(map);
+  TOWNS.forEach(([n,a,b])=>L.marker([a,b],{icon:L.divIcon({className:"",html:`<span class="lbl">${esc(n)}</span>`,iconSize:[0,0],iconAnchor:[-6,8]}),interactive:false,keyboard:false}).addTo(layers.labels));
+  SEAS.forEach(([n,a,b])=>L.marker([a,b],{icon:L.divIcon({className:"",html:`<span class="lbl sea">${esc(n)}</span>`,iconSize:[0,0]}),interactive:false,keyboard:false}).addTo(layers.labels));
+  L.marker([42.8267,140.8114],{icon:L.divIcon({className:"",html:`<span class="lbl" style="color:var(--ink)">▲ โยเท 1,898 ม.</span>`,iconSize:[0,0],iconAnchor:[8,8]}),keyboard:false}).addTo(layers.labels).bindPopup(()=>storyPopup("yotei"));
+  layers.routes=L.layerGroup().addTo(map); layers.stops=L.layerGroup().addTo(map); layers.scenic=L.layerGroup().addTo(map); layers.food=L.layerGroup().addTo(map); layers.bf=L.layerGroup().addTo(map);
+  restyleMap(); renderMapChips(); drawMap(true); addMapExtras();
+}
+function restyleMap(){
+  if(!map) return;
+  L_land.setStyle({color:cssVar("--land-line"),fillColor:cssVar("--land"),fillOpacity:tilesOk?0:1,opacity:tilesOk?0:1});
+  layers.lakes.eachLayer(l=>l.setStyle({color:cssVar("--land-line"),weight:1,fillColor:cssVar("--lake"),fillOpacity:tilesOk?0:1,opacity:tilesOk?0:1}));
+  drawMap(false);
+}
+function stopPopup(it,day){
+  const p=P[it.p];
+  return `<div class="pp-k">D${day.n} · ${esc(it.t)} · ${esc(KIND[it.k]||"")}</div><div class="pp-n">${esc(it.n)}</div><div class="muted">${esc(it.x||"")}</div><div class="pp-a">${aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav)}${aBtn(imgUrl(p[4]),"รูป",I.img)}${p[5]?`<button class="btn small" data-act="story" data-id="${p[5]}">${I.book}อ่าน</button>`:""}</div>`;
+}
+function storyPopup(id){ const s=S[id]; return `<div class="pp-k">${esc(s.k)}</div><div class="pp-n">${esc(s.t)}</div><div class="muted">${esc(s.x)}</div><div class="pp-a"><button class="btn small" data-act="story" data-id="${id}">${I.book}อ่านต่อ</button></div>`; }
+function drawMap(fit){
+  if(!map) return;
+  ["routes","stops","scenic","food","bf"].forEach(k=>layers[k].clearLayers());
+  const sel=mapDay;
+  DAYS.forEach((d,i)=>{
+    const on = sel<0 || sel===i;
+    const col=cssVar(`--d${d.n}`);
+    const line=L.polyline(d.route,{color:col,weight:on?(sel<0?4:6):2.5,opacity:on?.95:.25,dashArray:d.n===7?"6 8":null,lineCap:"round",lineJoin:"round"});
+    if(on) line.bindTooltip(`D${d.n} · ${d.title}`,{sticky:true});
+    line.addTo(layers.routes);
+    if(!on) return;
+    if(sel>=0) L.polyline(d.route,{color:"#fff",weight:10,opacity:.35,interactive:false}).addTo(layers.routes).bringToBack();
+    if(mapFlags.stops){
+      let num=0; const seen={};
+      d.items.forEach(it=>{
+        if(!it.p||it.k==="drive"||it.k==="train") return;
+        const p=P[it.p]; const key=it.p; num++;
+        if(seen[key]) return; seen[key]=1;
+        const isOpt=it.k==="opt";
+        const sz=sel<0?20:26;
+        const ic=divIcon(`<div class="mk stop" style="width:${sz}px;height:${sz}px;background:${isOpt?cssVar("--muted"):col};font-size:${sel<0?10:12}px">${sel<0?d.n:num}</div>`,sz);
+        L.marker([p[1],p[2]],{icon:ic,zIndexOffset:2000,title:it.n}).bindPopup(stopPopup(it,d)).addTo(layers.stops);
+      });
+    }
+    if(mapFlags.scenic){
+      d.items.forEach(it=>(it.sc||[]).forEach(s=>{
+        const ll=SCENIC_LL[s.t]; if(!ll) return;
+        const ic=divIcon(`<div class="mk scenic" style="width:24px;height:24px">🍁</div>`,24);
+        L.marker(ll,{icon:ic,zIndexOffset:300,title:s.t}).bindPopup(`<div class="pp-k">จุดวิวระหว่างขับ · D${d.n} · +${s.m} นาทีหลังออกรถ</div><div class="pp-n">${esc(s.t)}</div><div class="muted">${esc(s.x)}</div><div class="pp-a">${aBtn(imgUrl(s.img),"ดูรูป",I.img)}${s.story?`<button class="btn small" data-act="story" data-id="${s.story}">${I.book}อ่าน</button>`:""}</div>`).addTo(layers.scenic);
+      }));
+    }
+  });
+  FOOD.forEach(f=>{
+    const inplan=!!INPLAN[f[0]];
+    if(!(mapFlags.all || (mapFlags.plan&&inplan))) return;
+    if(mapFlags.all && !inplan && !foodCats.has(f[1])) return;
+    const c=CAT[f[1]]; const sz=inplan?32:24;
+    const ic=divIcon(`<div class="mk food${inplan?" inplan":""}" style="width:${sz}px;height:${sz}px;font-size:${inplan?17:13}px">${c.e}</div>`,sz);
+    L.marker([f[4],f[5]],{icon:ic,zIndexOffset:inplan?400:0,title:f[2]}).bindPopup(()=>`<div class="pp-k">${c.e} ${esc(c.n)}${inplan?' · <span class="star">★ อยู่ในแผน</span>':""}</div><div class="pp-n">${esc(f[2])}</div><div class="muted">${esc(f[3])}${inplan?" · "+esc(INPLAN[f[0]]):""}</div>${f[8]?`<div style="margin-top:4px">${esc(f[8])}</div>`:""}${f[7]?'<div class="tiny" style="margin-top:4px">ตำแหน่งโดยประมาณ</div>':""}<div class="pp-a">${aBtn(dirUrl(foodTarget(f)),"นำทาง",I.nav)}${aBtn(imgUrl(f[2]+" "+cityOf(f[3])),"รูป",I.img)}</div>`).addTo(layers.food);
+  });
+  if(mapFlags.bf) BREAKFAST.forEach(b=>{
+    const ic=divIcon(`<div class="mk food inplan" style="width:28px;height:28px;font-size:15px">☕</div>`,28);
+    L.marker([b[3],b[4]],{icon:ic,zIndexOffset:700,title:b[1]}).bindPopup(`<div class="pp-k">☕ อาหารเช้า</div><div class="pp-n">${esc(b[1])}</div><div class="muted">${esc(b[2])} · ${esc(b[6])}</div><div class="pp-a">${aBtn(dirUrl({name:b[1],lat:b[3],lng:b[4],pid:b[5],q:b[5]?latinName(b[1]):null}),"นำทาง",I.nav)}${aBtn(imgUrl(b[1]+" "+b[2]),"รูป",I.img)}</div>`).addTo(layers.bf);
+  });
+  if(fit){
+    if(sel>=0) map.fitBounds(L.latLngBounds(DAYS[sel].route),{padding:[40,40],maxZoom:14});
+    else map.fitBounds([[42.42,140.55],[43.25,141.85]],{padding:[20,20]});
+  }
+}
+function renderMapChips(){
+  $("#mapDays").innerHTML=`<button class="chip" data-mday="-1" aria-pressed="${mapDay<0}">ทั้งทริป</button>`+DAYS.map((d,i)=>`<button class="chip daychip" style="--dc:var(--d${d.n})" data-mday="${i}" aria-pressed="${mapDay===i}">D${d.n}</button>`).join("");
+  const fl=[["stops","จุดในทริป"],["scenic","🍁 จุดวิว"],["plan","★ ร้านในแผน"],["all","ร้านทั้งหมด"],["bf","☕ มื้อเช้า"]];
+  let h=fl.map(([k,n])=>`<button class="chip" data-flag="${k}" aria-pressed="${!!mapFlags[k]}">${n}</button>`).join("");
+  if(mapFlags.all) h+=Object.entries(CAT).filter(([k])=>k!=="0").map(([k,c])=>`<button class="chip" data-cat="${k}" aria-pressed="${foodCats.has(+k)}" title="${esc(c.n)}">${c.e} ${esc(c.n)}</button>`).join("");
+  $("#mapLayers").innerHTML=h;
+}
+
+/* ---------- stories panel ---------- */
+function renderStories(){
+  const order=["cts","yuni","letao","nidom","hokki","jigoku","oyunuma","shiraoi","toya","usu","wakasaimo","fireworks","yotei","panorama","nakayama","jozankei","hoheikyo","otaru","sapporo","hokudai","susukino","moiwa","clock","nakajima","odori","tanuki","nijo","beer"];
+  let h=`<h2 class="section-h" style="margin-top:2px">เรื่องน่ารู้และประวัติ</h2><div class="grid">`;
+  order.forEach(id=>{ const s=S[id]; if(!s) return; h+=`<button class="story" data-act="story" data-id="${id}"><span class="s-k">${esc(s.k)}</span><span class="s-t">${esc(s.t)}</span><span class="s-x">${esc(s.x)}</span></button>`; });
+  h+=`</div><h2 class="section-h">จุดวิวระหว่างขับ (โหมดขับรถจะเตือน)</h2>`;
+  DAYS.forEach(d=>{ const list=[]; d.items.forEach(it=>(it.sc||[]).forEach(s=>list.push([it,s]))); if(!list.length) return;
+    h+=`<div class="box" style="--dc:var(--d${d.n})"><h3 style="color:var(--dc)">D${d.n} · ${esc(d.title)}</h3>`+list.map(([it,s])=>`<div class="check" style="align-items:center"><span class="mono" style="min-width:70px;color:var(--muted);font-size:12px">${esc(it.t)} +${s.m}น.</span><span style="flex:1;min-width:0"><b>${esc(s.t)}</b><br><span class="muted" style="font-size:13px">${esc(s.x)}</span></span>${aBtn(imgUrl(s.img),"รูป",I.img)}</div>`).join("")+`</div>`; });
+  $("#p-stories").innerHTML=h;
+}
+
+/* ---------- food panel ---------- */
+let foodArea="all", foodCat=0, foodPlanOnly=false;
+const AREAS=[["all","ทั้งหมด"],["Sapporo","ซัปโปโร"],["Otaru","โอตารุ"],["south","โทยะ/โนโบริเบ็ตสึ/ชิราโออิ"],["Niseko","นิเซโกะ"],["cts","CTS/ชิโตเสะ/โทมาโคไม"]];
+function areaKey(f){ const c=cityOf(f[3]); if(["Toyako","Noboribetsu","Shiraoi"].includes(c)) return "south"; if(["Niseko","Makkari","Kutchan"].includes(c)) return "Niseko"; if(["New Chitose Airport","Chitose","Tomakomai","Yuni"].includes(c)) return "cts"; return c; }
+function renderFood(){
+  let h=`<h2 class="section-h" style="margin-top:2px">☕ อาหารเช้า</h2><div class="food-list">`+BREAKFAST.map(b=>`<div class="food-row inplan"><div class="food-ico">☕</div><div style="min-width:0"><div class="c-name" style="margin:0">${esc(b[1])}</div><div class="c-note">${esc(b[2])} · ${esc(b[6])}</div><div class="c-actions">${aBtn(dirUrl({name:b[1],lat:b[3],lng:b[4],pid:b[5],q:b[5]?latinName(b[1]):null}),"นำทาง",I.nav)}${aBtn(imgUrl(b[1]+" "+b[2]),"ดูรูป",I.img)}</div></div></div>`).join("")+`</div>`;
+  h+=`<h2 class="section-h">ร้านจากลิสต์ของคุณ (${FOOD.length} ร้าน)</h2><div class="filters">`+AREAS.map(([k,n])=>`<button class="chip" data-farea="${k}" aria-pressed="${foodArea===k}">${n}</button>`).join("")+`</div><div class="filters"><button class="chip" data-fcat="0" aria-pressed="${foodCat===0}">ทุกประเภท</button>`+Object.entries(CAT).filter(([k])=>k!=="0").map(([k,c])=>`<button class="chip" data-fcat="${k}" aria-pressed="${foodCat===+k}">${c.e} ${esc(c.n)}</button>`).join("")+`<button class="chip" data-fplan="1" aria-pressed="${foodPlanOnly}">★ เฉพาะในแผน</button></div><div class="food-list">`;
+  const list=FOOD.filter(f=>(foodArea==="all"||areaKey(f)===foodArea)&&(!foodCat||f[1]===foodCat)&&(!foodPlanOnly||INPLAN[f[0]])).sort((a,b)=>(INPLAN[b[0]]?1:0)-(INPLAN[a[0]]?1:0));
+  if(!list.length) h+=`<p class="muted">ไม่มีร้านที่ตรงกับตัวกรองนี้</p>`;
+  list.forEach(f=>{ const c=CAT[f[1]], ip=INPLAN[f[0]];
+    h+=`<div class="food-row${ip?" inplan":""}"><div class="food-ico">${c.e}</div><div style="min-width:0"><div class="c-top"><span class="c-name" style="margin:0">${esc(f[2])}</span>${ip?'<span class="star">★ ในแผน</span>':""}</div><div class="c-note">${esc(c.n)} · ${esc(f[3])}${ip?" · "+esc(ip):""}</div>${f[8]?`<div class="c-note" style="color:var(--ink)">${esc(f[8])}</div>`:""}<div class="c-actions">${aBtn(dirUrl(foodTarget(f)),"นำทาง",I.nav)}${aBtn(imgUrl(f[2]+" "+cityOf(f[3])),"ดูรูป",I.img)}<button class="btn small" data-act="foodmap" data-id="${f[0]}">${I.map}แผนที่</button></div></div></div>`; });
+  h+=`</div>`;
+  $("#p-food").innerHTML=h;
+}
+
+/* ---------- info panel ---------- */
+function renderInfo(){
+  const done=store.get("checks",{}); const rate=store.get("rate",RATE_DEFAULT);
+  let h=`<div class="box"><h3>เช็คลิสต์</h3>`+CHECKS.map(([id,t])=>`<label class="check${done[id]?" done":""}"><input type="checkbox" id="ck-${id}" data-check="${id}" ${done[id]?"checked":""}><span>${esc(t)}</span></label>`).join("")+`<p class="tiny" style="margin:6px 0 0">ติ๊กแล้วจำไว้ในเครื่องนี้เท่านั้น</p></div>`;
+  h+=`<div class="box"><h3>ที่พักและใบยืนยันการจอง</h3>`+Object.entries(BOOKINGS).map(([k,b])=>`<div class="check" style="flex-wrap:wrap"><div style="flex:1;min-width:180px"><b>${esc(b.n)}</b> <span class="muted">· ${esc(b.night)}</span><br><span class="muted" style="font-size:12.5px">${b.rooms.map(r=>esc(r.via)+" "+esc(r.id)).join(" · ")}</span>${b.alerts.length?`<br><span class="c-warn" style="font-size:12.5px">⚠ มีเรื่องที่ต้องจัดการ ${b.alerts.length} ข้อ</span>`:""}</div><div class="c-actions" style="margin:0"><button class="btn small primary" data-act="booking" data-id="${k}">${I.doc}ใบจอง</button>${aBtn(dirUrl(pointTarget(k)),"นำทาง",I.nav)}</div></div>`).join("")+`</div>`;
+  h+=`<div class="box"><h3>เบอร์ฉุกเฉิน</h3><dl class="kv"><dt class="mono">110</dt><dd>ตำรวจ / อุบัติเหตุรถ</dd><dt class="mono">119</dt><dd>รถพยาบาล / ดับเพลิง</dd><dt class="mono">#8139</dt><dd>JAF ช่วยเหลือรถเสียบนถนน (โทรจากมือถือ)</dd><dt class="mono">050-3816-2787</dt><dd>Japan Visitor Hotline (JNTO) ภาษาอังกฤษ 24 ชม.</dd><dt class="mono">+81 3-5789-2433</dt><dd>สถานทูตไทย โตเกียว</dd><dt>รถเช่า</dt><dd>ดูเบอร์ใน voucher (เก็บไว้ในรถด้วย)</dd></dl></div>`;
+  h+=`<div class="box"><h3>ขับรถในฮอกไกโด</h3><ul class="tipl"><li>ชิดซ้ายเหมือนไทย ป้ายสามเหลี่ยมหัวกลับสีแดง <b>止まれ</b> ต้องหยุดสนิท</li><li>ทางรถไฟตัดผ่าน หยุดก่อนข้ามทุกครั้ง</li><li>ทางด่วนเข้าเลน <b>ETC専用</b> สีม่วงได้เมื่อเสียบบัตร ETC</li><li>ปั๊มส่วนใหญ่เป็นแบบ <b>セルフ</b> หัวจ่ายสีแดง = レギュラー (ธรรมดา) สีเหลือง = ハイオク สีเขียว = ดีเซล ห้ามเติมผิด</li><li>ช่วงเย็นระวังกวางเอโซะและสุนัขจิ้งจอกตัดหน้า ห้ามให้อาหารสุนัขจิ้งจอก</li><li>บนเขามีหมีสีน้ำตาล อย่าเดินออกนอกเส้นทาง</li><li>ปลาย ต.ค. กลางวันราว 10–15°C กลางคืนอาจใกล้ 0°C บนช่องเขา (ค่าเฉลี่ยโดยประมาณ)</li></ul></div>`;
+  h+=`<div class="box"><h3>แปลงเงิน</h3><div class="conv"><input id="yen" inputmode="numeric" value="1000" aria-label="จำนวนเยน"><span>¥ =</span><span class="out" id="baht">–</span><span>บาท</span></div><p class="tiny" style="margin:8px 0 0">เรท <input id="rate" value="${rate}" inputmode="decimal" style="width:80px;font:inherit;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink)" aria-label="เรทบาทต่อเยน"> บาทต่อ ¥1 (จากชีตงบเดิม แก้ได้)</p></div>`;
+  h+=`<div class="box"><h3>ประโยคภาษาญี่ปุ่น</h3>`+PHRASES.map(([jp,ro,th])=>`<div class="phrase"><span class="jp">${esc(jp)}</span><span class="ro">${esc(ro)}</span><span class="th">${esc(th)}</span><button class="btn small" data-copy="${esc(jp)}">${I.copy}คัดลอก</button></div>`).join("")+`<p class="tiny" style="margin:6px 0 0">กดคัดลอกแล้ววางใน Google Translate หรือยื่นหน้าจอให้พนักงานอ่าน</p></div>`;
+  h+=`<div class="box"><h3>สภาพอากาศ</h3><div class="c-actions">${["洞爺湖","ニセコ","中山峠","定山渓","小樽","札幌"].map(n=>aBtn("https://www.google.com/search?q="+enc(n+" 天気"),n,"")).join("")}</div></div>`;
+  h+=`<div class="box"><h3>แชร์ให้เพื่อนร่วมทริป</h3><p style="margin:0;font-size:14px">ส่งลิงก์ของหน้านี้ให้ทุกคน เปิดบนมือถือได้เลย ทุกคนใช้โหมดขับรถและแผนที่ได้เหมือนกัน (เช็คลิสต์แยกกันในแต่ละเครื่อง)</p></div>`;
+  $("#p-info").innerHTML=h; convUpdate();
+}
+function convUpdate(){ const y=parseFloat(($("#yen")||{}).value)||0; const r=parseFloat(($("#rate")||{}).value)||RATE_DEFAULT; const o=$("#baht"); if(o) o.textContent=(y*r).toLocaleString("th-TH",{maximumFractionDigits:0}); }
+
+/* ---------- live location on map ---------- */
+let meMk=null, meAcc=null, meShown=null, meAnim=null, meKind=null, meHd=null, follow=true, legLayer=null, tilesOk=false, lastDriveH=0;
+const FRAMED=(()=>{ try{ return window.top!==window.self; }catch(e){ return true; } })();
+const CAN_POP=FRAMED&&/^https?:$/.test(location.protocol);
+function meIcon(kind,hd){ return L.divIcon({className:"",iconSize:[28,28],iconAnchor:[14,14],html:`<div class="me ${kind}">${hd!=null&&kind==="gps"?`<i style="transform:rotate(${Math.round(hd)}deg)"></i>`:""}<b></b></div>`}); }
+function placeMe(ll,kind,acc,hd){
+  if(!map||!ll) return;
+  hd=(hd!=null&&!isNaN(hd))?Math.round(hd/10)*10:null;
+  if(!meMk){ meAcc=L.circle(ll,{radius:0,interactive:false,stroke:false,fillColor:"#2F80ED",fillOpacity:.14}).addTo(map); meMk=L.marker(ll,{icon:meIcon(kind,hd),zIndexOffset:6000,interactive:false,keyboard:false}).addTo(map); meShown=ll; meKind=kind; meHd=hd; }
+  if(kind!==meKind||hd!==meHd){ meMk.setIcon(meIcon(kind,hd)); meKind=kind; meHd=hd; }
+  meAcc.setRadius(kind==="gps"?Math.min(acc||0,500):0);
+  const from=meShown||ll, t0=performance.now(), D=950; cancelAnimationFrame(meAnim);
+  const step=now=>{ const k=Math.min(1,(now-t0)/D); const p=[from[0]+(ll[0]-from[0])*k,from[1]+(ll[1]-from[1])*k]; meMk.setLatLng(p); meAcc.setLatLng(p); meShown=p; if(k<1) meAnim=requestAnimationFrame(step); };
+  meAnim=requestAnimationFrame(step);
+  if(follow&&curTab==="map"){ if(map.getZoom()<(tilesOk?11:9)) map.setView(ll,tilesOk?14:10,{animate:false}); else map.panTo(ll,{animate:true,duration:.95,easeLinearity:1,noMoveStart:true}); }
+}
+function syncLoc(){ const c=$(".loc-ctl"); if(c) c.classList.toggle("on",follow&&!!(gpsLive()||drive)); }
+function locate(){
+  follow=true; syncLoc();
+  if(gps.blocked||!("geolocation" in navigator)){ openSheet(gpsHelp()); return; }
+  if(gps.watch==null) startGps();
+  if(gpsLive()) map.setView(gps.pos.ll,Math.max(map.getZoom(),tilesOk?14:10));
+  else if(drive&&meShown) map.setView(meShown,Math.max(map.getZoom(),12));
+}
+function addMapExtras(){
+  try{
+    const t=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,maxNativeZoom:19,crossOrigin:true});
+    t.once("tileload",()=>{ tilesOk=true; L_land.setStyle({fillOpacity:0,opacity:0}); layers.lakes.eachLayer(l=>l.setStyle({fillOpacity:0,opacity:0})); const lg=$("#mapLegend"); if(lg) lg.innerHTML='เส้นทางโดยประมาณ · นำทางจริงกดปุ่ม "นำทาง"<br><span style="font-size:10px">แผนที่ © OpenStreetMap contributors</span>'; });
+    t.addTo(map);
+  }catch(e){}
+  map.setMaxZoom(18);
+  const Loc=L.Control.extend({onAdd(){ const d=L.DomUtil.create("div","leaflet-bar loc-ctl"); d.innerHTML=`<button type="button" aria-label="ตำแหน่งของฉัน" title="ตำแหน่งของฉัน"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>`; L.DomEvent.disableClickPropagation(d); L.DomEvent.on(d.firstChild,"click",e=>{ L.DomEvent.stop(e); locate(); }); return d; }});
+  map.addControl(new Loc({position:"bottomright"}));
+  map.on("dragstart",()=>{ follow=false; syncLoc(); });
+  legLayer=L.layerGroup().addTo(map);
+  if(gps.pos) placeMe(gps.pos.ll,"gps",gps.pos.acc,gps.pos.hd);
+}
+/* route of the current leg, cut from the day's polyline */
+function legPath(it,dayI){
+  const a=[P[it.from][1],P[it.from][2]], b=[P[it.to][1],P[it.to][2]], r=(DAYS[dayI]||{}).route||[];
+  let i=-1,di=9e9; r.forEach((p,k)=>{ const d=km(p,a); if(d<di){di=d;i=k;} });
+  let j=-1,dj=9e9; r.forEach((p,k)=>{ if(k<=i) return; const d=km(p,b); if(d<dj){dj=d;j=k;} });
+  if(i<0||j<0||di>4||dj>4) return [a,b];
+  return [a].concat(r.slice(i,j+1)).concat([b]);
+}
+function alongPath(path,f){
+  const seg=[]; let tot=0; for(let k=1;k<path.length;k++){ const d=km(path[k-1],path[k]); seg.push(d); tot+=d; }
+  let want=tot*Math.max(0,Math.min(1,f));
+  for(let k=0;k<seg.length;k++){ if(want<=seg[k]||k===seg.length-1){ const t=seg[k]?Math.min(1,want/seg[k]):0; const p=path[k],q=path[k+1]; return [p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t]; } want-=seg[k]; }
+  return path[path.length-1];
+}
+function estPos(){ const it=driveItem(); if(!it) return null; const el=(Date.now()-drive.start)/1000; return alongPath(legPath(it,drive.day),el/(it.min*60)); }
+function drawLeg(){
+  if(!map||!legLayer) return; legLayer.clearLayers(); const it=driveItem(); if(!it) return;
+  const path=legPath(it,drive.day);
+  L.polyline(path,{color:"#fff",weight:11,opacity:.55,interactive:false,lineCap:"round",lineJoin:"round"}).addTo(legLayer);
+  L.polyline(path,{color:"#2F80ED",weight:6,opacity:.95,interactive:false,lineCap:"round",lineJoin:"round"}).addTo(legLayer);
+  driveEvents(it).forEach(e=>{ if(!e.ll) return; L.marker(e.ll,{icon:L.divIcon({className:"",iconSize:[30,30],iconAnchor:[15,15],html:`<div class="leg-pin">${e.kind==="arrive"?"🏁":"🍁"}</div>`}),zIndexOffset:4000,keyboard:false}).bindTooltip(esc(e.t),{direction:"top",offset:[0,-14]}).addTo(legLayer); });
+  return path;
+}
+function showDriveMap(){
+  showTab("map");
+  setTimeout(()=>{ if(!map) return; mapDay=drive.day; renderMapChips(); drawMap(false); const path=drawLeg(); follow=true; syncLoc();
+    if(gpsLive()) map.setView(gps.pos.ll,tilesOk?14:10); else if(path) map.fitBounds(L.latLngBounds(path),{padding:[30,30],maxZoom:13});
+    if(!gpsLive()) placeMe(estPos(),"est"); },80);
+}
+/* notifications */
+const notifOk=()=>"Notification" in window;
+async function askNotif(){ try{ if(notifOk()&&Notification.permission==="default") await Notification.requestPermission(); }catch(e){} if(drive) renderDrive(); }
+async function pushNotif(title,body,tag){
+  try{
+    if(!notifOk()||Notification.permission!=="granted") return;
+    let reg=null; try{ reg=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration(); }catch(e){}
+    if(reg&&reg.showNotification){ await reg.showNotification(title,{body,tag,renotify:true,vibrate:[200,100,200],silent:false}); return; }
+    new Notification(title,{body,tag});
+  }catch(e){}
+}
+function notifLine(){
+  if(!notifOk()) return `<span class="gps off">● แจ้งเตือน</span> เครื่องนี้ไม่รองรับ`;
+  const p=Notification.permission;
+  if(p==="granted") return `<span class="gps on">● แจ้งเตือน Chrome</span> เปิดอยู่`;
+  if(p==="denied") return `<span class="gps off">● แจ้งเตือน</span> ถูกปิด (เปิดได้ที่ไอคอนข้างแถบที่อยู่ → การแจ้งเตือน)`;
+  return `<span class="gps wait">● แจ้งเตือน</span> <button class="linkbtn" data-act="notif">กดเพื่อเปิด</button>`;
+}
+try{ if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{}); }catch(e){}
+
+/* ---------- drive mode ---------- */
+let drive=store.get("drive",null), driveTimer=null, audio=null, wake=null;
+const gps={watch:null,pos:null,err:null,blocked:false};
+function beep(){
+  try{ if(!audio) return; const t=audio.currentTime; [0,0.28,0.56].forEach((o,i)=>{ const os=audio.createOscillator(), g=audio.createGain(); os.type="sine"; os.frequency.value=[784,988,1319][i]; g.gain.setValueAtTime(0.0001,t+o); g.gain.exponentialRampToValueAtTime(0.35,t+o+0.03); g.gain.exponentialRampToValueAtTime(0.0001,t+o+0.26); os.connect(g).connect(audio.destination); os.start(t+o); os.stop(t+o+0.3); }); }catch(e){}
+  try{ navigator.vibrate&&navigator.vibrate([200,100,200]); }catch(e){}
+}
+async function lockScreen(){ try{ if("wakeLock" in navigator) wake=await navigator.wakeLock.request("screen"); }catch(e){ wake=null; } }
+function km(a,b){ const R=6371,r=Math.PI/180,dl=(b[0]-a[0])*r,dg=(b[1]-a[1])*r; const h=Math.sin(dl/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dg/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function startGps(){
+  stopGps(); gps.err=null;
+  if(!("geolocation" in navigator)){ gps.err="อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับ GPS"; return; }
+  try{ if(document.featurePolicy&&!document.featurePolicy.allowsFeature("geolocation")){ gps.blocked=true; gps.err="หน้านี้เปิดอยู่ในกรอบของ Claude ซึ่งไม่ให้ใช้ตำแหน่ง"; return; } }catch(e){}
+  try{
+    gps.watch=navigator.geolocation.watchPosition(p=>{
+      gps.pos={ll:[p.coords.latitude,p.coords.longitude],acc:p.coords.accuracy,spd:p.coords.speed,hd:p.coords.heading,t:Date.now()}; gps.err=null;
+      placeMe(gps.pos.ll,"gps",gps.pos.acc,(p.coords.speed||0)>1?p.coords.heading:null); syncLoc();
+      if(drive){ checkDrive(); renderDrive(); }
+    },e=>{
+      gps.err=e.code===1?"ยังไม่ได้อนุญาตให้ใช้ตำแหน่ง":e.code===3?"ยังจับสัญญาณ GPS ไม่ได้ (รอสักครู่)":"หาตำแหน่งไม่ได้ ลองออกไปที่โล่ง";
+      if(e.code===1){ gps.blocked=true; stopGps(); }
+      if(drive) renderDrive();
+    },{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+  }catch(e){ gps.err="เปิด GPS ไม่ได้"; }
+}
+function stopGps(){ try{ if(gps.watch!=null) navigator.geolocation.clearWatch(gps.watch); }catch(e){} gps.watch=null; }
+function gpsLive(){ return gps.pos&&Date.now()-gps.pos.t<90e3; }
+function startDrive(dayI,k){
+  try{ audio=audio||new (window.AudioContext||window.webkitAudioContext)(); audio.resume&&audio.resume(); }catch(e){ audio=null; }
+  drive={day:dayI,k,start:Date.now(),fired:{},minD:{},min:true}; store.set("drive",drive); lockScreen(); beep(); gps.blocked=false; startGps(); askNotif(); renderDrive(); runDrive(); showDriveMap();
+}
+function stopDrive(){ drive=null; store.set("drive",null); clearInterval(driveTimer); driveTimer=null; stopGps(); gps.pos=null; if(legLayer) legLayer.clearLayers(); if(meMk){ map.removeLayer(meMk); map.removeLayer(meAcc); meMk=null; meAcc=null; meShown=null; meKind=null; } syncLoc(); $("#driveRoot").innerHTML=""; setTimeout(()=>map&&map.invalidateSize(),50); document.body.classList.remove("driving"); try{ wake&&wake.release(); }catch(e){} wake=null; }
+function driveItem(){ if(!drive) return null; const d=DAYS[drive.day]; return d&&d.items[drive.k]; }
+function driveEvents(it){ const ev=(it.sc||[]).map((s,i)=>({id:"s"+i,m:s.m,t:s.t,x:s.x,img:s.img,story:s.story,ll:s.ll,kind:"scenic"})); ev.push({id:"arr",m:Math.max(1,it.min-3),t:"ใกล้ถึง "+P[it.to][0],x:"ใกล้ถึงจุดหมายแล้ว",img:P[it.to][4],story:P[it.to][5],ll:[P[it.to][1],P[it.to][2]],kind:"arrive"}); return ev.sort((a,b)=>a.m-b.m); }
+/* alert radius: ~2 min ahead at current speed (scenic), ~3 min for arrival; straight-line km */
+function radius(e){ const v=gps.pos&&gps.pos.spd>0?gps.pos.spd*3.6:50; return Math.min(4,Math.max(e.kind==="arrive"?1.2:1,v*(e.kind==="arrive"?3:2)/60)); }
+function checkDrive(){
+  const it=driveItem(); if(!it) return;
+  const evs=driveEvents(it); drive.minD=drive.minD||{};
+  if(gpsLive()){
+    evs.forEach(e=>{ if(!e.ll) return; const d=km(gps.pos.ll,e.ll); drive.minD[e.id]=Math.min(drive.minD[e.id]??99,d);
+      if(!drive.fired[e.id]&&d<=radius(e)){ drive.fired[e.id]=1; store.set("drive",drive); showAlert(e,d); } });
+  }else{
+    const el=(Date.now()-drive.start)/1000;
+    evs.forEach(e=>{ const due=e.m*60-120; if(el>=due && el<e.m*60+300 && !drive.fired[e.id]){ drive.fired[e.id]=1; store.set("drive",drive); showAlert(e); } });
+  }
+}
+function gpsLine(){
+  if(gpsLive()){ const p=gps.pos; const v=p.spd!=null&&p.spd>=0?Math.round(p.spd*3.6)+" กม./ชม. · ":""; return `<span class="gps on">● GPS</span> ${v}แม่นยำ ±${Math.round(p.acc)} ม.`; }
+  if(gps.err) return `<span class="gps off">● GPS ปิด</span> ${esc(gps.err)} · จุดบนแผนที่เป็นตำแหน่งประมาณจากเวลา <button class="linkbtn" data-act="gpshelp">วิธีเปิด GPS</button>`;
+  return `<span class="gps wait">● กำลังหา GPS…</span> ระหว่างนี้ใช้การนับเวลา`;
+}
+function renderDrive(){
+  const it=driveItem(); if(!it){ stopDrive(); return; }
+  document.body.classList.add("driving");
+  const el=Math.max(0,Math.floor((Date.now()-drive.start)/1000));
+  const evs=driveEvents(it), live=gpsLive();
+  const eta=new Date(drive.start+it.min*60e3+9*3600e3);
+  const destD=live?km(gps.pos.ll,[P[it.to][1],P[it.to][2]]):null;
+  const rows=evs.map(e=>{
+    let cls="",cd;
+    if(live&&e.ll){ const d=km(gps.pos.ll,e.ll); const passed=drive.fired[e.id]&&d>(drive.minD[e.id]??d)+0.8; const due=!passed&&d<=radius(e)*1.5; cls=passed?"passed":due?"due":""; cd=passed?"ผ่านแล้ว":d<0.3?"ตอนนี้":d<10?d.toFixed(1)+" กม.":Math.round(d)+" กม."; }
+    else { const left=e.m*60-el; const passed=left< -60; const due=!passed&&left<=120; cls=passed?"passed":due?"due":""; cd=passed?"ผ่านแล้ว":left<=0?"ตอนนี้":"อีก "+Math.ceil(left/60)+" น."; }
+    return {cls,html:`<li class="${cls}"><span class="cd">${cd}</span><span>${e.kind==="arrive"?"🏁":"🍁"} ${esc(e.t)}</span></li>`};
+  });
+  const next=rows.find(r=>r.cls!=="passed")||rows[rows.length-1];
+  const sub=live?`ปลายทางห่างอีก ${destD<10?destD.toFixed(1):Math.round(destD)} กม. (ระยะตรง)`:`ถึงราว ${pad(eta.getUTCHours())}:${pad(eta.getUTCMinutes())} (เวลาญี่ปุ่น)`;
+  $("#driveRoot").innerHTML=`<div class="drive wrap${drive.min?" min":""}" role="region" aria-label="โหมดขับรถ"><div class="d-top"><div style="min-width:0"><div class="d-t">→ ${esc(P[it.to][0])}</div><div class="d-s">${sub}</div></div><div class="d-el" aria-label="เวลาที่ขับมาแล้ว">${pad(Math.floor(el/60))}:${pad(el%60)}</div><button class="d-min" data-act="dmin" aria-label="${drive.min?"ขยาย":"ย่อ"}">${drive.min?"▴":"▾"}</button></div><div class="d-gps">${gpsLine()}</div><div class="d-gps">${notifLine()}</div>${drive.min?`<ul>${next.html}</ul>`:`<ul>${rows.map(r=>r.html).join("")}</ul><div class="d-actions">${live?"":`<button class="btn small" data-act="dshift" data-v="5">รถติด +5 นาที</button><button class="btn small" data-act="dshift" data-v="-5">เร็วกว่า −5</button>`}<button class="btn small" data-act="dmap">${I.map||""}ดูแผนที่</button>${aBtn(dirUrl(pointTarget(it.to)),"Google Maps",I.nav)}<button class="btn small primary" data-act="dstop">ถึงแล้ว / ปิด</button></div>`}</div>`;
+  const h=$("#driveRoot").offsetHeight; if(map&&h!==lastDriveH){ lastDriveH=h; map.invalidateSize({pan:false}); }
+}
+
+function runDrive(){
+  clearInterval(driveTimer);
+  driveTimer=setInterval(()=>{
+    const it=driveItem(); if(!it){ stopDrive(); return; }
+    const el=(Date.now()-drive.start)/1000;
+    checkDrive();
+    if(!gpsLive()) placeMe(estPos(),"est");
+    if(el>it.min*60+90*60){ stopDrive(); return; }
+    renderDrive();
+  },1000);
+}
+function gpsHelp(){
+  return `<div class="sk">โหมดขับรถ</div><h2>วิธีเปิดให้แอปใช้ GPS</h2>
+  <p>เมื่อกด "โหมดขับรถ" เบราว์เซอร์จะถามว่าให้ใช้ตำแหน่งไหม ให้กด <b>อนุญาต (Allow)</b> ถ้าเคยกดไม่อนุญาตไปแล้ว ทำตามนี้</p>
+  ${CAN_POP?`<div class="bk-alert">ถ้าแถบขึ้นว่า "ไม่ให้ใช้ตำแหน่ง" แปลว่าหน้าเปิดอยู่ในกรอบของ Claude ให้กดปุ่มนี้เพื่อเปิดแอปเต็มหน้าจอในแท็บใหม่ แล้วเริ่มโหมดขับรถจากแท็บนั้น<div class="c-actions" style="margin-top:8px"><button class="btn small primary" data-act="popout">เปิดเต็มหน้าจอ</button></div></div>`:""}
+  <h3>iPhone</h3><ol class="facts"><li>การตั้งค่า → ความเป็นส่วนตัวและความปลอดภัย → บริการหาตำแหน่ง → เปิด</li><li>ในรายการเดียวกัน เลือกแอปที่ใช้เปิดหน้านี้ (Safari เว็บไซต์ / Chrome / Claude) → ตั้งเป็น "ขณะใช้แอป" และเปิด "ตำแหน่งที่แม่นยำ"</li><li>ถ้าใช้ Safari: กดปุ่ม "aA" ที่แถบที่อยู่ → การตั้งค่าเว็บไซต์ → ตำแหน่ง → อนุญาต</li><li>กลับมาที่แอป กด "ถึงแล้ว / ปิด" แล้วเริ่มโหมดขับรถใหม่</li></ol>
+  <h3>Android</h3><ol class="facts"><li>ดึงแถบด้านบนลงมา เปิด "ตำแหน่ง"</li><li>ใน Chrome กดไอคอนข้างแถบที่อยู่ → สิทธิ์ → ตำแหน่ง → อนุญาต</li><li>เริ่มโหมดขับรถใหม่</li></ol>
+  <h3>ข้อควรรู้</h3><ul class="facts"><li>แอปเตือนได้เฉพาะตอนที่หน้านี้เปิดอยู่บนจอ ถ้าสลับไป Google Maps หรือล็อกจอ การเตือนจะหยุด</li><li>วิธีที่ดีที่สุด: คนขับใช้ Google Maps นำทาง คนนั่งข้างเปิดโหมดขับรถในโทรศัพท์อีกเครื่อง</li><li>ระยะที่แสดงเป็นระยะเส้นตรง ไม่ใช่ระยะตามถนน แอปจะเตือนเมื่อจุดวิวอยู่ห่างราว 2 นาทีตามความเร็วรถ</li><li>ถ้าเปิด GPS ไม่ได้ แอปจะนับเวลาจากตอนกดเริ่มแทน ใช้ปุ่ม "รถติด +5" เพื่อปรับ</li></ul>
+  ${gps.blocked?`<div class="c-actions"><button class="btn small primary" data-act="gpsretry">ลองเปิด GPS อีกครั้ง</button></div>`:""}`;
+}
+let alertT=null;
+function showAlert(e,d){
+  beep();
+  pushNotif((e.kind==="arrive"?"🏁 ":"🍁 ")+e.t,e.x||"",e.id);
+  const head=e.kind==="arrive"?"ใกล้ถึงแล้ว":d!=null?`จุดวิวข้างหน้า · อีกราว ${d<1?"<1":d.toFixed(1)} กม.`:"จุดวิวข้างหน้า · อีกราว 2 นาที";
+  $("#alertRoot").innerHTML=`<div class="alert" role="alert"><div class="a-k">${head}</div><div class="a-t">${esc(e.t)}</div><p class="a-x">${esc(e.x)}</p><div class="a-act">${e.img?aBtn(imgUrl(e.img),"ดูรูป",I.img):""}${e.story?`<button class="btn small" data-act="story" data-id="${e.story}">${I.book}เรื่องน่ารู้</button>`:""}<button class="btn small" data-act="aclose">ปิด</button></div></div>`;
+  clearTimeout(alertT); alertT=setTimeout(()=>{$("#alertRoot").innerHTML="";},30000);
+}
+
+/* ---------- tabs ---------- */
+function showTab(t){
+  curTab=t; store.set("tab",t);
+  $$(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
+  ["plan","map","stories","food","info"].forEach(k=>{ $("#p-"+k).hidden = k!==t; });
+  if(t==="map"){ if(!map){ initMap(); } else { setTimeout(()=>map.invalidateSize(),30); } }
+}
+function selectDay(i){ curDay=i; store.set("day",i); renderDays(); renderPlan(); if(map&&curTab!=="map"){ mapDay=i; } }
+
+/* ---------- events ---------- */
+document.addEventListener("click",ev=>{
+  const b=ev.target.closest("[data-act],[data-day],[data-tab],[data-mday],[data-flag],[data-cat],[data-farea],[data-fcat],[data-fplan],[data-copy]");
+  if(!b) return;
+  if(b.dataset.day!=null){ selectDay(+b.dataset.day); $("#p-plan").scrollTop=0; return; }
+  if(b.dataset.tab){ showTab(b.dataset.tab); return; }
+  if(b.dataset.mday!=null){ mapDay=+b.dataset.mday; renderMapChips(); drawMap(true); return; }
+  if(b.dataset.flag){ mapFlags[b.dataset.flag]=!mapFlags[b.dataset.flag]; store.set("mapFlags",mapFlags); renderMapChips(); drawMap(false); return; }
+  if(b.dataset.cat){ const c=+b.dataset.cat; foodCats.has(c)?foodCats.delete(c):foodCats.add(c); renderMapChips(); drawMap(false); return; }
+  if(b.dataset.farea){ foodArea=b.dataset.farea; renderFood(); return; }
+  if(b.dataset.fcat!=null){ foodCat=+b.dataset.fcat; renderFood(); return; }
+  if(b.dataset.fplan){ foodPlanOnly=!foodPlanOnly; renderFood(); return; }
+  if(b.dataset.copy!=null){ const txt=b.dataset.copy; const done=()=>{ const o=b.innerHTML; b.textContent="คัดลอกแล้ว"; setTimeout(()=>b.innerHTML=o,1400); }; try{ navigator.clipboard.writeText(txt).then(done,()=>{}); }catch(e){} return; }
+  const a=b.dataset.act;
+  if(a==="close"){ closeSheet(); return; }
+  if(a==="story"){ openSheet(storyHtml(b.dataset.id)); return; }
+  if(a==="food"){ openSheet(foodHtml(b.dataset.id)); return; }
+  if(a==="booking"){ openSheet(bookingHtml(b.dataset.id)); return; }
+  if(a==="foodmap"){ closeSheet(); const f=FOOD.find(x=>x[0]===+b.dataset.id); if(!f) return; if(!INPLAN[f[0]]){ mapFlags.all=true; foodCats.add(f[1]); } else mapFlags.plan=true; store.set("mapFlags",mapFlags); showTab("map"); setTimeout(()=>{ renderMapChips(); drawMap(false); map.setView([f[4],f[5]],16); layers.food.eachLayer(m=>{ const ll=m.getLatLng(); if(Math.abs(ll.lat-f[4])<1e-6&&Math.abs(ll.lng-f[5])<1e-6) m.openPopup(); }); },80); return; }
+  if(a==="daymap"){ mapDay=curDay; showTab("map"); setTimeout(()=>{ renderMapChips(); drawMap(true); },60); return; }
+  if(a==="drive"){ startDrive(curDay,+b.dataset.k); return; }
+  if(a==="dstop"){ stopDrive(); return; }
+  if(a==="dmin"){ if(drive){ drive.min=!drive.min; store.set("drive",drive); renderDrive(); } return; }
+  if(a==="gpshelp"){ openSheet(gpsHelp()); return; }
+  if(a==="notif"){ askNotif(); return; }
+  if(a==="dmap"){ showDriveMap(); return; }
+  if(a==="popout"){ try{ window.open(location.href,"_blank"); }catch(e){} return; }
+  if(a==="gpsretry"){ closeSheet(); gps.blocked=false; startGps(); if(drive) renderDrive(); return; }
+  if(a==="dshift"){ if(drive){ drive.start+= (+b.dataset.v)*60e3; store.set("drive",drive); renderDrive(); } return; }
+  if(a==="aclose"){ $("#alertRoot").innerHTML=""; return; }
+});
+document.addEventListener("change",ev=>{
+  const c=ev.target.closest("[data-check]"); if(c){ const d=store.get("checks",{}); d[c.dataset.check]=c.checked; store.set("checks",d); c.closest(".check").classList.toggle("done",c.checked); }
+});
+document.addEventListener("input",ev=>{ if(ev.target.id==="yen"||ev.target.id==="rate"){ if(ev.target.id==="rate") store.set("rate",parseFloat(ev.target.value)||RATE_DEFAULT); convUpdate(); } });
+document.addEventListener("keydown",ev=>{ if(ev.key==="Escape") closeSheet(); });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&drive) lockScreen(); });
+try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>restyleMap()); }catch(e){}
+try{ new MutationObserver(()=>restyleMap()).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]}); }catch(e){}
+
+/* ---------- boot ---------- */
+mapDay=-1;
+renderDays(); renderPlan(); renderStories(); renderFood(); renderInfo(); tickClock();
+setInterval(()=>{ tickClock(); },15000);
+setInterval(()=>{ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); },120000);
+showTab(curTab);
+if(drive){ if(driveItem()&&Date.now()-drive.start<6*3600e3){ startGps(); renderDrive(); runDrive(); } else stopDrive(); }
+const chip=$(`.day-chip[data-day="${curDay}"]`); chip&&chip.scrollIntoView({inline:"center",block:"nearest"});
+})();
+
+</script>
