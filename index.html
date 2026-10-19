@@ -344,6 +344,11 @@ a{color:inherit}
 .sp-jp{font-size:13px;color:var(--muted);font-family:"Hiragino Sans","Noto Sans JP",var(--font-body)}
 .mk-off{position:relative}
 .mk-off::before{content:"";position:absolute;left:50%;top:50%;width:2px;height:calc(sqrt(var(--dx)*var(--dx) + var(--dy)*var(--dy)));background:rgba(0,0,0,.35);transform-origin:top;display:none}
+
+.rec-row{list-style:none;margin:0 0 8px;padding-left:78px}
+.rec{border:1.5px dashed #2A8AC9;border-radius:14px;padding:10px 12px;background:color-mix(in srgb,#2A8AC9 6%,var(--surface))}
+.rec-k{font-size:12.5px;font-weight:700;color:#2A8AC9}
+.rec-n{font-family:var(--font-display);font-weight:700;font-size:17px;margin-top:2px}
 .muted{color:var(--muted)}
 .tiny{font-size:13px;color:var(--muted)}
 .spacer-drive{height:0}
@@ -855,66 +860,79 @@ const DRINKS = {
  ]
 };
 
-const SPOTS = {
+const SPOTP = {
  jigoku:[
-  {n:"จุดชมวิวหุบเขานรก",jp:"登別 地獄谷 展望台",x:"ทางเดินไม้ลงไปกลางหุบเขาที่มีไอน้ำพวยพุ่ง ใช้เวลาเดินไป-กลับราว 20 นาที จุดชมวิวด้านบนเห็นหุบเขาทั้งหมด"},
-  {n:"บ่อเท็สเซ็น (Tessen-ike)",jp:"地獄谷 鉄泉池",x:"บ่อน้ำร้อนสุดทางเดินไม้ น้ำพุ่งขึ้นเป็นระยะคล้ายน้ำพุร้อน"},
-  {n:"Oyunuma ทะเลสาบน้ำร้อน",jp:"登別 大湯沼",x:"ปล่องภูเขาไฟเป็นทะเลสาบน้ำร้อนสีเทา ผิวน้ำมีไอลอยตลอด ขับต่อจากหุบเขานรกราว 5 นาที"},
-  {n:"ลำธารแช่เท้าธรรมชาติ",jp:"大湯沼川天然足湯",x:"ลำธารน้ำอุ่นในป่า เดินจากจุดจอดราว 10–15 นาที นั่งแช่เท้าบนแท่นไม้ได้ เตรียมผ้าเช็ดเท้าไปด้วย"},
-  {n:"ศาลยักษ์ Enma (Enmado)",jp:"登別 閻魔堂",x:"รูปปั้นพญายมในเมือง หน้าเปลี่ยนเป็นหน้าโกรธเป็นรอบๆ ต่อวัน ดูรอบเวลาที่ป้ายหน้าศาล"}],
- toya:[
-  {n:"เกาะนากาจิมะ (เรือล่องทะเลสาบ)",jp:"洞爺湖 中島",x:"เกาะกลางทะเลสาบ ล่องเรือรูปปราสาทจากท่าเรือ Toyako Onsen ราว 50 นาที"},
-  {n:"Silo Observatory",jp:"洞爺湖 サイロ展望台",x:"จุดชมวิวบนเนินฝั่งเหนือ มองทะเลสาบ เกาะกลาง และภูเขาอุสุ มีร้านของฝาก"},
-  {n:"ภูเขาโชวะชินซัง",jp:"昭和新山",x:"ภูเขาไฟที่ดันตัวขึ้นจากทุ่งนาในปี 1943–45 ยอดยังมีไอร้อน ลานจอดอยู่ตีนเขา"},
-  {n:"กระเช้าภูเขาอุสุ",jp:"有珠山ロープウェイ",x:"ขึ้นไปเห็นโชวะชินซัง ทะเลสาบโทยะ และอ่าวอุจิอุระพร้อมกัน ขึ้น-ลงราว 1 ชม."},
-  {n:"ทางเดินประติมากรรมริมทะเลสาบ",jp:"洞爺湖 彫刻公園",x:"ประติมากรรมกลางแจ้งรอบทะเลสาบ ช่วงหน้าเมือง Toyako Onsen เดินเล่นริมน้ำได้"}],
- usu:[
-  {n:"ภูเขาโชวะชินซัง",jp:"昭和新山",x:"ภูเขาไฟอายุไม่ถึง 100 ปี สีแดงอิฐ ยังมีไอร้อนออกจากยอด"},
-  {n:"กระเช้าภูเขาอุสุ",jp:"有珠山ロープウェイ",x:"จุดชมวิวบนยอดเห็นปล่องภูเขาไฟและทะเลสาบโทยะ"},
-  {n:"Silo Observatory",jp:"洞爺湖 サイロ展望台",x:"มุมมองทะเลสาบจากฝั่งเหนือ"}],
- yotei:[
-  {n:"Lake Hill Farm",jp:"レークヒルファーム 羊蹄山",x:"เจลาโต้กับวิวภูเขาโยเทเต็มลูก"},
-  {n:"สวนน้ำพุ Fukidashi (เมืองเกียวโกกุ)",jp:"京極 ふきだし公園",x:"น้ำใต้ดินจากหิมะบนยอดโยเทผุดขึ้นมาเป็นน้ำพุ ตักน้ำดื่มได้"},
-  {n:"ทุ่งมักการิ",jp:"真狩 羊蹄山",x:"ทุ่งเกษตรตีนเขา มุมถ่ายโยเทแบบไม่มีอะไรบัง"},
-  {n:"Niseko Takahashi Dairy Farm",jp:"ニセコ高橋牧場 羊蹄山",x:"ฟาร์มโคนม ร้านขนม และวิวโยเทอีกด้าน"}],
+  {n:"จุดชมวิวหุบเขานรก",m:10,jp:"登別 地獄谷 展望台",x:"มองเห็นหุบเขาที่มีไอน้ำพวยพุ่งทั้งหุบ อยู่ติดลานจอด"},
+  {n:"ทางเดินไม้กลางหุบเขา",m:20,jp:"登別 地獄谷 遊歩道",x:"เดินลงไปกลางบ่อไอน้ำ ไป-กลับราว 20 นาที"},
+  {n:"บ่อเท็สเซ็น (Tessen-ike)",m:10,jp:"地獄谷 鉄泉池",x:"บ่อน้ำร้อนสุดทางเดินไม้ น้ำพุ่งขึ้นเป็นระยะ"}],
+ oyunuma:[
+  {n:"ทะเลสาบน้ำร้อน Oyunuma",m:10,jp:"登別 大湯沼",x:"ปล่องภูเขาไฟสีเทา ผิวน้ำมีไอลอยตลอด ชมจากจุดชมวิวริมถนน"},
+  {n:"บ่อ Oku-no-yu",m:10,jp:"登別 奥の湯",x:"บ่อโคลนเดือดเล็กๆ ข้าง Oyunuma เดินไม่กี่นาที"},
+  {n:"ลำธารแช่เท้าธรรมชาติ",m:40,jp:"大湯沼川天然足湯",x:"ลำธารน้ำอุ่นในป่า เดินจากลานจอดราว 10–15 นาที เตรียมผ้าเช็ดเท้า"}],
+ wakasaimo:[
+  {n:"ทางเดินริมทะเลสาบและประติมากรรม",m:30,jp:"洞爺湖 彫刻公園 湖畔",x:"เดินเล่นริมน้ำหน้าเมือง มีประติมากรรมกลางแจ้งเรียงตามทาง"},
+  {n:"ท่าเรือล่องทะเลสาบ (ไปเกาะนากาจิมะ)",m:50,jp:"洞爺湖汽船 中島",x:"เรือรูปปราสาทล่องรอบเกาะกลางทะเลสาบราว 50 นาที"},
+  {n:"ร้าน Wakasaimo Honpo",m:15,jp:"わかさいも本舗 洞爺湖本店",x:"ขนมหวานรูปมันเทศ และอิโมเท็นของทอด"}],
+ lakehill:[
+  {n:"ร้านเจลาโต้",m:20,jp:"レークヒルファーム ジェラート",x:"เจลาโต้นมสดจากฟาร์ม หลายรสตามฤดูกาล"},
+  {n:"ลานหญ้าวิวโยเท",m:15,jp:"レークヒルファーム 羊蹄山",x:"นั่งกินบนลานหญ้า มองเห็นภูเขาโยเทเต็มลูก"}],
+ takahashi:[
+  {n:"Milk Kobo (ร้านขนม)",m:20,jp:"ニセコ高橋牧場 ミルク工房",x:"ชูครีม ชีสเค้ก โยเกิร์ตดื่ม จากนมของฟาร์ม"},
+  {n:"PRATIVO (บุฟเฟต์ผัก)",m:60,jp:"ニセコ高橋牧場 PRATIVO",x:"ร้านอาหารบุฟเฟต์ผักและอาหารจากฟาร์ม 11:00–16:00"},
+  {n:"ร้านพิซซ่า",m:45,jp:"ニセコ高橋牧場 ピザ",x:"พิซซ่าเตาอบในฟาร์ม"},
+  {n:"วิวภูเขาโยเทจากฟาร์ม",m:10,jp:"ニセコ高橋牧場 羊蹄山 眺望",x:"ลานด้านหน้าร้านมองเห็นโยเทและเทือกเขานิเซโกะ"}],
  panorama:[
-  {n:"Goshiki Onsen",jp:"ニセコ 五色温泉",x:"บ่อน้ำร้อนบนเขาสูง ไอกำมะถัน และป่าใบไม้เปลี่ยนสีรอบลานจอด"},
-  {n:"Niseko Oyunuma",jp:"ニセコ 大湯沼",x:"บ่อโคลนเดือดข้างถนน มีทางเดินสั้นๆ"},
-  {n:"Kagami-numa",jp:"ニセコ 鏡沼",x:"บึงเล็กสะท้อนภูเขาเหมือนกระจก"},
-  {n:"Shinsen-numa",jp:"神仙沼",x:"บึงบนที่ราบสูง ทางเดินไม้ราว 20 นาที ค่าบำรุงป่า ¥100 · ปีนี้ใบเริ่มร่วงแล้ว"}],
- jozankei:[
-  {n:"สะพานแขวน Futami และ Kappa-buchi",jp:"定山渓 二見吊橋",x:"สะพานแขวนสีแดงข้ามหุบแม่น้ำ มีรูปปั้นกัปปะที่แอ่งน้ำ Kappa-buchi เดินจากโรงแรมราว 10 นาที"},
-  {n:"ถ้ำ Iwato Kannon-do",jp:"定山渓 岩戸観音堂",x:"ถ้ำยาวราว 120 ม. ประดิษฐานรูปเจ้าแม่กวนอิม 33 องค์"},
-  {n:"สวนน้ำพุร้อน Gensen Park",jp:"定山源泉公園",x:"บ่อแช่เท้าฟรี และบ่อต้มไข่ออนเซ็น"},
-  {n:"สะพาน Nishiki",jp:"定山渓 錦橋",x:"สะพานข้ามหุบเขาที่ใบไม้รอบๆ สวยที่สุดจุดหนึ่งของโจซังเค"},
-  {n:"เขื่อนโฮเฮเคียว",jp:"豊平峡ダム",x:"เขื่อนโค้งกลางหุบเขา ห่างจากเมือง 15 นาที"}],
+  {n:"Goshiki Onsen",m:15,jp:"ニセコ 五色温泉",x:"บ่อน้ำร้อนบนเขาสูง ไอกำมะถัน ป่ารอบลานจอด"},
+  {n:"Niseko Oyunuma",m:15,jp:"ニセコ 大湯沼",x:"บ่อโคลนเดือดข้างถนน มีทางเดินสั้นๆ"},
+  {n:"Kagami-numa",m:15,jp:"ニセコ 鏡沼",x:"บึงเล็กสะท้อนภูเขาเหมือนกระจก"},
+  {n:"Shinsen-numa",m:40,jp:"神仙沼",x:"บึงบนที่ราบสูง ทางเดินไม้ราว 20 นาที ¥100 · ปีนี้ใบเริ่มร่วงแล้ว"}],
+ boyo:[
+  {n:"จุดมองภูเขาโยเท",m:10,jp:"道の駅 望羊中山 羊蹄山",x:"ลานหน้าจุดพักรถ มองเห็นโยเทข้ามหุบเขา"},
+  {n:"ร้าน Age-imo",m:10,jp:"中山峠 あげいも",x:"มันฝรั่งชุบแป้งทอดเสียบไม้ ของขึ้นชื่อของที่นี่"}],
+ futami:[
+  {n:"สะพานแขวน Futami",m:15,jp:"定山渓 二見吊橋",x:"สะพานแขวนสีแดงข้ามหุบแม่น้ำ จุดถ่ายรูปใบไม้"},
+  {n:"แอ่งน้ำ Kappa-buchi",m:10,jp:"定山渓 かっぱ淵",x:"แอ่งน้ำใต้สะพานตามตำนานกัปปะ มีรูปปั้นกัปปะ"},
+  {n:"ทางเดินริมแม่น้ำ",m:20,jp:"定山渓 二見公園 遊歩道",x:"ทางเดินจากเมืองไปสะพาน ผ่านป่าริมแม่น้ำ"}],
  hoheikyo:[
-  {n:"สันเขื่อน",jp:"豊平峡ダム",x:"เดินบนสันเขื่อนเห็นหุบเขาสองฝั่ง"},
-  {n:"ทะเลสาบเขื่อน",jp:"豊平峡ダム湖",x:"น้ำสีเขียวมรกตล้อมด้วยหน้าผาและป่า"},
-  {n:"รถบัสไฟฟ้า",jp:"豊平峡ダム 電気バス",x:"ลอดอุโมงค์จากลานจอดขึ้นไปถึงเขื่อน"}],
- otaru:[
-  {n:"คลองโอตารุ",jp:"小樽運河",x:"โกดังหินเก่าเรียงริมคลอง สวยทั้งกลางวันและตอนเปิดไฟหัวค่ำ"},
-  {n:"ถนน Sakaimachi",jp:"小樽 堺町通り",x:"ถนนร้านค้าในอาคารเก่า ร้านแก้ว ขนม และของฝาก"},
-  {n:"พิพิธภัณฑ์กล่องดนตรี",jp:"小樽オルゴール堂 蒸気時計",x:"อาคารอิฐ มีนาฬิกาไอน้ำหน้าร้านส่งเสียงทุก 15 นาที"},
-  {n:"Kitaichi Glass",jp:"北一硝子 三号館",x:"ร้านแก้วในโกดังเก่า มีคาเฟ่จุดตะเกียงน้ำมันหลายร้อยดวง"},
-  {n:"LeTAO สาขาหลัก",jp:"ルタオ本店",x:"ร้านชีสเค้กพร้อมหอชมวิวเล็กๆ ด้านบน"},
-  {n:"Otaru Soko No.1",jp:"小樽倉庫No.1",x:"โกดังเก่าริมคลองที่เป็นโรงเบียร์ Otaru Beer"}],
- sapporo:[
-  {n:"สวน Odori และหอคอยทีวี",jp:"大通公園 さっぽろテレビ塔",x:"สวนยาวกลางเมือง หอคอยทีวีมีจุดชมวิวด้านบน"},
-  {n:"หอนาฬิกาซัปโปโร",jp:"札幌市時計台",x:"อาคารไม้ยุคบุกเบิก สัญลักษณ์ของเมือง"},
-  {n:"ถนนแปะก๊วย ม.ฮอกไกโด",jp:"北海道大学 イチョウ並木",x:"ต้นแปะก๊วยเรียงสองข้างทางยาวราว 380 ม. ปีนี้คาดว่าเหลืองเต็มที่ราวปลายเดือน"},
-  {n:"วิวกลางคืนภูเขาโมอิวะ",jp:"藻岩山 夜景",x:"กระเช้าขึ้นไปดูวิวเมืองยามค่ำ"},
-  {n:"ตลาดนิโจ",jp:"二条市場",x:"ตลาดอาหารทะเลเช้า ข้าวหน้าปลาดิบ ปูฮอกไกโด"}],
+  {n:"สันเขื่อน",m:20,jp:"豊平峡ダム",x:"เดินบนสันเขื่อนเห็นหุบเขาสองฝั่ง"},
+  {n:"ทะเลสาบเขื่อน",m:15,jp:"豊平峡ダム湖",x:"น้ำสีเขียวมรกตล้อมด้วยหน้าผาและป่า"},
+  {n:"รถบัสไฟฟ้าลอดอุโมงค์",m:10,jp:"豊平峡ダム 電気バス",x:"จากลานจอดขึ้นไปถึงเขื่อน ราว 5 นาที"}],
+ sakaimachi:[
+  {n:"คลองโอตารุ",m:30,jp:"小樽運河",x:"โกดังหินเก่าเรียงริมคลอง สวยทั้งกลางวันและตอนเปิดไฟหัวค่ำ"},
+  {n:"ถนน Sakaimachi",m:60,jp:"小樽 堺町通り",x:"ถนนร้านค้าในอาคารเก่า ร้านแก้ว ขนม และของฝาก"},
+  {n:"พิพิธภัณฑ์กล่องดนตรี",m:30,jp:"小樽オルゴール堂 蒸気時計",x:"อาคารอิฐ มีนาฬิกาไอน้ำหน้าร้านส่งเสียงทุก 15 นาที"},
+  {n:"Kitaichi Glass",m:30,jp:"北一硝子 三号館",x:"ร้านแก้วในโกดังเก่า คาเฟ่จุดตะเกียงน้ำมันหลายร้อยดวง"},
+  {n:"LeTAO สาขาหลัก",m:30,jp:"ルタオ本店",x:"ร้านชีสเค้กพร้อมหอชมวิวเล็กๆ ด้านบน"},
+  {n:"Otaru Soko No.1",m:30,jp:"小樽倉庫No.1",x:"โกดังเก่าริมคลองที่เป็นโรงเบียร์ Otaru Beer"}],
+ ginkgo:[
+  {n:"ถนนแปะก๊วย",m:30,jp:"北海道大学 イチョウ並木",x:"ต้นแปะก๊วยเรียงสองข้างทางยาวราว 380 ม."},
+  {n:"ถนนต้นป็อปลาร์",m:15,jp:"北海道大学 ポプラ並木",x:"แนวต้นป็อปลาร์สูงในมหาวิทยาลัย"},
+  {n:"รูปปั้น Dr. Clark",m:10,jp:"北海道大学 クラーク像",x:"ผู้ก่อตั้งวิทยาลัยเกษตรซัปโปโร \"Boys, be ambitious\""},
+  {n:"พิพิธภัณฑ์มหาวิทยาลัย",m:40,jp:"北海道大学総合博物館",x:"อาคารเก่าสวย เข้าชมฟรี (เช็ควันเปิด)"}],
+ tvtower:[
+  {n:"สวนโอโดริ",m:20,jp:"大通公園 紅葉",x:"สวนยาวกลางเมือง ต้นไม้เปลี่ยนสีตลอดแนว"},
+  {n:"หอคอยทีวี",m:15,jp:"さっぽろテレビ塔",x:"ถ่ายรูปหอคอยจากกลางสวน มีจุดชมวิวด้านบน"},
+  {n:"หอนาฬิกาซัปโปโร",m:20,jp:"札幌市時計台",x:"อาคารไม้ยุคบุกเบิก สัญลักษณ์ของเมือง ห่างไปราว 5 นาทีเดิน"}],
+ sapfac:[
+  {n:"ปล่องควันอิฐแดง",m:10,jp:"サッポロファクトリー 煙突",x:"ปล่องควันของโรงเบียร์เดิม สัญลักษณ์ของที่นี่"},
+  {n:"โรงเบียร์ Kaitakushi",m:60,jp:"開拓使麦酒醸造所",x:"ร้านอาหารข้างหม้อต้มเบียร์ ดื่มเบียร์ Kaitakushi สด"},
+  {n:"ห้องโถงหลังคากระจก",m:15,jp:"サッポロファクトリー アトリウム",x:"โถงกลางห้างขนาดใหญ่ ตกแต่งตามฤดูกาล"}],
  susukino:[
-  {n:"สี่แยกซูซูกิโนะ (ป้ายนิกกะ)",jp:"すすきの交差点 ニッカ",x:"ป้ายไฟวิสกี้ Nikka ยักษ์ จุดถ่ายรูปกลางคืน"},
-  {n:"ซอยราเมน",jp:"元祖さっぽろラーメン横丁",x:"ซอยแคบที่มีร้านราเมนเรียงกัน"}]
+  {n:"สี่แยกซูซูกิโนะ (ป้ายนิกกะ)",m:10,jp:"すすきの交差点 ニッカ",x:"ป้ายไฟวิสกี้ Nikka ยักษ์ จุดถ่ายรูปกลางคืน"},
+  {n:"ซอยราเมน",m:45,jp:"元祖さっぽろラーメン横丁",x:"ซอยแคบที่มีร้านราเมนเรียงกัน"}]
 };
-SPOTS.sapfac=[
-  {n:"ปล่องควันอิฐแดง (Entotsu Plaza)",jp:"サッポロファクトリー 煙突",x:"ปล่องควันของโรงเบียร์เดิม สัญลักษณ์ของที่นี่"},
-  {n:"โรงเบียร์ Kaitakushi",jp:"開拓使麦酒醸造所",x:"ร้านอาหารข้างหม้อต้มเบียร์ ดื่มเบียร์ Kaitakushi สด"},
-  {n:"ห้องโถงหลังคากระจก (Atrium)",jp:"サッポロファクトリー アトリウム",x:"โถงกลางห้างขนาดใหญ่ มีงานตกแต่งตามฤดูกาล"},
-  {n:"พิพิธภัณฑ์เบียร์ซัปโปโร",jp:"サッポロビール博物館",x:"อาคารอิฐแดง เข้าชมฟรี มีชุดชิมเบียร์ (เสียเงิน) เดินจากที่นี่ราว 15 นาที"}];
-SPOTS.oyunuma=SPOTS.jigoku;
+/* places worth adding, shown between timeline cards: day index, after point key */
+const REC = [
+ {id:"enmado",day:1,after:"jigoku",n:"ศาลยักษ์ Enma (Enmado)",jp:"登別 閻魔堂",lat:42.4946,lng:141.1455,dur:15,x:"รูปปั้นพญายมในเมือง Noboribetsu Onsen หน้าเปลี่ยนเป็นหน้าโกรธเป็นรอบๆ ต่อวัน อยู่ระหว่างทางจากหุบเขานรก"},
+ {id:"usuzan",day:1,after:"hikaru",n:"ภูเขาโชวะชินซัง + กระเช้าภูเขาอุสุ",jp:"有珠山ロープウェイ",lat:42.5440,lng:140.8639,dur:75,x:"ภูเขาไฟที่เกิดใหม่ปี 1943–45 ขึ้นกระเช้าดูวิวโชวะชินซัง ทะเลสาบโทยะ และอ่าวอุจิอุระ อยู่ทางผ่านเข้าเมืองโทยะ"},
+ {id:"fukidashi",day:2,after:"takahashi",n:"สวนน้ำพุ Fukidashi (เกียวโกกุ)",jp:"京極 ふきだし公園",lat:42.8566,lng:140.8779,dur:30,x:"น้ำใต้ดินจากหิมะบนยอดโยเทผุดเป็นน้ำพุ ตักน้ำดื่มได้ อยู่บนเส้นทางไป Nakayama Pass"},
+ {id:"gensen",day:2,after:"futami",n:"สวนน้ำพุร้อน Gensen Park",jp:"定山源泉公園",lat:42.9667,lng:141.1636,dur:20,x:"บ่อแช่เท้าฟรีกลางเมืองโจซังเค และบ่อต้มไข่ออนเซ็น"},
+ {id:"iwato",day:2,after:"futami",n:"ถ้ำ Iwato Kannon-do",jp:"定山渓 岩戸観音堂",lat:42.9655,lng:141.1580,dur:30,x:"ถ้ำยาวราว 120 ม. ประดิษฐานรูปเจ้าแม่กวนอิม 33 องค์ ใกล้สะพาน Futami"},
+ {id:"kikkogura",day:3,after:"sakaimachi",n:"โรงสาเก Tanaka Shuzo (Kikkogura)",jp:"田中酒造 亀甲蔵",lat:43.1868,lng:141.0160,dur:30,x:"โรงสาเกในโกดังหินเก่าของโอตารุ ชมการผลิตและชิมฟรี (คนขับงดดื่ม)"},
+ {id:"jingu",day:4,after:"ginkgo",n:"ศาลเจ้าฮอกไกโด + สวนมารุยามะ",jp:"北海道神宮",lat:43.0547,lng:141.3080,dur:75,x:"ศาลเจ้าใหญ่ในป่ากลางเมือง ช่วงนี้ใบไม้กำลังเปลี่ยนสี รถไฟใต้ดินสายโทไซลงสถานี Maruyama-koen"},
+ {id:"koibito",day:4,after:"ginkgo",n:"Shiroi Koibito Park",jp:"白い恋人パーク",lat:43.0889,lng:141.2712,dur:90,x:"โรงงานคุกกี้ Shiroi Koibito อาคารแบบยุโรป ทัวร์ดูการผลิต และคาเฟ่ รถไฟใต้ดินสายโทไซลงสถานี Miyanosawa"},
+ {id:"beermuseum",day:5,after:"sapfac",n:"พิพิธภัณฑ์เบียร์ซัปโปโร",jp:"サッポロビール博物館",lat:43.0713,lng:141.3687,dur:45,x:"อาคารอิฐแดงประวัติเบียร์ญี่ปุ่น เข้าชมฟรี มีชุดชิมเบียร์ (เสียเงิน) เดินจาก Sapporo Factory ราว 15 นาที"}
+];
 
 </script>
 <script>
@@ -1009,7 +1027,7 @@ function renderPlan(){
   h+=wxDayLine(curDay);
   if(edits[curDay]) h+=`<div class="note-box">วันนี้แก้แผนแล้ว เวลาคำนวณใหม่ (เวลาเดิมขีดฆ่าตัวเล็ก) <button class="linkbtn" data-act="cs-reset">รีเซ็ตกลับแผนเดิม</button></div>`;
   h+=`<ol class="tl">`;
-  let carGoneR=curDay>=CARFREE_DAY;
+  let carGoneR=curDay>=CARFREE_DAY; const recShown={};
   planItems(curDay).forEach(it=>{
     const k=it._i;
     navMode=carGoneR?(it.walk?"walking":"transit"):"driving";
@@ -1028,8 +1046,8 @@ function renderPlan(){
     const story=p&&p[5]?`<button class="btn small" data-act="story" data-id="${p[5]}">${I.book}เรื่องน่ารู้</button>`:"";
     const bk=(it.k==="hotel"&&BOOKINGS[it.p])?`<button class="btn small primary" data-act="booking" data-id="${it.p}">${I.doc}ใบยืนยันการจอง</button>`:"";
     const food=it.food?`<button class="btn small" data-act="food" data-id="${it.food}">★ ร้านในลิสต์</button>`:"";
-    h+=`<li class="${cls}" data-key-row="${esc(k)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}${p?stripHtml(p[4]||p[0],5):""}${p&&p[5]&&SPOTS[p[5]]?`<button class="spot-link" data-act="story" data-id="${p[5]}">📍 จุดที่ต้องชม ${SPOTS[p[5]].length} จุด ›</button>`:""}${it._clash?`<p class="c-warn">⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว</p>`:""}${it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`<p class="c-warn">⚠ เวลาใหม่เลย ${esc(it.lim)} แล้ว (${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"})</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
-    if(it.k!=="opt") h+=insRow(k);
+    h+=`<li class="${cls}" data-key-row="${esc(k)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}${p?stripHtml(p[4]||p[0],5):""}${SPOTP[it.p]?`<button class="spot-link" data-act="spots" data-id="${it.p}">📍 จุดที่ต้องชมใน${esc(p[0])} (${SPOTP[it.p].length}) ›</button>`:""}${it._clash?`<p class="c-warn">⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว</p>`:""}${it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`<p class="c-warn">⚠ เวลาใหม่เลย ${esc(it.lim)} แล้ว (${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"})</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
+    if(it.k!=="opt"){ if(!recShown[it.p]){ h+=recsAfter(curDay,it); recShown[it.p]=1; } h+=insRow(k); }
     if(curDay===3&&it.p==="station"&&it.k==="stop") carGoneR=true;
   });
   h+=`</ol>`;
@@ -1051,7 +1069,7 @@ function storyHtml(id){
   const s=S[id]; if(!s) return "";
   const pts=Object.entries(P).filter(([k,p])=>p[5]===id);
   const acts=pts.slice(0,2).map(([k,p])=>aBtn(dirUrl(pointTarget(k)),"นำทางไป "+p[0],I.nav)).join("")+(pts[0]?aBtn(imgUrl(pts[0][1][4]),"ดูรูป",I.img):"");
-  return `<div class="sk">${esc(s.k)}</div><h2>${esc(s.t)}</h2><p class="muted" style="margin-top:2px">${esc(s.x)}</p>${pts[0]?stripHtml(pts[0][1][4]||pts[0][1][0],5,"lg"):""}${s.body.map(b=>`<p>${esc(b)}</p>`).join("")}${s.facts&&s.facts.length?`<ul class="facts">${s.facts.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>`:""}<div class="c-actions">${acts}</div>${spotsHtml(id)}`;
+  return `<div class="sk">${esc(s.k)}</div><h2>${esc(s.t)}</h2><p class="muted" style="margin-top:2px">${esc(s.x)}</p>${pts[0]?stripHtml(pts[0][1][4]||pts[0][1][0],5,"lg"):""}${s.body.map(b=>`<p>${esc(b)}</p>`).join("")}${s.facts&&s.facts.length?`<ul class="facts">${s.facts.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>`:""}<div class="c-actions">${acts}</div>${(()=>{ const pk=(pts.find(([k])=>SPOTP[k])||[])[0]; return pk?spotsHtml(pk):""; })()}`;
 }
 function bookingHtml(k){
   const b=BOOKINGS[k]; if(!b) return "";
@@ -1371,7 +1389,7 @@ let edits=store.get("edits",{});
 if(store.get("editsVer",1)<3){ delete edits[4]; delete edits[5]; store.set("edits",edits); store.set("editsVer",3); }
 let pickMode=null, draft=null, searchT=null, lastRes=[];
 function saveEdits(){ store.set("edits",edits); }
-function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.name||"",null]; }
+function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.q||n.name||"",null,n.q||null]; }
 Object.values(edits).forEach(ed=>(ed.list||[]).forEach(regCustom));
 function origDur(it){ if(it.k==="train") return it.min||0; if(it.e) return Math.max(0,toMin(it.e)-toMin(it.t)); return it.k==="hotel"?20:30; }
 function buildEd(di){
@@ -1461,7 +1479,7 @@ function renderAddStop(){
   <div class="c-actions" style="margin:8px 0 4px"><button class="btn small" data-act="cs-here">📍 ตำแหน่งปัจจุบัน</button><button class="btn small" data-act="cs-pick">🗺 แตะเลือกบนแผนที่</button>${c.lat!=null?`<button class="btn small" data-act="cs-noplace">ไม่ระบุสถานที่ (แค่รอ)</button>`:""}</div>
   <div class="cs-picked">${c.lat!=null?`<b>📌 ${esc(c.name||"จุดที่เลือก")}</b><span class="tiny mono">${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}</span>`:`<span class="tiny">ยังไม่ได้เลือกสถานที่ · ถ้าแค่ฝนตก/รถติด ไม่ต้องเลือก ใส่เวลารอได้เลย</span>`}</div>
   <label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.name)}" placeholder="${c.lat!=null?"ชื่อสถานที่":"เช่น ฝนตก รอที่โรงแรม"}">`:`<div class="c-name" style="font-size:18px;margin:4px 0">${esc(c.title||"")}</div>`}
-  <div class="grid2"><div><label class="fl" for="cs-dur">อยู่นาน</label><select id="cs-dur" class="inp">${durOpts(c.dur)}</select></div>
+  <div class="grid2"><div><label class="fl" for="cs-dur">อยู่นาน</label><select id="cs-dur" class="inp">${durOpts(c.dur)}</select>${c.durNote?`<div class="tiny" style="margin-top:3px">${esc(c.durNote)}</div>`:""}</div>
   <div><label class="fl" for="cs-at">เวลาเริ่ม</label><select id="cs-at" class="inp">${timeOpts(c.at)}</select></div></div>
   ${isCustom?`<label class="fl" for="cs-note">โน้ต</label><input id="cs-note" class="inp" value="${esc(c.note||"")}" placeholder="ไม่ใส่ก็ได้">`:""}
   <div class="cs-prev"><b>เวลาใหม่ของแผน</b>${previewList(sim,c.mode==="add"?c.key:c.key)}<p class="tiny" style="margin:6px 0 0">เวลาขับระหว่างจุดใหม่คำนวณจากระยะทางโดยประมาณ</p></div>
@@ -1481,11 +1499,20 @@ function moveItem(key,dir){
   const t=ed.list[i]; ed.list[i]=ed.list[j]; ed.list[j]=t; ed.list[i].pre=0; ed.list[j].pre=0; saveEdits(); renderPlan(); drawCustoms();
   const el=$(`[data-key-row="${CSS.escape(key)}"]`); el&&el.scrollIntoView({block:"center",behavior:"smooth"});
 }
+function guessDur(k,v,name){
+  k=k||""; v=v||""; const n=String(name||"");
+  const T=[[/onsen|温泉|湯/.test(n)||v==="spa"||v==="public_bath",90,"ออนเซ็น"],[v==="restaurant"||v==="food_court",60,"ร้านอาหาร"],[v==="cafe"||v==="ice_cream",40,"คาเฟ่"],[v==="fast_food"||v==="bakery",25,"ร้านอาหารเร็ว/เบเกอรี่"],[v==="bar"||v==="pub",60,"บาร์"],
+   [v==="convenience"||v==="supermarket",15,"ร้านสะดวกซื้อ/ซูเปอร์"],[v==="mall"||v==="department_store",90,"ห้าง"],[k==="shop",30,"ร้านค้า"],[v==="museum"||v==="gallery",60,"พิพิธภัณฑ์"],
+   [v==="viewpoint",15,"จุดชมวิว"],[v==="waterfall"||k==="natural",25,"ธรรมชาติ"],[v==="park"||v==="garden",45,"สวน"],[v==="shrine"||v==="temple"||v==="place_of_worship",30,"ศาลเจ้า/วัด"],
+   [v==="attraction"||k==="tourism"||k==="historic",45,"ที่เที่ยว"],[v==="fuel",10,"ปั๊มน้ำมัน"],[k==="railway"||v==="station",10,"สถานี"]];
+  for(const [c,m,lab] of T) if(c===true||c) { if(typeof c==="boolean"?c:true) return {m,lab}; }
+  return {m:30,lab:""};
+}
 async function geoSearch(q){
   const bias=gps.pos?gps.pos.ll:(()=>{ const r=DAYS[curDay].route; return r[Math.floor(r.length/2)]; })();
   const m=q.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{2,3}\.\d+)/); if(m) return [{name:"พิกัดที่ใส่",sub:q,lat:+m[1],lng:+m[2]}];
   try{ const r=await fetch(`https://photon.komoot.io/api/?q=${enc(q)}&lat=${bias[0]}&lon=${bias[1]}&limit=8&bbox=${HKD_BBOX}`); const j=await r.json();
-    const out=(j.features||[]).map(f=>{ const p=f.properties||{}; return {name:p.name||p.street||q,sub:[p.city||p.town||p.village||p.county,p.state].filter(Boolean).join(", "),lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]}; });
+    const out=(j.features||[]).map(f=>{ const p=f.properties||{}; const g=guessDur(p.osm_key,p.osm_value,p.name); return {name:p.name||p.street||q,sub:[g.lab,p.city||p.town||p.village||p.county,p.state].filter(Boolean).join(" · "),lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0],dur:g.m,lab:g.lab}; });
     if(out.length) return out; }catch(e){}
   try{ const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${enc(q)}&countrycodes=jp&viewbox=139.3,45.6,146.0,41.3&bounded=1&limit=8&accept-language=ja,en`); const j=await r.json();
     return j.map(x=>({name:(x.name||x.display_name.split(",")[0]),sub:x.display_name.split(",").slice(1,3).join(","),lat:+x.lat,lng:+x.lon})); }catch(e){ return null; }
@@ -1506,7 +1533,7 @@ function endPick(){ pickMode=null; $("#pickBar")&&$("#pickBar").remove(); if(map
 function hookMapPick(){ map.on("click",async e=>{ if(!pickMode) return; const ll=[e.latlng.lat,e.latlng.lng]; draft=Object.assign(pickMode,{lat:ll[0],lng:ll[1]}); endPick(); showTab("plan"); if(!draft.name) draft.name=await reverseName(ll)||"จุดที่ปักเอง"; renderAddStop(); }); }
 function customHtml(it,cls,tm){
   const c=it._c; const ll=c.lat!=null;
-  return `<li class="${cls} k-custom" data-key-row="${esc(it._i)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${ll?"📌 จุดแวะที่เพิ่มเอง":"⏱ รอ / เลื่อนเวลา"}</span>${ll?wxChip(it._i,DAYS[curDay].date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${ll&&c.name?stripHtml(c.name,5):""}${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it._late?`<p class="c-warn">⚠ เริ่มช้ากว่าเวลาที่ตั้งไว้</p>`:""}<div class="c-actions">${ll?aBtn(dirUrl({name:c.name,lat:c.lat,lng:c.lng}),"นำทาง",I.nav):""}${ll&&c.name?aBtn(imgUrl(c.name),"ดูรูป",I.img):""}<button class="btn small" data-act="cs-edit" data-key="${esc(it._i)}">แก้ไข</button></div></div></li>`;
+  return `<li class="${cls} k-custom" data-key-row="${esc(it._i)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${ll?"📌 จุดแวะที่เพิ่มเอง":"⏱ รอ / เลื่อนเวลา"}</span>${ll?wxChip(it._i,DAYS[curDay].date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${ll&&c.name?stripHtml(c.q||c.name,5):""}${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it._late?`<p class="c-warn">⚠ เริ่มช้ากว่าเวลาที่ตั้งไว้</p>`:""}<div class="c-actions">${ll?aBtn(dirUrl({name:c.name,lat:c.lat,lng:c.lng,q:c.q||null}),"นำทาง",I.nav):""}${ll&&c.name?aBtn(imgUrl(c.q||c.name),"ดูรูป",I.img):""}<button class="btn small" data-act="cs-edit" data-key="${esc(it._i)}">แก้ไข</button></div></div></li>`;
 }
 function moveBtns(it){ if(it.k==="drive") return ""; return `<div class="mv"><button class="mv-b" data-act="cs-mv" data-key="${esc(it._i)}" data-dir="-1" aria-label="เลื่อนขึ้น">▲</button><button class="mv-b" data-act="cs-mv" data-key="${esc(it._i)}" data-dir="1" aria-label="เลื่อนลง">▼</button><button class="mv-b" data-act="cs-edit" data-key="${esc(it._i)}" aria-label="ปรับเวลา">⋯</button></div>`; }
 function insRow(key){ return `<li class="ins-row"><button class="ins-b" data-act="cs-ins" data-key="${esc(key)}">＋ เพิ่มจุดตรงนี้</button></li>`; }
@@ -1523,7 +1550,7 @@ document.addEventListener("click",ev=>{
   if(a==="cs-mv"){ moveItem(b.dataset.key,+b.dataset.dir); return; }
   if(a==="cs-edit"){ openEditItem(b.dataset.key); return; }
   if(a==="cs-reset"){ delete edits[curDay]; saveEdits(); renderPlan(); drawCustoms(); return; }
-  if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng}); renderAddStop(); return; }
+  if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng}); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
   if(a==="cs-noplace"){ readDraft(); Object.assign(draft,{lat:null,lng:null}); renderAddStop(); return; }
   if(a==="cs-here"){ readDraft(); const use=p=>{ Object.assign(draft,{lat:p[0],lng:p[1]}); reverseName(p).then(n=>{ if(!draft.name) draft.name=n||"ตำแหน่งปัจจุบัน"; renderAddStop(); }); };
     if(gpsLive()) use(gps.pos.ll); else try{ navigator.geolocation.getCurrentPosition(p=>use([p.coords.latitude,p.coords.longitude]),()=>openSheet(gpsHelp()),{enableHighAccuracy:true,timeout:15000}); }catch(e){ openSheet(gpsHelp()); } return; }
@@ -1578,9 +1605,20 @@ function openLightbox(q,n,i){
 addEventListener("popstate",()=>{ if(lbOpen) closeLightbox(true); });
 document.addEventListener("keydown",ev=>{ if(lbOpen&&ev.key==="Escape") closeLightbox(false); });
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-ph]"); if(!b) return; ev.stopPropagation(); const [q,n]=b.dataset.ph.split("|"); openLightbox(q,+n,+b.dataset.pi); },true);
-function spotsHtml(id){
-  const sp=SPOTS[id]; if(!sp) return "";
-  return `<h3 class="sp-h">จุดที่ต้องชม (${sp.length})</h3><ol class="spots">${sp.map(s=>`<li><div class="sp-n"><b>${esc(s.n)}</b><span class="sp-jp">${esc(s.jp)}</span></div><p>${esc(s.x)}</p>${stripHtml(s.jp,3,"sm")}<div class="c-actions">${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(s.jp),"แผนที่",I.nav)}<button class="btn small" data-copy="${esc(s.jp)}">${I.copy}คัดลอกชื่อ</button></div></li>`).join("")}</ol>`;
+function spotsHtml(pk){
+  const sp=SPOTP[pk]; if(!sp) return "";
+  const tot=sp.reduce((t,s)=>t+(s.m||0),0);
+  return `<h3 class="sp-h">จุดที่ต้องชมใน${esc(P[pk]?P[pk][0]:"")} (${sp.length})</h3>${tot?`<p class="tiny" style="margin:-2px 0 8px">ถ้าดูครบทุกจุด ใช้เวลาราว ${tot>=60?Math.floor(tot/60)+" ชม. "+(tot%60?tot%60+" นาที":""):tot+" นาที"} ไม่รวมเวลาเดินระหว่างจุด</p>`:""}<ol class="spots">${sp.map(s=>`<li><div class="sp-n"><b>${esc(s.n)}${s.m?` <span class="pill opt">⏱ ~${s.m} นาที</span>`:""}</b><span class="sp-jp">${esc(s.jp)}</span></div><p>${esc(s.x)}</p>${stripHtml(s.jp,3,"sm")}<div class="c-actions">${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(s.jp),"แผนที่",I.nav)}<button class="btn small" data-copy="${esc(s.jp)}">${I.copy}คัดลอกชื่อ</button></div></li>`).join("")}</ol>`;
+}
+function spotsSheet(pk){ const p=P[pk]; return `<div class="sk">จุดที่ต้องชม</div><h2>${esc(p[0])}</h2>${stripHtml(p[4]||p[0],5,"lg")}${spotsHtml(pk)}`; }
+function recHtml(r){
+  return `<li class="rec-row"><div class="rec"><div class="rec-k">💡 สถานที่แนะนำ · ใกล้เส้นทาง</div><div class="rec-n">${esc(r.n)}</div><div class="sp-jp">${esc(r.jp)}</div><p class="c-note">${esc(r.x)}</p>${stripHtml(r.jp,4,"sm")}<div class="c-actions"><button class="btn small primary" data-act="rec-add" data-id="${r.id}">＋ เพิ่มเข้าแผน (${r.dur} นาที)</button>${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(r.jp),"แผนที่",I.nav)}<button class="btn small" data-act="rec-hide" data-id="${r.id}">ไม่สนใจ</button></div></div></li>`;
+}
+let recHidden=store.get("recHidden",{});
+function recsAfter(di,it){
+  if(!it.p) return "";
+  const ed=edits[di]; const have=k=>ed&&ed.list.some(n=>n.key==="cs_rec_"+k);
+  return REC.filter(r=>r.day===di&&r.after===it.p&&!recHidden[r.id]&&!have(r.id)).map(recHtml).join("");
 }
 /* ---------- weather (Open-Meteo, refreshed on the phone) ---------- */
 let wx=store.get("wx",null), wxBusy=false;
@@ -1787,6 +1825,10 @@ document.addEventListener("click",ev=>{
   if(a==="story"){ openSheet(storyHtml(b.dataset.id)); return; }
   if(a==="food"){ openSheet(foodHtml(b.dataset.id)); return; }
   if(a==="booking"){ openSheet(bookingHtml(b.dataset.id)); return; }
+  if(a==="spots"){ openSheet(spotsSheet(b.dataset.id)); return; }
+  if(a==="rec-hide"){ recHidden[b.dataset.id]=1; store.set("recHidden",recHidden); renderPlan(); return; }
+  if(a==="rec-add"){ const r=REC.find(x=>x.id===b.dataset.id); if(!r) return; const ed=materialize(r.day); const n={key:"cs_rec_"+r.id,kind:"custom",name:r.n,lat:r.lat,lng:r.lng,q:r.jp,note:r.x,dur:r.dur,at:"",pre:0}; regCustom(n);
+    const its=planItems(r.day); const after=its.filter(x=>x.p===r.after&&x.k!=="drive"&&x.k!=="train"&&x.k!=="opt").pop(); const i=after?ed.list.findIndex(x=>x.key===after._i):-1; ed.list.splice(i+1,0,n); saveEdits(); renderPlan(); drawCustoms(); return; }
   if(a==="foodmap"){ closeSheet(); const f=FOOD.find(x=>x[0]===+b.dataset.id); if(!f) return; if(!INPLAN[f[0]]){ mapFlags.all=true; foodCats.add(f[1]); } else mapFlags.plan=true; store.set("mapFlags",mapFlags); showTab("map"); setTimeout(()=>{ renderMapChips(); drawMap(false); map.setView([f[4],f[5]],16); layers.food.eachLayer(m=>{ const ll=m.getLatLng(); if(Math.abs(ll.lat-f[4])<1e-6&&Math.abs(ll.lng-f[5])<1e-6) m.openPopup(); }); },80); return; }
   if(a==="daymap"){ mapDay=curDay; showTab("map"); setTimeout(()=>{ renderMapChips(); drawMap(true); },60); return; }
   if(a==="drive"){ startDrive(curDay,b.dataset.k); return; }
