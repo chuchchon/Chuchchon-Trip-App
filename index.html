@@ -329,6 +329,7 @@ a{color:inherit}
 @keyframes skel{from{opacity:.5}to{opacity:1}}
 .ph img{width:100%;height:100%;object-fit:cover;display:block}
 .ph.more{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--muted);text-decoration:none;border:1px dashed var(--line);width:80px}
+.ph-none svg,.ph.more svg{width:18px;height:18px;flex:none}
 .ph-none{font-size:12.5px;color:var(--muted);text-decoration:none;display:inline-flex;gap:4px;align-items:center}
 .lb{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
 .lb img{max-width:100%;max-height:78vh;border-radius:10px}
@@ -435,6 +436,10 @@ const P = {
   clock:["หอนาฬิกาซัปโปโร",43.0626,141.3535,"ChIJR3JQJ3YpC18R680ES0qomxs","札幌市時計台","clock"],
   donguri:["Donguri (Odori)",43.0604,141.3556,null,"どんぐり ちくわパン",null,"Donguri Odori Sapporo"],
   tanuki:["ถนน Tanukikoji",43.0577,141.3530,null,"狸小路商店街","tanuki","Tanukikoji Shopping Street Sapporo"],
+  ramai:["Asian Bar Ramai (สาขา Sapporo Chuo)",43.0546,141.3428,null,"アジアンバー ラマイ スープカレー","ramai","アジアンバー ラマイ 札幌中央店"],
+  sapfac:["Sapporo Factory",43.0645,141.3627,null,"サッポロファクトリー 煙突","sapfac","サッポロファクトリー"],
+  outlet:["Mitsui Outlet Park Sapporo Kitahiroshima",42.991,141.523,null,"三井アウトレットパーク 札幌北広島","outlet","三井アウトレットパーク 札幌北広島"],
+  busstop:["ป้ายรถบัสหน้า Tokyu (สถานีซัปโปโร)",43.0681,141.3536,null,"札幌駅前 東急百貨店",null,"札幌駅前 東急百貨店前 バス停"],
   beergarden:["Sapporo Beer Garden",43.0713,141.3691,"ChIJ__9PCWwpC18RpHEvsAli2gg","サッポロビール園","beer"]
 };
 
@@ -509,6 +514,15 @@ const S = {
   nakajima:{k:"สวน",t:"สวนนากาจิมะ และ Hoheikan",x:"สวนริมแม่น้ำกลางเมือง มีโรงแรมแบบตะวันตกจากปี 1880",
     body:["Hoheikan สร้างปี 1880 เป็นโรงแรมแบบตะวันตกของรัฐบาลเพื่อรับเสด็จจักรพรรดิเมจิ อาคารสีขาวขอบฟ้าย้ายมาตั้งในสวนนี้ภายหลัง","ในสวนยังมีเรือนชา Hasso-an และสระน้ำที่ใบไม้สะท้อนน้ำสวยในฤดูใบไม้ร่วง"],
     facts:["สถานี Nakajima-koen (สาย Namboku) อยู่ติดสวน"]},
+  ramai:{k:"ซุปแกงกะหรี่",t:"Asian Bar Ramai — ซุปแกงกะหรี่สไตล์บาหลี",x:"ร้านซุปแกงกะหรี่ชื่อดังของซัปโปโร ตกแต่งแนวเอเชีย/บาหลี",
+    body:["เมนูแนะนำสำหรับครั้งแรกคือ \"Chicken\" น่องไก่ทั้งชิ้นในซุปแกงเผ็ด เลือกระดับความเผ็ดได้ เมนูยอดนิยมอื่นคือ Pork (หมูตุ๋น) และ Buhi (หมูชาบู)","สาขา Sapporo Chuo อยู่ฝั่งตะวันตกของตัวเมือง เดินจากซูซูกิโนะราว 15 นาที เปิดดึกกว่าสาขาอื่น"],
+    facts:["สาขา Sapporo Chuo: Minami 4 Nishi 10 (コンフォモール札幌 1F)","เปิด 11:30–23:00 (สั่งสุดท้าย 22:00) ไม่มีวันหยุด","Chicken / Pork / Buhi ราว ¥1,680 · ผัก ¥1,580","เพิ่มซุปและข้าวขนาดใหญ่ได้ฟรี","ข้อมูลจากบทความปี 2026 ราคาอาจเปลี่ยน"]},
+  sapfac:{k:"ช้อปปิ้ง + ประวัติเบียร์",t:"Sapporo Factory",x:"ที่ตั้งโรงเบียร์ Kaitakushi ปี 1876 จุดเริ่มต้นเบียร์ญี่ปุ่น",
+    body:["รัฐบาลบุกเบิกฮอกไกโด (Kaitakushi) ตั้งโรงเบียร์ที่นี่ในปี 1876 ปัจจุบันเป็นห้างช้อปปิ้งที่ยังเก็บอาคารอิฐแดงและปล่องควันเดิมไว้","ภายในมีโรงต้มเบียร์ขนาดเล็กที่ยังผลิตเบียร์ Kaitakushi ดื่มสดได้ที่ร้านอาหารข้างหม้อต้ม ห้องโถงกระจกกลางห้างกว้าง เดินสบายแม้ฝนตก"],
+    facts:["ร้านค้า 10:00–20:00 · ร้านอาหาร 11:00–22:00 (บางร้านต่างกัน)","เดินจากสถานี Bus Center-mae (สายโทไซ) 3 นาที หรือเดินจากสถานีซัปโปโรราว 15 นาที","พิพิธภัณฑ์เบียร์ซัปโปโรอยู่ห่างไปราว 15 นาทีเดิน"]},
+  outlet:{k:"เอาต์เล็ต",t:"Mitsui Outlet Park Sapporo Kitahiroshima",x:"เอาต์เล็ตใหญ่ที่สุดของฮอกไกโด ระหว่างซัปโปโรกับสนามบิน",
+    body:["มีร้านแบรนด์กีฬาและเอาต์ดอร์หลายร้าน เช่น Onitsuka Tiger, mont-bell, THE NORTH FACE, HELLY HANSEN ร้านส่วนใหญ่ลดภาษี 10% (ใช้พาสปอร์ต)","รับคูปองเพิ่มได้ที่ Tourist Information ชั้น 1 ทางเข้าตะวันออก มีล็อกเกอร์ขนาดใหญ่ไม่ต้องลากกระเป๋า"],
+    facts:["รถบัส Chuo Bus สาย 100 จากป้ายหน้าห้าง Tokyu (ทางออกตะวันออกสถานีซัปโปโร ป้าย 1) ออกทุกชั่วโมงตรง 9:00–14:00 ใช้เวลาราว 50 นาที ¥500","ขากลับ: ออกจากทางเข้าทิศเหนือทุกชั่วโมงตรง 12:00–18:00","ยังไม่ยืนยันว่ามีร้าน On ที่เอาต์เล็ต (รองเท้า On ในเมืองมีที่ Daimaru และ atmos Stellar Place)","ข้อมูลรถบัสจากบทความ พ.ค. 2026 เช็คตารางล่าสุดก่อนไป"]},
   odori:{k:"สวน",t:"สวนโอโดริ และ TV Tower",x:"แนวกันไฟยาวราว 1.5 กม. ที่กลายเป็นหัวใจของเมือง",
     body:["สวนโอโดริเดิมเป็นแนวกันไฟที่แบ่งเมืองเหนือ-ใต้ ทุกวันนี้เป็นที่จัดงานเทศกาลหิมะช่วงกุมภาพันธ์ ฤดูใบไม้ร่วงมีต้นไม้เปลี่ยนสีตลอดแนว","TV Tower ที่ปลายสวนสร้างปี 1957 มีจุดชมวิวด้านบน"],
     facts:["Donguri สาขาโอโดริอยู่ใกล้ TV Tower เปิด 10:00"]},
@@ -533,6 +547,7 @@ const CAT = {
   9:{n:"ซีฟู้ดรวม",e:"🐟"},0:{n:"อาหารเช้า",e:"☕"}
 };
 const FOOD = [
+ [73,1,"Asian Bar Ramai (Sapporo Chuo)","ซัปโปโร (Minami 4 Nishi 10)",43.0546,141.3428,null,1,"ซุปแกงกะหรี่สไตล์บาหลี · Chicken ¥1,680 · เปิดถึง 23:00"],
  [1,1,"Suage+","ซัปโปโร (Susukino)",43.0557,141.3513,"ChIJv0HGVIQpC18Rc2m8zsIZwJE",0,"ซุปแกงกะหรี่ร้านดัง ผักย่างหวาน"],
  [2,1,"Garaku","ซัปโปโร (Odori)",43.0584,141.3589,"ChIJQ21rhoMpC18RmzhfndITzug",0,"เปิดสองรอบ 11:30–15:00, 17:00–20:30 คิวก่อนเปิด"],
  [3,1,"Rojiura Curry Samurai","ซัปโปโร (APIA ใต้สถานี)",43.0670,141.3493,"ChIJ95HrKowpC18RYNUV06Os-7Y",0,"ผัก 20 ชนิดในชามเดียว"],
@@ -607,7 +622,7 @@ const FOOD = [
  [72,9,"Sengyo Shokudo","โทยะ",42.5650,140.8175,null,1,""]
 ];
 // ร้านที่ปักไว้ในทริป
-const INPLAN = {37:"18 ต.ค. มื้อเที่ยง",12:"18 ต.ค. มื้อเย็น (ตัวเลือก)",45:"19 ต.ค. มื้อเที่ยง",23:"19 ต.ค. ตัวเลือก",39:"20 ต.ค. มื้อเช้ามื้อที่สอง",40:"20 ต.ค. มื้อเที่ยง (ตัวเลือก)",33:"21 ต.ค. มื้อเที่ยง",17:"21 ต.ค. มื้อเย็น (ตัวเลือก)",1:"21 ต.ค. มื้อเย็น (ตัวเลือก)",9:"22 ต.ค. มื้อเที่ยง",66:"23 ต.ค. มื้อเช้า (ตัวเลือก)",18:"23 ต.ค. มื้อเย็น (ตัวเลือก)",27:"24 ต.ค. สนามบิน",4:"24 ต.ค. สนามบิน",20:"24 ต.ค. สนามบิน"};
+const INPLAN = {73:"22 ต.ค. มื้อเย็น",37:"18 ต.ค. มื้อเที่ยง",12:"18 ต.ค. มื้อเย็น (ตัวเลือก)",45:"19 ต.ค. มื้อเที่ยง",23:"19 ต.ค. ตัวเลือก",39:"20 ต.ค. มื้อเช้ามื้อที่สอง",40:"20 ต.ค. มื้อเที่ยง (ตัวเลือก)",33:"21 ต.ค. มื้อเที่ยง",17:"21 ต.ค. มื้อเย็น (ตัวเลือก)",1:"21 ต.ค. มื้อเย็น (ตัวเลือก)",9:"22 ต.ค. มื้อเที่ยง",66:"23 ต.ค. มื้อเช้า (ตัวเลือก)",18:"23 ต.ค. มื้อเย็น (ตัวเลือก)",27:"24 ต.ค. สนามบิน",4:"24 ต.ค. สนามบิน",20:"24 ต.ค. สนามบิน"};
 // ร้านอาหารเช้า (นอกลิสต์)
 const BREAKFAST = [
   ["b1","Marutoma Shokudo","โทมาโคไม",42.6294,141.6169,"ChIJnxyjauwQdV8RR5-TmWAJEDg","19 ต.ค. (ทางเลือก) · 05:00–14:00 ปิดอาทิตย์ · แกงกะหรี่หอยฮกกิ"],
@@ -699,26 +714,28 @@ const DAYS = [
    {t:"17:00",e:"17:45",k:"stop",p:"station",lim:"18:00",n:"คืนรถเช่า (ไม่เกิน 18:30)",x:"เติมน้ำมันเต็มถังใกล้สาขา เคลียร์ ETC · เผื่อเวลารถติดช่วงเย็น 45 นาที",tag:"chg"},
    {t:"18:30",e:"20:00",k:"meal",p:"susukino",n:"มื้อเย็น Susukino",x:"Daruma (เปิด 17:00 คิวยาว) / Suage+ / Shingen",food:17}
   ]},
- {n:5,date:"2026-10-22",dow:"พฤ",title:"ซัปโปโร: ม.ฮอกไกโด · ช้อปปิ้ง · วิวกลางคืน",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
+ {n:5,date:"2026-10-22",dow:"พฤ",title:"ซัปโปโร: ม.ฮอกไกโด · ช้อปปิ้ง · Ramai · วิวกลางคืน",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
   route:[[43.0704,141.3489],[43.0756,141.346],[43.0704,141.3489],[43.0681,141.3518],[43.0676,141.3493],[43.0611,141.3564],[43.0554,141.353],[43.045,141.335],[43.0384,141.3224]],
   items:[
    {t:"07:45",e:"08:45",k:"bf",p:"mystays",n:"บุฟเฟต์ MyStays (ชั้น 2)",x:"06:30–10:00 · ¥2,420 · อิคุระ ปลาย่าง เจงกิสข่าน",tag:"chg"},
-   {t:"09:00",e:"10:45",k:"stop",p:"ginkgo",n:"ถนนแปะก๊วย ม.ฮอกไกโด",x:"เดินจากโรงแรม 15–20 นาที"},
-   {t:"11:15",e:"12:45",k:"meal",p:"stellar",n:"มื้อเที่ยง Stellar Place",x:"Tokachi Butadon Ippin ชั้น 6",food:9},
-   {t:"12:45",e:"17:00",k:"stop",p:"daimaru",n:"ช้อปปิ้ง Daimaru / BIC Camera",x:"ดูนาฬิกาที่ Daimaru · ชั้นใต้ดินเป็นฟู้ดฮอลล์"},
-   {t:"18:00",e:"19:15",k:"meal",p:"susukino",n:"มื้อเย็นย่าน Odori/Susukino",x:"ทานก่อนขึ้นโมอิวะ"},
-   {t:"19:30",e:"21:15",k:"night",p:"moiwa",n:"วิวกลางคืน Mt. Moiwa",x:"รถรางลงป้าย Ropeway Iriguchi · ไป-กลับ ¥2,100",tag:"new"}
+   {t:"09:00",e:"10:30",k:"stop",p:"ginkgo",n:"ถนนแปะก๊วย ม.ฮอกไกโด",x:"เดินจากโรงแรม 15–20 นาที · ปีนี้คาดว่าเหลืองเต็มที่ราว 28 ต.ค. วันนี้อาจยังเหลืองไม่หมด"},
+   {t:"11:00",e:"12:00",k:"meal",p:"stellar",n:"มื้อเที่ยง Stellar Place + รองเท้า On",x:"Tokachi Butadon Ippin ชั้น 6 · ร้าน atmos ในห้างมีรองเท้า On",tag:"chg"},
+   {t:"12:00",e:"16:45",k:"stop",p:"daimaru",n:"ช้อปปิ้ง Daimaru / BIC Camera · รองเท้า On",x:"รองเท้า On ที่ Daimaru: ชั้น 2 (ผู้หญิง) ชั้น 6 (ผู้ชาย) · ดูนาฬิกา · ฟู้ดฮอลล์ชั้นใต้ดิน",tag:"chg"},
+   {t:"17:30",e:"18:45",k:"meal",p:"ramai",n:"มื้อเย็น Asian Bar Ramai (สาขา Sapporo Chuo)",x:"ซุปแกงกะหรี่ เมนูแนะนำ Chicken · เปิดถึง 23:00 · เดินจาก Susukino ราว 15 นาที",food:73,tag:"new"},
+   {t:"19:15",e:"21:00",k:"night",p:"moiwa",n:"วิวกลางคืน Mt. Moiwa",x:"แท็กซี่จากร้านราว 10 นาที หรือรถรางลงป้าย Ropeway Iriguchi · ไป-กลับ ¥2,100"}
   ]},
- {n:6,date:"2026-10-23",dow:"ศ",title:"ซัปโปโร: สวนสาธารณะ · ทานุกิโคจิ",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
-  route:[[43.0704,141.3489],[43.0606,141.352],[43.0440,141.354],[43.0611,141.3564],[43.0626,141.3535],[43.0604,141.3556],[43.0577,141.353],[43.0704,141.3489]],
+ {n:6,date:"2026-10-23",dow:"ศ",title:"ซัปโปโร: เอาต์เล็ต · Sapporo Factory · ทานุกิโคจิ",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
+  route:[[43.0626,141.3535],[43.0611,141.3564],[43.0681,141.3536],[43.04,141.42],[42.991,141.523],[43.04,141.42],[43.0681,141.3536],[43.0645,141.3627],[43.0577,141.3530]],
   items:[
-   {t:"08:00",e:"09:00",k:"bf",p:"komeda",n:"Komeda's Coffee (Odori Nishi 2)",x:"มอร์นิ่ง ขนมปังปิ้ง+ไข่ฟรี"},
-   {t:"07:30",e:"08:30",k:"opt",p:"ooiso",n:"ทางเลือก: Ooiso ตลาดนิโจ",x:"ชุดปลาย่างจาก ¥1,200 · เปิด 07:30",food:66},
-   {t:"09:30",e:"10:30",k:"stop",p:"nakajima",n:"สวนนากาจิมะ",x:"Hoheikan · ใบไม้ริมสระ"},
-   {t:"10:45",e:"12:00",k:"stop",p:"tvtower",n:"สวนโอโดริ + หอนาฬิกา",x:"TV Tower · Clock Tower ¥350"},
-   {t:"12:00",e:"13:00",k:"meal",p:"donguri",n:"มื้อเที่ยง Donguri (Odori)",x:"ขนมปังชิคุวะ · เปิด 10:00",tag:"chg"},
-   {t:"13:00",e:"17:00",k:"stop",p:"tanuki",n:"ถนนทานุกิโคจิ",x:"Don Quijote ร้านยา ของฝาก · tax-free ใช้พาสปอร์ต"},
-   {t:"17:30",e:"19:30",k:"meal",p:"beergarden",n:"มื้อเย็นส่งท้ายทริป",x:"สุกี้ยากี้/ชาบู หรือ Sapporo Beer Garden",food:18}
+   {t:"08:00",e:"08:50",k:"bf",p:"komeda",n:"Komeda's Coffee (Odori Nishi 2)",x:"มอร์นิ่ง ขนมปังปิ้ง+ไข่ฟรี"},
+   {t:"07:30",e:"08:30",k:"opt",p:"ooiso",n:"ทางเลือก: Ooiso ตลาดนิโจ",x:"ชุดปลาย่างจาก ¥1,200 · เปิด 07:30"},
+   {t:"08:50",e:"09:40",k:"stop",p:"tvtower",n:"สวนโอโดริ + หอนาฬิกา",x:"ถ่ายรูป TV Tower · หอนาฬิกาเปิด 08:45 ¥350",tag:"chg"},
+   {t:"10:00",k:"train",bus:true,from:"busstop",to:"outlet",min:50,x:"Chuo Bus สาย 100 จากป้ายหน้าห้าง Tokyu ทางออกตะวันออก (ป้าย 1) · ออกทุกชั่วโมงตรง · ¥500",tag:"new"},
+   {t:"10:50",e:"15:00",k:"stop",p:"outlet",n:"Mitsui Outlet Park Sapporo Kitahiroshima",x:"ลดภาษี 10% ใช้พาสปอร์ต · คูปองที่ Tourist Info ชั้น 1 · มื้อเที่ยงที่ฟู้ดคอร์ต · ยังไม่ยืนยันว่ามีร้าน On",lim:"15:00",tag:"new"},
+   {t:"15:00",k:"train",bus:true,from:"outlet",to:"busstop",min:50,x:"รถบัสกลับออกจากทางเข้าทิศเหนือทุกชั่วโมงตรง 12:00–18:00 · ¥500"},
+   {t:"16:00",e:"17:30",k:"stop",p:"sapfac",n:"Sapporo Factory",x:"เดินจากสถานีราว 15 นาที · ปล่องควันอิฐแดง โถงกระจก ร้านค้า",tag:"new"},
+   {t:"17:30",e:"19:30",k:"meal",p:"sapfac",n:"มื้อเย็นส่งท้ายทริป ที่ Sapporo Factory",x:"เบียร์ Kaitakushi สดจากโรงต้มในห้าง · หรือ Sapporo Beer Garden (เจงกิสข่าน) เดินต่ออีกราว 15 นาที",tag:"chg"},
+   {t:"20:00",e:"21:00",k:"stop",p:"tanuki",n:"ทานุกิโคจิ · Don Quijote",x:"ช้อปของฝาก/ร้านยาส่งท้าย · Don Quijote เปิดดึก · tax-free ใช้พาสปอร์ต",tag:"chg"}
   ]},
  {n:7,date:"2026-10-24",dow:"ส",title:"กลับไทย",hotel:null,hotelName:"—",
   route:[[43.0704,141.3489],[43.0687,141.3508],[43.039,141.471],[42.98,141.56],[42.83,141.65],[42.7791,141.6866]],
@@ -891,6 +908,11 @@ const SPOTS = {
   {n:"สี่แยกซูซูกิโนะ (ป้ายนิกกะ)",jp:"すすきの交差点 ニッカ",x:"ป้ายไฟวิสกี้ Nikka ยักษ์ จุดถ่ายรูปกลางคืน"},
   {n:"ซอยราเมน",jp:"元祖さっぽろラーメン横丁",x:"ซอยแคบที่มีร้านราเมนเรียงกัน"}]
 };
+SPOTS.sapfac=[
+  {n:"ปล่องควันอิฐแดง (Entotsu Plaza)",jp:"サッポロファクトリー 煙突",x:"ปล่องควันของโรงเบียร์เดิม สัญลักษณ์ของที่นี่"},
+  {n:"โรงเบียร์ Kaitakushi",jp:"開拓使麦酒醸造所",x:"ร้านอาหารข้างหม้อต้มเบียร์ ดื่มเบียร์ Kaitakushi สด"},
+  {n:"ห้องโถงหลังคากระจก (Atrium)",jp:"サッポロファクトリー アトリウム",x:"โถงกลางห้างขนาดใหญ่ มีงานตกแต่งตามฤดูกาล"},
+  {n:"พิพิธภัณฑ์เบียร์ซัปโปโร",jp:"サッポロビール博物館",x:"อาคารอิฐแดง เข้าชมฟรี มีชุดชิมเบียร์ (เสียเงิน) เดินจากที่นี่ราว 15 นาที"}];
 SPOTS.oyunuma=SPOTS.jigoku;
 
 </script>
@@ -992,7 +1014,7 @@ function renderPlan(){
       const to=P[it.to][0];
       const sc=(it.sc||[]).map(s=>`<li><b>+${s.m} น.</b><span>${esc(s.t)}</span></li>`).join("");
       const roads=(it.rd||[]).map(roadBadge).join(" ");
-      h+=`<li class="${cls}${it.syn?" syn":""}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?"🚆 รถไฟ":"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}${wxChip(it.to,d.date,fmtMin(toMin(it.t)+(it.min||0)))}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc?`<ul class="scenic-mini">${sc}</ul>`:""}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}</div></div></li>`;
+      h+=`<li class="${cls}${it.syn?" syn":""}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?(it.bus?"🚌 รถบัส":"🚆 รถไฟ"):"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}${wxChip(it.to,d.date,fmtMin(toMin(it.t)+(it.min||0)))}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc?`<ul class="scenic-mini">${sc}</ul>`:""}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}</div></div></li>`;
       return;
     }
     const p=it.p?P[it.p]:null;
@@ -1334,6 +1356,7 @@ addEventListener("resize",()=>{ if(tour) renderTour(); });
 /* ---------- editable day plans: custom stops, reorder, recalculated times ---------- */
 const HKD_BBOX="139.3,41.3,146.0,45.6";
 let edits=store.get("edits",{});
+if(store.get("editsVer",1)<2){ delete edits[4]; delete edits[5]; store.set("edits",edits); store.set("editsVer",2); }
 let pickMode=null, draft=null, searchT=null, lastRes=[];
 function saveEdits(){ store.set("edits",edits); }
 function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.name||"",null]; }
