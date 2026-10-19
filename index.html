@@ -332,7 +332,8 @@ a{color:inherit}
 .ph-none svg,.ph.more svg{width:18px;height:18px;flex:none}
 .ph-none{font-size:12.5px;color:var(--muted);text-decoration:none;display:inline-flex;gap:4px;align-items:center}
 .lb{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
-.lb img{max-width:100%;max-height:78vh;border-radius:10px}
+.lb img{max-width:100%;max-height:72vh;border-radius:10px}
+.lb-x{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:20px;cursor:pointer}
 .lb-bar{display:flex;gap:8px;align-items:center;margin-top:12px;color:#ddd;flex-wrap:wrap;justify-content:center}
 .lb-bar .btn{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.35)}
 .spot-link{display:block;width:100%;text-align:left;margin:6px 0 2px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
@@ -627,7 +628,7 @@ const INPLAN = {73:"22 ต.ค. มื้อเย็น",37:"18 ต.ค. มื
 const BREAKFAST = [
   ["b1","Marutoma Shokudo","โทมาโคไม",42.6294,141.6169,"ChIJnxyjauwQdV8RR5-TmWAJEDg","19 ต.ค. (ทางเลือก) · 05:00–14:00 ปิดอาทิตย์ · แกงกะหรี่หอยฮกกิ"],
   ["b2","Lake Hill Farm","โทยะ",42.6155,140.7865,"ChIJt84zVDJWdV8RiDubucSznAM","20 ต.ค. · 09:00 · คาเฟ่ + เจลาโต้"],
-  ["b3","บุฟเฟต์ MyStays Aspen (ชั้น 2)","ซัปโปโร",43.0704,141.3489,"ChIJCfSgCQspC18RE7HvgD9w6fs","22 และ 24 ต.ค. · 06:30–10:00 · ¥2,420 (จากอีเมลจอง)"],
+  ["b3","บุฟเฟต์ MyStays Aspen (ชั้น 2)","ซัปโปโร",43.0704,141.3489,"ChIJCfSgCQspC18RE7HvgD9w6fs","ไม่รวมในห้องที่จอง · จ่ายเพิ่ม ¥2,420/คน · 06:30–10:00"],
   ["b4","Marcei Coffee","โอโดริ",43.0592,141.3555,null,"07:30 (จ–ส) · ชุดขนมปังปิ้ง ¥550"],
   ["b5","Sapporo Coffee Kan (Clock Tower)","หอนาฬิกา",43.0624,141.3537,null,"08:00 วันธรรมดา · มอร์นิ่งถึง 10:30"],
   ["b6","Komeda's Coffee (Odori Nishi 2)","โอโดริ",43.0606,141.3520,null,"23 ต.ค. · สั่งเครื่องดื่มได้ขนมปังปิ้งฟรี"],
@@ -714,15 +715,15 @@ const DAYS = [
    {t:"17:00",e:"17:45",k:"stop",p:"station",lim:"18:00",n:"คืนรถเช่า (ไม่เกิน 18:30)",x:"เติมน้ำมันเต็มถังใกล้สาขา เคลียร์ ETC · เผื่อเวลารถติดช่วงเย็น 45 นาที",tag:"chg"},
    {t:"18:30",e:"20:00",k:"meal",p:"susukino",n:"มื้อเย็น Susukino",x:"Daruma (เปิด 17:00 คิวยาว) / Suage+ / Shingen",food:17}
   ]},
- {n:5,date:"2026-10-22",dow:"พฤ",title:"ซัปโปโร: ม.ฮอกไกโด · ช้อปปิ้ง · Ramai · วิวกลางคืน",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
+ {n:5,date:"2026-10-22",dow:"พฤ",title:"ซัปโปโร: ม.ฮอกไกโด · ช้อปปิ้ง · Ramai",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
   route:[[43.0704,141.3489],[43.0756,141.346],[43.0704,141.3489],[43.0681,141.3518],[43.0676,141.3493],[43.0611,141.3564],[43.0554,141.353],[43.045,141.335],[43.0384,141.3224]],
   items:[
-   {t:"07:45",e:"08:45",k:"bf",p:"mystays",n:"บุฟเฟต์ MyStays (ชั้น 2)",x:"06:30–10:00 · ¥2,420 · อิคุระ ปลาย่าง เจงกิสข่าน",tag:"chg"},
+   {t:"07:45",e:"08:45",k:"bf",p:"station",n:"อาหารเช้าแถวสถานีซัปโปโร",x:"ห้องจองแบบไม่รวมอาหารเช้า · เลือกได้: ร้านกาแฟ/เบเกอรี่ในสถานีและ Stellar Place · ข้าวปั้น/แซนด์วิชร้านสะดวกซื้อ · หรือบุฟเฟต์โรงแรมจ่ายเพิ่ม ¥2,420/คน",tag:"chg"},
    {t:"09:00",e:"10:30",k:"stop",p:"ginkgo",n:"ถนนแปะก๊วย ม.ฮอกไกโด",x:"เดินจากโรงแรม 15–20 นาที · ปีนี้คาดว่าเหลืองเต็มที่ราว 28 ต.ค. วันนี้อาจยังเหลืองไม่หมด"},
    {t:"11:00",e:"12:00",k:"meal",p:"stellar",n:"มื้อเที่ยง Stellar Place + รองเท้า On",x:"Tokachi Butadon Ippin ชั้น 6 · ร้าน atmos ในห้างมีรองเท้า On",tag:"chg"},
    {t:"12:00",e:"16:45",k:"stop",p:"daimaru",n:"ช้อปปิ้ง Daimaru / BIC Camera · รองเท้า On",x:"รองเท้า On ที่ Daimaru: ชั้น 2 (ผู้หญิง) ชั้น 6 (ผู้ชาย) · ดูนาฬิกา · ฟู้ดฮอลล์ชั้นใต้ดิน",tag:"chg"},
-   {t:"17:30",e:"18:45",k:"meal",p:"ramai",n:"มื้อเย็น Asian Bar Ramai (สาขา Sapporo Chuo)",x:"ซุปแกงกะหรี่ เมนูแนะนำ Chicken · เปิดถึง 23:00 · เดินจาก Susukino ราว 15 นาที",food:73,tag:"new"},
-   {t:"19:15",e:"21:00",k:"night",p:"moiwa",n:"วิวกลางคืน Mt. Moiwa",x:"แท็กซี่จากร้านราว 10 นาที หรือรถรางลงป้าย Ropeway Iriguchi · ไป-กลับ ¥2,100"}
+   {t:"17:30",e:"18:45",k:"meal",p:"ramai",n:"มื้อเย็น Asian Bar Ramai (สาขา Sapporo Chuo)",x:"ซุปแกงกะหรี่ เมนูแนะนำ Chicken · เปิดถึง 23:00 · เดินจาก Susukino ราว 15 นาที · กินเสร็จเดินเล่น Susukino/Tanukikoji ได้",food:73,tag:"new"},
+   {t:"19:15",e:"20:30",k:"opt",p:"tvtower",n:"ทางเลือก: วิวกลางคืนจาก TV Tower",x:"หอคอยทีวีที่สวนโอโดริ เดินจากร้าน Ramai ราว 20 นาที · เช็คเวลาเปิดและค่าเข้าที่หน้างาน"}
   ]},
  {n:6,date:"2026-10-23",dow:"ศ",title:"ซัปโปโร: เอาต์เล็ต · Sapporo Factory · ทานุกิโคจิ",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
   route:[[43.0626,141.3535],[43.0611,141.3564],[43.0681,141.3536],[43.04,141.42],[42.991,141.523],[43.04,141.42],[43.0681,141.3536],[43.0645,141.3627],[43.0577,141.3530]],
@@ -740,7 +741,7 @@ const DAYS = [
  {n:7,date:"2026-10-24",dow:"ส",title:"กลับไทย",hotel:null,hotelName:"—",
   route:[[43.0704,141.3489],[43.0687,141.3508],[43.039,141.471],[42.98,141.56],[42.83,141.65],[42.7791,141.6866]],
   items:[
-   {t:"08:15",e:"08:45",k:"bf",p:"station",n:"Ekiben ที่สถานีซัปโปโร",x:"หรือบุฟเฟต์โรงแรม 06:30"},
+   {t:"08:15",e:"08:45",k:"bf",p:"station",n:"Ekiben ที่สถานีซัปโปโร",x:"ห้องไม่รวมอาหารเช้า · ซื้อ Ekiben/ขนมปังที่สถานีก่อนขึ้นรถไฟ (หรือบุฟเฟต์โรงแรมจ่ายเพิ่ม ¥2,420)"},
    {t:"08:50",k:"train",from:"station",to:"cts",min:40,x:"JR Rapid Airport ¥1,230 · uSeat +¥840"},
    {t:"09:30",e:"10:30",k:"stop",p:"cts",n:"เช็คอินสนามบิน",x:"ถึงก่อนเวลาบิน 2.5–3 ชม.",w:"ในแผนยังไม่มีเวลาเครื่องออก"},
    {t:"10:30",k:"meal",p:"cts",n:"ของกินและของฝากที่ CTS",x:"Ebisoba Ichigen · Soup Curry Lavi · Royce",food:27}
@@ -1032,11 +1033,14 @@ function renderPlan(){
 
 /* ---------- sheet ---------- */
 function openSheet(html){
+  if(!sheetHist){ sheetHist=true; try{ history.pushState({sheet:1},""); }catch(e){} }
   const r=$("#sheetRoot");
   r.innerHTML=`<div class="scrim" data-act="close"></div><div class="sheet wrap" role="dialog" aria-modal="true"><div class="grab"></div><button class="sheet-close" data-act="close" aria-label="ปิด">×</button>${html}</div>`; setTimeout(()=>hydratePhotos(r),30);
   const s=$(".sheet",r); s.focus&&s.setAttribute("tabindex","-1"); s.focus();
 }
-function closeSheet(){ $("#sheetRoot").innerHTML=""; }
+let sheetHist=false;
+function closeSheet(fromPop){ $("#sheetRoot").innerHTML=""; if(sheetHist){ sheetHist=false; if(fromPop!==true&&history.state&&history.state.sheet) history.back(); } }
+addEventListener("popstate",()=>{ if(lbOpen) return; if($("#sheetRoot").innerHTML) closeSheet(true); });
 function storyHtml(id){
   const s=S[id]; if(!s) return "";
   const pts=Object.entries(P).filter(([k,p])=>p[5]===id);
@@ -1356,7 +1360,7 @@ addEventListener("resize",()=>{ if(tour) renderTour(); });
 /* ---------- editable day plans: custom stops, reorder, recalculated times ---------- */
 const HKD_BBOX="139.3,41.3,146.0,45.6";
 let edits=store.get("edits",{});
-if(store.get("editsVer",1)<2){ delete edits[4]; delete edits[5]; store.set("edits",edits); store.set("editsVer",2); }
+if(store.get("editsVer",1)<3){ delete edits[4]; delete edits[5]; store.set("edits",edits); store.set("editsVer",3); }
 let pickMode=null, draft=null, searchT=null, lastRes=[];
 function saveEdits(){ store.set("edits",edits); }
 function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.name||"",null]; }
@@ -1541,12 +1545,20 @@ function hydratePhotos(root){
   if(!phObs) phObs=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ phObs.unobserve(e.target); go(e.target); } }),{rootMargin:"300px"});
   els.forEach(el=>phObs.observe(el));
 }
+let lbOpen=false;
+function closeLightbox(fromPop){ if(!lbOpen) return; lbOpen=false; $("#lbRoot").innerHTML=""; if(!fromPop&&history.state&&history.state.lb) history.back(); }
 function openLightbox(q,n,i){
   const list=photoCache[cleanQ(q)+"|"+n]; if(!list) return; let k=i;
-  const draw=()=>{ const p=list[k]; $("#lbRoot").innerHTML=`<div class="lb" data-lb="close"><img src="${esc(p.src)}" alt=""><div class="lb-bar"><button class="btn small" data-lb="prev" ${k===0?"disabled":""}>‹</button><span class="tiny">${k+1}/${list.length} · ${esc(p.by||"Wikimedia Commons")} ${esc(p.lic||"")}</span><a class="btn small" href="${esc(p.page)}" target="_blank" rel="noopener">ที่มา</a><button class="btn small" data-lb="next" ${k===list.length-1?"disabled":""}>›</button></div></div>`; };
+  if(!lbOpen){ lbOpen=true; try{ history.pushState({lb:1},""); }catch(e){} }
+  const draw=()=>{ const p=list[k]; $("#lbRoot").innerHTML=`<div class="lb" data-lb="close"><button class="lb-x" data-lb="close" aria-label="ปิด">✕</button><img src="${esc(p.src)}" alt="" data-lb="close"><div class="lb-bar"><button class="btn small" data-lb="prev" ${k===0?"disabled":""}>‹</button><span class="tiny">${k+1}/${list.length} · ${esc(p.by||"Wikimedia Commons")} ${esc(p.lic||"")}</span><a class="btn small" href="${esc(p.page)}" target="_blank" rel="noopener">ที่มา</a><button class="btn small" data-lb="next" ${k===list.length-1?"disabled":""}>›</button></div><div class="tiny" style="color:#bbb;margin-top:8px">แตะที่ว่างหรือ ✕ เพื่อปิด · ปัดซ้าย/ขวาเปลี่ยนรูป</div></div>`; };
   draw();
-  $("#lbRoot").onclick=ev=>{ const b=ev.target.closest("[data-lb]"); if(!b) return; const a=b.dataset.lb; if(a==="close"&&ev.target!==b) return; if(a==="next"&&k<list.length-1){k++;draw();} else if(a==="prev"&&k>0){k--;draw();} else if(a==="close") $("#lbRoot").innerHTML=""; };
+  const root=$("#lbRoot");
+  root.onclick=ev=>{ const b=ev.target.closest("[data-lb]"); if(!b) return; const a=b.dataset.lb; ev.stopPropagation();
+    if(a==="next"){ if(k<list.length-1){k++;draw();} } else if(a==="prev"){ if(k>0){k--;draw();} } else if(a==="close") closeLightbox(false); };
+  let sx=null; root.ontouchstart=e=>{ sx=e.touches[0].clientX; }; root.ontouchend=e=>{ if(sx==null) return; const dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>50){ if(dx<0&&k<list.length-1){k++;draw();} else if(dx>0&&k>0){k--;draw();} } };
 }
+addEventListener("popstate",()=>{ if(lbOpen) closeLightbox(true); });
+document.addEventListener("keydown",ev=>{ if(lbOpen&&ev.key==="Escape") closeLightbox(false); });
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-ph]"); if(!b) return; ev.stopPropagation(); const [q,n]=b.dataset.ph.split("|"); openLightbox(q,+n,+b.dataset.pi); },true);
 function spotsHtml(id){
   const sp=SPOTS[id]; if(!sp) return "";
