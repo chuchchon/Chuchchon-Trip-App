@@ -731,9 +731,9 @@ const DAYS = [
    {t:"08:00",e:"08:50",k:"bf",p:"komeda",n:"Komeda's Coffee (Odori Nishi 2)",x:"มอร์นิ่ง ขนมปังปิ้ง+ไข่ฟรี"},
    {t:"07:30",e:"08:30",k:"opt",p:"ooiso",n:"ทางเลือก: Ooiso ตลาดนิโจ",x:"ชุดปลาย่างจาก ¥1,200 · เปิด 07:30"},
    {t:"08:50",e:"09:40",k:"stop",p:"tvtower",n:"สวนโอโดริ + หอนาฬิกา",x:"ถ่ายรูป TV Tower · หอนาฬิกาเปิด 08:45 ¥350",tag:"chg"},
-   {t:"10:00",k:"train",bus:true,from:"busstop",to:"outlet",min:50,x:"Chuo Bus สาย 100 จากป้ายหน้าห้าง Tokyu ทางออกตะวันออก (ป้าย 1) · ออกทุกชั่วโมงตรง · ¥500",tag:"new"},
+   {t:"10:00",k:"train",bus:true,fix:true,from:"busstop",to:"outlet",min:50,x:"Chuo Bus สาย 100 จากป้ายหน้าห้าง Tokyu ทางออกตะวันออก (ป้าย 1) · ออกทุกชั่วโมงตรง · ¥500",tag:"new"},
    {t:"10:50",e:"15:00",k:"stop",p:"outlet",n:"Mitsui Outlet Park Sapporo Kitahiroshima",x:"ลดภาษี 10% ใช้พาสปอร์ต · คูปองที่ Tourist Info ชั้น 1 · มื้อเที่ยงที่ฟู้ดคอร์ต · ยังไม่ยืนยันว่ามีร้าน On",lim:"15:00",tag:"new"},
-   {t:"15:00",k:"train",bus:true,from:"outlet",to:"busstop",min:50,x:"รถบัสกลับออกจากทางเข้าทิศเหนือทุกชั่วโมงตรง 12:00–18:00 · ¥500"},
+   {t:"15:00",k:"train",bus:true,fix:true,from:"outlet",to:"busstop",min:50,x:"รถบัสกลับออกจากทางเข้าทิศเหนือทุกชั่วโมงตรง 12:00–18:00 · ¥500"},
    {t:"16:00",e:"17:30",k:"stop",p:"sapfac",n:"Sapporo Factory",x:"เดินจากสถานีราว 15 นาที · ปล่องควันอิฐแดง โถงกระจก ร้านค้า",tag:"new"},
    {t:"17:30",e:"19:30",k:"meal",p:"sapfac",n:"มื้อเย็นส่งท้ายทริป ที่ Sapporo Factory",x:"เบียร์ Kaitakushi สดจากโรงต้มในห้าง · หรือ Sapporo Beer Garden (เจงกิสข่าน) เดินต่ออีกราว 15 นาที",tag:"chg"},
    {t:"20:00",e:"21:00",k:"stop",p:"tanuki",n:"ทานุกิโคจิ · Don Quijote",x:"ช้อปของฝาก/ร้านยาส่งท้าย · Don Quijote เปิดดึก · tax-free ใช้พาสปอร์ต",tag:"chg"}
@@ -941,8 +941,9 @@ function todayIndex(){ const t=jst().date; return DAYS.findIndex(d=>d.date===t);
 const CITY = [["ซัปโปโร","Sapporo"],["นิโจ","Sapporo"],["Jogai","Sapporo"],["โอตารุ","Otaru"],["โทยะ","Toyako"],["นิเซโกะ","Niseko"],["Takahashi","Niseko"],["สนามบิน","New Chitose Airport"],["ชิราโออิ","Shiraoi"],["โนโบริเบ็ตสึ","Noboribetsu"],["ชิโตเสะ","Chitose"],["โทมาโคไม","Tomakomai"],["มักการิ","Makkari"],["คุจจัง","Kutchan"],["Yuni","Yuni"]];
 function cityOf(area){ for(const [k,v] of CITY) if(area.includes(k)) return v; return "Hokkaido"; }
 function latinName(n){ return n.replace(/\(([^)]*[฀-๿][^)]*)\)/g,"").replace(/[฀-๿]+/g,"").replace(/\s+/g," ").trim(); }
-function dirUrl({name,lat,lng,pid,q}){
-  let u="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=";
+let navMode="driving";
+function dirUrl({name,lat,lng,pid,q},mode){
+  let u="https://www.google.com/maps/dir/?api=1&travelmode="+(mode||navMode)+"&destination=";
   if(pid) u+=enc(q||name)+"&destination_place_id="+pid;
   else if(q) u+=enc(q);
   else u+=lat+","+lng;
@@ -952,6 +953,7 @@ const imgUrl = q => "https://www.google.com/search?tbm=isch&q="+enc(q);
 function pointTarget(pid){ const p=P[pid]; return {name:p[0],lat:p[1],lng:p[2],pid:p[3],q:p[6]||(p[3]?latinName(p[0])||p[4]:null)}; }
 function foodTarget(f){ return {name:f[2],lat:f[4],lng:f[5],pid:f[6],q:(latinName(f[2])||f[2])+" "+cityOf(f[3])}; }
 function dayRouteUrl(day){
+  if(DAYS.indexOf(day)>=CARFREE_DAY) return null;
   const pts=[]; let last=null;
   day.items.forEach(it=>{ if(!it.p||it.k==="opt"||it.k==="drive"||it.k==="train") return; if(it.p===last) return; last=it.p; pts.push(it.p); });
   if(pts.length<2) return null;
@@ -1001,13 +1003,16 @@ function renderPlan(){
   const hotel = d.hotel?P[d.hotel]:null;
   const ru=dayRouteUrl(d);
   let h=`<div class="day-head"><div class="day-num">D${d.n}</div><div><h2 class="day-title">${esc(d.title)}</h2><div class="day-meta">${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค. 2026${curDay===todayIndex()?" · วันนี้":""}</div></div></div>`;
+  navMode=curDay>=CARFREE_DAY?"transit":"driving";
   if(hotel) h+=`<div class="hotel-line"><span>🛏</span><span style="flex:1;min-width:0">คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="btn small" data-act="booking" data-id="${d.hotel}">${I.doc}ใบจอง</button>${aBtn(dirUrl(pointTarget(d.hotel)),"นำทาง",I.nav)}</div>`;
   h+=`<div class="row-actions">${ru?aBtn(ru,"เส้นทางทั้งวันใน Google Maps",I.nav,"go"):""}<button class="btn small" data-act="daymap">${I.map}ดูบนแผนที่</button><button class="btn small primary" data-act="addstop">＋ เพิ่มจุดแวะ / เลื่อนเวลา</button></div>`;
   h+=wxDayLine(curDay);
   if(edits[curDay]) h+=`<div class="note-box">วันนี้แก้แผนแล้ว เวลาคำนวณใหม่ (เวลาเดิมขีดฆ่าตัวเล็ก) <button class="linkbtn" data-act="cs-reset">รีเซ็ตกลับแผนเดิม</button></div>`;
   h+=`<ol class="tl">`;
+  let carGoneR=curDay>=CARFREE_DAY;
   planItems(curDay).forEach(it=>{
     const k=it._i;
+    navMode=carGoneR?(it.walk?"walking":"transit"):"driving";
     const cls=`ti k-${it.k}${k===nowK?" is-now":""}`;
     const tm=`<div class="tm">${esc(it.t)}${it.e?`<small>${esc(it.e)}</small>`:""}${it._sh?`<s class="t0">${esc(it._t0)}</s>`:""}</div><div class="dot"></div>`;
     if(it.k==="custom"){ h+=customHtml(it,cls,tm)+insRow(k); return; }
@@ -1015,7 +1020,7 @@ function renderPlan(){
       const to=P[it.to][0];
       const sc=(it.sc||[]).map(s=>`<li><b>+${s.m} น.</b><span>${esc(s.t)}</span></li>`).join("");
       const roads=(it.rd||[]).map(roadBadge).join(" ");
-      h+=`<li class="${cls}${it.syn?" syn":""}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?(it.bus?"🚌 รถบัส":"🚆 รถไฟ"):"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}${wxChip(it.to,d.date,fmtMin(toMin(it.t)+(it.min||0)))}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc?`<ul class="scenic-mini">${sc}</ul>`:""}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}</div></div></li>`;
+      h+=`<li class="${cls}${it.syn?" syn":""}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?(it.bus?"🚌 รถบัส":it.walk?"🚶 เดิน":it.transit?"🚇 รถไฟใต้ดิน/รถบัส":"🚆 รถไฟ"):"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}${wxChip(it.to,d.date,fmtMin(toMin(it.t)+(it.min||0)))}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc?`<ul class="scenic-mini">${sc}</ul>`:""}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}</div></div></li>`;
       return;
     }
     const p=it.p?P[it.p]:null;
@@ -1025,10 +1030,11 @@ function renderPlan(){
     const food=it.food?`<button class="btn small" data-act="food" data-id="${it.food}">★ ร้านในลิสต์</button>`:"";
     h+=`<li class="${cls}" data-key-row="${esc(k)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}${p?stripHtml(p[4]||p[0],5):""}${p&&p[5]&&SPOTS[p[5]]?`<button class="spot-link" data-act="story" data-id="${p[5]}">📍 จุดที่ต้องชม ${SPOTS[p[5]].length} จุด ›</button>`:""}${it._clash?`<p class="c-warn">⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว</p>`:""}${it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`<p class="c-warn">⚠ เวลาใหม่เลย ${esc(it.lim)} แล้ว (${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"})</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
     if(it.k!=="opt") h+=insRow(k);
+    if(curDay===3&&it.p==="station"&&it.k==="stop") carGoneR=true;
   });
   h+=`</ol>`;
   if(curDay===2) h+=`<div class="note-box">วันนี้ขับขึ้นเขาสูง ถ้าเช้ามีน้ำแข็งบนถนน ขับช้าและเว้นระยะ · พระอาทิตย์ตกราว 16:50 ควรถึงโจซังเคก่อนมืด</div>`;
-  el.innerHTML=h; hydratePhotos(el);
+  navMode="driving"; el.innerHTML=h; hydratePhotos(el);
 }
 
 /* ---------- sheet ---------- */
@@ -1101,8 +1107,10 @@ function restyleMap(){
   drawMap(false);
 }
 function stopPopup(it,day){
+  const _nm=navMode; navMode=DAYS.indexOf(day)>=CARFREE_DAY?"transit":"driving";
   const p=P[it.p];
-  return `<div class="pp-k">D${day.n} · ${esc(it.t)} · ${esc(KIND[it.k]||"")}</div><div class="pp-n">${esc(it.n)}</div><div class="muted">${esc(it.x||"")}</div><div class="pp-a">${aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav)}${aBtn(imgUrl(p[4]),"รูป",I.img)}${p[5]?`<button class="btn small" data-act="story" data-id="${p[5]}">${I.book}อ่าน</button>`:""}</div>`;
+  const _h=`<div class="pp-k">D${day.n} · ${esc(it.t)} · ${esc(KIND[it.k]||"")}</div><div class="pp-n">${esc(it.n)}</div><div class="muted">${esc(it.x||"")}</div><div class="pp-a">${aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav)}${aBtn(imgUrl(p[4]),"รูป",I.img)}${p[5]?`<button class="btn small" data-act="story" data-id="${p[5]}">${I.book}อ่าน</button>`:""}</div>`;
+  navMode=_nm; return _h;
 }
 function storyPopup(id){ const s=S[id]; return `<div class="pp-k">${esc(s.k)}</div><div class="pp-n">${esc(s.t)}</div><div class="muted">${esc(s.x)}</div><div class="pp-a"><button class="btn small" data-act="story" data-id="${id}">${I.book}อ่านต่อ</button></div>`; }
 function drawMap(fit){
@@ -1366,8 +1374,7 @@ function saveEdits(){ store.set("edits",edits); }
 function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.name||"",null]; }
 Object.values(edits).forEach(ed=>(ed.list||[]).forEach(regCustom));
 function origDur(it){ if(it.k==="train") return it.min||0; if(it.e) return Math.max(0,toMin(it.e)-toMin(it.t)); return it.k==="hotel"?20:30; }
-function materialize(di){
-  if(edits[di]) return edits[di];
+function buildEd(di){
   const its=DAYS[di].items; let prevEnd=null; const list=[];
   its.forEach((it,k)=>{
     const s=toMin(it.t);
@@ -1376,19 +1383,28 @@ function materialize(di){
     list.push({key:"b"+k,kind:"base",src:k,pre});
     if(it.k!=="opt") prevEnd=s+origDur(it);
   });
-  const first=its.find(it=>it.k!=="opt"); edits[di]={start:first?first.t:"08:00",list}; saveEdits(); return edits[di];
+  const first=its.find(it=>it.k!=="opt"); return {start:first?first.t:"08:00",list};
 }
+function materialize(di){ if(edits[di]) return edits[di]; edits[di]=buildEd(di); saveEdits(); return edits[di]; }
 /* migrate stops saved by the previous version */
 (()=>{ const old=store.get("customs",null); if(!old||!old.length) return;
   old.forEach(c=>{ const ed=materialize(c.day); const n={key:"cs_"+c.id,kind:"custom",name:c.name,lat:c.lat,lng:c.lng,note:c.note,dur:c.dur||0,at:c.t,pre:0}; regCustom(n);
     const items=planItems(c.day); const after=items.filter(x=>x.k!=="drive"&&toMin(x.t)<=toMin(c.t)).pop(); const i=after?ed.list.findIndex(x=>x.key===after._i):-1; ed.list.splice(i+1,0,n); });
   saveEdits(); store.set("customs",[]); })();
 function findDrive(di,a,b){ const its=DAYS[di].items; for(let k=0;k<its.length;k++){ const it=its[k]; if(it.k==="drive"&&it.from===a&&it.to===b) return Object.assign({},it,{_i:"d"+k}); } return null; }
+const CARFREE_DAY=4; /* D5 onward: no car (returned D4 ~17:00) */
+function carFreeAt(di,node){ if(di>=CARFREE_DAY) return true; return false; }
+function footLeg(prev,next,_i){
+  const k=km([P[prev][1],P[prev][2]],[P[next][1],P[next][2]]);
+  if(k<=1.6) return {k:"train",walk:true,from:prev,to:next,min:Math.max(5,Math.round(k*1.25/4.5*60/5)*5),x:"เดินราว "+(k*1.25).toFixed(1)+" กม. (โดยประมาณ)",syn:true,_i};
+  return {k:"train",transit:true,from:prev,to:next,min:Math.max(10,Math.round((k*1.3/22*60+10)/5)*5),x:"รถไฟใต้ดิน/รถราง/รถบัส หรือแท็กซี่ · เวลาโดยประมาณ เช็คเส้นทางจริงในปุ่มนำทาง",syn:true,_i};
+}
 function roadMin(a,b){ const d=km(a,b)*1.3; const v=d>25?60:d>8?45:30; return Math.max(5,Math.round(d/v*60/5)*5); }
 function planItems(di){
-  const d=DAYS[di], ed=edits[di];
+  const d=DAYS[di], ed=edits[di]||(di>=CARFREE_DAY?buildEd(di):null);
   if(!ed) return d.items.map((it,k)=>Object.assign({},it,{_i:(it.k==="drive"?"d":"b")+k,_t0:it.t,_sh:0}));
-  const out=[]; let cur=toMin(ed.start), prevLoc=null;
+  const out=[]; let cur=toMin(ed.start), prevLoc=null, carGone=di>=CARFREE_DAY;
+  let legStart=null;
   ed.list.forEach((n,idx)=>{
     let node;
     if(n.kind==="base"){ const it=d.items[n.src]; if(!it) return; node=Object.assign({},it,{_i:n.key,_n:n,_t0:it.t,_e0:it.e}); if(n.promote&&node.k==="opt") node.k="stop"; }
@@ -1396,17 +1412,19 @@ function planItems(di){
     if(node.k==="opt"){ out.push(node); return; }
     const startLoc=node.k==="train"?node.from:node.p;
     if(startLoc&&prevLoc&&startLoc!==prevLoc&&P[startLoc]&&P[prevLoc]){
-      let dv=findDrive(di,prevLoc,startLoc);
+      let dv=carGone?null:findDrive(di,prevLoc,startLoc);
+      if(!dv&&carGone) dv=footLeg(prevLoc,startLoc,"s"+prevLoc+">"+startLoc);
       if(!dv){ const m=roadMin([P[prevLoc][1],P[prevLoc][2]],[P[startLoc][1],P[startLoc][2]]); dv={k:"drive",from:prevLoc,to:startLoc,min:m,rd:[],sc:[],syn:true,x:"เวลาขับโดยประมาณจากระยะทาง",_i:"s"+prevLoc+">"+startLoc}; }
-      dv.t=fmtMin(cur); dv._t0=null; out.push(dv); cur+=dv.min;
+      dv.t=fmtMin(cur); dv._t0=null; out.push(dv); if(dv.walk||dv.transit) legStart=cur; cur+=dv.min;
     }
     const dur=n.dur!=null?n.dur:origDur(node);
-    let t=cur+(n.pre||0);
+    let t=legStart!=null?Math.max(cur,legStart+(n.pre||0)):cur+(n.pre||0); legStart=null;
     if(node.k==="night"||node.fix){ const ft=toMin(node._t0); if(cur>ft) node._clash=true; t=ft; }
     else if(n.at){ const a=toMin(n.at); if(t>a) node._late=true; t=Math.max(t,a); }
     node.t=fmtMin(t); node.e=dur?fmtMin(t+dur):null; node._sh=node._t0?t-toMin(node._t0):0;
     out.push(node); cur=t+dur;
     const endLoc=node.k==="train"?node.to:node.p; if(endLoc) prevLoc=endLoc;
+    if(di===3&&node.p==="station"&&node.k==="stop") carGone=true;
   });
   return out;
 }
