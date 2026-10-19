@@ -297,7 +297,7 @@ a{color:inherit}
 .drinks{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
 .drink{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden}
 .dk-img{background:color-mix(in srgb,var(--dk) 16%,var(--surface));display:grid;place-items:center;min-height:140px;border-right:3px solid var(--dk)}
-.dk-img img{width:100%;height:100%;object-fit:cover;display:block}
+.dk-img img{width:100%;height:100%;object-fit:contain;display:block;background:#fff}
 .dk-emo{font-size:44px}
 .dk-body{padding:10px 12px 10px 0}
 .dk-body h3{margin:2px 0 0;font-family:var(--font-display);font-size:18px}
@@ -800,15 +800,15 @@ const CHECKS = [
 
 const DRINKS = {
  beer:[
-  {n:"Sapporo Classic",jp:"サッポロクラシック",from:"Sapporo Breweries · ขายเฉพาะในฮอกไกโด (ตั้งแต่ปี 1985)",x:"เบียร์ลาเกอร์มอลต์ 100% รสสะอาด ดื่มง่าย คนฮอกไกโดถือเป็นเบียร์ประจำบ้าน นอกฮอกไกโดหาซื้อยาก",buy:"ร้านสะดวกซื้อ Seicomart / Lawson / ซูเปอร์ทุกที่ · สนามบินชิโตเสะ",wiki:"サッポロクラシック",e:"🍺",c:"#1F4E79",must:true},
-  {n:"Sapporo Kaitakushi Beer",jp:"開拓使麦酒仕立て",from:"Sapporo Beer · สูตรจำลองเบียร์ยุคบุกเบิก (Kaitakushi) ปี 1876",x:"สูตรที่จำลองเบียร์แรกของซัปโปโร รสเข้มกว่า Classic หน่อย ดื่มสดได้ที่โรงเบียร์ในย่าน Sapporo Factory",buy:"Sapporo Factory · พิพิธภัณฑ์เบียร์ซัปโปโร (Sapporo Beer Museum)",wiki:"サッポロビール博物館",e:"🍺",c:"#7A4B1E"},
-  {n:"Otaru Beer",jp:"小樽ビール",from:"Otaru Beer · โรงเบียร์ข้างคลองโอตารุ",x:"ต้มตามกฎความบริสุทธิ์ของเยอรมัน มี Pilsner, Dunkel, Weiss ดื่มสดที่ร้านในโกดังเก่า Otaru Soko No.1 ริมคลอง",buy:"ร้าน Otaru Soko No.1 (ริมคลองโอตารุ) · ร้านของฝากในโอตารุ",img:"https://commons.wikimedia.org/wiki/Special:FilePath/Otaru_Beer_Brewery_02.jpg?width=480",wiki:"小樽ビール",e:"🍺",c:"#2E6B4F",day:"D4 โอตารุ"},
+  {n:"Sapporo Classic",jp:"サッポロクラシック",from:"Sapporo Breweries · ขายเฉพาะในฮอกไกโด (ตั้งแต่ปี 1985)",x:"เบียร์ลาเกอร์มอลต์ 100% รสสะอาด ดื่มง่าย คนฮอกไกโดถือเป็นเบียร์ประจำบ้าน นอกฮอกไกโดหาซื้อยาก",buy:"ร้านสะดวกซื้อ Seicomart / Lawson / ซูเปอร์ทุกที่ · สนามบินชิโตเสะ",imgs:["https://images.openfoodfacts.org/images/products/490/188/019/1313/front_ja.3.400.jpg","https://images.openfoodfacts.org/images/products/490/188/019/1313/front_ja.3.full.jpg"],wiki:"サッポロクラシック",e:"🍺",c:"#1F4E79",must:true},
+  {n:"Sapporo Kaitakushi Beer",jp:"開拓使麦酒仕立て",from:"Sapporo Beer · สูตรจำลองเบียร์ยุคบุกเบิก (Kaitakushi) ปี 1876",x:"สูตรที่จำลองเบียร์แรกของซัปโปโร รสเข้มกว่า Classic หน่อย ดื่มสดได้ที่โรงเบียร์ในย่าน Sapporo Factory",buy:"Sapporo Factory · พิพิธภัณฑ์เบียร์ซัปโปโร (Sapporo Beer Museum)",imgs:["https://getnavi.jp/wp-content/uploads/2021/01/210121_sapporo_01_DSC_6113.jpg"],wiki:"サッポロビール博物館",e:"🍺",c:"#7A4B1E"},
+  {n:"Otaru Beer",jp:"小樽ビール",from:"Otaru Beer · โรงเบียร์ข้างคลองโอตารุ",x:"ต้มตามกฎความบริสุทธิ์ของเยอรมัน มี Pilsner, Dunkel, Weiss ดื่มสดที่ร้านในโกดังเก่า Otaru Soko No.1 ริมคลอง",buy:"ร้าน Otaru Soko No.1 (ริมคลองโอตารุ) · ร้านของฝากในโอตารุ",imgs:["https://item-shopping.c.yimg.jp/i/n/hokkaido-shinhakken_otarubeer008","https://item-shopping.c.yimg.jp/i/n/hokkaido-shinhakken_otarubeer008_1","https://commons.wikimedia.org/wiki/Special:FilePath/Otaru_Beer_Brewery_02.jpg?width=480"],wiki:"小樽ビール",e:"🍺",c:"#2E6B4F",day:"D4 โอตารุ"},
   {n:"Oni Densetsu (เบียร์โนโบริเบ็ตสึ)",jp:"鬼伝説 (登別地ビール)",from:"Noboribetsu Jibeer · ต้มที่เมือง Noboribetsu Onsen",x:"ฉลากเป็นยักษ์ (Oni) สีต่างๆ ตามรสชาติ เข้าธีมหุบเขานรก Jigokudani เป็นของฝากยอดนิยมของโนโบริเบ็ตสึ",buy:"ร้านของฝากในเมือง Noboribetsu Onsen · ร้านเบียร์ข้างทางขึ้น Jigokudani",wiki:"登別地ビール",e:"👹",c:"#B03A2E",day:"D2 โนโบริเบ็ตสึ"},
-  {n:"Abashiri Beer · Ryuhyo Draft",jp:"網走ビール 流氷ドラフト",from:"Abashiri Beer · เมืองอาบาชิริ ทางตะวันออกเฉียงเหนือ",x:"เบียร์สีฟ้าใส ทำจากน้ำแข็งทะเล (流氷) ของทะเลโอค็อตสค์ ถ่ายรูปสวย รสอ่อน",buy:"สนามบินชิโตเสะ · ร้านของฝากใหญ่ในซัปโปโร",wiki:"網走ビール",e:"🧊",c:"#2A8AC9"},
+  {n:"Abashiri Beer · Ryuhyo Draft",jp:"網走ビール 流氷ドラフト",from:"Abashiri Beer · เมืองอาบาชิริ ทางตะวันออกเฉียงเหนือ",x:"เบียร์สีฟ้าใส ทำจากน้ำแข็งทะเล (流氷) ของทะเลโอค็อตสค์ ถ่ายรูปสวย รสอ่อน",buy:"สนามบินชิโตเสะ · ร้านของฝากใหญ่ในซัปโปโร",imgs:["https://cf.furunavi.jp/Api/ProductImages/v1?ProductId=93678&DisplayOrder=1","https://www.mistore.jp/on/demandware.static/-/Sites-eGift-Library/ja_JP/dw0cc5f359/default/images/04_01.jpg"],wiki:"網走ビール",e:"🧊",c:"#2A8AC9"},
   {n:"Hakodate Beer",jp:"はこだてビール",from:"Hakodate Beer · เมืองฮาโกดาเตะ",x:"คราฟต์เบียร์รุ่นแรกๆ ของฮอกไกโด หลายสไตล์ ทั้งเอลและไวเซน",buy:"สนามบินชิโตเสะ · ร้านของฝากฮอกไกโด",wiki:"はこだてビール",e:"🍺",c:"#8E5B2C"}
  ],
  milk:[
-  {n:"Yotsuba Milk",jp:"よつ葉牛乳",from:"Yotsuba Milk Products · สหกรณ์โคนมเขตโทคาจิ",x:"แบรนด์นมที่ก่อตั้งโดยเกษตรกรโคนมฮอกไกโด รสหวานมัน ไม่ใส่สารปรุงแต่ง ลองเนยและโยเกิร์ตของแบรนด์นี้ด้วย",buy:"ซูเปอร์ / ร้านสะดวกซื้อทั่วฮอกไกโด",wiki:"よつ葉乳業",e:"🥛",c:"#3C8D3F",must:true},
+  {n:"Yotsuba Milk",jp:"よつ葉牛乳",from:"Yotsuba Milk Products · สหกรณ์โคนมเขตโทคาจิ",x:"แบรนด์นมที่ก่อตั้งโดยเกษตรกรโคนมฮอกไกโด รสหวานมัน ลองโยเกิร์ตดื่ม \"Hokkaido Nomu Yogurt\" และเนยของแบรนด์นี้ด้วย",buy:"ซูเปอร์ / ร้านสะดวกซื้อทั่วฮอกไกโด",imgs:["https://greenbeans.com/images-v3/89edeb69-fe10-49ca-baab-5c51900239b9/e264868c-61d4-4d44-afad-72c6043db44e/500x500.jpg","https://greenbeans.com/images-v3/89edeb69-fe10-49ca-baab-5c51900239b9/d04e77e7-fe83-405b-9bc9-d2109c5f97e2/500x500.jpg","https://images.openfoodfacts.org/images/products/490/801/313/7279/front_ja.3.400.jpg"],wiki:"よつ葉乳業",e:"🥛",c:"#3C8D3F",must:true},
   {n:"Takahashi Dairy Farm · Milk Kobo",jp:"ニセコ高橋牧場 ミルク工房",from:"ฟาร์มที่นิเซโกะ ตีนภูเขาโยเท",x:"นมสดจากฟาร์ม ชีสเค้ก ชูครีม และ \"นมดื่มโยเกิร์ต\" ขึ้นชื่อมาก",buy:"ร้านที่ฟาร์ม (แวะมื้อเที่ยงตามแผน)",wiki:"ニセコ高橋牧場",e:"🐄",c:"#6B8E23",day:"D3 นิเซโกะ"},
   {n:"Lake Hill Farm",jp:"レークヒルファーム",from:"ฟาร์มโคนมริมทะเลสาบโทยะ",x:"เจลาโต้และพุดดิ้งทำจากนมของฟาร์มเอง วิวภูเขาโยเท",buy:"ร้านที่ฟาร์ม (มื้อเช้ามื้อที่สองตามแผน)",wiki:"レークヒルファーム",e:"🍦",c:"#C27C2C",day:"D3 โทยะ"},
   {n:"Machimura Farm",jp:"町村農場",from:"ฟาร์มเก่าแก่ของซัปโปโร (ปัจจุบันอยู่เอเบ็ตสึ)",x:"หนึ่งในฟาร์มโคนมยุคบุกเบิกของฮอกไกโด ซอฟต์ครีมและนมขวดแก้วขึ้นชื่อ",buy:"ฟู้ดฮอลล์/ห้างในซัปโปโร (ถามที่ชั้นใต้ดิน)",wiki:"町村農場",e:"🥛",c:"#2C5F8A"},
@@ -1564,16 +1564,23 @@ async function loadWikiImg(title){
   try{ const r=await fetch(`https://ja.wikipedia.org/api/rest_v1/page/summary/${enc(title)}`); const j=r.ok?await r.json():{}; wikiImg[title]=(j.thumbnail&&j.thumbnail.source)||(j.originalimage&&j.originalimage.source)||""; }catch(e){ return ""; }
   store.set("wikiImg",wikiImg); return wikiImg[title];
 }
+async function offImg(q){
+  const k="off:"+q; if(k in wikiImg) return wikiImg[k];
+  try{ const r=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${enc(q)}&search_simple=1&action=process&json=1&page_size=3&fields=product_name,image_front_small_url,image_front_url`); const j=await r.json(); const p=(j.products||[]).find(x=>x.image_front_url||x.image_front_small_url); wikiImg[k]=p?(p.image_front_url||p.image_front_small_url):""; store.set("wikiImg",wikiImg); return wikiImg[k]; }catch(e){ return ""; }
+}
 function renderDrinks(){
   const list=DRINKS[drinkCat];
   let h=`<h2 class="sec-h">เครื่องดื่มเฉพาะฮอกไกโด</h2><div class="chips" style="margin-bottom:12px"><button class="chip" aria-pressed="${drinkCat==="beer"}" data-dcat="beer">🍺 เบียร์</button><button class="chip" aria-pressed="${drinkCat==="milk"}" data-dcat="milk">🥛 นม & ฟาร์ม</button></div>`;
-  h+=`<div class="drinks">`+list.map((d,i)=>`<article class="drink" style="--dk:${d.c}"><div class="dk-img" data-wiki="${esc(d.wiki||"")}" data-img="${esc(d.img||"")}"><span class="dk-emo">${d.e}</span></div><div class="dk-body"><div class="c-top">${d.must?'<span class="pill new">ต้องลอง</span>':""}${d.day?`<span class="pill opt">${esc(d.day)}</span>`:""}</div><h3>${esc(d.n)}</h3><div class="dk-jp">${esc(d.jp)}</div><p class="tiny" style="margin:2px 0 6px">${esc(d.from)}</p><p class="c-note">${esc(d.x)}</p><p class="dk-buy">🛒 ${esc(d.buy)}</p><div class="c-actions">${aBtn(imgUrl(d.jp),"ดูรูปจริง",I.img)}<button class="btn small" data-copy="${esc(d.jp)}">${I.copy}คัดลอกชื่อญี่ปุ่น</button></div></div></article>`).join("")+`</div>`;
-  h+=`<p class="tiny">ภาพประกอบจาก Wikipedia/Wikimedia Commons (ถ้ามี) · กด "ดูรูปจริง" เพื่อดูรูปสินค้า · คัดลอกชื่อญี่ปุ่นไปให้พนักงานร้านดูได้</p>`;
+  h+=`<div class="drinks">`+list.map((d,i)=>`<article class="drink" style="--dk:${d.c}"><div class="dk-img" data-wiki="${esc(d.wiki||"")}" data-img="${esc(d.img||"")}"><span class="dk-emo">${d.e}</span></div><div class="dk-body"><div class="c-top">${d.must?'<span class="pill new">ต้องลอง</span>':""}${d.day?`<span class="pill opt">${esc(d.day)}</span>`:""}</div><h3>${esc(d.n)}</h3><div class="dk-jp">${esc(d.jp)}</div><p class="tiny" style="margin:2px 0 6px">${esc(d.from)}</p><p class="c-note">${esc(d.x)}</p><p class="dk-buy">🛒 ${esc(d.buy)}</p><div class="c-actions">${aBtn(imgUrl(d.jp+" 商品"),"ดูรูปจริง",I.img)}<button class="btn small" data-copy="${esc(d.jp)}">${I.copy}คัดลอกชื่อญี่ปุ่น</button></div></div></article>`).join("")+`</div>`;
+  h+=`<p class="tiny">ภาพสินค้าจากร้านค้าออนไลน์/Open Food Facts (บางแบรนด์ยังหาภาพไม่ได้) · กด "ดูรูปจริง" เพื่อดูรูปสินค้าเพิ่ม · คัดลอกชื่อญี่ปุ่นไปให้พนักงานร้านดูได้</p>`;
   $("#p-drinks").innerHTML=h;
-  $$("#p-drinks .dk-img").forEach(async el=>{
-    const set=src=>{ if(!src) return; const im=new Image(); im.alt=""; im.loading="lazy"; im.onload=()=>{ el.innerHTML=""; el.appendChild(im); el.classList.add("has"); }; im.src=src; };
-    if(el.dataset.img) set(el.dataset.img); else if(el.dataset.wiki) set(await loadWikiImg(el.dataset.wiki));
+  $$("#p-drinks .dk-img").forEach(async (el,i)=>{
+    const d=list[i]; let cands=(d.imgs||[]).slice();
+    const tryNext=()=>{ const src=cands.shift(); if(!src){ return false; } const im=new Image(); im.alt=d.n; im.referrerPolicy="no-referrer"; im.onload=()=>{ if(im.naturalWidth<40){ tryNext(); return; } el.innerHTML=""; el.appendChild(im); el.classList.add("has"); }; im.onerror=()=>{ if(!tryNext()) fallback(); }; im.src=src; return true; };
+    const fallback=async()=>{ const off=await offImg(d.jp); if(off){ cands=[off]; tryNext(); return; } if(d.wiki){ const w=await loadWikiImg(d.wiki); if(w){ cands=[w]; tryNext(); } } };
+    if(!tryNext()) fallback();
   });
+
 }
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-dcat]"); if(!b) return; drinkCat=b.dataset.dcat; store.set("drinkCat",drinkCat); renderDrinks(); });
 
