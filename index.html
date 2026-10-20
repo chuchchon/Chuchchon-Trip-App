@@ -1046,7 +1046,7 @@ function renderPlan(){
     const story=p&&p[5]?`<button class="btn small" data-act="story" data-id="${p[5]}">${I.book}เรื่องน่ารู้</button>`:"";
     const bk=(it.k==="hotel"&&BOOKINGS[it.p])?`<button class="btn small primary" data-act="booking" data-id="${it.p}">${I.doc}ใบยืนยันการจอง</button>`:"";
     const food=it.food?`<button class="btn small" data-act="food" data-id="${it.food}">★ ร้านในลิสต์</button>`:"";
-    h+=`<li class="${cls}" data-key-row="${esc(k)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}${p?stripHtml(p[4]||p[0],5):""}${SPOTP[it.p]?`<button class="spot-link" data-act="spots" data-id="${it.p}">📍 จุดที่ต้องชมใน${esc(p[0])} (${SPOTP[it.p].length}) ›</button>`:""}${it._clash?`<p class="c-warn">⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว</p>`:""}${it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`<p class="c-warn">⚠ เวลาใหม่เลย ${esc(it.lim)} แล้ว (${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"})</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
+    h+=`<li class="${cls}" data-key-row="${esc(k)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}${p?stripHtml(p[4]||p[0],5,"",p[6]||latinName(p[0])):""}${SPOTP[it.p]?`<button class="spot-link" data-act="spots" data-id="${it.p}">📍 จุดที่ต้องชมใน${esc(p[0])} (${SPOTP[it.p].length}) ›</button>`:""}${it._clash?`<p class="c-warn">⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว</p>`:""}${it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`<p class="c-warn">⚠ เวลาใหม่เลย ${esc(it.lim)} แล้ว (${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"})</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
     if(it.k!=="opt"){ if(!recShown[it.p]){ h+=recsAfter(curDay,it); recShown[it.p]=1; } h+=insRow(k); }
     if(curDay===3&&it.p==="station"&&it.k==="stop") carGoneR=true;
   });
@@ -1533,7 +1533,7 @@ function endPick(){ pickMode=null; $("#pickBar")&&$("#pickBar").remove(); if(map
 function hookMapPick(){ map.on("click",async e=>{ if(!pickMode) return; const ll=[e.latlng.lat,e.latlng.lng]; draft=Object.assign(pickMode,{lat:ll[0],lng:ll[1]}); endPick(); showTab("plan"); if(!draft.name) draft.name=await reverseName(ll)||"จุดที่ปักเอง"; renderAddStop(); }); }
 function customHtml(it,cls,tm){
   const c=it._c; const ll=c.lat!=null;
-  return `<li class="${cls} k-custom" data-key-row="${esc(it._i)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${ll?"📌 จุดแวะที่เพิ่มเอง":"⏱ รอ / เลื่อนเวลา"}</span>${ll?wxChip(it._i,DAYS[curDay].date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${ll&&c.name?stripHtml(c.q||c.name,5):""}${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it._late?`<p class="c-warn">⚠ เริ่มช้ากว่าเวลาที่ตั้งไว้</p>`:""}<div class="c-actions">${ll?aBtn(dirUrl({name:c.name,lat:c.lat,lng:c.lng,q:c.q||null}),"นำทาง",I.nav):""}${ll&&c.name?aBtn(imgUrl(c.q||c.name),"ดูรูป",I.img):""}<button class="btn small" data-act="cs-edit" data-key="${esc(it._i)}">แก้ไข</button></div></div></li>`;
+  return `<li class="${cls} k-custom" data-key-row="${esc(it._i)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${ll?"📌 จุดแวะที่เพิ่มเอง":"⏱ รอ / เลื่อนเวลา"}</span>${ll?wxChip(it._i,DAYS[curDay].date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${ll&&c.name?stripHtml(c.q||c.name,5,"",latinName(c.name)):""}${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it._late?`<p class="c-warn">⚠ เริ่มช้ากว่าเวลาที่ตั้งไว้</p>`:""}<div class="c-actions">${ll?aBtn(dirUrl({name:c.name,lat:c.lat,lng:c.lng,q:c.q||null}),"นำทาง",I.nav):""}${ll&&c.name?aBtn(imgUrl(c.q||c.name),"ดูรูป",I.img):""}<button class="btn small" data-act="cs-edit" data-key="${esc(it._i)}">แก้ไข</button></div></div></li>`;
 }
 function moveBtns(it){ if(it.k==="drive") return ""; return `<div class="mv"><button class="mv-b" data-act="cs-mv" data-key="${esc(it._i)}" data-dir="-1" aria-label="เลื่อนขึ้น">▲</button><button class="mv-b" data-act="cs-mv" data-key="${esc(it._i)}" data-dir="1" aria-label="เลื่อนลง">▼</button><button class="mv-b" data-act="cs-edit" data-key="${esc(it._i)}" aria-label="ปรับเวลา">⋯</button></div>`; }
 function insRow(key){ return `<li class="ins-row"><button class="ins-b" data-act="cs-ins" data-key="${esc(key)}">＋ เพิ่มจุดตรงนี้</button></li>`; }
@@ -1565,26 +1565,45 @@ document.addEventListener("click",ev=>{
 const photoCache=store.get("photos",{});
 const photoReq={};
 function cleanQ(q){ return String(q||"").replace(/紅葉|夜景|夕景|眺望|景色/g,"").replace(/\s+/g," ").trim(); }
-function commonsPhotos(q,n){
-  q=cleanQ(q); const key=q+"|"+n;
-  if(photoCache[key]) return Promise.resolve(photoCache[key]);
-  if(photoReq[key]) return photoReq[key];
+async function srcCommons(q,n){
   const url=`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=${n+3}&gsrsearch=${enc(q+" filetype:bitmap")}&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640`;
-  photoReq[key]=fetch(url).then(r=>r.json()).then(j=>{
-    const pages=Object.values((j.query||{}).pages||{}).sort((a,b)=>(a.index||0)-(b.index||0));
-    const out=pages.map(p=>{ const ii=(p.imageinfo||[])[0]||{}; const md=ii.extmetadata||{}; return {src:ii.thumburl,page:ii.descriptionurl,by:((md.Artist||{}).value||"").replace(/<[^>]+>/g,"").slice(0,60),lic:((md.LicenseShortName||{}).value||"")}; }).filter(x=>x.src&&!/\.(svg|pdf|tif)/i.test(x.page||"")).slice(0,n);
-    if(!out.length&&q.includes(" ")&&!q.endsWith("~")){ const q2=q.split(" ").slice(0,-1).join(" "); return commonsPhotos(q2,n).then(r=>{ photoCache[key]=r||[]; return r; }); }
-    photoCache[key]=out; try{ const ks=Object.keys(photoCache); if(ks.length>200) delete photoCache[ks[0]]; store.set("photos",photoCache); }catch(e){} return out;
-  }).catch(()=>null);
+  const j=await (await fetch(url)).json(); const pages=Object.values((j.query||{}).pages||{}).sort((a,b)=>(a.index||0)-(b.index||0));
+  return pages.map(p=>{ const ii=(p.imageinfo||[])[0]||{}; const md=ii.extmetadata||{}; return {src:ii.thumburl,page:ii.descriptionurl,by:((md.Artist||{}).value||"").replace(/<[^>]+>/g,"").slice(0,60),lic:((md.LicenseShortName||{}).value||"")}; }).filter(x=>x.src&&!/\.(svg|pdf|tif)/i.test(x.page||""));
+}
+async function srcWiki(q,n){
+  const url=`https://ja.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=${enc(q)}&gsrlimit=${n}&prop=pageimages&piprop=thumbnail&pithumbsize=640`;
+  const j=await (await fetch(url)).json(); const pages=Object.values((j.query||{}).pages||{}).sort((a,b)=>(a.index||0)-(b.index||0));
+  return pages.filter(p=>p.thumbnail&&p.thumbnail.source&&!/\.svg/i.test(p.thumbnail.source)).map(p=>({src:p.thumbnail.source,page:"https://ja.wikipedia.org/wiki/"+enc(p.title),by:"Wikipedia: "+p.title,lic:""}));
+}
+async function srcOpenverse(q,n){
+  const j=await (await fetch(`https://api.openverse.org/v1/images/?q=${enc(q)}&page_size=${n+2}&mature=false`)).json();
+  return (j.results||[]).filter(r=>r.thumbnail||r.url).map(r=>({src:r.thumbnail||r.url,big:r.url,page:r.foreign_landing_url||r.url,by:(r.creator||"")+(r.source?" · "+r.source:""),lic:(r.license||"").toUpperCase()}));
+}
+function commonsPhotos(q,n,en){
+  q=cleanQ(q); en=cleanQ(en||""); const key=q+"|"+en+"|"+n;
+  if(photoCache[key]&&photoCache[key].length) return Promise.resolve(photoCache[key]);
+  if(photoReq[key]) return photoReq[key];
+  photoReq[key]=(async()=>{
+    let out=[], ok=false; const seen=new Set(); const add=l=>{ (l||[]).forEach(x=>{ if(out.length<n&&x.src&&!seen.has(x.src)){ seen.add(x.src); out.push(x); } }); };
+    const tryS=async f=>{ try{ add(await f()); ok=true; }catch(e){} };
+    await tryS(()=>srcCommons(q,n));
+    if(out.length<n&&q.includes(" ")) await tryS(()=>srcCommons(q.split(" ").slice(0,-1).join(" "),n));
+    if(out.length<n) await tryS(()=>srcWiki(q,3));
+    if(out.length<n&&en) await tryS(()=>srcOpenverse(en,n));
+    if(out.length<n) await tryS(()=>srcOpenverse(q,n));
+    if(!ok) return null;
+    photoCache[key]=out; try{ const ks=Object.keys(photoCache); if(ks.length>200) delete photoCache[ks[0]]; store.set("photos",photoCache); }catch(e){}
+    return out;
+  })();
   return photoReq[key];
 }
-function stripHtml(q,n,cls){ return `<div class="ph-strip ${cls||""}" data-q="${esc(q)}" data-n="${n||5}"><div class="ph-skel"></div><div class="ph-skel"></div><div class="ph-skel"></div></div>`; }
+function stripHtml(q,n,cls,en){ return `<div class="ph-strip ${cls||""}" data-q="${esc(q)}" data-en="${esc(en||"")}" data-n="${n||5}"><div class="ph-skel"></div><div class="ph-skel"></div><div class="ph-skel"></div></div>`; }
 let phObs=null;
 function hydratePhotos(root){
   const els=$$(".ph-strip:not([data-done])",root||document);
-  const go=async el=>{ el.dataset.done=1; const list=await commonsPhotos(el.dataset.q,+el.dataset.n||5);
+  const go=async el=>{ el.dataset.done=1; const list=await commonsPhotos(el.dataset.q,+el.dataset.n||5,el.dataset.en);
     if(!list||!list.length){ el.innerHTML=`<a class="ph-none" href="${esc(imgUrl(el.dataset.q))}" target="_blank" rel="noopener">${I.img} ${list?"ยังไม่มีภาพตัวอย่าง":"โหลดภาพไม่ได้"} · ดูรูปใน Google</a>`; return; }
-    el.innerHTML=list.map((p,i)=>`<button class="ph" data-ph="${esc(el.dataset.q)}|${el.dataset.n}" data-pi="${i}"><img src="${esc(p.src)}" alt="" loading="lazy" onerror="this.parentNode.remove()"></button>`).join("")+`<a class="ph more" href="${esc(imgUrl(el.dataset.q))}" target="_blank" rel="noopener">${I.img}<span>ดูเพิ่ม</span></a>`;
+    el.innerHTML=list.map((p,i)=>`<button class="ph" data-ph="${esc(el.dataset.q)}|${el.dataset.n}|${esc(el.dataset.en||"")}" data-pi="${i}"><img src="${esc(p.src)}" alt="" loading="lazy" onerror="this.parentNode.remove()"></button>`).join("")+`<a class="ph more" href="${esc(imgUrl(el.dataset.q))}" target="_blank" rel="noopener">${I.img}<span>ดูเพิ่ม</span></a>`;
   };
   if(!("IntersectionObserver" in window)){ els.forEach(go); return; }
   if(!phObs) phObs=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ phObs.unobserve(e.target); go(e.target); } }),{rootMargin:"300px"});
@@ -1592,10 +1611,10 @@ function hydratePhotos(root){
 }
 let lbOpen=false;
 function closeLightbox(fromPop){ if(!lbOpen) return; lbOpen=false; $("#lbRoot").innerHTML=""; if(!fromPop&&history.state&&history.state.lb) history.back(); }
-function openLightbox(q,n,i){
-  const list=photoCache[cleanQ(q)+"|"+n]; if(!list) return; let k=i;
+function openLightbox(q,n,i,en){
+  const list=photoCache[cleanQ(q)+"|"+cleanQ(en||"")+"|"+n]; if(!list) return; let k=i;
   if(!lbOpen){ lbOpen=true; try{ history.pushState({lb:1},""); }catch(e){} }
-  const draw=()=>{ const p=list[k]; $("#lbRoot").innerHTML=`<div class="lb" data-lb="close"><button class="lb-x" data-lb="close" aria-label="ปิด">✕</button><img src="${esc(p.src)}" alt="" data-lb="close"><div class="lb-bar"><button class="btn small" data-lb="prev" ${k===0?"disabled":""}>‹</button><span class="tiny">${k+1}/${list.length} · ${esc(p.by||"Wikimedia Commons")} ${esc(p.lic||"")}</span><a class="btn small" href="${esc(p.page)}" target="_blank" rel="noopener">ที่มา</a><button class="btn small" data-lb="next" ${k===list.length-1?"disabled":""}>›</button></div><div class="tiny" style="color:#bbb;margin-top:8px">แตะที่ว่างหรือ ✕ เพื่อปิด · ปัดซ้าย/ขวาเปลี่ยนรูป</div></div>`; };
+  const draw=()=>{ const p=list[k]; $("#lbRoot").innerHTML=`<div class="lb" data-lb="close"><button class="lb-x" data-lb="close" aria-label="ปิด">✕</button><img src="${esc(p.big||p.src)}" alt="" data-lb="close"><div class="lb-bar"><button class="btn small" data-lb="prev" ${k===0?"disabled":""}>‹</button><span class="tiny">${k+1}/${list.length} · ${esc(p.by||"Wikimedia Commons")} ${esc(p.lic||"")}</span><a class="btn small" href="${esc(p.page)}" target="_blank" rel="noopener">ที่มา</a><button class="btn small" data-lb="next" ${k===list.length-1?"disabled":""}>›</button></div><div class="tiny" style="color:#bbb;margin-top:8px">แตะที่ว่างหรือ ✕ เพื่อปิด · ปัดซ้าย/ขวาเปลี่ยนรูป</div></div>`; };
   draw();
   const root=$("#lbRoot");
   root.onclick=ev=>{ const b=ev.target.closest("[data-lb]"); if(!b) return; const a=b.dataset.lb; ev.stopPropagation();
@@ -1604,15 +1623,15 @@ function openLightbox(q,n,i){
 }
 addEventListener("popstate",()=>{ if(lbOpen) closeLightbox(true); });
 document.addEventListener("keydown",ev=>{ if(lbOpen&&ev.key==="Escape") closeLightbox(false); });
-document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-ph]"); if(!b) return; ev.stopPropagation(); const [q,n]=b.dataset.ph.split("|"); openLightbox(q,+n,+b.dataset.pi); },true);
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-ph]"); if(!b) return; ev.stopPropagation(); const [q,n,en]=b.dataset.ph.split("|"); openLightbox(q,+n,+b.dataset.pi,en); },true);
 function spotsHtml(pk){
   const sp=SPOTP[pk]; if(!sp) return "";
   const tot=sp.reduce((t,s)=>t+(s.m||0),0);
-  return `<h3 class="sp-h">จุดที่ต้องชมใน${esc(P[pk]?P[pk][0]:"")} (${sp.length})</h3>${tot?`<p class="tiny" style="margin:-2px 0 8px">ถ้าดูครบทุกจุด ใช้เวลาราว ${tot>=60?Math.floor(tot/60)+" ชม. "+(tot%60?tot%60+" นาที":""):tot+" นาที"} ไม่รวมเวลาเดินระหว่างจุด</p>`:""}<ol class="spots">${sp.map(s=>`<li><div class="sp-n"><b>${esc(s.n)}${s.m?` <span class="pill opt">⏱ ~${s.m} นาที</span>`:""}</b><span class="sp-jp">${esc(s.jp)}</span></div><p>${esc(s.x)}</p>${stripHtml(s.jp,3,"sm")}<div class="c-actions">${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(s.jp),"แผนที่",I.nav)}<button class="btn small" data-copy="${esc(s.jp)}">${I.copy}คัดลอกชื่อ</button></div></li>`).join("")}</ol>`;
+  return `<h3 class="sp-h">จุดที่ต้องชมใน${esc(P[pk]?P[pk][0]:"")} (${sp.length})</h3>${tot?`<p class="tiny" style="margin:-2px 0 8px">ถ้าดูครบทุกจุด ใช้เวลาราว ${tot>=60?Math.floor(tot/60)+" ชม. "+(tot%60?tot%60+" นาที":""):tot+" นาที"} ไม่รวมเวลาเดินระหว่างจุด</p>`:""}<ol class="spots">${sp.map(s=>`<li><div class="sp-n"><b>${esc(s.n)}${s.m?` <span class="pill opt">⏱ ~${s.m} นาที</span>`:""}</b><span class="sp-jp">${esc(s.jp)}</span></div><p>${esc(s.x)}</p>${stripHtml(s.jp,3,"sm",(latinName(s.n)+" "+(P[pk]?(P[pk][6]||latinName(P[pk][0])):"")).trim())}<div class="c-actions">${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(s.jp),"แผนที่",I.nav)}<button class="btn small" data-copy="${esc(s.jp)}">${I.copy}คัดลอกชื่อ</button></div></li>`).join("")}</ol>`;
 }
-function spotsSheet(pk){ const p=P[pk]; return `<div class="sk">จุดที่ต้องชม</div><h2>${esc(p[0])}</h2>${stripHtml(p[4]||p[0],5,"lg")}${spotsHtml(pk)}`; }
+function spotsSheet(pk){ const p=P[pk]; return `<div class="sk">จุดที่ต้องชม</div><h2>${esc(p[0])}</h2>${stripHtml(p[4]||p[0],5,"lg",p[6]||latinName(p[0]))}${spotsHtml(pk)}`; }
 function recHtml(r){
-  return `<li class="rec-row"><div class="rec"><div class="rec-k">💡 สถานที่แนะนำ · ใกล้เส้นทาง</div><div class="rec-n">${esc(r.n)}</div><div class="sp-jp">${esc(r.jp)}</div><p class="c-note">${esc(r.x)}</p>${stripHtml(r.jp,4,"sm")}<div class="c-actions"><button class="btn small primary" data-act="rec-add" data-id="${r.id}">＋ เพิ่มเข้าแผน (${r.dur} นาที)</button>${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(r.jp),"แผนที่",I.nav)}<button class="btn small" data-act="rec-hide" data-id="${r.id}">ไม่สนใจ</button></div></div></li>`;
+  return `<li class="rec-row"><div class="rec"><div class="rec-k">💡 สถานที่แนะนำ · ใกล้เส้นทาง</div><div class="rec-n">${esc(r.n)}</div><div class="sp-jp">${esc(r.jp)}</div><p class="c-note">${esc(r.x)}</p>${stripHtml(r.jp,4,"sm",(latinName(r.n)||"")+" Hokkaido")}<div class="c-actions"><button class="btn small primary" data-act="rec-add" data-id="${r.id}">＋ เพิ่มเข้าแผน (${r.dur} นาที)</button>${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(r.jp),"แผนที่",I.nav)}<button class="btn small" data-act="rec-hide" data-id="${r.id}">ไม่สนใจ</button></div></div></li>`;
 }
 let recHidden=store.get("recHidden",{});
 function recsAfter(di,it){
