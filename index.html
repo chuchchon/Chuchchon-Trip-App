@@ -352,6 +352,13 @@ a{color:inherit}
 .ti.k-scenic .card{background:color-mix(in srgb,#C0392B 5%,var(--surface));border-style:dashed}
 .ti.k-scenic .dot{background:#E67E22;border-color:#E67E22;transform:scale(.8)}
 .ti.k-scenic .tm small{font-size:10px}
+.x-scope,.x-cats{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.x-cats .chip,.x-scope .chip{font-size:14px}
+.x-cats .chip.on,.x-scope .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.x-res{max-height:52vh;overflow:auto;border-radius:10px}
+.x-hit{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:9px 4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.x-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px}
+.x-btns{display:flex;gap:6px;flex-wrap:wrap}
 .muted{color:var(--muted)}
 .tiny{font-size:13px;color:var(--muted)}
 .spacer-drive{height:0}
@@ -716,7 +723,7 @@ const DAYS = [
   items:[
    {t:"07:30",e:"08:30",k:"bf",p:"hanamomiji",n:"บุฟเฟต์เช้า Hanamomiji",x:"รวมในค่าที่พัก · เช็คเอาท์ก่อน 10:00",tag:"chg"},
    {t:"08:45",e:"10:00",k:"opt",p:"hoheikyo",n:"ทางเลือก: เขื่อนโฮเฮเคียว",x:"ถ้าเมื่อวานไม่ได้ไป · รถบัสไฟฟ้ารอบแรก 08:45"},
-   {t:"09:00",k:"drive",from:"hanamomiji",to:"otaru",min:75,rd:[["pref","1"]],sc:[
+   {t:"09:00",k:"drive",from:"hanamomiji",to:"otaru",min:60,rd:[["pref","1"]],sc:[
      {m:10,t:"ทะเลสาบซัปโปโร (เขื่อนโจซังเค)",ll:[43.005,141.155],x:"ทะเลสาบเขื่อนทางขวามือ ใบไม้รอบทะเลสาบ มีจุดจอดดูวิว",img:"さっぽろ湖 紅葉 定山渓ダム"},
      {m:30,t:"ถนนข้ามเขาอาซาริ",ll:[43.08,141.06],x:"ทางผ่านป่าและทะเลสาบเขื่อนบนเขา ใบไม้เปลี่ยนสีสองข้างทาง",img:"小樽定山渓線 紅葉 朝里"},
      {m:55,t:"มองเห็นทะเลและเมืองโอตารุ",ll:[43.15,141.02],x:"ถนนลงเขา ด้านหน้าคืออ่าวอิชิการิและท่าเรือ",img:"小樽 港 眺望",story:"otaru"}]},
@@ -1043,8 +1050,8 @@ function renderPlan(){
   h+=wxDayLine(curDay);
   if(edits[curDay]) h+=`<div class="note-box">วันนี้แก้แผนแล้ว เวลาคำนวณใหม่ (เวลาเดิมขีดฆ่าตัวเล็ก) <button class="linkbtn" data-act="cs-reset">รีเซ็ตกลับแผนเดิม</button></div>`;
   h+=`<ol class="tl">`;
-  let carGoneR=curDay>=CARFREE_DAY; const recShown={};
-  planItems(curDay).forEach(it=>{
+  let carGoneR=curDay>=CARFREE_DAY; const recShown={}; let prevKeyR=null;
+  planItems(curDay).forEach(it=>{ const pkR=prevKeyR; if(it.k!=="drive"&&it.k!=="opt"&&it.k!=="train") prevKeyR=it._i;
     const k=it._i;
     navMode=carGoneR?(it.walk?"walking":"transit"):"driving";
     const cls=`ti k-${it.k}${k===nowK?" is-now":""}`;
@@ -1054,7 +1061,7 @@ function renderPlan(){
       const to=P[it.to][0];
       const sc=(it.sc||[]).length?`<p class="tiny" style="margin:4px 0 0">🍁 จุดวิวระหว่างทาง ${it.sc.length} จุด (แสดงในไทม์ไลน์ด้านล่าง)</p>`:"";
       const roads=(it.rd||[]).map(roadBadge).join(" ");
-      h+=`<li class="${cls}${it.syn?" syn":""}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?(it.bus?"🚌 รถบัส":it.walk?"🚶 เดิน":it.transit?"🚇 รถไฟใต้ดิน/รถบัส":"🚆 รถไฟ"):"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}${wxChip(it.to,d.date,fmtMin(toMin(it.t)+(it.min||0)))}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc?`<ul class="scenic-mini">${sc}</ul>`:""}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}</div></div></li>`;
+      h+=`<li class="${cls}${it.syn?" syn":""}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?(it.bus?"🚌 รถบัส":it.walk?"🚶 เดิน":it.transit?"🚇 รถไฟใต้ดิน/รถบัส":"🚆 รถไฟ"):"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}${wxChip(it.to,d.date,fmtMin(toMin(it.t)+(it.min||0)))}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}${it.k==="drive"?`<button class="btn small" data-act="cs-leg" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-min="${it.min}">⏱ แก้เวลาขับ</button><button class="btn small" data-act="cs-explore" data-key="${esc(pkR||"")}">🔎 แวะอะไรดีระหว่างทาง</button>`:""}</div></div></li>`;
       (it.sc||[]).forEach(s=>{ const st=fmtMin(toMin(it.t)+s.m);
         h+=`<li class="ti k-scenic"><div class="tm">${st}<small>ระหว่างขับ</small></div><div class="dot"></div><div class="card"><div class="c-top"><span class="c-kind">🍁 จุดวิวสวย · หลังออกรถ ${s.m} นาที</span></div><div class="c-name">${esc(s.t)}</div><p class="c-note">${esc(s.x||"")}</p>${s.img?stripHtml(s.img,4,"sm",""):""}<div class="c-actions">${s.story?`<button class="btn small" data-act="story" data-id="${s.story}">${I.book}เรื่องน่ารู้</button>`:""}${s.ll?aBtn("https://www.google.com/maps/search/?api=1&query="+s.ll[0]+","+s.ll[1],"ดูบนแผนที่",I.map||""):""}</div></div></li>`; });
       return;
@@ -1469,7 +1476,21 @@ function materialize(di){ if(edits[di]) return edits[di]; edits[di]=buildEd(di);
   old.forEach(c=>{ const ed=materialize(c.day); const n={key:"cs_"+c.id,kind:"custom",name:c.name,lat:c.lat,lng:c.lng,note:c.note,dur:c.dur||0,at:c.t,pre:0}; regCustom(n);
     const items=planItems(c.day); const after=items.filter(x=>x.k!=="drive"&&toMin(x.t)<=toMin(c.t)).pop(); const i=after?ed.list.findIndex(x=>x.key===after._i):-1; ed.list.splice(i+1,0,n); });
   saveEdits(); store.set("customs",[]); })();
-function findDrive(di,a,b){ const its=DAYS[di].items; for(let k=0;k<its.length;k++){ const it=its[k]; if(it.k==="drive"&&it.from===a&&it.to===b) return Object.assign({},it,{_i:"d"+k}); } return null; }
+function nearPt(x,y){ if(x===y) return true; const A=P[x],B=P[y]; return !!(A&&B&&km([A[1],A[2]],[B[1],B[2]])<1.5); }
+function findDrive(di,a,b){ const its=DAYS[di].items; for(let k=0;k<its.length;k++){ const it=its[k]; if(it.k==="drive"&&it.from===a&&it.to===b) return Object.assign({},it,{_i:"d"+k}); }
+  for(let k=0;k<its.length;k++){ const it=its[k]; if(it.k==="drive"&&nearPt(it.from,a)&&nearPt(it.to,b)) return Object.assign({},it,{from:a,to:b,_i:"d"+k}); } return null; }
+/* real road routing (OSRM on OpenStreetMap), cached on the device; Japanese roads are slower than OSRM assumes */
+const JP_ROAD_F=1.2;
+let routeCache=store.get("routes",{}); const routeQ=new Set(); let routeT=null;
+function llSig(a,b){ const A=P[a],B=P[b]; return A&&B?[A[1],A[2],B[1],B[2]].map(v=>(+v).toFixed(4)).join(","):""; }
+function routeFor(a,b){ const k=a+">"+b, s=llSig(a,b); if(!s) return null; const c=routeCache[k]; if(c&&c.s===s) return c;
+  if(!routeQ.has(k)){ routeQ.add(k); fetchRoute(a,b,k,s); } return null; }
+async function fetchRoute(a,b,k,s){ try{ const A=P[a],B=P[b];
+  const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${A[2]},${A[1]};${B[2]},${B[1]}?overview=simplified&geometries=geojson`); const j=await r.json(); const rt=j.routes&&j.routes[0]; if(!rt) return;
+  const co=rt.geometry.coordinates, st=Math.max(1,Math.ceil(co.length/40));
+  routeCache[k]={s,min:Math.max(5,Math.round((rt.duration/60*JP_ROAD_F+2)/5)*5),km:+(rt.distance/1000).toFixed(1),g:co.filter((_,i)=>i%st===0||i===co.length-1).map(c=>[+c[1].toFixed(4),+c[0].toFixed(4)])};
+  store.set("routes",routeCache); clearTimeout(routeT); routeT=setTimeout(()=>{ try{ renderPlan(); }catch(e){} },400); }catch(e){} }
+function legOverride(di,a,b){ const ed=edits[di]; return ed&&ed.legs?ed.legs[a+">"+b]:undefined; }
 const CARFREE_DAY=4; /* D5 onward: no car (returned D4 ~17:00) */
 function carFreeAt(di,node){ if(di>=CARFREE_DAY) return true; return false; }
 function footLeg(prev,next,_i){
@@ -1477,7 +1498,7 @@ function footLeg(prev,next,_i){
   if(k<=1.6) return {k:"train",walk:true,from:prev,to:next,min:Math.max(5,Math.round(k*1.25/4.5*60/5)*5),x:"เดินราว "+(k*1.25).toFixed(1)+" กม. (โดยประมาณ)",syn:true,_i};
   return {k:"train",transit:true,from:prev,to:next,min:Math.max(10,Math.round((k*1.3/22*60+10)/5)*5),x:"รถไฟใต้ดิน/รถราง/รถบัส หรือแท็กซี่ · เวลาโดยประมาณ เช็คเส้นทางจริงในปุ่มนำทาง",syn:true,_i};
 }
-function roadMin(a,b){ const d=km(a,b)*1.3; const v=d>25?60:d>8?45:30; return Math.max(5,Math.round(d/v*60/5)*5); }
+function roadMin(a,b){ const d=km(a,b)*1.35; const v=d>25?45:d>8?35:25; return Math.max(5,Math.round(d/v*60/5)*5); }
 function planItems(di){
   const d=DAYS[di], ed=edits[di]||(di>=CARFREE_DAY?buildEd(di):null);
   if(!ed) return d.items.map((it,k)=>Object.assign({},it,{_i:(it.k==="drive"?"d":"b")+k,_t0:it.t,_sh:0}));
@@ -1492,7 +1513,9 @@ function planItems(di){
     if(startLoc&&prevLoc&&startLoc!==prevLoc&&P[startLoc]&&P[prevLoc]){
       let dv=carGone?null:findDrive(di,prevLoc,startLoc);
       if(!dv&&carGone) dv=footLeg(prevLoc,startLoc,"s"+prevLoc+">"+startLoc);
-      if(!dv){ const m=roadMin([P[prevLoc][1],P[prevLoc][2]],[P[startLoc][1],P[startLoc][2]]); dv={k:"drive",from:prevLoc,to:startLoc,min:m,rd:[],sc:[],syn:true,x:"เวลาขับโดยประมาณจากระยะทาง",_i:"s"+prevLoc+">"+startLoc}; }
+      if(!dv){ const rt=routeFor(prevLoc,startLoc); const m=rt?rt.min:roadMin([P[prevLoc][1],P[prevLoc][2]],[P[startLoc][1],P[startLoc][2]]);
+        dv={k:"drive",from:prevLoc,to:startLoc,min:m,rd:[],sc:[],syn:true,x:rt?`ตามเส้นทางถนนจริง ${rt.km} กม. (ประมาณการ เผื่อถนนญี่ปุ่นช้าแล้ว)`:"เวลาโดยประมาณจากระยะทาง · กำลังคำนวณเส้นทางจริงเมื่อมีเน็ต",_i:"s"+prevLoc+">"+startLoc}; }
+      if(dv.k==="drive"){ const ov=legOverride(di,dv.from,dv.to); if(ov!=null){ dv=Object.assign({},dv,{min:ov,_ov:1,x:"เวลาขับที่ตั้งเอง (เช่น จาก Google Maps)"}); } }
       dv.t=fmtMin(cur); dv._t0=null; out.push(dv); if(dv.walk||dv.transit) legStart=cur; cur+=dv.min;
     }
     const dur=n.dur!=null?n.dur:origDur(node);
@@ -1516,6 +1539,74 @@ function previewList(items,fromKey){
   return `<ul class="cs-list">${rows.map(it=>`<li><span class="mono">${esc(it.t)}</span>${it._sh?`<s class="tiny mono">${esc(it._t0)}</s>`:""}<span>${it.k==="drive"?"🚗 → "+esc(P[it.to][0])+" ("+it.min+" น.)":esc(it.n)}</span>${limWarn(it)}${it._clash?`<span class="c-warn tiny">⚠ เวลาตายตัว ชนแล้ว</span>`:""}</li>`).join("")}</ul>`;
 }
 function limWarn(it){ return it.lim&&toMin(it.t)>toMin(it.lim)?`<span class="c-warn tiny">⚠ เกิน ${esc(it.lim)}</span>`:""; }
+/* ----- drive time override ----- */
+function legSheet(from,to,min){ const opts=[];for(let m=5;m<=240;m+=5) opts.push(m); const cur=legOverride(curDay,from,to);
+  return `<div class="sk">เวลาขับ</div><h2>${esc(P[from][0])} → ${esc(P[to][0])}</h2><p>ตอนนี้ใช้ <b>${min} นาที</b>${cur!=null?" (ตั้งเอง)":""} · กด "นำทาง" ดูเวลาใน Google Maps แล้วเลือกเวลาที่นี่ แผนทั้งวันจะคำนวณใหม่</p>
+  <div class="c-actions" style="margin:6px 0 10px">${aBtn(dirUrl(pointTarget(to)),"ดูใน Google Maps",I.nav)}</div>
+  <label class="fl" for="leg-min">เวลาขับ</label><select id="leg-min" class="inp">${opts.map(m=>`<option value="${m}"${m===min?" selected":""}>${m<60?m+" นาที":Math.floor(m/60)+" ชม. "+(m%60?m%60+" นาที":"")}</option>`).join("")}</select>
+  <div class="c-actions" style="margin-top:12px">${cur!=null?`<button class="btn small" data-act="cs-legclear" data-from="${esc(from)}" data-to="${esc(to)}">ใช้ค่าประมาณเดิม</button>`:""}<button class="btn small primary" data-act="cs-legsave" data-from="${esc(from)}" data-to="${esc(to)}">บันทึก</button></div>`; }
+/* ----- explore places by category (OpenStreetMap + Wikipedia) ----- */
+const XCATS=[
+ {id:"view",e:"🍁",n:"จุดชมวิว",f:['nwr["tourism"="viewpoint"]'],k:"tourism",v:"viewpoint"},
+ {id:"michi",e:"🛣",n:"Michi-no-Eki / จุดพักรถ",f:['nwr["name"~"道の駅"]','nwr["highway"="services"]','nwr["highway"="rest_area"]["name"]'],k:"tourism",v:"attraction",dur:30},
+ {id:"onsen",e:"♨️",n:"ออนเซ็น",f:['nwr["amenity"="public_bath"]','nwr["natural"="hot_spring"]','nwr["leisure"="spa"]'],k:"amenity",v:"public_bath"},
+ {id:"nature",e:"🏞",n:"ธรรมชาติ / น้ำตก",f:['nwr["natural"="waterfall"]','nwr["leisure"="park"]["name"]["wikidata"]','nwr["natural"="peak"]["name"]["wikidata"]','nwr["water"="lake"]["name"]["wikidata"]'],k:"natural",v:"waterfall"},
+ {id:"sight",e:"🏛",n:"ที่เที่ยว / พิพิธภัณฑ์",f:['nwr["tourism"~"^(attraction|museum|gallery|zoo|theme_park|aquarium)$"]["name"]','nwr["historic"]["name"]["wikidata"]'],k:"tourism",v:"attraction"},
+ {id:"shrine",e:"⛩",n:"ศาลเจ้า / วัด",f:['nwr["amenity"="place_of_worship"]["name"]'],k:"amenity",v:"shrine"},
+ {id:"cafe",e:"☕",n:"คาเฟ่ / ขนม",f:['nwr["amenity"~"^(cafe|ice_cream)$"]["name"]','nwr["shop"~"^(confectionery|pastry|bakery)$"]["name"]'],k:"amenity",v:"cafe"},
+ {id:"food",e:"🍜",n:"ร้านอาหาร",f:['nwr["amenity"="restaurant"]["name"]'],k:"amenity",v:"restaurant"},
+ {id:"farm",e:"🥛",n:"ฟาร์ม / ของท้องถิ่น",f:['nwr["shop"="farm"]','nwr["shop"~"^(cheese|dairy|alcohol|wine)$"]["name"]','nwr["craft"~"^(winery|brewery|distillery)$"]'],k:"shop",v:"farm",dur:30},
+ {id:"shop",e:"🛍",n:"ช้อปปิ้ง",f:['nwr["shop"~"^(mall|department_store|outlet|gift|souvenir)$"]["name"]'],k:"shop",v:"mall"},
+ {id:"wiki",e:"📖",n:"ที่เด่นใน Wikipedia",wiki:true},
+ {id:"fuel",e:"⛽",n:"ปั๊มน้ำมัน",f:['nwr["amenity"="fuel"]'],k:"amenity",v:"fuel"},
+ {id:"konbini",e:"🏪",n:"คอนบินิ",f:['nwr["shop"="convenience"]'],k:"shop",v:"convenience"},
+ {id:"wc",e:"🚻",n:"ห้องน้ำ",f:['nwr["amenity"="toilets"]'],k:"amenity",v:"toilets",dur:10}];
+const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.private.coffee/api/interpreter"];
+let xCache={};
+function xContext(dr){ /* where the new stop sits: previous and next located stops */
+  const its=planItems(dr.day).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt");
+  const i=dr.atStart?-1:its.findIndex(x=>x._i===dr.afterKey); const loc=x=>x&&x.p&&P[x.p]?[P[x.p][1],P[x.p][2],x.p]:null;
+  let prev=null,next=null; for(let j=i;j>=0&&!prev;j--) prev=loc(its[j]); for(let j=i+1;j<its.length&&!next;j++) next=loc(its[j]);
+  return {prev,next}; }
+function xLine(ctx,scope){
+  if(scope==="here"&&gps.pos) return {pts:[gps.pos.ll],r:4000,label:"ใกล้ตำแหน่งปัจจุบัน"};
+  if(scope==="near"&&ctx.prev) return {pts:[[ctx.prev[0],ctx.prev[1]]],r:4000,label:"ใกล้ "+P[ctx.prev[2]][0]};
+  if(ctx.prev&&ctx.next&&km(ctx.prev,ctx.next)>2){ const rt=routeCache[ctx.prev[2]+">"+ctx.next[2]]; let pts=rt&&rt.g?rt.g.slice():null;
+    if(!pts){ pts=[]; for(let t=0;t<=1.0001;t+=1/14) pts.push([ctx.prev[0]+(ctx.next[0]-ctx.prev[0])*t,ctx.prev[1]+(ctx.next[1]-ctx.prev[1])*t]); routeFor(ctx.prev[2],ctx.next[2]); }
+    return {pts,r:2500,label:"ระหว่างทาง "+P[ctx.prev[2]][0]+" → "+P[ctx.next[2]][0],route:true}; }
+  const c=ctx.prev||ctx.next||(gps.pos?gps.pos.ll:null); return c?{pts:[[c[0],c[1]]],r:4000,label:"รอบๆ "+(c[2]?P[c[2]][0]:"ตำแหน่งนี้")}:null; }
+function along(pts,ll){ let best=1e9,bi=0; pts.forEach((p,i)=>{ const d=km(p,ll); if(d<best){ best=d; bi=i; } }); let acc=0; for(let i=1;i<=bi;i++) acc+=km(pts[i-1],pts[i]); return {off:best,at:acc}; }
+async function xOverpass(cat,line){
+  const ar=`around:${line.r},${line.pts.map(p=>p[0].toFixed(4)+","+p[1].toFixed(4)).join(",")}`;
+  const q=`[out:json][timeout:25];(${cat.f.map(f=>f+`(${ar});`).join("")});out center tags 120;`;
+  for(const u of OVERPASS){ try{ const r=await fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}}); if(!r.ok) continue; const j=await r.json();
+    return (j.elements||[]).map(e=>{ const t=e.tags||{}; const lat=e.lat??(e.center&&e.center.lat), lng=e.lon??(e.center&&e.center.lon); if(lat==null) return null;
+      const name=t.name||t["name:ja"]||t["name:en"]||(cat.id==="view"?"จุดชมวิว (ไม่มีชื่อ)":cat.id==="wc"?"ห้องน้ำ":cat.id==="fuel"?(t.brand||"ปั๊มน้ำมัน"):cat.id==="konbini"?(t.brand||"คอนบินิ"):"");
+      if(!name) return null; const sub=[t["name:en"]&&t["name:en"]!==name?t["name:en"]:"",t.cuisine?("อาหาร: "+t.cuisine.replace(/;/g,", ")):"",t.opening_hours?("เวลาเปิด "+t.opening_hours):"",t.ele?("สูง "+t.ele+" ม."):""].filter(Boolean).join(" · ");
+      return {name,sub,lat,lng,star:!!(t.wikipedia||t.wikidata),wp:t.wikipedia||"",hours:t.opening_hours||"",osmk:cat.k,osmv:t.amenity==="place_of_worship"?(t.religion==="buddhist"?"temple":"shrine"):cat.v}; }).filter(Boolean); }catch(e){} }
+  return null; }
+async function xWiki(line){ const out=[], seen=new Set(); const samp=line.pts.length<=4?line.pts:[0,.25,.5,.75,1].map(t=>line.pts[Math.round(t*(line.pts.length-1))]);
+  for(const p of samp){ try{ const r=await fetch(`https://ja.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${p[0]}|${p[1]}&gsradius=${Math.min(10000,line.r*2)}&gslimit=40&format=json&origin=*`); const j=await r.json();
+    (j.query&&j.query.geosearch||[]).forEach(g=>{ if(seen.has(g.pageid)) return; if(/駅$|学校|線$|小学校|中学校|高等学校|郵便局|IC$|インターチェンジ|ジャンクション|町$|村$|市$|区$|丁目/.test(g.title)) return; seen.add(g.pageid); out.push({name:g.title,sub:"บทความ Wikipedia ภาษาญี่ปุ่น",lat:g.lat,lng:g.lon,star:true,wp:"ja:"+g.title,osmk:"tourism",osmv:"attraction"}); }); }catch(e){} }
+  return out; }
+async function runExplore(){
+  const dr=draft; if(!dr||!dr.xc) return; const cat=XCATS.find(c=>c.id===dr.xc); const ctx=xContext(dr); const line=xLine(ctx,dr.xs||"route");
+  const box=()=>$("#x-res"); if(!line){ dr.xr={err:"ยังไม่รู้ตำแหน่ง ลองเปิด GPS หรือเลือกจุดก่อนหน้าที่มีสถานที่"}; box()&&(box().innerHTML=xResHtml(dr)); return; }
+  const key=cat.id+"|"+(dr.xs||"route")+"|"+line.pts.length+"|"+line.pts[0].join(",")+"|"+line.pts[line.pts.length-1].join(",");
+  dr.xlabel=line.label; if(xCache[key]){ dr.xr=xCache[key]; box()&&(box().innerHTML=xResHtml(dr)); return; }
+  dr.xr={loading:true}; box()&&(box().innerHTML=xResHtml(dr));
+  let res=cat.wiki?await xWiki(line):await xOverpass(cat,line);
+  if(draft!==dr) return;
+  if(res==null){ dr.xr={err:"ค้นหาไม่ได้ตอนนี้ (เน็ตหรือเซิร์ฟเวอร์ OpenStreetMap ไม่ตอบ) ลองใหม่อีกครั้ง"}; }
+  else { const seen=new Set(); res=res.filter(r=>{ const k=r.name+"|"+r.lat.toFixed(3)+r.lng.toFixed(3); if(seen.has(k)) return false; seen.add(k); return true; });
+    res.forEach(r=>{ const a=along(line.pts,[r.lat,r.lng]); r.off=a.off; r.at=a.at; r.det=Math.max(2,Math.round(a.off*2*1.3/30*60)); });
+    if(line.route) res.sort((x,y)=>x.at-y.at); else res.sort((x,y)=>(y.star-x.star)||(x.off-y.off));
+    if(res.length>60){ const st=res.filter(r=>r.star); res=st.concat(res.filter(r=>!r.star)).slice(0,60); if(line.route) res.sort((x,y)=>x.at-y.at); }
+    dr.xr={list:res,route:line.route}; xCache[key]=dr.xr; }
+  box()&&(box().innerHTML=xResHtml(dr)); }
+function xResHtml(dr){ const x=dr.xr; if(!x) return ""; if(x.loading) return `<div class="tiny">กำลังค้นหา ${esc(dr.xlabel||"")}…</div>`; if(x.err) return `<div class="tiny">${esc(x.err)}</div>`;
+  if(!x.list.length) return `<div class="tiny">ไม่พบในบริเวณนี้ ลองประเภทอื่นหรือเปลี่ยนขอบเขต</div>`;
+  return `<div class="tiny" style="margin:4px 0 6px">${esc(dr.xlabel)} · ${x.list.length} แห่ง${x.route?" · เรียงตามลำดับที่จะผ่าน":""} · ★ = มีบทความ Wikipedia</div>`+x.list.map((r,i)=>`<div class="x-hit"><div class="x-main"><b>${r.star?"★ ":""}${esc(r.name)}</b>${r.sub?`<span class="tiny">${esc(r.sub)}</span>`:""}<span class="tiny">${x.route?`อีก ~${Math.round(r.at)} กม. จากจุดก่อนหน้า · `:""}${r.off<0.3?"ติดถนน":"ออกนอกทาง "+r.off.toFixed(1)+" กม."} · เพิ่มเวลา ~${r.det} นาที</span></div><div class="x-btns">${aBtn(imgUrl(r.name),"รูป",I.img)}${r.wp?aBtn("https://"+(r.wp.split(":")[0]||"ja")+".wikipedia.org/wiki/"+enc(r.wp.split(":").slice(1).join(":")||r.wp),"อ่าน",I.book):""}<button class="btn small primary" data-act="cs-xadd" data-i="${i}">＋ เลือก</button></div></div>`).join(""); }
 /* ----- add / edit sheet ----- */
 function openAddStop(afterKey){
   const di=curDay; draft={mode:"add",day:di,afterKey:afterKey||null,key:"cs_"+Date.now().toString(36),name:"",lat:null,lng:null,dur:30,at:"",note:""};
@@ -1537,6 +1628,7 @@ function renderAddStop(){
   <div class="srch"><input id="cs-q" type="search" placeholder="เช่น Upopoy, 白老, Seicomart, ร้านกาแฟ…" autocomplete="off"></div>
   <div id="cs-res" class="cs-res"></div>
   <div class="c-actions" style="margin:8px 0 4px"><button class="btn small" data-act="cs-here">📍 ตำแหน่งปัจจุบัน</button><button class="btn small" data-act="cs-pick">🗺 แตะเลือกบนแผนที่</button>${c.lat!=null?`<button class="btn small" data-act="cs-noplace">ไม่ระบุสถานที่ (แค่รอ)</button>`:""}</div>
+  ${c.mode==="add"?xPanel(c):""}
   <div class="cs-picked">${c.lat!=null?`<b>📌 ${esc(c.name||"จุดที่เลือก")}</b><span class="tiny mono">${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}</span>`:`<span class="tiny">ยังไม่ได้เลือกสถานที่ · ถ้าแค่ฝนตก/รถติด ไม่ต้องเลือก ใส่เวลารอได้เลย</span>`}</div>
   <label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.name)}" placeholder="${c.lat!=null?"ชื่อสถานที่":"เช่น ฝนตก รอที่โรงแรม"}">`:`<div class="c-name" style="font-size:18px;margin:4px 0">${esc(c.title||"")}</div>`}
   <div class="grid2"><div><label class="fl" for="cs-dur">อยู่นาน</label><select id="cs-dur" class="inp">${durOpts(c.dur)}</select>${c.durNote?`<div class="tiny" style="margin-top:3px">${esc(c.durNote)}</div>`:""}</div>
@@ -1546,6 +1638,10 @@ function renderAddStop(){
   <div class="c-actions" style="margin-top:12px">${c.mode==="edit"?`<button class="btn small" data-act="cs-del">${isCustom?"ลบจุดนี้":"ข้ามจุดนี้"}</button>`:""}${c.isOpt?`<button class="btn small" data-act="cs-promote">${c.promote?"เอาออกจากแผน":"ใส่ในแผน"}</button>`:""}<button class="btn small primary" data-act="cs-save">บันทึก</button></div>
   <p class="tiny">บันทึกไว้ในเครื่องนี้ · ผลค้นหาจาก OpenStreetMap</p>`);
 }
+function xPanel(c){ const ctx=xContext(c); const hasRoute=ctx.prev&&ctx.next&&km(ctx.prev,ctx.next)>2; const xs=c.xs||(hasRoute?"route":"near");
+  const sc=[hasRoute?["route","🛣 ระหว่างทางไปจุดถัดไป"]:null,ctx.prev?["near","📍 ใกล้จุดก่อนหน้า"]:null,["here","🧭 ใกล้ฉันตอนนี้"]].filter(Boolean);
+  return `<label class="fl">หรือหาตามประเภทสถานที่</label><div class="x-scope">${sc.map(([id,n])=>`<button class="chip${xs===id?" on":""}" data-act="cs-xscope" data-id="${id}">${n}</button>`).join("")}</div>
+  <div class="x-cats">${XCATS.map(k=>`<button class="chip${c.xc===k.id?" on":""}" data-act="cs-xcat" data-id="${k.id}">${k.e} ${esc(k.n)}</button>`).join("")}</div><div id="x-res" class="x-res">${xResHtml(c)}</div>`; }
 function openEditItem(key){
   const di=curDay; const ed=materialize(di); const n=ed.list.find(x=>x.key===key); if(!n) return;
   const it=planItems(di).find(x=>x._i===key)||{};
@@ -1610,6 +1706,13 @@ document.addEventListener("click",ev=>{
   if(a==="cs-mv"){ moveItem(b.dataset.key,+b.dataset.dir); return; }
   if(a==="cs-edit"){ openEditItem(b.dataset.key); return; }
   if(a==="cs-reset"){ delete edits[curDay]; saveEdits(); renderPlan(); drawCustoms(); return; }
+  if(a==="cs-leg"){ openSheet(legSheet(b.dataset.from,b.dataset.to,+b.dataset.min)); return; }
+  if(a==="cs-legsave"||a==="cs-legclear"){ const ed=materialize(curDay); ed.legs=ed.legs||{}; const k=b.dataset.from+">"+b.dataset.to; if(a==="cs-legsave") ed.legs[k]=+$("#leg-min").value; else delete ed.legs[k]; saveEdits(); closeSheet(); renderPlan(); return; }
+  if(a==="cs-explore"){ openAddStop(b.dataset.key||undefined); if(draft){ const ctx=xContext(draft); draft.xs=ctx.prev&&ctx.next?"route":"near"; draft.xc="view"; renderAddStop(); runExplore(); } return; }
+  if(a==="cs-xscope"){ readDraft(); draft.xs=b.dataset.id; draft.xr=null; renderAddStop(); if(draft.xc) runExplore(); return; }
+  if(a==="cs-xcat"){ readDraft(); draft.xc=b.dataset.id; draft.xr=null; renderAddStop(); runExplore(); return; }
+  if(a==="cs-xadd"){ readDraft(); const r=draft.xr&&draft.xr.list&&draft.xr.list[+b.dataset.i]; if(!r) return; const cat=XCATS.find(c=>c.id===draft.xc)||{}; const g=guessDur(r.osmk,r.osmv,r.name); const dur=cat.dur||g.m;
+    Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng,dur,note:draft.note||(r.hours?"เวลาเปิด "+r.hours:""),durNote:(g.lab||cat.n||"")+" · ตั้งเวลาอยู่ให้อัตโนมัติ "+dur+" นาที ปรับได้"}); renderAddStop(); const pk=$(".cs-picked"); pk&&pk.scrollIntoView({block:"center",behavior:"smooth"}); return; }
   if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng}); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
   if(a==="cs-noplace"){ readDraft(); Object.assign(draft,{lat:null,lng:null}); renderAddStop(); return; }
   if(a==="cs-here"){ readDraft(); const use=p=>{ Object.assign(draft,{lat:p[0],lng:p[1]}); reverseName(p).then(n=>{ if(!draft.name) draft.name=n||"ตำแหน่งปัจจุบัน"; renderAddStop(); }); };
