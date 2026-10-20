@@ -947,6 +947,9 @@ const REC = [
  {id:"beermuseum",day:5,after:"sapfac",n:"พิพิธภัณฑ์เบียร์ซัปโปโร",jp:"サッポロビール博物館",lat:43.0713,lng:141.3687,dur:45,x:"อาคารอิฐแดงประวัติเบียร์ญี่ปุ่น เข้าชมฟรี มีชุดชิมเบียร์ (เสียเงิน) เดินจาก Sapporo Factory ราว 15 นาที"}
 ];
 
+/* base plan of earlier app versions, used to carry saved edits over when a day's base plan changes */
+const LEGACY_BASE={"2":[["bf","cocoa","อาหารเช้าเบาๆ ที่ Hotel Cocoa"],["drive","silo",""],["stop","silo","Silo Observatory"],["drive","lakehill",""],["bf","lakehill","Lake Hill Farm"],["drive","panorama",""],["meal","takahashi","มื้อเที่ยง Takahashi Dairy Farm"],["drive","boyo",""],["stop","boyo","Michi-no-Eki Bōyō Nakayama"],["drive","hanamomiji",""],["hotel","hanamomiji","เช็คอิน Hanamomiji"],["stop","futami","สะพาน Futami"],["meal","hanamomiji","ไคเซกิที่โรงแรม"]],"3":[["bf","hanamomiji","บุฟเฟต์เช้า Hanamomiji"],["drive","hoheikyo",""],["stop","hoheikyo","เขื่อนโฮเฮเคียว (Hoheikyo Dam)"],["drive","otaru",""],["stop","sakaimachi","โอตารุ: Sakaimachi + คลอง"],["drive","mystays",""],["hotel","mystays","ฝากกระเป๋าที่ MyStays"],["stop","station","คืนรถเช่า (ไม่เกิน 18:30)"],["meal","susukino","มื้อเย็น Susukino"]]};
+
 </script>
 <script>
 (function(){
@@ -1245,6 +1248,7 @@ function renderInfo(){
   h+=`<div class="box"><h3>แปลงเงิน</h3><div class="conv"><input id="yen" inputmode="numeric" value="1000" aria-label="จำนวนเยน"><span>¥ =</span><span class="out" id="baht">–</span><span>บาท</span></div><p class="tiny" style="margin:8px 0 0">เรท <input id="rate" value="${rate}" inputmode="decimal" style="width:80px;font:inherit;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink)" aria-label="เรทบาทต่อเยน"> บาทต่อ ¥1 (จากชีตงบเดิม แก้ได้)</p></div>`;
   h+=`<div class="box"><h3>ประโยคภาษาญี่ปุ่น</h3>`+PHRASES.map(([jp,ro,th])=>`<div class="phrase"><span class="jp">${esc(jp)}</span><span class="ro">${esc(ro)}</span><span class="th">${esc(th)}</span><button class="btn small" data-copy="${esc(jp)}">${I.copy}คัดลอก</button></div>`).join("")+`<p class="tiny" style="margin:6px 0 0">กดคัดลอกแล้ววางใน Google Translate หรือยื่นหน้าจอให้พนักงานอ่าน</p></div>`;
   h+=`<div class="box"><h3>สภาพอากาศ</h3><div class="c-actions">${["洞爺湖","ニセコ","中山峠","定山渓","小樽","札幌"].map(n=>aBtn("https://www.google.com/search?q="+enc(n+" 天気"),n,"")).join("")}</div></div>`;
+  h+=`<div class="box"><h3>สำรอง / กู้คืนแผนที่แก้ไว้</h3><p style="margin:0 0 8px;font-size:15px">แอปเก็บประวัติการแก้แผน (จุดแวะที่เพิ่ม ลำดับ เวลา) ไว้ในเครื่องนี้อัตโนมัติ และคัดลอกเป็นรหัสไปเปิดในเครื่องอื่นได้</p><div class="c-actions"><button class="btn small primary" data-act="backup">เปิดสำรอง / กู้คืน</button></div></div>`;
   h+=`<div class="box"><h3>แชร์ให้เพื่อนร่วมทริป</h3><p style="margin:0;font-size:15px">ส่งลิงก์ของหน้านี้ให้ทุกคน เปิดบนมือถือได้เลย ทุกคนใช้โหมดขับรถและแผนที่ได้เหมือนกัน (เช็คลิสต์แยกกันในแต่ละเครื่อง)</p></div>`;
   $("#p-info").innerHTML=h; convUpdate();
 }
@@ -1401,9 +1405,50 @@ addEventListener("resize",()=>{ if(tour) renderTour(); });
 /* ---------- editable day plans: custom stops, reorder, recalculated times ---------- */
 const HKD_BBOX="139.3,41.3,146.0,45.6";
 let edits=store.get("edits",{});
-if(store.get("editsVer",1)<4){ delete edits[2]; delete edits[3]; delete edits[4]; delete edits[5]; store.set("edits",edits); store.set("editsVer",4); }
+/* edits are never thrown away: every change is snapshotted, and when a day's base plan changes the saved edits are carried over */
+function daySig(di){ return DAYS[di].items.map(i=>i.k+"|"+(i.p||i.to||"")+"|"+i.t).join(","); }
+function snapEdits(why){ try{ const h=store.get("editsHist",[]); const js=JSON.stringify(edits); if(h.length&&h[0].js===js) return; if(js==="{}"&&why!=="manual") return;
+  h.unshift({ts:Date.now(),why:why||"auto",js}); while(h.length>25) h.pop(); store.set("editsHist",h); }catch(e){} }
+let lastSnap=0;
+function saveEdits(){ store.set("edits",edits); if(Date.now()-lastSnap>3*60*1000){ lastSnap=Date.now(); snapEdits("auto"); } else { try{ const h=store.get("editsHist",[]); if(h[0]&&h[0].why==="auto"){ h[0].js=JSON.stringify(edits); h[0].ts=Date.now(); store.set("editsHist",h); } }catch(e){} } }
+function reconcileDay(di){
+  const ed=edits[di]; if(!ed||!ed.list) return false; const cur=daySig(di);
+  if(ed.sig===cur) return false;
+  const oldItems=ed.sig?null:(LEGACY_BASE[di]||null);
+  if(!ed.sig&&!oldItems){ ed.sig=cur; return true; } /* legacy edits made on an unchanged base: keep as they are */
+  const its=DAYS[di].items, used=new Set();
+  const oldInfo=n=>{ if(n.p!==undefined) return {k:n.bk,p:n.p,n:n.bn}; const o=oldItems&&oldItems[n.src]; return o?{k:o[0],p:o[1],n:o[2]}:null; };
+  const matchNew=info=>{ if(!info) return -1; let best=-1;
+    its.forEach((it,k)=>{ if(best>=0||used.has(k)||it.k==="drive") return; if((it.p||"")===info.p&&(it.k===info.k||(it.n&&it.n===info.n))) best=k; });
+    if(best<0) its.forEach((it,k)=>{ if(best>=0||used.has(k)||it.k==="drive") return; if(info.p&&(it.p||"")===info.p) best=k; });
+    if(best>=0) used.add(best); return best; };
+  const fresh=buildEd(di), carry={}, inserts=[]; let anchor=null;
+  ed.list.forEach(n=>{
+    if(n.kind==="base"){ const k=matchNew(oldInfo(n)); if(k>=0){ anchor="b"+k; const keep={}; ["dur","at","promote"].forEach(f=>{ if(n[f]!=null) keep[f]=n[f]; }); carry["b"+k]=keep; } }
+    else inserts.push({anchor,n});
+  });
+  fresh.list.forEach(x=>Object.assign(x,carry[x.key]||{}));
+  inserts.forEach(({anchor,n})=>{ const i=anchor?fresh.list.findIndex(x=>x.key===anchor):-1; let j=i+1; while(j<fresh.list.length&&fresh.list[j].kind==="custom"&&fresh.list[j]._ins) j++; n._ins=1; fresh.list.splice(j,0,n); });
+  fresh.list.forEach(x=>delete x._ins);
+  if(ed.start) fresh.start=ed.start;
+  edits[di]=fresh; return true;
+}
+function editsSummary(e){ const days=Object.keys(e||{}).filter(k=>e[k]&&e[k].list); if(!days.length) return "ไม่มีการแก้ไข";
+  return days.sort((x,y)=>x-y).map(k=>{ const c=e[k].list.filter(n=>n.kind==="custom"); const nm=c.filter(n=>n.name).map(n=>n.name).slice(0,3); return "D"+(+k+1)+(c.length?": +"+c.length+" จุด"+(nm.length?" ("+nm.join(", ")+")":""):": ปรับเวลา/ลำดับ"); }).join(" · "); }
+function backupHtml(){
+  const h=store.get("editsHist",[]);
+  const fmt=ts=>{ const d=new Date(ts); return d.toLocaleString("th-TH",{timeZone:"Asia/Tokyo",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); };
+  return `<div class="sk">สำรองข้อมูล</div><h2>สำรอง / กู้คืนแผนที่แก้ไว้</h2><div class="box"><h3>ตอนนี้</h3><p style="margin:0 0 8px">${esc(editsSummary(edits))}</p><div class="c-actions"><button class="btn small primary" data-act="bk-copy">${I.copy}คัดลอกรหัสสำรอง</button>${navigator.share?`<button class="btn small" data-act="bk-share">แชร์ไปเครื่องอื่น</button>`:""}</div></div>
+  <div class="box"><h3>กู้คืนจากรหัส</h3><textarea id="bk-in" rows="3" style="width:100%;font:13px/1.4 var(--mono,monospace);border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--surface-2);color:var(--ink)" placeholder="วางรหัสสำรองที่คัดลอกมาจากเครื่องอื่น"></textarea><div class="c-actions"><button class="btn small" data-act="bk-import">กู้คืนจากรหัสนี้</button></div></div>
+  <div class="box"><h3>ประวัติในเครื่องนี้</h3>${h.length?h.map((s,i)=>{ let e={}; try{ e=JSON.parse(s.js); }catch(x){} return `<div class="check" style="flex-wrap:wrap"><div style="flex:1;min-width:180px"><b>${esc(fmt(s.ts))}</b><br><span class="tiny">${esc(editsSummary(e))}</span></div><button class="btn small" data-act="bk-restore" data-i="${i}">กู้คืน</button></div>`; }).join(""):`<p class="tiny" style="margin:0">ยังไม่มีประวัติ จะเริ่มเก็บตั้งแต่ตอนนี้</p>`}</div>`;
+}
+function restoreEdits(js,btn){ let e; try{ e=JSON.parse(js); }catch(x){ if(btn) btn.textContent="รหัสไม่ถูกต้อง"; return; } if(!e||typeof e!=="object"){ if(btn) btn.textContent="รหัสไม่ถูกต้อง"; return; }
+  snapEdits("ก่อนกู้คืน"); edits=e; Object.values(edits).forEach(ed=>(ed&&ed.list||[]).forEach(regCustom)); reconcileAll(); store.set("edits",edits); snapEdits("กู้คืน");
+  closeSheet(); renderPlan(); if(typeof drawCustoms==="function") try{ drawCustoms(); }catch(x){} }
+function reconcileAll(){ let ch=false; Object.keys(edits).forEach(di=>{ if(DAYS[di]&&reconcileDay(+di)) ch=true; }); return ch; }
+snapEdits("open");
+if(reconcileAll()){ store.set("edits",edits); }
 let pickMode=null, draft=null, searchT=null, lastRes=[];
-function saveEdits(){ store.set("edits",edits); }
 function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.q||n.name||"",null,n.q||null]; }
 Object.values(edits).forEach(ed=>(ed.list||[]).forEach(regCustom));
 function origDur(it){ if(it.k==="train") return it.min||0; if(it.e) return Math.max(0,toMin(it.e)-toMin(it.t)); return it.k==="hotel"?20:30; }
@@ -1413,10 +1458,10 @@ function buildEd(di){
     const s=toMin(it.t);
     if(it.k==="drive"){ prevEnd=s+(it.min||0); return; }
     const pre=(it.k!=="opt"&&prevEnd!=null&&s>prevEnd)?s-prevEnd:0;
-    list.push({key:"b"+k,kind:"base",src:k,pre});
+    list.push({key:"b"+k,kind:"base",src:k,pre,p:it.p||"",bk:it.k,bn:it.n||""});
     if(it.k!=="opt") prevEnd=s+origDur(it);
   });
-  const first=its.find(it=>it.k!=="opt"); return {start:first?first.t:"08:00",list};
+  const first=its.find(it=>it.k!=="opt"); return {start:first?first.t:"08:00",list,sig:daySig(di)};
 }
 function materialize(di){ if(edits[di]) return edits[di]; edits[di]=buildEd(di); saveEdits(); return edits[di]; }
 /* migrate stops saved by the previous version */
@@ -1869,6 +1914,11 @@ document.addEventListener("click",ev=>{
   if(a==="dstop"){ stopDrive(); return; }
   if(a==="dmin"){ if(drive){ drive.min=!drive.min; store.set("drive",drive); renderDrive(); } return; }
   if(a==="gpshelp"){ openSheet(gpsHelp()); return; }
+  if(a==="backup"){ openSheet(backupHtml()); return; }
+  if(a==="bk-copy"){ const t=JSON.stringify(edits); const done=()=>{ b.textContent="คัดลอกแล้ว"; }; try{ navigator.clipboard.writeText(t).then(done,()=>{ const ta=$("#bk-in"); if(ta){ ta.value=t; ta.select(); } }); }catch(e){} return; }
+  if(a==="bk-share"){ const t=JSON.stringify(edits); if(navigator.share) navigator.share({title:"แผนฮอกไกโดที่แก้ไว้",text:t}).catch(()=>{}); return; }
+  if(a==="bk-import"){ const v=($("#bk-in")||{}).value||""; restoreEdits(v,b); return; }
+  if(a==="bk-restore"){ const h=store.get("editsHist",[]); const s=h[+b.dataset.i]; if(s) restoreEdits(s.js,b); return; }
   if(a==="notif"){ askNotif(); return; }
   if(a==="tour"){ startTour(); return; }
   if(a==="dmap"){ showDriveMap(); return; }
