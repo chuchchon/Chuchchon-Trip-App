@@ -349,6 +349,9 @@ a{color:inherit}
 .rec{border:1.5px dashed #2A8AC9;border-radius:14px;padding:10px 12px;background:color-mix(in srgb,#2A8AC9 6%,var(--surface))}
 .rec-k{font-size:12.5px;font-weight:700;color:#2A8AC9}
 .rec-n{font-family:var(--font-display);font-weight:700;font-size:17px;margin-top:2px}
+.ti.k-scenic .card{background:color-mix(in srgb,#C0392B 5%,var(--surface));border-style:dashed}
+.ti.k-scenic .dot{background:#E67E22;border-color:#E67E22;transform:scale(.8)}
+.ti.k-scenic .tm small{font-size:10px}
 .muted{color:var(--muted)}
 .tiny{font-size:13px;color:var(--muted)}
 .spacer-drive{height:0}
@@ -442,6 +445,8 @@ const P = {
   clock:["หอนาฬิกาซัปโปโร",43.0626,141.3535,"ChIJR3JQJ3YpC18R680ES0qomxs","札幌市時計台","clock"],
   donguri:["Donguri (Odori)",43.0604,141.3556,null,"どんぐり ちくわパン",null,"Donguri Odori Sapporo"],
   tanuki:["ถนน Tanukikoji",43.0577,141.3530,null,"狸小路商店街","tanuki","Tanukikoji Shopping Street Sapporo"],
+  nisekovp:["Michi-no-Eki Niseko View Plaza",42.8705,140.6875,null,"道の駅 ニセコビュープラザ 羊蹄山",null,"道の駅 ニセコビュープラザ"],
+  fukidashi:["สวนน้ำพุ Fukidashi (เกียวโกกุ)",42.8566,140.8779,null,"京極 ふきだし公園","yotei","京極ふきだし公園"],
   ramai:["Asian Bar Ramai (สาขา Sapporo Chuo)",43.0546,141.3428,null,"アジアンバー ラマイ スープカレー","ramai","アジアンバー ラマイ 札幌中央店"],
   sapfac:["Sapporo Factory",43.0645,141.3627,null,"サッポロファクトリー 煙突","sapfac","サッポロファクトリー"],
   outlet:["Mitsui Outlet Park Sapporo Kitahiroshima",42.991,141.523,null,"三井アウトレットパーク 札幌北広島","outlet","三井アウトレットパーク 札幌北広島"],
@@ -678,42 +683,44 @@ const DAYS = [
    {t:"15:45",k:"hotel",p:"cocoa",lim:"21:30",n:"เช็คอิน Hotel Cocoa",x:"วิวทะเลสาบจากห้อง · ไม่มีอาหาร มีแพนทรีไมโครเวฟ",w:"แผนกต้อนรับปิด 22:00 เช็คอินก่อนออกไปดูพลุ"},
    {t:"20:45",e:"21:05",k:"night",p:"fireworks",n:"พลุทะเลสาบโทยะ",x:"ออกจากโรงแรมราว 20:15 · ลมแรงยกเลิก",tag:"new"}
   ]},
- {n:3,date:"2026-10-20",dow:"อ",title:"โทยะ → นิเซโกะ → Nakayama Pass → โจซังเค",hotel:"hanamomiji",hotelName:"Hanamomiji (จ่ายที่โรงแรม 8,116 บาท)",
-  route:[[42.6133,140.7802],[42.6262,140.7996],[42.6155,140.7865],[42.68,140.80],[42.765,140.79],[42.80,140.72],[42.845,140.67],[42.872,140.645],[42.882,140.633],[42.8886,140.6071],[42.875,140.64],[42.8368,140.6754],[42.88,140.73],[42.901,140.757],[42.857,140.876],[42.81,140.93],[42.83,141.03],[42.8563,141.0972],[42.92,141.135],[42.966,141.1618]],
+ {n:3,date:"2026-10-20",dow:"อ",title:"โทยะ → นิเซโกะ → เกียวโกกุ → Nakayama → เขื่อนโฮเฮเคียว → โจซังเค",hotel:"hanamomiji",hotelName:"Hanamomiji (จ่ายที่โรงแรม 8,116 บาท)",
+  route:[[42.6133,140.7802],[42.6262,140.7996],[42.6155,140.7865],[42.68,140.80],[42.765,140.79],[42.8705,140.6875],[42.90,140.76],[42.88,140.83],[42.8566,140.8779],[42.81,140.93],[42.83,141.03],[42.8563,141.0972],[42.90,141.13],[42.9157,141.1535],[42.966,141.1618]],
   items:[
    {t:"08:00",e:"08:30",k:"bf",p:"cocoa",n:"อาหารเช้าเบาๆ ที่ Hotel Cocoa",x:"เสบียงที่ซื้อไว้ แล้วไปต่อที่ Lake Hill Farm"},
    {t:"08:30",k:"drive",from:"cocoa",to:"silo",min:10,rd:[],sc:[]},
    {t:"08:45",e:"09:15",k:"stop",p:"silo",n:"Silo Observatory",x:"วิวทะเลสาบ ภูเขา Usu · เปิด 08:30"},
    {t:"09:15",k:"drive",from:"silo",to:"lakehill",min:10,rd:[],sc:[]},
-   {t:"09:30",e:"10:20",k:"bf",p:"lakehill",n:"Lake Hill Farm",x:"มื้อเช้ามื้อที่สอง: พิซซ่า พุดดิ้ง เจลาโต้ · วิวโยเท",food:39},
-   {t:"10:20",k:"drive",from:"lakehill",to:"panorama",min:80,rd:[["pref","66"]],sc:[
-     {m:12,t:"ภูเขาโยเทเต็มลูก",ll:[42.68,140.8],x:"ถนนขึ้นเหนือไปมักการิ ภูเขาโยเทจะอยู่ด้านหน้าเยื้องขวา",img:"真狩 羊蹄山 紅葉",story:"yotei"},
-     {m:40,t:"ทุ่งนิเซโกะและ Niseko Annupuri",ll:[42.82,140.7],x:"ทุ่งเกษตรกว้าง ด้านหน้าเป็นเทือกเขานิเซโกะ",img:"ニセコアンヌプリ 紅葉"},
-     {m:58,t:"Goshiki Onsen — ไอกำมะถันบนเขา",ll:[42.87,140.642],x:"เริ่มเข้า Panorama Line ช่วงสูง ป่าแดงเหลืองทั้งสองข้าง",img:"五色温泉 ニセコ 紅葉",story:"panorama"},
-     {m:70,t:"จุดสูงของ Panorama Line",ll:[42.884,140.62],x:"มองย้อนกลับไปจะเห็นโยเทอยู่อีกฝั่งหุบเขา หาลานจอดข้างทางเพื่อถ่ายรูป",img:"ニセコパノラマライン 羊蹄山",story:"panorama"}]},
-   {t:"12:00",e:"13:15",k:"meal",p:"takahashi",n:"มื้อเที่ยง Takahashi Dairy Farm",x:"PRATIVO 11:00–16:00 หรือ Mandriano พิซซ่า · Milk Kobo ขนมนม",food:40},
-   {t:"13:15",k:"drive",from:"takahashi",to:"boyo",min:60,rd:[["nat","276"],["nat","230"]],sc:[
-     {m:22,t:"โยเทระยะใกล้ — เมืองเกียวโกกุ",ll:[42.857,140.876],x:"ถนนอ้อมตีนเขาโยเท ในเมืองนี้มีสวนน้ำพุ Fukidashi ที่น้ำจากหิมะบนยอดผุดขึ้นมา",img:"京極 ふきだし公園 羊蹄山",story:"yotei"},
-     {m:40,t:"หุบเขาคิโมเบ็ตสึ",ll:[42.81,140.96],x:"ถนนเลี้ยวขึ้นทางหลวง 230 ผ่านหุบเขาใบไม้แดง",img:"喜茂別 紅葉 国道230号"},
-     {m:57,t:"ใกล้ถึง Bōyō Nakayama",ll:[42.85,141.08],x:"ยอดช่องเขา มองย้อนกลับไปเห็นโยเท",img:"中山峠 羊蹄山",story:"nakayama"}]},
-   {t:"14:15",e:"14:35",k:"stop",p:"boyo",n:"Michi-no-Eki Bōyō Nakayama",x:"จุดมองโยเท · ลอง Age-imo",tag:"new"},
-   {t:"14:35",k:"drive",from:"boyo",to:"hanamomiji",min:30,rd:[["nat","230"]],sc:[
-     {m:20,t:"หุบเขาลงสู่โจซังเค",ll:[42.93,141.14],x:"ทางลงเขายาว ทั้งสองข้างเป็นป่าใบไม้แดง ขับช้าและใช้เกียร์ต่ำ",img:"定山渓 紅葉 国道230号",story:"jozankei"}]},
-   {t:"15:05",e:"15:30",k:"hotel",p:"hanamomiji",n:"เช็คอิน Hanamomiji",x:"จ่ายห้อง 1 คนที่โรงแรม ¥39,500 (ราว 8,116 บาท)",w:"สองห้องได้มื้อเย็นคนละแพลน ดูรายละเอียดในใบยืนยันการจอง"},
-   {t:"15:30",e:"16:30",k:"stop",p:"futami",n:"สะพาน Futami",x:"เดิน 10 นาที ใบไม้ริมแม่น้ำ"},
+   {t:"09:30",e:"10:00",k:"bf",p:"lakehill",n:"Lake Hill Farm",x:"มื้อเช้ามื้อที่สอง: พิซซ่า พุดดิ้ง เจลาโต้ · วิวโยเท",food:39,tag:"chg"},
+   {t:"10:00",k:"drive",from:"lakehill",to:"nisekovp",min:40,rd:[["pref","66"]],sc:[
+     {m:10,t:"ภูเขาโยเทเต็มลูก",ll:[42.68,140.8],x:"ถนนขึ้นเหนือไปมักการิ ภูเขาโยเทจะอยู่ด้านหน้าเยื้องขวา",img:"真狩 羊蹄山 紅葉",story:"yotei"},
+     {m:25,t:"ทุ่งมักการิ ตีนเขาโยเท",ll:[42.76,140.8],x:"ทุ่งเกษตรกว้างตีนเขา มีที่จอดข้างทางให้แวะถ่ายรูปได้",img:"真狩村 羊蹄山 畑"}]},
+   {t:"10:40",e:"11:05",k:"stop",p:"nisekovp",n:"Michi-no-Eki Niseko View Plaza",x:"จุดพักรถ ตลาดผักผลไม้ ห้องน้ำ · วิวโยเทและ Niseko Annupuri",tag:"new"},
+   {t:"11:05",k:"drive",from:"nisekovp",to:"fukidashi",min:35,rd:[["nat","5"],["nat","276"]],sc:[
+     {m:10,t:"โยเทจากฝั่งคุจจัง",ll:[42.9,140.76],x:"ผ่านเมืองคุจจัง โยเทอยู่ทางขวามือ",img:"倶知安 羊蹄山"},
+     {m:25,t:"ทุ่งเกษตรเชิงเขาโยเท",ll:[42.88,140.83],x:"ถนนเลียบตีนเขาไปเกียวโกกุ",img:"京極町 羊蹄山 畑"}]},
+   {t:"11:40",e:"12:10",k:"stop",p:"fukidashi",n:"สวนน้ำพุ Fukidashi (เกียวโกกุ)",x:"น้ำใต้ดินจากหิมะบนยอดโยเทผุดเป็นน้ำพุ ตักน้ำดื่มได้ · มีจุดพักรถติดกัน",tag:"new"},
+   {t:"12:10",k:"drive",from:"fukidashi",to:"boyo",min:45,rd:[["nat","276"],["nat","230"]],sc:[
+     {m:18,t:"หุบเขาคิโมเบ็ตสึ",ll:[42.81,140.96],x:"ถนนเลี้ยวขึ้นทางหลวง 230 ผ่านหุบเขาใบไม้แดง",img:"喜茂別 紅葉 国道230号"},
+     {m:40,t:"ใกล้ถึง Bōyō Nakayama",ll:[42.85,141.08],x:"ยอดช่องเขา มองย้อนกลับไปเห็นโยเท",img:"中山峠 羊蹄山",story:"nakayama"}]},
+   {t:"12:55",e:"13:40",k:"meal",p:"boyo",n:"มื้อเที่ยง Michi-no-Eki Bōyō Nakayama",x:"ร้านอาหารในจุดพักรถ · ลอง Age-imo · จุดมองโยเท",tag:"chg"},
+   {t:"13:40",k:"drive",from:"boyo",to:"hoheikyo",min:25,rd:[["nat","230"]],sc:[
+     {m:15,t:"หุบเขาลงสู่โจซังเค",ll:[42.93,141.14],x:"ทางลงเขายาว ทั้งสองข้างเป็นป่าใบไม้แดง ขับช้าและใช้เกียร์ต่ำ",img:"定山渓 紅葉 国道230号",story:"jozankei"}]},
+   {t:"14:05",e:"15:15",k:"stop",p:"hoheikyo",n:"เขื่อนโฮเฮเคียว (Hoheikyo Dam)",x:"จอดลานจอดฟรี → รถบัสไฟฟ้า (ไป-กลับ ¥1,200) · รอบขึ้นสุดท้าย 15:30",lim:"15:15",tag:"new"},
+   {t:"15:15",k:"drive",from:"hoheikyo",to:"hanamomiji",min:15,rd:[["nat","230"]],sc:[]},
+   {t:"15:30",e:"15:50",k:"hotel",p:"hanamomiji",n:"เช็คอิน Hanamomiji",x:"จ่ายห้อง 1 คนที่โรงแรม ¥39,500 (ราว 8,116 บาท)",w:"สองห้องได้มื้อเย็นคนละแพลน ดูรายละเอียดในใบยืนยันการจอง"},
+   {t:"15:50",e:"16:40",k:"stop",p:"futami",n:"สะพาน Futami",x:"เดิน 10 นาที ใบไม้ริมแม่น้ำ · พระอาทิตย์ตกราว 16:50"},
    {t:"18:00",e:"19:30",k:"meal",p:"hanamomiji",fix:true,n:"ไคเซกิที่โรงแรม",x:"คอร์สปรุงสุก งดเนื้อวัว"}
   ]},
  {n:4,date:"2026-10-21",dow:"พ",title:"โจซังเค → โอตารุ → ซัปโปโร (คืนรถ)",hotel:"mystays",hotelName:"Hotel MyStays Sapporo Aspen",
   route:[[42.966,141.1618],[43.00,141.12],[43.06,141.07],[43.12,141.04],[43.17,141.01],[43.199,141.0021],[43.1915,141.0068],[43.2004,140.9951],[43.18,141.07],[43.14,141.18],[43.10,141.28],[43.0704,141.3489]],
   items:[
-   {t:"07:30",e:"08:20",k:"bf",p:"hanamomiji",n:"บุฟเฟต์เช้า Hanamomiji",x:"รวมในค่าที่พัก · กินเร็วหน่อยเพื่อไปเขื่อนให้ทันรอบแรก แล้วเช็คเอาท์ (ก่อน 10:00)",tag:"chg"},
-   {t:"08:30",k:"drive",from:"hanamomiji",to:"hoheikyo",min:15,rd:[["nat","230"]],sc:[]},
-   {t:"08:45",e:"10:15",k:"stop",p:"hoheikyo",lim:"15:30",n:"เขื่อนโฮเฮเคียว (Hoheikyo Dam)",x:"จอดลานจอดฟรี → รถบัสไฟฟ้า 2 กม. (รอบแรก 08:45 · ไป-กลับ ¥1,200) · ใบไม้เริ่มร่วงแล้ว ถามโรงแรมก่อนว่ายังมีสีไหม",tag:"new"},
-   {t:"10:15",k:"drive",from:"hoheikyo",to:"otaru",min:75,rd:[["nat","230"],["pref","1"]],sc:[
-     {m:20,t:"ทะเลสาบซัปโปโร (เขื่อนโจซังเค)",ll:[43.005,141.155],x:"ทะเลสาบเขื่อนทางขวามือ ใบไม้รอบทะเลสาบ มีจุดจอดดูวิว",img:"さっぽろ湖 紅葉 定山渓ダム"},
-     {m:40,t:"ถนนข้ามเขาอาซาริ",ll:[43.08,141.06],x:"ทางผ่านป่าและทะเลสาบเขื่อนบนเขา ใบไม้เปลี่ยนสีสองข้างทาง",img:"小樽定山渓線 紅葉 朝里"},
-     {m:65,t:"มองเห็นทะเลและเมืองโอตารุ",ll:[43.15,141.02],x:"ถนนลงเขา ด้านหน้าคืออ่าวอิชิการิและท่าเรือ",img:"小樽 港 眺望",story:"otaru"}]},
-   {t:"11:30",e:"15:30",k:"stop",p:"sakaimachi",n:"โอตารุ: Sakaimachi + คลอง",x:"LeTAO สาขาหลัก Kitaichi Glass กล่องดนตรี · มื้อเที่ยง Naruto · มีเวลาเดินเต็มที่ 4 ชม.",food:33,tag:"chg"},
+   {t:"07:30",e:"08:30",k:"bf",p:"hanamomiji",n:"บุฟเฟต์เช้า Hanamomiji",x:"รวมในค่าที่พัก · เช็คเอาท์ก่อน 10:00",tag:"chg"},
+   {t:"08:45",e:"10:00",k:"opt",p:"hoheikyo",n:"ทางเลือก: เขื่อนโฮเฮเคียว",x:"ถ้าเมื่อวานไม่ได้ไป · รถบัสไฟฟ้ารอบแรก 08:45"},
+   {t:"09:00",k:"drive",from:"hanamomiji",to:"otaru",min:75,rd:[["pref","1"]],sc:[
+     {m:10,t:"ทะเลสาบซัปโปโร (เขื่อนโจซังเค)",ll:[43.005,141.155],x:"ทะเลสาบเขื่อนทางขวามือ ใบไม้รอบทะเลสาบ มีจุดจอดดูวิว",img:"さっぽろ湖 紅葉 定山渓ダム"},
+     {m:30,t:"ถนนข้ามเขาอาซาริ",ll:[43.08,141.06],x:"ทางผ่านป่าและทะเลสาบเขื่อนบนเขา ใบไม้เปลี่ยนสีสองข้างทาง",img:"小樽定山渓線 紅葉 朝里"},
+     {m:55,t:"มองเห็นทะเลและเมืองโอตารุ",ll:[43.15,141.02],x:"ถนนลงเขา ด้านหน้าคืออ่าวอิชิการิและท่าเรือ",img:"小樽 港 眺望",story:"otaru"}]},
+   {t:"10:15",e:"15:30",k:"stop",p:"sakaimachi",n:"โอตารุ: Sakaimachi + คลอง",x:"LeTAO สาขาหลัก Kitaichi Glass กล่องดนตรี · มื้อเที่ยง Naruto · มีเวลาเดินเต็มที่ 5 ชม.",food:33,tag:"chg"},
    {t:"15:30",k:"drive",from:"otaru",to:"mystays",min:60,rd:[["exp","E5A"]],sc:[
      {m:12,t:"ทางด่วนเลียบอ่าวอิชิการิ",ll:[43.137,141.165],x:"ช่วงเซนิบาโกะ ทางซ้ายมือคือทะเลญี่ปุ่น · แดดใกล้ตก",img:"銭函 石狩湾 海岸"}]},
    {t:"16:30",e:"16:50",k:"hotel",p:"mystays",n:"ฝากกระเป๋าที่ MyStays",x:"ก่อนคืนรถ · จอดหน้าโรงแรมสั้นๆ ถามหน้าเคาน์เตอร์",tag:"chg"},
@@ -917,6 +924,12 @@ const SPOTP = {
   {n:"ปล่องควันอิฐแดง",m:10,jp:"サッポロファクトリー 煙突",x:"ปล่องควันของโรงเบียร์เดิม สัญลักษณ์ของที่นี่"},
   {n:"โรงเบียร์ Kaitakushi",m:60,jp:"開拓使麦酒醸造所",x:"ร้านอาหารข้างหม้อต้มเบียร์ ดื่มเบียร์ Kaitakushi สด"},
   {n:"ห้องโถงหลังคากระจก",m:15,jp:"サッポロファクトリー アトリウム",x:"โถงกลางห้างขนาดใหญ่ ตกแต่งตามฤดูกาล"}],
+ nisekovp:[
+  {n:"ลานวิวโยเทและ Annupuri",m:10,jp:"ニセコビュープラザ 羊蹄山 アンヌプリ",x:"ลานหน้าจุดพักรถ มองเห็นทั้งโยเทและเทือกเขานิเซโกะ"},
+  {n:"ตลาดผักผลไม้เกษตรกร",m:15,jp:"ニセコビュープラザ 直売所",x:"ผักผลไม้ตามฤดูของนิเซโกะ ขนม และนมจากฟาร์มท้องถิ่น"}],
+ fukidashi:[
+  {n:"น้ำพุจากภูเขาโยเท",m:15,jp:"京極 ふきだし公園 湧水",x:"น้ำใสเย็นผุดจากโขดหิน ตักดื่มได้ (เอาขวดไปด้วย)"},
+  {n:"สะพานและทางเดินในสวน",m:15,jp:"京極 ふきだし公園 遊歩道",x:"ทางเดินสั้นๆ ข้ามลำธาร ใบไม้รอบสวน"}],
  susukino:[
   {n:"สี่แยกซูซูกิโนะ (ป้ายนิกกะ)",m:10,jp:"すすきの交差点 ニッカ",x:"ป้ายไฟวิสกี้ Nikka ยักษ์ จุดถ่ายรูปกลางคืน"},
   {n:"ซอยราเมน",m:45,jp:"元祖さっぽろラーメン横丁",x:"ซอยแคบที่มีร้านราเมนเรียงกัน"}]
@@ -925,7 +938,7 @@ const SPOTP = {
 const REC = [
  {id:"enmado",day:1,after:"jigoku",n:"ศาลยักษ์ Enma (Enmado)",jp:"登別 閻魔堂",lat:42.4946,lng:141.1455,dur:15,x:"รูปปั้นพญายมในเมือง Noboribetsu Onsen หน้าเปลี่ยนเป็นหน้าโกรธเป็นรอบๆ ต่อวัน อยู่ระหว่างทางจากหุบเขานรก"},
  {id:"usuzan",day:1,after:"hikaru",n:"ภูเขาโชวะชินซัง + กระเช้าภูเขาอุสุ",jp:"有珠山ロープウェイ",lat:42.5440,lng:140.8639,dur:75,x:"ภูเขาไฟที่เกิดใหม่ปี 1943–45 ขึ้นกระเช้าดูวิวโชวะชินซัง ทะเลสาบโทยะ และอ่าวอุจิอุระ อยู่ทางผ่านเข้าเมืองโทยะ"},
- {id:"fukidashi",day:2,after:"takahashi",n:"สวนน้ำพุ Fukidashi (เกียวโกกุ)",jp:"京極 ふきだし公園",lat:42.8566,lng:140.8779,dur:30,x:"น้ำใต้ดินจากหิมะบนยอดโยเทผุดเป็นน้ำพุ ตักน้ำดื่มได้ อยู่บนเส้นทางไป Nakayama Pass"},
+ {id:"goshiki",day:2,after:"nisekovp",n:"แวะขึ้น Niseko Panorama Line ถึง Goshiki Onsen",jp:"ニセコ 五色温泉",lat:42.870,lng:140.642,dur:20,x:"ถนนขึ้นเขาจากเมืองนิเซโกะ ใบไม้ช่วงบนเริ่มร่วงแล้วแต่ช่วงกลางยังมีสี ขับไป-กลับเพิ่มราว 1 ชม. ทำให้ถึงเขื่อนช้าลง แอปจะเตือนถ้าไม่ทันรถบัสรอบสุดท้าย"},
  {id:"gensen",day:2,after:"futami",n:"สวนน้ำพุร้อน Gensen Park",jp:"定山源泉公園",lat:42.9667,lng:141.1636,dur:20,x:"บ่อแช่เท้าฟรีกลางเมืองโจซังเค และบ่อต้มไข่ออนเซ็น"},
  {id:"iwato",day:2,after:"futami",n:"ถ้ำ Iwato Kannon-do",jp:"定山渓 岩戸観音堂",lat:42.9655,lng:141.1580,dur:30,x:"ถ้ำยาวราว 120 ม. ประดิษฐานรูปเจ้าแม่กวนอิม 33 องค์ ใกล้สะพาน Futami"},
  {id:"kikkogura",day:3,after:"sakaimachi",n:"โรงสาเก Tanaka Shuzo (Kikkogura)",jp:"田中酒造 亀甲蔵",lat:43.1868,lng:141.0160,dur:30,x:"โรงสาเกในโกดังหินเก่าของโอตารุ ชมการผลิตและชิมฟรี (คนขับงดดื่ม)"},
@@ -1036,9 +1049,11 @@ function renderPlan(){
     if(it.k==="custom"){ h+=customHtml(it,cls,tm)+insRow(k); return; }
     if(it.k==="drive"||it.k==="train"){
       const to=P[it.to][0];
-      const sc=(it.sc||[]).map(s=>`<li><b>+${s.m} น.</b><span>${esc(s.t)}</span></li>`).join("");
+      const sc=(it.sc||[]).length?`<p class="tiny" style="margin:4px 0 0">🍁 จุดวิวระหว่างทาง ${it.sc.length} จุด (แสดงในไทม์ไลน์ด้านล่าง)</p>`:"";
       const roads=(it.rd||[]).map(roadBadge).join(" ");
       h+=`<li class="${cls}${it.syn?" syn":""}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?(it.bus?"🚌 รถบัส":it.walk?"🚶 เดิน":it.transit?"🚇 รถไฟใต้ดิน/รถบัส":"🚆 รถไฟ"):"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}${wxChip(it.to,d.date,fmtMin(toMin(it.t)+(it.min||0)))}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc?`<ul class="scenic-mini">${sc}</ul>`:""}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}</div></div></li>`;
+      (it.sc||[]).forEach(s=>{ const st=fmtMin(toMin(it.t)+s.m);
+        h+=`<li class="ti k-scenic"><div class="tm">${st}<small>ระหว่างขับ</small></div><div class="dot"></div><div class="card"><div class="c-top"><span class="c-kind">🍁 จุดวิวสวย · หลังออกรถ ${s.m} นาที</span></div><div class="c-name">${esc(s.t)}</div><p class="c-note">${esc(s.x||"")}</p>${s.img?stripHtml(s.img,4,"sm",""):""}<div class="c-actions">${s.story?`<button class="btn small" data-act="story" data-id="${s.story}">${I.book}เรื่องน่ารู้</button>`:""}${s.ll?aBtn("https://www.google.com/maps/search/?api=1&query="+s.ll[0]+","+s.ll[1],"ดูบนแผนที่",I.map||""):""}</div></div></li>`; });
       return;
     }
     const p=it.p?P[it.p]:null;
@@ -1386,7 +1401,7 @@ addEventListener("resize",()=>{ if(tour) renderTour(); });
 /* ---------- editable day plans: custom stops, reorder, recalculated times ---------- */
 const HKD_BBOX="139.3,41.3,146.0,45.6";
 let edits=store.get("edits",{});
-if(store.get("editsVer",1)<3){ delete edits[4]; delete edits[5]; store.set("edits",edits); store.set("editsVer",3); }
+if(store.get("editsVer",1)<4){ delete edits[2]; delete edits[3]; delete edits[4]; delete edits[5]; store.set("edits",edits); store.set("editsVer",4); }
 let pickMode=null, draft=null, searchT=null, lastRes=[];
 function saveEdits(){ store.set("edits",edits); }
 function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.q||n.name||"",null,n.q||null]; }
