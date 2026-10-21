@@ -350,6 +350,16 @@ a{color:inherit}
 .rec{border:1.5px dashed #2A8AC9;border-radius:14px;padding:10px 12px;background:color-mix(in srgb,#2A8AC9 6%,var(--surface))}
 .rec-k{font-size:12.5px;font-weight:700;color:#2A8AC9}
 .rec-n{font-family:var(--font-display);font-weight:700;font-size:17px;margin-top:2px}
+.food-rec{border-color:#C77D2B;background:color-mix(in srgb,#C77D2B 6%,var(--surface))}
+.food-rec .rec-k{color:#A35F12}
+.fr-list{list-style:none;margin:6px 0 4px;padding:0;display:flex;flex-direction:column;gap:8px}
+.fr-list li{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;border-top:1px dashed color-mix(in srgb,#C77D2B 35%,transparent);padding-top:8px}
+.fr-list li:first-child{border-top:0;padding-top:0}
+.fr-e{font-size:20px;line-height:1.2}
+.fr-m{flex:1;min-width:170px;display:flex;flex-direction:column;gap:1px}
+.fr-m b{font-size:15.5px}
+.fr-note{color:var(--ink);opacity:.8}
+.fr-b{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .ti.k-scenic .card{background:color-mix(in srgb,#C0392B 5%,var(--surface));border-style:dashed}
 .ti.k-scenic .dot{background:#E67E22;border-color:#E67E22;transform:scale(.8)}
 .ti.k-scenic .tm small{font-size:10px}
@@ -1080,14 +1090,14 @@ function renderPlan(){
   h+=wxDayLine(curDay);
   if(edits[curDay]) h+=`<div class="note-box">วันนี้แก้แผนแล้ว เวลาคำนวณใหม่ (เวลาเดิมขีดฆ่าตัวเล็ก) <button class="linkbtn" data-act="cs-reset">รีเซ็ตกลับแผนเดิม</button></div>`;
   h+=`<ol class="tl">`;
-  let carGoneR=curDay>=CARFREE_DAY; const recShown={}; let prevKeyR=null;
+  let carGoneR=curDay>=CARFREE_DAY; const recShown={}; let prevKeyR=null; const frMap=foodByStop(curDay);
   planItems(curDay).forEach(it=>{ const pkR=prevKeyR; if(it.k!=="drive"&&it.k!=="opt"&&it.k!=="train") prevKeyR=it._i;
     const k=it._i;
     navMode=carGoneR?(it.walk?"walking":"transit"):"driving";
     const cls=`ti k-${it.k}${k===nowK?" is-now":""}`;
     const tAct=it.k==="drive"?`data-act="cs-leg" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-min="${it.min}"`:(it.k==="train"?"":`data-act="cs-time" data-key="${esc(k)}"`);
     const tm=`<div class="tm${tAct?" tm-ed":""}" ${tAct} ${tAct?'role="button" aria-label="แก้เวลา"':""}>${esc(it.t)}${it.e?`<small>${esc(it.e)}</small>`:""}${it._sh?`<s class="t0">${esc(it._t0)}</s>`:""}${tAct?'<i class="tm-pen">✎</i>':""}</div><div class="dot"></div>`;
-    if(it.k==="custom"){ h+=customHtml(it,cls,tm)+insRow(k); return; }
+    if(it.k==="custom"){ h+=customHtml(it,cls,tm)+foodRowHtml(curDay,it,frMap[k])+insRow(k); return; }
     if(it.k==="drive"||it.k==="train"){
       const to=P[it.to][0];
       const sc=(it.sc||[]).length?`<p class="tiny" style="margin:4px 0 0">🍁 จุดวิวระหว่างทาง ${it.sc.length} จุด (แสดงในไทม์ไลน์ด้านล่าง)</p>`:"";
@@ -1103,7 +1113,7 @@ function renderPlan(){
     const bk=(it.k==="hotel"&&BOOKINGS[it.p])?`<button class="btn small primary" data-act="booking" data-id="${it.p}">${I.doc}ใบยืนยันการจอง</button>`:"";
     const food=it.food?`<button class="btn small" data-act="food" data-id="${it.food}">★ ร้านในลิสต์</button>`:"";
     h+=`<li class="${cls}" data-key-row="${esc(k)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}${p?stripHtml(p[4]||p[0],5,"",p[6]||latinName(p[0]),[p[1],p[2]]):""}${SPOTP[it.p]?`<button class="spot-link" data-act="spots" data-id="${it.p}">📍 จุดที่ต้องชมใน${esc(p[0])} (${SPOTP[it.p].length}) ›</button>`:""}${it._clash?`<p class="c-warn">⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว</p>`:""}${it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`<p class="c-warn">⚠ เวลาใหม่เลย ${esc(it.lim)} แล้ว (${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"})</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
-    if(it.k!=="opt"){ if(!recShown[it.p]){ h+=recsAfter(curDay,it); recShown[it.p]=1; } h+=insRow(k); }
+    if(it.k!=="opt"){ h+=foodRowHtml(curDay,it,frMap[k]); if(!recShown[it.p]){ h+=recsAfter(curDay,it); recShown[it.p]=1; } h+=insRow(k); }
     if(curDay===3&&it.p==="station"&&it.k==="stop") carGoneR=true;
   });
   h+=`</ol>`;
@@ -1700,6 +1710,7 @@ function distTxt(kmv){ return kmv<1?Math.round(kmv*1000/10)*10+" ม.":kmv.toFix
 /* ----- explore around me (walking) ----- */
 const EXC=[
  {id:"top",e:"✨",n:"น่าเที่ยว",f:['nwr["tourism"~"^(attraction|museum|gallery|viewpoint|zoo|aquarium|theme_park)$"]["name"]','nwr["historic"]["name"]','nwr["amenity"="place_of_worship"]["name"]["wikidata"]','nwr["leisure"~"^(park|garden)$"]["name"]["wikidata"]','nwr["natural"~"^(waterfall|peak|hot_spring)$"]["name"]'],wiki:true},
+ {id:"mine",e:"⭐",n:"ร้านในลิสต์ของฉัน",f:[],mine:true},
  {id:"food",e:"🍜",n:"ร้านอาหาร",f:['nwr["amenity"~"^(restaurant|fast_food|food_court)$"]["name"]']},
  {id:"cafe",e:"☕",n:"คาเฟ่ / ขนม",f:['nwr["amenity"~"^(cafe|ice_cream)$"]["name"]','nwr["shop"~"^(confectionery|pastry|bakery)$"]["name"]']},
  {id:"bar",e:"🍺",n:"บาร์ / อิซากายะ",f:['nwr["amenity"~"^(bar|pub|biergarten)$"]["name"]','nwr["amenity"="restaurant"]["cuisine"~"izakaya|yakitori"]["name"]']},
@@ -1740,6 +1751,8 @@ async function exRun(){
   ex.loading=true; exPaint(); const want=ex.ll.join(",")+cat.id+ex.r;
   let list=[], ok=false;
   if(cat.f.length){ const q=`[out:json][timeout:25];(${cat.f.map(f=>f+`(around:${ex.r},${ex.ll[0].toFixed(5)},${ex.ll[1].toFixed(5)});`).join("")});out center tags 200;`; const j=await ovFetch(q); if(j){ ok=true; list=(j.elements||[]).map(e=>ovItem(e,cat)).filter(Boolean); } }
+  if(cat.mine){ ok=true; const rr=Math.max(ex.r,1500)/1000; FOOD.forEach(f=>{ if(f[4]==null) return; const d=km(ex.ll,[f[4],f[5]]); if(d>rr) return; const c=CAT[f[1]]||{e:"🍴",n:"ร้านอาหาร"};
+      list.push({id:"f"+f[0],fid:f[0],name:f[2],en:"",kind:c.e+" "+c.n,sub:[c.n,f[3],INPLAN[f[0]]?"★ ในแผน: "+INPLAN[f[0]]:"",f[8]].filter(Boolean).join(" · "),lat:f[4],lng:f[5],star:false,wp:"",wd:"",hours:"",tags:{},osmk:"amenity",osmv:f[1]===0?"cafe":"restaurant"}); }); }
   if(cat.wiki){ const w=await exWiki(ex.ll,ex.r); if(w){ ok=true; const near=(a,b)=>km([a.lat,a.lng],[b.lat,b.lng])<0.12; w.forEach(x=>{ const dup=list.find(y=>y.name===x.name||(near(x,y)&&(y.star||y.name.includes(x.name)||x.name.includes(y.name)))); if(dup){ if(!dup.wp) dup.wp=x.wp; dup.star=true; } else list.push(x); }); } }
   if(ex.ll.join(",")+cat.id+ex.r!==want) return;
   ex.loading=false; if(!ok){ ex.err="ค้นหาไม่ได้ตอนนี้ (เน็ตหรือเซิร์ฟเวอร์ OpenStreetMap ไม่ตอบ) ลองใหม่อีกครั้ง"; ex.res=null; exPaint(); return; }
@@ -1854,7 +1867,7 @@ function openAddStop(afterKey){
   renderAddStop();
 }
 function applyDraft(ed,dr){
-  if(dr.mode==="add"){ const n={key:dr.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note,dur:dr.dur,at:dr.at||"",pre:0}; regCustom(n);
+  if(dr.mode==="add"){ const n={key:dr.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note,dur:dr.dur,at:dr.at||"",pre:0}; if(dr.q) n.q=dr.q; regCustom(n);
     const i=dr.atStart?-1:ed.list.findIndex(x=>x.key===dr.afterKey); ed.list.splice(i<0&&!dr.atStart?ed.list.length:i+1,0,n); }
   else { const n=ed.list.find(x=>x.key===dr.key); if(!n) return; n.dur=dr.dur; n.at=dr.at||""; if(n.kind==="custom"){ n.name=dr.name||n.name; n.lat=dr.lat; n.lng=dr.lng; n.note=dr.note; regCustom(n); } if(dr.promote!=null) n.promote=dr.promote; }
 }
@@ -2014,6 +2027,9 @@ document.addEventListener("click",ev=>{
   if(a==="cs-pickcancel"){ cancelPick(false); return; }
   if(a==="cs-pickname"){ const c=pickCands[+b.dataset.i]; if(c) finishPick(c); return; }
   if(a==="cs-pickraw"){ if(!pickTap) return; const ll=pickTap.ll; const near=pickCands[0]; finishPick({lat:ll[0],lng:ll[1],name:pickMode.name||(near&&near.d<0.05?near.name:"")||"จุดที่ปักเอง"}); return; }
+  if(a==="cs-frmore"){ const k=b.dataset.k; frOpen.has(k)?frOpen.delete(k):frOpen.add(k); renderPlan(); return; }
+  if(a==="cs-fradd"){ const f=FOOD.find(x=>x[0]===+b.dataset.id); if(!f) return; openAddStop(b.dataset.key); const meal=f[1]!==0;
+    Object.assign(draft,{name:f[2],lat:f[4],lng:f[5],q:(latinName(f[2])||f[2])+" "+cityOf(f[3]),dur:meal?60:30,note:f[8]||"",durNote:(meal?"มื้ออาหาร":"อาหารเช้า/ของว่าง")+" · ตั้งเวลาอยู่ให้อัตโนมัติ "+(meal?60:30)+" นาที ปรับได้"}); renderAddStop(); return; }
   if(a==="cs-time"){ openTime(b.dataset.key); return; }
   if(a==="cs-qtshift"){ const m=+b.dataset.m; qt.s+=m; if(qt.e!=null) qt.e+=m; renderTime(false); return; }
   if(a==="cs-qtdur"){ if(qt.e==null) return; qt.e=Math.max(qt.s+5,qt.e+ +b.dataset.m); renderTime(false); return; }
@@ -2102,6 +2118,23 @@ function spotsSheet(pk){ const p=P[pk]; return `<div class="sk">จุดที�
 function recHtml(r){
   return `<li class="rec-row"><div class="rec"><div class="rec-k">💡 สถานที่แนะนำ · ใกล้เส้นทาง</div><div class="rec-n">${esc(r.n)}</div><div class="sp-jp">${esc(r.jp)}</div><p class="c-note">${esc(r.x)}</p>${stripHtml(r.jp,4,"sm",(latinName(r.n)||"")+" Hokkaido")}<div class="c-actions"><button class="btn small primary" data-act="rec-add" data-id="${r.id}">＋ เพิ่มเข้าแผน (${r.dur} นาที)</button>${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(r.jp),"แผนที่",I.nav)}<button class="btn small" data-act="rec-hide" data-id="${r.id}">ไม่สนใจ</button></div></div></li>`;
 }
+/* restaurants from Sea's own Food List (Google Sheet), placed under the nearest stop of each day */
+const frOpen=new Set();
+function foodByStop(di){
+  /* every shop in the list shows up somewhere: near a stop of that day, or (if it is near no stop on any day) under the closest stop of the whole trip */
+  const stops=DAYS.map((_,d)=>planItems(d).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x.p&&P[x.p]));
+  const near=(d,f)=>{ let best=null,bd=1e9; stops[d].forEach(it=>{ const v=km([P[it.p][1],P[it.p][2]],[f[4],f[5]]); if(v<bd){ bd=v; best=it; } }); return [best,bd]; };
+  const out={}, placed=new Set();
+  DAYS.forEach((_,d)=>{ const R=d>=CARFREE_DAY?1.6:4; FOOD.forEach(f=>{ if(f[4]==null) return; const [it,v]=near(d,f); if(it&&v<=R){ placed.add(f[0]); if(d===di)(out[it._i]=out[it._i]||[]).push({f,d:v}); } }); });
+  FOOD.forEach(f=>{ if(f[4]==null||placed.has(f[0])) return; let bd=1e9,bi=null,bday=-1; DAYS.forEach((_,d)=>{ const [it,v]=near(d,f); if(it&&v<bd){ bd=v; bi=it; bday=d; } }); if(bday===di&&bi&&bd<40)(out[bi._i]=out[bi._i]||[]).push({f,d:bd,far:true}); });
+  const today=Number(DAYS[di].date.slice(8))+" ต.ค.", mine=f=>INPLAN[f[0]]&&INPLAN[f[0]].startsWith(today)?1:0;
+  Object.values(out).forEach(l=>l.sort((x,y)=>(mine(y.f)-mine(x.f))||x.d-y.d));
+  return out; }
+function foodRowHtml(di,it,list){
+  if(!list||!list.length) return ""; const carFree=di>=CARFREE_DAY, open=frOpen.has(di+"|"+it._i), show=open?list:list.slice(0,3);
+  const tt=d=>d<1.2?`🚶 ~${walkMin(d)} นาที`:carFree?`🚇 ~${Math.max(10,Math.round((d*1.3/22*60+10)/5)*5)} นาที`:`🚗 ~${roadMin([0,0],[d/111,0])} นาที`;
+  return `<li class="rec-row"><div class="rec food-rec"><div class="rec-k">🍽 ร้านจากลิสต์ของคุณแถวนี้ · ${list.length} ร้าน</div><ul class="fr-list">${show.map(({f,d})=>{ const c=CAT[f[1]]||{e:"🍴",n:""};
+    return `<li><span class="fr-e">${c.e}</span><div class="fr-m"><div><b>${esc(f[2])}</b>${INPLAN[f[0]]?` <span class="pill new">★ ${esc(INPLAN[f[0]])}</span>`:""}</div><span class="tiny">${esc(c.n)} · ${esc(f[3])} · ${distTxt(d)} ${tt(d)}</span>${f[8]?`<span class="tiny fr-note">${esc(f[8])}</span>`:""}</div><div class="fr-b">${aBtn(dirUrl(foodTarget(f),carFree?(d<1.2?"walking":"transit"):"driving"),"นำทาง",I.nav)}<button class="btn small" data-act="food" data-id="${f[0]}">ร้าน</button><button class="btn small primary" data-act="cs-fradd" data-id="${f[0]}" data-key="${esc(it._i)}">＋ แผน</button></div></li>`; }).join("")}</ul>${list.length>3?`<button class="linkbtn" data-act="cs-frmore" data-k="${esc(di+"|"+it._i)}">${open?"ย่อ":"ดูอีก "+(list.length-3)+" ร้าน"}</button>`:""}</div></li>`; }
 let recHidden=store.get("recHidden",{});
 function recsAfter(di,it){
   if(!it.p) return "";
