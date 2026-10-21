@@ -360,6 +360,9 @@ a{color:inherit}
 .fr-m b{font-size:15.5px}
 .fr-note{color:var(--ink);opacity:.8}
 .fr-b{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.gm-row{display:flex;flex-direction:column;gap:2px;padding:10px 12px;margin:0 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--ink);text-decoration:none}
+.gm-row:active{background:color-mix(in srgb,var(--accent) 10%,var(--surface-2))}
+.gm-l{font-weight:700;font-size:15.5px;color:#1a73e8}
 .ti.k-scenic .card{background:color-mix(in srgb,#C0392B 5%,var(--surface));border-style:dashed}
 .ti.k-scenic .dot{background:#E67E22;border-color:#E67E22;transform:scale(.8)}
 .ti.k-scenic .tm small{font-size:10px}
@@ -1109,7 +1112,7 @@ function renderPlan(){
   let h=`<div class="day-head"><div class="day-num">D${d.n}</div><div><h2 class="day-title">${esc(d.title)}</h2><div class="day-meta">${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค. 2026${curDay===todayIndex()?" · วันนี้":""}</div></div></div>`;
   navMode=curDay>=CARFREE_DAY?"transit":"driving";
   if(hotel) h+=`<div class="hotel-line"><span>🛏</span><span style="flex:1;min-width:0">คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="btn small" data-act="booking" data-id="${d.hotel}">${I.doc}ใบจอง</button>${aBtn(dirUrl(pointTarget(d.hotel)),"นำทาง",I.nav)}</div>`;
-  h+=`<div class="row-actions">${ru?aBtn(ru,"เส้นทางทั้งวันใน Google Maps",I.nav,"go"):""}<button class="btn small" data-act="daymap">${I.map}ดูบนแผนที่</button><button class="btn small primary" data-act="addstop">＋ เพิ่มจุดแวะ / เลื่อนเวลา</button></div>`;
+  h+=`<div class="row-actions"><button class="btn small go" data-act="gmroute">${I.nav}เส้นทางใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}ดูบนแผนที่</button><button class="btn small primary" data-act="addstop">＋ เพิ่มจุดแวะ / เลื่อนเวลา</button></div>`;
   h+=wxDayLine(curDay);
   if(edits[curDay]) h+=`<div class="note-box">วันนี้แก้แผนแล้ว เวลาคำนวณใหม่ (เวลาเดิมขีดฆ่าตัวเล็ก) <button class="linkbtn" data-act="cs-reset">รีเซ็ตกลับแผนเดิม</button></div>`;
   h+=`<ol class="tl">`;
@@ -1883,6 +1886,34 @@ function renderTime(first){ const c=qt; let res={msg:""}; const sim=simulate(c.d
 document.addEventListener("change",ev=>{ if(!qt) return; const id=ev.target.id; if(id!=="qt-s"&&id!=="qt-e") return; const v=ev.target.value;
   if(id==="qt-s"&&v){ const ns=toMin(v); if(qt.e!=null) qt.e=ns+(qt.e-qt.s); qt.s=ns; } else if(id==="qt-e"){ qt.e=v?toMin(v):null; if(qt.e!=null&&qt.e<=qt.s) qt.e=qt.s+5; } renderTime(false); });
 
+/* ----- the day's route as Google Maps links (follows the edited plan) ----- */
+function gmStops(di,fromNow){
+  const j=jst(), now=j.h*60+j.mi; const out=[];
+  planItems(di).forEach(it=>{ if(!it.p||!P[it.p]||it.k==="opt"||it.k==="drive"||it.k==="train") return;
+    if(fromNow&&toMin(it.e||it.t)<=now) return;
+    if(out.length&&out[out.length-1].p===it.p) return; out.push({p:it.p,t:it.t,e:it.e,n:it.n}); });
+  return out; }
+function gmLoc(pid){ const t=pointTarget(pid); return t.q?t.q:(t.lat+","+t.lng); }
+function gmUrl(stops,mode,fromHere){
+  const L2=stops.map(s=>s.p); let u="https://www.google.com/maps/dir/?api=1&travelmode="+mode;
+  const o=fromHere?null:L2.shift(), d=L2.pop();
+  if(o){ u+="&origin="+enc(gmLoc(o)); const op=P[o][3]; if(op) u+="&origin_place_id="+op; }
+  u+="&destination="+enc(gmLoc(d)); const dp=P[d][3]; if(dp) u+="&destination_place_id="+dp;
+  if(L2.length) u+="&waypoints="+L2.map(x=>enc(gmLoc(x))).join("%7C");
+  return u; }
+function gmChunks(stops,max){ const out=[]; let i=0; while(i<stops.length-1){ const c=stops.slice(i,i+max); out.push(c); i+=max-1; } return out; }
+function gmRouteSheet(di){
+  const d=DAYS[di], carFree=di>=CARFREE_DAY, mode=carFree?"walking":"driving", modeTh=carFree?"เดิน":"ขับรถ";
+  const all=gmStops(di,false); const isToday=di===todayIndex(); const rest=isToday?gmStops(di,true):[];
+  const names=l=>l.map(s=>esc(s.n.replace(/^(คาเฟ่ยอดฮิตตอนเช้า|คาเฟ่หลังมื้อเที่ยง|มื้อเที่ยง|มื้อเย็น[^:]*|ทางเลือก):\s*/,""))).join(" → ");
+  const row=(label,sub,url)=>`<a class="gm-row" href="${esc(url)}" target="_blank" rel="noopener"><span class="gm-l">${label}</span><span class="tiny">${sub}</span></a>`;
+  let h=`<div class="sk">D${d.n} · ${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค.</div><h2>เส้นทางใน Google Maps</h2><p class="tiny" style="margin:-4px 0 10px">ตามแผนล่าสุดในแอป (รวมจุดที่เพิ่มเองและที่สลับลำดับ) · โหมด${modeTh}${carFree?" · Google ไม่รองรับรถไฟใต้ดินแบบหลายจุด ช่วงที่ไกลให้กด \"นำทาง\" ที่การ์ดทีละจุด":""}</p>`;
+  if(all.length<2) return h+`<p>วันนี้มีจุดในแผนไม่พอสำหรับทำเส้นทาง</p>`;
+  if(isToday&&rest.length){ const r2=rest[0]&&rest[0].p===d.hotel&&rest.length>1?rest.slice(1):rest; const nx=r2.slice(0,4); h+=`<h3 class="sp-h">ต่อจากตรงนี้</h3>`+row(`📍 จากตำแหน่งปัจจุบัน → ${nx.length} จุดถัดไป`,names(nx),gmUrl(nx,mode,true)); }
+  const ch=gmChunks(all,5);
+  h+=`<h3 class="sp-h">แบ่งเป็นช่วง (เปิดได้ทุกเครื่อง)</h3>`+ch.map((c,i)=>row(`ช่วง ${i+1} · ${esc(c[0].t)}–${esc(c[c.length-1].e||c[c.length-1].t)}`,names(c),gmUrl(c,mode,false))).join("");
+  if(all.length<=11) h+=`<h3 class="sp-h">ทั้งวันในลิงก์เดียว</h3>`+row(`🗺 ทั้งวัน ${all.length} จุด`,names(all),gmUrl(all,mode,false))+`<p class="tiny">ถ้าเปิดในเบราว์เซอร์มือถือ Google แสดงจุดแวะได้แค่ 3 จุด ถ้าจุดหายให้ใช้แบบแบ่งช่วงด้านบน หรือเปิดในแอป Google Maps</p>`;
+  return h; }
 /* ----- add / edit sheet ----- */
 function openAddStop(afterKey){
   const di=curDay; draft={mode:"add",day:di,afterKey:afterKey||null,key:"cs_"+Date.now().toString(36),name:"",lat:null,lng:null,dur:30,at:"",note:""};
@@ -2379,6 +2410,7 @@ document.addEventListener("click",ev=>{
   if(a==="dstop"){ stopDrive(); return; }
   if(a==="dmin"){ if(drive){ drive.min=!drive.min; store.set("drive",drive); renderDrive(); } return; }
   if(a==="gpshelp"){ openSheet(gpsHelp()); return; }
+  if(a==="gmroute"){ openSheet(gmRouteSheet(curDay)); return; }
   if(a==="rate-live"){ b.textContent="กำลังโหลด…"; refreshRate(true).then(()=>{ if(curTab==="info") renderInfo(); }); return; }
   if(a==="backup"){ openSheet(backupHtml()); return; }
   if(a==="bk-copy"){ const t=JSON.stringify(edits); const done=()=>{ b.textContent="คัดลอกแล้ว"; }; try{ navigator.clipboard.writeText(t).then(done,()=>{ const ta=$("#bk-in"); if(ta){ ta.value=t; ta.select(); } }); }catch(e){} return; }
