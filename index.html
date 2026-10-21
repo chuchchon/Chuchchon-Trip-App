@@ -290,7 +290,8 @@ a{color:inherit}
 .cs-picked{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,#7B3FBF 10%,var(--surface));margin-top:6px}
 .cs-prev{margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
 .cs-list{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14px}
-.cs-list li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.cs-list li{display:flex;gap:8px;align-items:baseline;flex-wrap:nowrap}
+.cs-list li .nm{flex:1 1 auto;min-width:0}
 .cs-list s{color:var(--muted)}
 .pick-bar{position:absolute;left:12px;right:12px;top:12px;z-index:1000;background:#7B3FBF;color:#fff;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600;box-shadow:var(--shadow)}
 .pick-bar .btn{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.5)}
@@ -359,6 +360,34 @@ a{color:inherit}
 .x-hit{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:9px 4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .x-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:200px}
 .x-btns{display:flex;gap:6px;flex-wrap:wrap}
+.ti .tm.tm-ed{cursor:pointer;border-radius:8px;padding:3px 4px 4px;margin:-0px -4px 0 0;-webkit-tap-highlight-color:transparent}
+.ti .tm.tm-ed:active{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.tm-pen{display:block;font-style:normal;font-size:11px;color:var(--muted);opacity:.7;margin-top:2px}
+.qt-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 0}
+.qt-row .tiny{min-width:64px}
+input[type="time"].inp{font-family:var(--font-mono);font-size:18px;padding:9px 10px}
+#p-plan{padding-bottom:88px}
+.fab-ex{display:none;position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:16px;z-index:600;align-items:center;gap:6px;border:0;border-radius:999px;padding:11px 16px;background:#7B3FBF;color:#fff;font:inherit;font-weight:700;font-size:15px;box-shadow:0 6px 18px rgba(60,20,110,.35);cursor:pointer}
+body[data-tab="plan"] .fab-ex{display:flex}
+body[data-tab="map"] .fab-ex{display:flex;right:auto;left:max(10px,env(safe-area-inset-left,0px));bottom:62px}
+body.picking .fab-ex{display:none!important}
+body[data-tab="map"]:has(#exBar) .fab-ex{display:none}
+.ex-bar{position:absolute;z-index:620;left:max(10px,env(safe-area-inset-left,0px));right:60px;bottom:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow);font-weight:600;font-size:14px}
+.ex-bar span{flex:1;min-width:0}
+.mk.ex{width:24px;height:24px;background:#7B3FBF;color:#fff;font-weight:700;font-size:12px;font-family:var(--font-mono)}
+.mk.ex.star{background:#C0392B}
+.oh{display:inline-block;font-size:12.5px;padding:1px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);margin-left:2px;white-space:nowrap}
+.oh.open{background:#E6F4EA;border-color:#A8D5B5;color:#1E6B34}
+.oh.soon{background:#FFF4D6;border-color:#E8C76A;color:#7A5300}
+.oh.shut{background:#FBEAEA;border-color:#E3AFAF;color:#8A2525}
+.wk{margin:10px 0;padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+.wk p{margin:6px 0;font-size:15px}
+.pick-bar{flex-wrap:nowrap}
+.pick-bar span{flex:1;font-size:14px}
+.pick-panel{position:absolute;z-index:1000;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:10px;max-height:52%;overflow-y:auto;background:var(--surface);border-radius:14px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.28)}
+.pick-list{display:flex;flex-direction:column;gap:6px;margin:6px 0 8px}
+.cs-hit.sel{border-color:#7B3FBF;background:color-mix(in srgb,#7B3FBF 10%,var(--surface))}
+.pick-tt{font-size:12px;font-weight:600;padding:2px 6px}
 .muted{color:var(--muted)}
 .tiny{font-size:13px;color:var(--muted)}
 .spacer-drive{height:0}
@@ -388,6 +417,7 @@ a{color:inherit}
     <section class="panel wrap" id="p-food" role="tabpanel" aria-label="ร้านอาหาร" hidden></section>
     <section class="panel wrap" id="p-drinks" role="tabpanel" aria-label="เครื่องดื่ม" hidden></section>
     <section class="panel wrap" id="p-info" role="tabpanel" aria-label="ข้อมูลจำเป็น" hidden></section>
+    <button class="fab-ex" data-act="ex-open" aria-label="สำรวจรอบตัว">🧭 สำรวจรอบตัว</button>
   </main>
   <div id="driveRoot"></div>
 
@@ -1055,7 +1085,8 @@ function renderPlan(){
     const k=it._i;
     navMode=carGoneR?(it.walk?"walking":"transit"):"driving";
     const cls=`ti k-${it.k}${k===nowK?" is-now":""}`;
-    const tm=`<div class="tm">${esc(it.t)}${it.e?`<small>${esc(it.e)}</small>`:""}${it._sh?`<s class="t0">${esc(it._t0)}</s>`:""}</div><div class="dot"></div>`;
+    const tAct=it.k==="drive"?`data-act="cs-leg" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-min="${it.min}"`:(it.k==="train"?"":`data-act="cs-time" data-key="${esc(k)}"`);
+    const tm=`<div class="tm${tAct?" tm-ed":""}" ${tAct} ${tAct?'role="button" aria-label="แก้เวลา"':""}>${esc(it.t)}${it.e?`<small>${esc(it.e)}</small>`:""}${it._sh?`<s class="t0">${esc(it._t0)}</s>`:""}${tAct?'<i class="tm-pen">✎</i>':""}</div><div class="dot"></div>`;
     if(it.k==="custom"){ h+=customHtml(it,cls,tm)+insRow(k); return; }
     if(it.k==="drive"||it.k==="train"){
       const to=P[it.to][0];
@@ -1063,7 +1094,7 @@ function renderPlan(){
       const roads=(it.rd||[]).map(roadBadge).join(" ");
       h+=`<li class="${cls}${it.syn?" syn":""}">${tm}<div class="card"><div class="c-top"><span class="c-kind">${it.k==="train"?(it.bus?"🚌 รถบัส":it.walk?"🚶 เดิน":it.transit?"🚇 รถไฟใต้ดิน/รถบัส":"🚆 รถไฟ"):"🚗 ขับรถ"} · ${it.min} นาที</span>${roads}${wxChip(it.to,d.date,fmtMin(toMin(it.t)+(it.min||0)))}</div><div class="c-name">→ ${esc(to)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${sc}<div class="c-actions">${it.k==="drive"?`<button class="btn small primary" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button>`:""}${aBtn(dirUrl(pointTarget(it.to)),"นำทาง",I.nav)}${it.k==="drive"?`<button class="btn small" data-act="cs-leg" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-min="${it.min}">⏱ แก้เวลาขับ</button><button class="btn small" data-act="cs-explore" data-key="${esc(pkR||"")}">🔎 แวะอะไรดีระหว่างทาง</button>`:""}</div></div></li>`;
       (it.sc||[]).forEach(s=>{ const st=fmtMin(toMin(it.t)+s.m);
-        h+=`<li class="ti k-scenic"><div class="tm">${st}<small>ระหว่างขับ</small></div><div class="dot"></div><div class="card"><div class="c-top"><span class="c-kind">🍁 จุดวิวสวย · หลังออกรถ ${s.m} นาที</span></div><div class="c-name">${esc(s.t)}</div><p class="c-note">${esc(s.x||"")}</p>${s.img?stripHtml(s.img,4,"sm",""):""}<div class="c-actions">${s.story?`<button class="btn small" data-act="story" data-id="${s.story}">${I.book}เรื่องน่ารู้</button>`:""}${s.ll?aBtn("https://www.google.com/maps/search/?api=1&query="+s.ll[0]+","+s.ll[1],"ดูบนแผนที่",I.map||""):""}</div></div></li>`; });
+        h+=`<li class="ti k-scenic"><div class="tm">${st}<small>ระหว่างขับ</small></div><div class="dot"></div><div class="card"><div class="c-top"><span class="c-kind">🍁 จุดวิวสวย · หลังออกรถ ${s.m} นาที</span></div><div class="c-name">${esc(s.t)}</div><p class="c-note">${esc(s.x||"")}</p>${s.img?stripHtml(s.img,4,"sm","",s.ll):""}<div class="c-actions">${s.story?`<button class="btn small" data-act="story" data-id="${s.story}">${I.book}เรื่องน่ารู้</button>`:""}${s.ll?aBtn("https://www.google.com/maps/search/?api=1&query="+s.ll[0]+","+s.ll[1],"ดูบนแผนที่",I.map||""):""}</div></div></li>`; });
       return;
     }
     const p=it.p?P[it.p]:null;
@@ -1071,7 +1102,7 @@ function renderPlan(){
     const story=p&&p[5]?`<button class="btn small" data-act="story" data-id="${p[5]}">${I.book}เรื่องน่ารู้</button>`:"";
     const bk=(it.k==="hotel"&&BOOKINGS[it.p])?`<button class="btn small primary" data-act="booking" data-id="${it.p}">${I.doc}ใบยืนยันการจอง</button>`:"";
     const food=it.food?`<button class="btn small" data-act="food" data-id="${it.food}">★ ร้านในลิสต์</button>`:"";
-    h+=`<li class="${cls}" data-key-row="${esc(k)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}${p?stripHtml(p[4]||p[0],5,"",p[6]||latinName(p[0])):""}${SPOTP[it.p]?`<button class="spot-link" data-act="spots" data-id="${it.p}">📍 จุดที่ต้องชมใน${esc(p[0])} (${SPOTP[it.p].length}) ›</button>`:""}${it._clash?`<p class="c-warn">⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว</p>`:""}${it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`<p class="c-warn">⚠ เวลาใหม่เลย ${esc(it.lim)} แล้ว (${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"})</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
+    h+=`<li class="${cls}" data-key-row="${esc(k)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${KIND[it.k]||""}</span>${tag}${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it.w?`<p class="c-warn">⚠ ${esc(it.w)}</p>`:""}${p?stripHtml(p[4]||p[0],5,"",p[6]||latinName(p[0]),[p[1],p[2]]):""}${SPOTP[it.p]?`<button class="spot-link" data-act="spots" data-id="${it.p}">📍 จุดที่ต้องชมใน${esc(p[0])} (${SPOTP[it.p].length}) ›</button>`:""}${it._clash?`<p class="c-warn">⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว</p>`:""}${it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`<p class="c-warn">⚠ เวลาใหม่เลย ${esc(it.lim)} แล้ว (${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"})</p>`:""}<div class="c-actions">${bk}${p?aBtn(dirUrl(pointTarget(it.p)),"นำทาง",I.nav):""}${p?aBtn(imgUrl(p[4]),"ดูรูป",I.img):""}${story}${food}</div></div></li>`;
     if(it.k!=="opt"){ if(!recShown[it.p]){ h+=recsAfter(curDay,it); recShown[it.p]=1; } h+=insRow(k); }
     if(curDay===3&&it.p==="station"&&it.k==="stop") carGoneR=true;
   });
@@ -1082,14 +1113,24 @@ function renderPlan(){
 
 /* ---------- sheet ---------- */
 function openSheet(html){
-  if(!sheetHist){ sheetHist=true; try{ history.pushState({sheet:1},""); }catch(e){} }
+  if(!sheetHist){ sheetHist=true; sheetBack.length=0; try{ history.pushState({sheet:1},""); }catch(e){} }
+  renderSheet(html);
+}
+/* a page on top of the current sheet: Back (button or phone) returns to the page under it */
+const sheetBack=[];
+function openSubSheet(html,backFn){ if(!sheetHist){ openSheet(html); sheetBack.push(backFn); return; } sheetBack.push(backFn); try{ history.pushState({sheet:1,sub:sheetBack.length},""); }catch(e){} renderSheet(html); }
+function sheetGoBack(){ if(sheetBack.length){ try{ history.back(); }catch(e){ const f=sheetBack.pop(); f&&f(); } } else closeSheet(); }
+function renderSheet(html){
   const r=$("#sheetRoot");
   r.innerHTML=`<div class="scrim" data-act="close"></div><div class="sheet wrap" role="dialog" aria-modal="true"><div class="grab"></div><button class="sheet-close" data-act="close" aria-label="ปิด">×</button>${html}</div>`; setTimeout(()=>hydratePhotos(r),30);
   const s=$(".sheet",r); s.focus&&s.setAttribute("tabindex","-1"); s.focus();
 }
 let sheetHist=false;
-function closeSheet(fromPop){ $("#sheetRoot").innerHTML=""; if(sheetHist){ sheetHist=false; if(fromPop!==true&&history.state&&history.state.sheet) history.back(); } }
-addEventListener("popstate",()=>{ if(lbOpen) return; if($("#sheetRoot").innerHTML) closeSheet(true); });
+function closeSheet(fromPop){ const extra=sheetBack.length; sheetBack.length=0; $("#sheetRoot").innerHTML=""; if(sheetHist){ sheetHist=false; if(fromPop!==true&&history.state&&history.state.sheet) history.go(-(1+extra)); } }
+addEventListener("popstate",()=>{ if(lbOpen) return;
+  if(typeof pickMode!=="undefined"&&pickMode&&!$("#sheetRoot").innerHTML){ cancelPick(true); return; }
+  if(sheetBack.length&&$("#sheetRoot").innerHTML){ const f=sheetBack.pop(); f&&f(); return; }
+  if($("#sheetRoot").innerHTML) closeSheet(true); });
 function storyHtml(id){
   const s=S[id]; if(!s) return "";
   const pts=Object.entries(P).filter(([k,p])=>p[5]===id);
@@ -1252,13 +1293,17 @@ function renderInfo(){
   h+=`<div class="box"><h3>ที่พักและใบยืนยันการจอง</h3>`+Object.entries(BOOKINGS).map(([k,b])=>`<div class="check" style="flex-wrap:wrap"><div style="flex:1;min-width:180px"><b>${esc(b.n)}</b> <span class="muted">· ${esc(b.night)}</span><br><span class="muted" style="font-size:13.5px">${b.rooms.map(r=>esc(r.via)+" "+esc(r.id)).join(" · ")}</span>${b.alerts.length?`<br><span class="c-warn" style="font-size:13.5px">⚠ มีเรื่องที่ต้องจัดการ ${b.alerts.length} ข้อ</span>`:""}</div><div class="c-actions" style="margin:0"><button class="btn small primary" data-act="booking" data-id="${k}">${I.doc}ใบจอง</button>${aBtn(dirUrl(pointTarget(k)),"นำทาง",I.nav)}</div></div>`).join("")+`</div>`;
   h+=`<div class="box"><h3>เบอร์ฉุกเฉิน</h3><dl class="kv"><dt class="mono">110</dt><dd>ตำรวจ / อุบัติเหตุรถ</dd><dt class="mono">119</dt><dd>รถพยาบาล / ดับเพลิง</dd><dt class="mono">#8139</dt><dd>JAF ช่วยเหลือรถเสียบนถนน (โทรจากมือถือ)</dd><dt class="mono">050-3816-2787</dt><dd>Japan Visitor Hotline (JNTO) ภาษาอังกฤษ 24 ชม.</dd><dt class="mono">+81 3-5789-2433</dt><dd>สถานทูตไทย โตเกียว</dd><dt>รถเช่า</dt><dd>ดูเบอร์ใน voucher (เก็บไว้ในรถด้วย)</dd></dl></div>`;
   h+=`<div class="box"><h3>ขับรถในฮอกไกโด</h3><ul class="tipl"><li>ชิดซ้ายเหมือนไทย ป้ายสามเหลี่ยมหัวกลับสีแดง <b>止まれ</b> ต้องหยุดสนิท</li><li>ทางรถไฟตัดผ่าน หยุดก่อนข้ามทุกครั้ง</li><li>ทางด่วนเข้าเลน <b>ETC専用</b> สีม่วงได้เมื่อเสียบบัตร ETC</li><li>ปั๊มส่วนใหญ่เป็นแบบ <b>セルフ</b> หัวจ่ายสีแดง = レギュラー (ธรรมดา) สีเหลือง = ハイオク สีเขียว = ดีเซล ห้ามเติมผิด</li><li>ช่วงเย็นระวังกวางเอโซะและสุนัขจิ้งจอกตัดหน้า ห้ามให้อาหารสุนัขจิ้งจอก</li><li>บนเขามีหมีสีน้ำตาล อย่าเดินออกนอกเส้นทาง</li><li>ปลาย ต.ค. กลางวันราว 10–15°C กลางคืนอาจใกล้ 0°C บนช่องเขา (ค่าเฉลี่ยโดยประมาณ)</li></ul></div>`;
-  h+=`<div class="box"><h3>แปลงเงิน</h3><div class="conv"><input id="yen" inputmode="numeric" value="1000" aria-label="จำนวนเยน"><span>¥ =</span><span class="out" id="baht">–</span><span>บาท</span></div><p class="tiny" style="margin:8px 0 0">เรท <input id="rate" value="${rate}" inputmode="decimal" style="width:80px;font:inherit;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink)" aria-label="เรทบาทต่อเยน"> บาทต่อ ¥1 (จากชีตงบเดิม แก้ได้)</p></div>`;
+  h+=`<div class="box"><h3>แปลงเงิน</h3><div class="conv"><input id="yen" inputmode="numeric" value="1000" aria-label="จำนวนเยน"><span>¥ =</span><span class="out" id="baht">–</span><span>บาท</span></div><p class="tiny" style="margin:8px 0 0">เรท <input id="rate" value="${rate}" inputmode="decimal" style="width:80px;font:inherit;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink)" aria-label="เรทบาทต่อเยน"> บาทต่อ ¥1 · ${store.get("rateManual",false)?"ตั้งเอง":store.get("rateSrc","")?"เรทวันนี้จาก "+esc(store.get("rateSrc","")):"เรทเดิม (ยังไม่ได้ออนไลน์)"} <button class="linkbtn" data-act="rate-live">ใช้เรทวันนี้</button></p></div>`;
   h+=`<div class="box"><h3>ประโยคภาษาญี่ปุ่น</h3>`+PHRASES.map(([jp,ro,th])=>`<div class="phrase"><span class="jp">${esc(jp)}</span><span class="ro">${esc(ro)}</span><span class="th">${esc(th)}</span><button class="btn small" data-copy="${esc(jp)}">${I.copy}คัดลอก</button></div>`).join("")+`<p class="tiny" style="margin:6px 0 0">กดคัดลอกแล้ววางใน Google Translate หรือยื่นหน้าจอให้พนักงานอ่าน</p></div>`;
   h+=`<div class="box"><h3>สภาพอากาศ</h3><div class="c-actions">${["洞爺湖","ニセコ","中山峠","定山渓","小樽","札幌"].map(n=>aBtn("https://www.google.com/search?q="+enc(n+" 天気"),n,"")).join("")}</div></div>`;
   h+=`<div class="box"><h3>สำรอง / กู้คืนแผนที่แก้ไว้</h3><p style="margin:0 0 8px;font-size:15px">แอปเก็บประวัติการแก้แผน (จุดแวะที่เพิ่ม ลำดับ เวลา) ไว้ในเครื่องนี้อัตโนมัติ และคัดลอกเป็นรหัสไปเปิดในเครื่องอื่นได้</p><div class="c-actions"><button class="btn small primary" data-act="backup">เปิดสำรอง / กู้คืน</button></div></div>`;
   h+=`<div class="box"><h3>แชร์ให้เพื่อนร่วมทริป</h3><p style="margin:0;font-size:15px">ส่งลิงก์ของหน้านี้ให้ทุกคน เปิดบนมือถือได้เลย ทุกคนใช้โหมดขับรถและแผนที่ได้เหมือนกัน (เช็คลิสต์แยกกันในแต่ละเครื่อง)</p></div>`;
   $("#p-info").innerHTML=h; convUpdate();
 }
+async function refreshRate(force){
+  if(store.get("rateManual",false)&&!force) return; const last=store.get("rateAt",0); if(!force&&Date.now()-last<6*3600e3) return;
+  const tries=[["https://api.frankfurter.dev/v1/latest?base=JPY&symbols=THB",j=>[j.rates&&j.rates.THB,"ธนาคารกลางยุโรป "+(j.date||"")]],["https://api.frankfurter.app/latest?from=JPY&to=THB",j=>[j.rates&&j.rates.THB,"ธนาคารกลางยุโรป "+(j.date||"")]],["https://open.er-api.com/v6/latest/JPY",j=>[j.rates&&j.rates.THB,"open.er-api.com"]]];
+  for(const [u,f] of tries){ try{ const r=await fetch(u); if(!r.ok) continue; const [v,src]=f(await r.json()); if(v>0){ store.set("rate",+(+v).toFixed(4)); store.set("rateSrc",src); store.set("rateAt",Date.now()); if(force) store.set("rateManual",false); if(curTab==="info") renderInfo(); return; } }catch(e){} } }
 function convUpdate(){ const y=parseFloat(($("#yen")||{}).value)||0; const r=parseFloat(($("#rate")||{}).value)||RATE_DEFAULT; const o=$("#baht"); if(o) o.textContent=(y*r).toLocaleString("th-TH",{maximumFractionDigits:0}); }
 
 /* ---------- live location on map ---------- */
@@ -1366,7 +1411,7 @@ function homeTip(){
 const TOUR=[
   {t:"ยินดีต้อนรับ 🍁",x:`แอปนี้รวมแผนเที่ยวฮอกไกโด 7 วัน การนำทาง จุดชมวิว ร้านอาหาร และเรื่องน่ารู้ไว้ในที่เดียว<br><br>ใช้เวลาประมาณ 1 นาทีเพื่อดูวิธีใช้`},
   {sel:"#days",tab:"plan",t:"เลือกวัน",x:"แตะ D1–D7 เพื่อดูแผนของแต่ละวัน จุดสีเหลืองคือวันนี้ แอปจะเปิดที่วันนี้ให้อัตโนมัติ"},
-  {sel:"#p-plan .tl > li .card",tab:"plan",t:"แผนรายวัน",x:"แต่ละการ์ดคือหนึ่งจุดในแผน<br>• <b>นำทาง</b> เปิด Google Maps ไปที่นั่น<br>• <b>ดูรูป</b> ดูภาพจริงของสถานที่<br>• <b>เรื่องน่ารู้</b> อ่านประวัติและสิ่งที่ควรรู้"},
+  {sel:"#p-plan .tl > li .card",tab:"plan",t:"แผนรายวัน",x:"แต่ละการ์ดคือหนึ่งจุดในแผน<br>• แตะ <b>เวลา</b> ทางซ้ายของการ์ดเพื่อแก้เวลาได้ทันที<br>• <b>นำทาง</b> เปิด Google Maps ไปที่นั่น<br>• <b>ดูรูป</b> ดูภาพจริงของสถานที่<br>• <b>เรื่องน่ารู้</b> อ่านประวัติและสิ่งที่ควรรู้"},
   {sel:'#p-plan [data-act="drive"]',tab:"plan",need:firstDriveBtn,t:"โหมดขับรถ",x:"กดตอนเริ่มขับแต่ละช่วง แอปจะเปิดแผนที่ แสดงจุดตำแหน่งของคุณ และเตือนก่อนถึงจุดวิวสวยราว 2 นาที<br><br>แนะนำ: คนขับใช้ Google Maps ส่วนคนนั่งข้างเปิดโหมดนี้"},
   {sel:'#p-plan [data-act="addstop"]',tab:"plan",t:"ออกนอกแผนได้",x:"แวะที่ใหม่ หรือฝนตกต้องรอ กดปุ่มนี้ หรือปุ่ม <b>＋ เพิ่มจุดตรงนี้</b> ระหว่างการ์ด<br>• ค้นหาชื่อสถานที่ / ใช้ตำแหน่งปัจจุบัน / แตะบนแผนที่<br>• ปุ่ม <b>▲ ▼</b> บนการ์ดสลับลำดับได้ ปุ่ม <b>⋯</b> ปรับเวลาอยู่ หรือข้ามจุดนั้น<br>• แอปคำนวณเวลาใหม่และเวลาขับให้ และเตือนถ้าเลยเวลาสำคัญ เช่น เช็คอิน"},
   {t:"อนุญาตตำแหน่งและแจ้งเตือน",perm:true,x:"โหมดขับรถต้องใช้สองอย่างนี้ กดปุ่มด้านล่าง แล้วกด <b>อนุญาต (Allow)</b> เมื่อเครื่องถาม"},
@@ -1374,6 +1419,7 @@ const TOUR=[
   {sel:'.tab[data-tab="stories"]',t:"เรื่องน่ารู้",x:"ประวัติและข้อมูลน่าสนใจของแต่ละที่ อ่านระหว่างนั่งรถได้"},
   {sel:'.tab[data-tab="food"]',t:"ร้านอาหาร",x:"ร้านทั้งหมดแยกตามพื้นที่และประเภท กดดูบนแผนที่หรือนำทางได้ทันที"},
   {sel:'.tab[data-tab="drinks"]',t:"เครื่องดื่ม",x:"เบียร์และนมที่มีเฉพาะฮอกไกโด บอกว่าซื้อที่ไหน และแวะได้วันไหนในทริป"},
+  {sel:'.fab-ex',tab:"plan",t:"สำรวจรอบตัว",x:"ตอนเดินเที่ยว กดปุ่มนี้เพื่อดูว่าแถวนี้มีที่เที่ยว ร้านอาหาร คาเฟ่ ดรักสโตร์ ห้องน้ำ อะไรบ้าง เรียงจากใกล้ไปไกล พร้อมเวลาเปิดและปุ่มนำทาง"},
   {sel:'.tab[data-tab="info"]',t:"จำเป็น",x:"เช็กลิสต์ ข้อมูลโรงแรม เบอร์ฉุกเฉิน วลีญี่ปุ่น และตัวแปลงเงินเยน"},
   {t:"เพิ่มลงหน้าจอหลัก",home:true,x:"เปิดได้เร็วเหมือนแอป ไม่ต้องหาลิงก์"},
   {t:"พร้อมเที่ยวแล้ว! 🚗",x:"ดูวิธีใช้อีกครั้งได้ที่แท็บ <b>จำเป็น</b> → ปุ่ม \"ดูวิธีใช้แอป\""}
@@ -1483,19 +1529,26 @@ function findDrive(di,a,b){ const its=DAYS[di].items; for(let k=0;k<its.length;k
 const JP_ROAD_F=1.2;
 let routeCache=store.get("routes",{}); const routeQ=new Set(); let routeT=null;
 function llSig(a,b){ const A=P[a],B=P[b]; return A&&B?[A[1],A[2],B[1],B[2]].map(v=>(+v).toFixed(4)).join(","):""; }
-function routeFor(a,b){ const k=a+">"+b, s=llSig(a,b); if(!s) return null; const c=routeCache[k]; if(c&&c.s===s) return c;
-  if(!routeQ.has(k)){ routeQ.add(k); fetchRoute(a,b,k,s); } return null; }
-async function fetchRoute(a,b,k,s){ try{ const A=P[a],B=P[b];
-  const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${A[2]},${A[1]};${B[2]},${B[1]}?overview=simplified&geometries=geojson`); const j=await r.json(); const rt=j.routes&&j.routes[0]; if(!rt) return;
-  const co=rt.geometry.coordinates, st=Math.max(1,Math.ceil(co.length/40));
-  routeCache[k]={s,min:Math.max(5,Math.round((rt.duration/60*JP_ROAD_F+2)/5)*5),km:+(rt.distance/1000).toFixed(1),g:co.filter((_,i)=>i%st===0||i===co.length-1).map(c=>[+c[1].toFixed(4),+c[0].toFixed(4)])};
-  store.set("routes",routeCache); clearTimeout(routeT); routeT=setTimeout(()=>{ try{ renderPlan(); }catch(e){} },400); }catch(e){} }
+/* free routing servers: FOSSGIS (routing.openstreetmap.de, car + foot), OSRM demo as a second try for cars */
+const ROUTERS={car:["https://routing.openstreetmap.de/routed-car/route/v1/driving/","https://router.project-osrm.org/route/v1/driving/"],foot:["https://routing.openstreetmap.de/routed-foot/route/v1/foot/"]};
+async function osrmRoute(A,B,mode){ /* A,B = [lat,lng]; returns {min,km,g} or null */
+  for(const base of ROUTERS[mode||"car"]){ try{ const r=await fetch(`${base}${A[1]},${A[0]};${B[1]},${B[0]}?overview=simplified&geometries=geojson`); if(!r.ok) continue; const j=await r.json(); const rt=j.routes&&j.routes[0]; if(!rt) continue;
+    const co=rt.geometry.coordinates, st=Math.max(1,Math.ceil(co.length/40));
+    const raw=rt.duration/60, min=mode==="foot"?Math.max(1,Math.round(raw)):Math.max(5,Math.round((raw*JP_ROAD_F+2)/5)*5);
+    return {min,km:+(rt.distance/1000).toFixed(1),g:co.filter((_,i)=>i%st===0||i===co.length-1).map(c=>[+c[1].toFixed(4),+c[0].toFixed(4)])}; }catch(e){} }
+  return null; }
+function routeFor(a,b,mode){ mode=mode||"car"; const k=a+">"+b+(mode==="car"?"":"|"+mode), s=llSig(a,b); if(!s) return null; const c=routeCache[k]; if(c&&c.s===s) return c;
+  if(!routeQ.has(k)){ routeQ.add(k); fetchRoute(a,b,k,s,mode); } return null; }
+async function fetchRoute(a,b,k,s,mode){ const A=P[a],B=P[b]; const rt=await osrmRoute([A[1],A[2]],[B[1],B[2]],mode); if(!rt) return;
+  routeCache[k]=Object.assign({s},rt); try{ const ks=Object.keys(routeCache); if(ks.length>300) delete routeCache[ks[0]]; }catch(e){}
+  store.set("routes",routeCache); clearTimeout(routeT); routeT=setTimeout(()=>{ try{ renderPlan(); }catch(e){} },400); }
 function legOverride(di,a,b){ const ed=edits[di]; return ed&&ed.legs?ed.legs[a+">"+b]:undefined; }
 const CARFREE_DAY=4; /* D5 onward: no car (returned D4 ~17:00) */
 function carFreeAt(di,node){ if(di>=CARFREE_DAY) return true; return false; }
 function footLeg(prev,next,_i){
   const k=km([P[prev][1],P[prev][2]],[P[next][1],P[next][2]]);
-  if(k<=1.6) return {k:"train",walk:true,from:prev,to:next,min:Math.max(5,Math.round(k*1.25/4.5*60/5)*5),x:"เดินราว "+(k*1.25).toFixed(1)+" กม. (โดยประมาณ)",syn:true,_i};
+  if(k<=1.6){ const rt=routeFor(prev,next,"foot"); if(rt) return {k:"train",walk:true,from:prev,to:next,min:Math.max(5,Math.round(rt.min/5)*5),x:"เดิน "+rt.km+" กม. ตามทางเดินจริง",syn:true,_i};
+    return {k:"train",walk:true,from:prev,to:next,min:Math.max(5,Math.round(k*1.25/4.5*60/5)*5),x:"เดินราว "+(k*1.25).toFixed(1)+" กม. (โดยประมาณ)",syn:true,_i}; }
   return {k:"train",transit:true,from:prev,to:next,min:Math.max(10,Math.round((k*1.3/22*60+10)/5)*5),x:"รถไฟใต้ดิน/รถราง/รถบัส หรือแท็กซี่ · เวลาโดยประมาณ เช็คเส้นทางจริงในปุ่มนำทาง",syn:true,_i};
 }
 function roadMin(a,b){ const d=km(a,b)*1.35; const v=d>25?45:d>8?35:25; return Math.max(5,Math.round(d/v*60/5)*5); }
@@ -1520,7 +1573,7 @@ function planItems(di){
     }
     const dur=n.dur!=null?n.dur:origDur(node);
     let t=legStart!=null?Math.max(cur,legStart+(n.pre||0)):cur+(n.pre||0); legStart=null;
-    if(node.k==="night"||node.fix){ const ft=toMin(node._t0); if(cur>ft) node._clash=true; t=ft; }
+    if(node.k==="night"||node.fix){ const ft=toMin(n.fixAt||node._t0); if(cur>ft) node._clash=true; t=ft; }
     else if(n.at){ const a=toMin(n.at); if(t>a) node._late=true; t=Math.max(t,a); }
     node.t=fmtMin(t); node.e=dur?fmtMin(t+dur):null; node._sh=node._t0?t-toMin(node._t0):0;
     out.push(node); cur=t+dur;
@@ -1536,7 +1589,7 @@ function simulate(di,fn){ const keep=JSON.stringify(edits[di]||null); materializ
 function previewList(items,fromKey){
   let on=!fromKey; const rows=[];
   items.forEach(it=>{ if(it._i===fromKey) on=true; if(!on||it.k==="opt") return; if(rows.length<7) rows.push(it); });
-  return `<ul class="cs-list">${rows.map(it=>`<li><span class="mono">${esc(it.t)}</span>${it._sh?`<s class="tiny mono">${esc(it._t0)}</s>`:""}<span>${it.k==="drive"?"🚗 → "+esc(P[it.to][0])+" ("+it.min+" น.)":esc(it.n)}</span>${limWarn(it)}${it._clash?`<span class="c-warn tiny">⚠ เวลาตายตัว ชนแล้ว</span>`:""}</li>`).join("")}</ul>`;
+  return `<ul class="cs-list">${rows.map(it=>`<li><span class="mono">${esc(it.t)}</span>${it._sh?`<s class="tiny mono">${esc(it._t0)}</s>`:""}<span class="nm">${it.k==="drive"||it.k==="train"?(it.k==="drive"?"🚗":it.walk?"🚶":it.bus?"🚌":"🚇")+" → "+esc(P[it.to][0])+" ("+it.min+" น.)":esc(it.n)}</span>${limWarn(it)}${it._clash?`<span class="c-warn tiny">⚠ เวลาตายตัว ชนแล้ว</span>`:""}</li>`).join("")}</ul>`;
 }
 function limWarn(it){ return it.lim&&toMin(it.t)>toMin(it.lim)?`<span class="c-warn tiny">⚠ เกิน ${esc(it.lim)}</span>`:""; }
 /* ----- drive time override ----- */
@@ -1561,7 +1614,8 @@ const XCATS=[
  {id:"fuel",e:"⛽",n:"ปั๊มน้ำมัน",f:['nwr["amenity"="fuel"]'],k:"amenity",v:"fuel"},
  {id:"konbini",e:"🏪",n:"คอนบินิ",f:['nwr["shop"="convenience"]'],k:"shop",v:"convenience"},
  {id:"wc",e:"🚻",n:"ห้องน้ำ",f:['nwr["amenity"="toilets"]'],k:"amenity",v:"toilets",dur:10}];
-const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.private.coffee/api/interpreter"];
+const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.private.coffee/api/interpreter","https://maps.mail.ru/osm/tools/overpass/api/interpreter"];
+XCATS.forEach(c=>{ c.unnamed={view:"จุดชมวิว (ไม่มีชื่อ)",wc:"ห้องน้ำ",fuel:"ปั๊มน้ำมัน",konbini:"คอนบินิ"}[c.id]; });
 let xCache={};
 function xContext(dr){ /* where the new stop sits: previous and next located stops */
   const its=planItems(dr.day).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt");
@@ -1578,13 +1632,8 @@ function xLine(ctx,scope){
 function along(pts,ll){ let best=1e9,bi=0; pts.forEach((p,i)=>{ const d=km(p,ll); if(d<best){ best=d; bi=i; } }); let acc=0; for(let i=1;i<=bi;i++) acc+=km(pts[i-1],pts[i]); return {off:best,at:acc}; }
 async function xOverpass(cat,line){
   const ar=`around:${line.r},${line.pts.map(p=>p[0].toFixed(4)+","+p[1].toFixed(4)).join(",")}`;
-  const q=`[out:json][timeout:25];(${cat.f.map(f=>f+`(${ar});`).join("")});out center tags 120;`;
-  for(const u of OVERPASS){ try{ const r=await fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}}); if(!r.ok) continue; const j=await r.json();
-    return (j.elements||[]).map(e=>{ const t=e.tags||{}; const lat=e.lat??(e.center&&e.center.lat), lng=e.lon??(e.center&&e.center.lon); if(lat==null) return null;
-      const name=t.name||t["name:ja"]||t["name:en"]||(cat.id==="view"?"จุดชมวิว (ไม่มีชื่อ)":cat.id==="wc"?"ห้องน้ำ":cat.id==="fuel"?(t.brand||"ปั๊มน้ำมัน"):cat.id==="konbini"?(t.brand||"คอนบินิ"):"");
-      if(!name) return null; const sub=[t["name:en"]&&t["name:en"]!==name?t["name:en"]:"",t.cuisine?("อาหาร: "+t.cuisine.replace(/;/g,", ")):"",t.opening_hours?("เวลาเปิด "+t.opening_hours):"",t.ele?("สูง "+t.ele+" ม."):""].filter(Boolean).join(" · ");
-      return {name,sub,lat,lng,star:!!(t.wikipedia||t.wikidata),wp:t.wikipedia||"",hours:t.opening_hours||"",osmk:cat.k,osmv:t.amenity==="place_of_worship"?(t.religion==="buddhist"?"temple":"shrine"):cat.v}; }).filter(Boolean); }catch(e){} }
-  return null; }
+  const j=await ovFetch(`[out:json][timeout:25];(${cat.f.map(f=>f+`(${ar});`).join("")});out center tags 120;`); if(!j) return null;
+  return (j.elements||[]).map(e=>{ const r=ovItem(e,cat); if(r&&cat.v&&!r.osmv){ r.osmk=cat.k; r.osmv=cat.v; } if(r){ const t=e.tags||{}; r.sub=[r.en,r.kind,t.cuisine?("อาหาร: "+t.cuisine.replace(/;/g,", ")):"",t.ele?("สูง "+t.ele+" ม."):""].filter(Boolean).join(" · "); } return r; }).filter(Boolean); }
 async function xWiki(line){ const out=[], seen=new Set(); const samp=line.pts.length<=4?line.pts:[0,.25,.5,.75,1].map(t=>line.pts[Math.round(t*(line.pts.length-1))]);
   for(const p of samp){ try{ const r=await fetch(`https://ja.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${p[0]}|${p[1]}&gsradius=${Math.min(10000,line.r*2)}&gslimit=40&format=json&origin=*`); const j=await r.json();
     (j.query&&j.query.geosearch||[]).forEach(g=>{ if(seen.has(g.pageid)) return; if(/駅$|学校|線$|小学校|中学校|高等学校|郵便局|IC$|インターチェンジ|ジャンクション|町$|村$|市$|区$|丁目/.test(g.title)) return; seen.add(g.pageid); out.push({name:g.title,sub:"บทความ Wikipedia ภาษาญี่ปุ่น",lat:g.lat,lng:g.lon,star:true,wp:"ja:"+g.title,osmk:"tourism",osmv:"attraction"}); }); }catch(e){} }
@@ -1606,7 +1655,198 @@ async function runExplore(){
   box()&&(box().innerHTML=xResHtml(dr)); }
 function xResHtml(dr){ const x=dr.xr; if(!x) return ""; if(x.loading) return `<div class="tiny">กำลังค้นหา ${esc(dr.xlabel||"")}…</div>`; if(x.err) return `<div class="tiny">${esc(x.err)}</div>`;
   if(!x.list.length) return `<div class="tiny">ไม่พบในบริเวณนี้ ลองประเภทอื่นหรือเปลี่ยนขอบเขต</div>`;
-  return `<div class="tiny" style="margin:4px 0 6px">${esc(dr.xlabel)} · ${x.list.length} แห่ง${x.route?" · เรียงตามลำดับที่จะผ่าน":""} · ★ = มีบทความ Wikipedia</div>`+x.list.map((r,i)=>`<div class="x-hit"><div class="x-main"><b>${r.star?"★ ":""}${esc(r.name)}</b>${r.sub?`<span class="tiny">${esc(r.sub)}</span>`:""}<span class="tiny">${x.route?`อีก ~${Math.round(r.at)} กม. จากจุดก่อนหน้า · `:""}${r.off<0.3?"ติดถนน":"ออกนอกทาง "+r.off.toFixed(1)+" กม."} · เพิ่มเวลา ~${r.det} นาที</span></div><div class="x-btns">${aBtn(imgUrl(r.name),"รูป",I.img)}${r.wp?aBtn("https://"+(r.wp.split(":")[0]||"ja")+".wikipedia.org/wiki/"+enc(r.wp.split(":").slice(1).join(":")||r.wp),"อ่าน",I.book):""}<button class="btn small primary" data-act="cs-xadd" data-i="${i}">＋ เลือก</button></div></div>`).join(""); }
+  return `<div class="tiny" style="margin:4px 0 6px">${esc(dr.xlabel)} · ${x.list.length} แห่ง${x.route?" · เรียงตามลำดับที่จะผ่าน":""} · ★ = มีบทความ Wikipedia</div>`+x.list.map((r,i)=>`<div class="x-hit"><div class="x-main"><b>${r.star?"★ ":""}${esc(r.name)}</b>${r.sub?`<span class="tiny">${esc(r.sub)}</span>`:""}<span class="tiny">${x.route?`อีก ~${Math.round(r.at)} กม. จากจุดก่อนหน้า · `:""}${r.off<0.3?"ติดถนน":"ออกนอกทาง "+r.off.toFixed(1)+" กม."} · เพิ่มเวลา ~${r.det} นาที ${ohBadge(r.hours)}</span></div><div class="x-btns">${aBtn(imgUrl(r.name),"รูป",I.img)}${r.wp?aBtn("https://"+(r.wp.split(":")[0]||"ja")+".wikipedia.org/wiki/"+enc(r.wp.split(":").slice(1).join(":")||r.wp),"อ่าน",I.book):""}<button class="btn small primary" data-act="cs-xadd" data-i="${i}">＋ เลือก</button></div></div>`).join(""); }
+/* ----- shared helpers: OpenStreetMap (Overpass), opening hours, Wikipedia ----- */
+async function ovFetch(q){ for(const u of OVERPASS){ try{ const r=await fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}}); if(!r.ok) continue; return await r.json(); }catch(e){} } return null; }
+const OV_TH={restaurant:"ร้านอาหาร",cafe:"คาเฟ่",bar:"บาร์",pub:"ผับ",biergarten:"สวนเบียร์",fast_food:"ฟาสต์ฟู้ด",food_court:"ศูนย์อาหาร",ice_cream:"ไอศกรีม",public_bath:"ออนเซ็น / เซ็นโต",museum:"พิพิธภัณฑ์",gallery:"แกลเลอรี",viewpoint:"จุดชมวิว",attraction:"ที่เที่ยว",zoo:"สวนสัตว์",aquarium:"อควาเรียม",theme_park:"สวนสนุก",park:"สวนสาธารณะ",garden:"สวน",convenience:"คอนบินิ",chemist:"ดรักสโตร์",cosmetics:"เครื่องสำอาง",pharmacy:"ร้านขายยา",mall:"ห้าง",department_store:"ห้างสรรพสินค้า",shoes:"ร้านรองเท้า",clothes:"ร้านเสื้อผ้า",sports:"ร้านกีฬา",outdoor:"ร้านเอาท์ดอร์",boutique:"บูติก",station:"สถานี",halt:"สถานี",tram_stop:"ป้ายรถราง",bus_stop:"ป้ายรถเมล์",toilets:"ห้องน้ำ",atm:"ATM",fuel:"ปั๊มน้ำมัน",hot_spring:"บ่อน้ำพุร้อน",waterfall:"น้ำตก",peak:"ยอดเขา",gift:"ร้านของฝาก",souvenir:"ร้านของฝาก",confectionery:"ร้านขนม",pastry:"ร้านขนม",bakery:"เบเกอรี่",variety_store:"ร้าน 100 เยน / ของจิปาถะ",farm:"ร้านของฟาร์ม",cheese:"ร้านชีส",alcohol:"ร้านเหล้า",wine:"ร้านไวน์",winery:"โรงไวน์",brewery:"โรงเบียร์",distillery:"โรงกลั่น",services:"จุดพักรถ",rest_area:"จุดพักรถ",marketplace:"ตลาด"};
+function ovKind(t){ if(t.amenity==="place_of_worship") return t.religion==="buddhist"?"วัด":t.religion==="shinto"?"ศาลเจ้า":"ศาสนสถาน"; if(t.historic) return "โบราณสถาน / ประวัติศาสตร์";
+  for(const k of ["tourism","amenity","shop","leisure","natural","railway","highway","craft"]) if(t[k]&&OV_TH[t[k]]) return OV_TH[t[k]]; return ""; }
+function ovOsm(t){ if(t.amenity==="place_of_worship") return ["amenity",t.religion==="buddhist"?"temple":"shrine"]; for(const k of ["amenity","shop","tourism","leisure","natural","historic","railway"]) if(t[k]) return [k,t[k]]; return ["",""]; }
+function ovItem(e,cat){ const t=e.tags||{}; const lat=e.lat??(e.center&&e.center.lat), lng=e.lon??(e.center&&e.center.lon); if(lat==null) return null;
+  const name=t.name||t["name:ja"]||t["name:en"]||t.brand||(cat&&cat.unnamed)||""; if(!name) return null;
+  const en=t["name:en"]&&t["name:en"]!==name?t["name:en"]:""; const kind=ovKind(t); const [osmk,osmv]=ovOsm(t);
+  const sub=[en,kind,t.cuisine?("อาหาร: "+t.cuisine.replace(/;/g,", ").replace(/_/g," ")):"",t.ele?("สูง "+t.ele+" ม."):""].filter(Boolean).join(" · ");
+  return {id:e.type+e.id,name,en,kind,sub,lat,lng,star:!!(t.wikipedia||t.wikidata),wp:t.wikipedia||"",wd:t.wikidata||"",hours:t.opening_hours||"",tags:t,osmk,osmv}; }
+/* opening_hours ("Mo-Fr 10:00-20:00; Sa,Su 09:00-18:00; Tu off") → open now? Unknown formats return null and the raw text is shown */
+function ohState(oh){
+  if(!oh) return null; const s=String(oh).trim(); if(/^24\/7$/.test(s)) return {open:true,txt:"เปิด 24 ชม."};
+  const DD=["Su","Mo","Tu","We","Th","Fr","Sa"], j=jst(), dow=new Date(Date.UTC(j.y,j.m-1,j.d)).getUTCDay(), now=j.h*60+j.mi;
+  let today=null, any=false;
+  for(const raw of s.split(";")){ const rule=raw.trim(); if(!rule) continue;
+    const m=rule.match(/^((?:(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:\s*-\s*(?:Mo|Tu|We|Th|Fr|Sa|Su))?)(?:\s*,\s*(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:\s*-\s*(?:Mo|Tu|We|Th|Fr|Sa|Su))?)*)?\s*(.*)$/); if(!m) return null;
+    let hit=!m[1];
+    if(m[1]) for(const part of m[1].split(",")){ const pp=part.trim(); if(pp==="PH") continue; const [x,y]=pp.split("-").map(v=>v.trim()); const ia=DD.indexOf(x), ib=y?DD.indexOf(y):ia; if(ia<0||ib<0) return null; for(let k=ia,g=0;g<8;k=(k+1)%7,g++){ if(k===dow) hit=true; if(k===ib) break; } }
+    const t=m[2].trim(); if(!t&&m[1]) continue; any=true; if(!hit) continue;
+    if(/^(off|closed)$/i.test(t)){ today="off"; continue; }
+    const rng=[]; for(const p of t.split(",")){ const mm=p.trim().match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\+?$/); if(!mm) return null; rng.push([+mm[1]*60+ +mm[2],+mm[3]*60+ +mm[4]]); }
+    today=rng; }
+  if(!any) return null;
+  if(today==null||today==="off") return {open:false,txt:"วันนี้ปิด"};
+  for(const [a,b] of today){ const e=b<=a?b+1440:b; if(now>=a&&now<e) return {open:true,soon:e-now<=45,txt:(e-now<=45?"ใกล้ปิด ":"เปิดอยู่ ")+"ถึง "+fmtMin(b)}; }
+  const nx=today.map(r=>r[0]).filter(a=>a>now).sort((x,y)=>x-y)[0]; return {open:false,txt:nx!=null?"ยังไม่เปิด เปิด "+fmtMin(nx):"ปิดแล้ววันนี้"}; }
+function ohBadge(h){ if(!h) return ""; const o=ohState(h); if(!o) return `<span class="oh">🕘 ${esc(h)}</span>`; return `<span class="oh ${o.open?(o.soon?"soon":"open"):"shut"}">${o.open?"🟢":"🔴"} ${esc(o.txt)}</span>`; }
+async function wikiSummary(wp,wd){
+  let lang="", title="";
+  if(wd){ try{ const j=await (await fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${enc(wd)}&props=sitelinks&format=json&origin=*`)).json(); const sl=(j.entities&&j.entities[wd]&&j.entities[wd].sitelinks)||{}; for(const l of ["th","en","ja"]) if(sl[l+"wiki"]){ lang=l; title=sl[l+"wiki"].title; break; } }catch(e){} }
+  if(!title&&wp){ const m=String(wp).match(/^([a-z-]{2,12}):(.+)$/); if(m){ lang=m[1]; title=m[2]; } }
+  if(!title) return null;
+  try{ const j=await (await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g,"_"))}`)).json();
+    return {lang,title,extract:j.extract||"",url:(j.content_urls&&j.content_urls.mobile&&j.content_urls.mobile.page)||`https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`}; }catch(e){ return {lang,title,extract:"",url:`https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`}; } }
+function wikiHtml(w){ if(!w) return ""; const LN={th:"ไทย",en:"อังกฤษ",ja:"ญี่ปุ่น"}[w.lang]||w.lang; const ex=w.extract.length>650?w.extract.slice(0,650)+"…":w.extract;
+  return `<div class="wk"><div class="tiny">📖 Wikipedia ภาษา${esc(LN)}: ${esc(w.title)}</div>${ex?`<p>${esc(ex)}</p>`:""}<div class="c-actions">${aBtn(w.url,"อ่านต่อ",I.book)}${w.lang!=="th"&&ex?aBtn("https://translate.google.com/?sl=auto&tl=th&op=translate&text="+enc(w.extract.slice(0,1800)),"แปลเป็นไทย",""):""}</div></div>`; }
+function walkMin(kmv){ return Math.max(1,Math.round(kmv*1.25/4.5*60)); }
+function distTxt(kmv){ return kmv<1?Math.round(kmv*1000/10)*10+" ม.":kmv.toFixed(1)+" กม."; }
+
+/* ----- explore around me (walking) ----- */
+const EXC=[
+ {id:"top",e:"✨",n:"น่าเที่ยว",f:['nwr["tourism"~"^(attraction|museum|gallery|viewpoint|zoo|aquarium|theme_park)$"]["name"]','nwr["historic"]["name"]','nwr["amenity"="place_of_worship"]["name"]["wikidata"]','nwr["leisure"~"^(park|garden)$"]["name"]["wikidata"]','nwr["natural"~"^(waterfall|peak|hot_spring)$"]["name"]'],wiki:true},
+ {id:"food",e:"🍜",n:"ร้านอาหาร",f:['nwr["amenity"~"^(restaurant|fast_food|food_court)$"]["name"]']},
+ {id:"cafe",e:"☕",n:"คาเฟ่ / ขนม",f:['nwr["amenity"~"^(cafe|ice_cream)$"]["name"]','nwr["shop"~"^(confectionery|pastry|bakery)$"]["name"]']},
+ {id:"bar",e:"🍺",n:"บาร์ / อิซากายะ",f:['nwr["amenity"~"^(bar|pub|biergarten)$"]["name"]','nwr["amenity"="restaurant"]["cuisine"~"izakaya|yakitori"]["name"]']},
+ {id:"shop",e:"🛍",n:"ห้าง / ของฝาก",f:['nwr["shop"~"^(mall|department_store|gift|souvenir|variety_store)$"]["name"]']},
+ {id:"shoes",e:"👟",n:"รองเท้า / เสื้อผ้า",f:['nwr["shop"~"^(shoes|clothes|sports|outdoor|boutique)$"]["name"]']},
+ {id:"drug",e:"💊",n:"ดรักสโตร์",f:['nwr["shop"~"^(chemist|cosmetics)$"]','nwr["amenity"="pharmacy"]'],unnamed:"ดรักสโตร์"},
+ {id:"konbini",e:"🏪",n:"คอนบินิ",f:['nwr["shop"="convenience"]'],unnamed:"คอนบินิ"},
+ {id:"onsen",e:"♨️",n:"ออนเซ็น / เซ็นโต",f:['nwr["amenity"="public_bath"]','nwr["natural"="hot_spring"]','nwr["leisure"="spa"]["name"]']},
+ {id:"shrine",e:"⛩",n:"ศาลเจ้า / วัด",f:['nwr["amenity"="place_of_worship"]["name"]']},
+ {id:"park",e:"🌳",n:"สวน / ใบไม้",f:['nwr["leisure"~"^(park|garden)$"]["name"]']},
+ {id:"view",e:"🍁",n:"จุดชมวิว",f:['nwr["tourism"="viewpoint"]'],unnamed:"จุดชมวิว (ไม่มีชื่อ)"},
+ {id:"museum",e:"🏛",n:"พิพิธภัณฑ์",f:['nwr["tourism"~"^(museum|gallery)$"]["name"]']},
+ {id:"wiki",e:"📖",n:"Wikipedia",wiki:true,f:[]},
+ {id:"station",e:"🚉",n:"สถานี / ป้ายรถ",f:['nwr["railway"~"^(station|halt|tram_stop)$"]["name"]','node["highway"="bus_stop"]["name"]'],dur:10},
+ {id:"wc",e:"🚻",n:"ห้องน้ำ",f:['nwr["amenity"="toilets"]'],unnamed:"ห้องน้ำ",dur:10},
+ {id:"atm",e:"🏧",n:"ATM",f:['nwr["amenity"="atm"]'],unnamed:"ATM",dur:10}];
+const EXR=[[400,"เดิน 5 นาที"],[800,"10 นาที"],[1500,"20 นาที"],[3000,"3 กม."]];
+let ex={r:800,cat:"top",src:"gps",openOnly:false}, exCache={}, exLayer=null;
+function planHere(){ const ti=todayIndex(), di=ti>=0?ti:curDay; const its=planItems(di).filter(x=>x.p&&P[x.p]&&x.k!=="drive"&&x.k!=="train");
+  const j=jst(), now=j.h*60+j.mi; let it=ti>=0?its.filter(x=>toMin(x.t)<=now).pop():null; it=it||its[0]; return it?[P[it.p][1],P[it.p][2],it.n]:null; }
+function openExplore(){ if(curTab==="map"&&map){ const c=map.getCenter(); ex.mapC=[c.lat,c.lng]; } ex.view="list"; exLocate(); }
+function exLocate(){
+  ex.err=""; ex.res=null;
+  if(ex.src==="map"&&ex.mapC){ ex.ll=ex.mapC; ex.acc=null; ex.where="กลางแผนที่"; renderExplore(); exRun(); return; }
+  if(ex.src==="plan"){ const h=planHere(); if(h){ ex.ll=[h[0],h[1]]; ex.acc=null; ex.where=h[2]; renderExplore(); exRun(); return; } }
+  if(gpsLive()){ ex.ll=gps.pos.ll; ex.acc=gps.pos.acc; ex.where="ตำแหน่งของคุณ"; renderExplore(); exRun(); return; }
+  ex.locating=true; renderExplore();
+  const fail=msg=>{ ex.locating=false; const h=planHere(); if(h){ ex.src="plan"; ex.ll=[h[0],h[1]]; ex.where=h[2]; ex.err=msg+" ใช้จุดในแผนแทน"; renderExplore(); exRun(); } else { ex.err=msg; renderExplore(); } };
+  try{ if(!("geolocation" in navigator)) return fail("เครื่องนี้ไม่รองรับ GPS");
+    navigator.geolocation.getCurrentPosition(p=>{ ex.locating=false; gps.pos={ll:[p.coords.latitude,p.coords.longitude],acc:p.coords.accuracy,spd:p.coords.speed,hd:p.coords.heading,t:Date.now()}; if(map) placeMe(gps.pos.ll,"gps",gps.pos.acc,null);
+      ex.ll=gps.pos.ll; ex.acc=gps.pos.acc; ex.where="ตำแหน่งของคุณ"; renderExplore(); exRun(); },
+      e=>fail(e.code===1?"ยังไม่ได้อนุญาตให้ใช้ตำแหน่ง":"หาตำแหน่ง GPS ไม่ได้"),{enableHighAccuracy:true,timeout:12000,maximumAge:30000}); }catch(e){ fail("เปิด GPS ไม่ได้"); } }
+async function exWiki(ll,r){ try{ const j=await (await fetch(`https://ja.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${ll[0]}|${ll[1]}&gsradius=${Math.min(10000,Math.max(300,r))}&gslimit=50&format=json&origin=*`)).json();
+  return ((j.query&&j.query.geosearch)||[]).filter(g=>!/駅$|学校|線$|郵便局|IC$|インターチェンジ|ジャンクション|町$|村$|市$|区$|丁目|交差点|号$/.test(g.title)).map(g=>({id:"wp"+g.pageid,name:g.title,en:"",kind:"บทความ Wikipedia",sub:"บทความ Wikipedia ภาษาญี่ปุ่น",lat:g.lat,lng:g.lon,star:true,wp:"ja:"+g.title,wd:"",hours:"",tags:{},osmk:"tourism",osmv:"attraction"})); }catch(e){ return null; } }
+async function exRun(){
+  if(!ex.ll) return; const cat=EXC.find(c=>c.id===ex.cat)||EXC[0]; const key=[cat.id,ex.r,ex.ll[0].toFixed(3),ex.ll[1].toFixed(3)].join("|");
+  if(exCache[key]&&Date.now()-exCache[key].t<20*60e3){ ex.res=exCache[key].list; exPaint(); return; }
+  ex.loading=true; exPaint(); const want=ex.ll.join(",")+cat.id+ex.r;
+  let list=[], ok=false;
+  if(cat.f.length){ const q=`[out:json][timeout:25];(${cat.f.map(f=>f+`(around:${ex.r},${ex.ll[0].toFixed(5)},${ex.ll[1].toFixed(5)});`).join("")});out center tags 200;`; const j=await ovFetch(q); if(j){ ok=true; list=(j.elements||[]).map(e=>ovItem(e,cat)).filter(Boolean); } }
+  if(cat.wiki){ const w=await exWiki(ex.ll,ex.r); if(w){ ok=true; const near=(a,b)=>km([a.lat,a.lng],[b.lat,b.lng])<0.12; w.forEach(x=>{ const dup=list.find(y=>y.name===x.name||(near(x,y)&&(y.star||y.name.includes(x.name)||x.name.includes(y.name)))); if(dup){ if(!dup.wp) dup.wp=x.wp; dup.star=true; } else list.push(x); }); } }
+  if(ex.ll.join(",")+cat.id+ex.r!==want) return;
+  ex.loading=false; if(!ok){ ex.err="ค้นหาไม่ได้ตอนนี้ (เน็ตหรือเซิร์ฟเวอร์ OpenStreetMap ไม่ตอบ) ลองใหม่อีกครั้ง"; ex.res=null; exPaint(); return; }
+  const seen=new Set(); list=list.filter(r=>{ const k=r.name+"|"+r.lat.toFixed(4)+r.lng.toFixed(4); if(seen.has(k)) return false; seen.add(k); return true; });
+  list.forEach(r=>{ r.d=km(ex.ll,[r.lat,r.lng]); r.oh=ohState(r.hours); });
+  list.sort((x,y)=>(x.d-(x.star?0.15:0))-(y.d-(y.star?0.15:0))); list=list.slice(0,80);
+  exCache[key]={t:Date.now(),list}; ex.res=list; ex.err=""; exPaint(); if(exLayer&&curTab==="map") exDrawMap(false); }
+function exShown(){ return (ex.res||[]).filter(r=>!ex.openOnly||(r.oh&&r.oh.open)); }
+function exResHtml(){
+  if(ex.locating) return `<div class="tiny">กำลังหาตำแหน่ง GPS…</div>`; if(ex.loading) return `<div class="tiny">กำลังค้นหา…</div>`;
+  if(!ex.res) return ex.err?`<div class="tiny">${esc(ex.err)}</div>`:"";
+  const L2=exShown(); if(!L2.length) return `<div class="tiny">ไม่พบในรัศมีนี้${ex.openOnly?" ที่เปิดอยู่ตอนนี้":""} ลองขยายรัศมีหรือเลือกประเภทอื่น</div>`;
+  return `<div class="tiny" style="margin:2px 0 6px">${L2.length} แห่ง · เรียงจากใกล้ไปไกล · ★ = มีบทความ Wikipedia</div>`+L2.map(r=>{ const i=ex.res.indexOf(r);
+    return `<div class="x-hit"><div class="x-main"><b>${r.star?"★ ":""}${esc(r.name)}</b>${r.sub?`<span class="tiny">${esc(r.sub)}</span>`:""}<span class="tiny">📏 ${distTxt(r.d)} · 🚶 ~${walkMin(r.d)} นาที ${ohBadge(r.hours)}</span></div><div class="x-btns">${aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng},"walking"),"นำทาง",I.nav)}<button class="btn small" data-act="ex-detail" data-i="${i}">รายละเอียด</button><button class="btn small primary" data-act="ex-add" data-i="${i}">＋ แผน</button></div></div>`; }).join(""); }
+function exploreHtml(){
+  const cat=EXC.find(c=>c.id===ex.cat)||EXC[0];
+  const srcs=[["gps","📍 ตำแหน่งฉัน"],map&&ex.mapC?["map","🗺 กลางแผนที่"]:null,["plan","🗓 จุดในแผนตอนนี้"]].filter(Boolean);
+  return `<div id="ex-root"><div class="sk">สำรวจรอบตัว</div><h2>มีอะไรน่าสนใจแถวนี้</h2>
+  <div class="x-scope">${srcs.map(([id,n])=>`<button class="chip${ex.src===id?" on":""}" data-act="ex-src" data-id="${id}">${n}</button>`).join("")}</div>
+  <div class="tiny" id="ex-where" style="margin:-2px 0 6px">${ex.where?`ค้นรอบ: ${esc(ex.where)}${ex.acc?` (GPS ±${Math.round(ex.acc)} ม.)`:""}`:""}${ex.err&&ex.res?` · ${esc(ex.err)}`:""}</div>
+  <div class="x-scope">${EXR.map(([r,n])=>`<button class="chip${ex.r===r?" on":""}" data-act="ex-r" data-r="${r}">${n}</button>`).join("")}<button class="chip${ex.openOnly?" on":""}" data-act="ex-openonly">🟢 เปิดอยู่ตอนนี้</button></div>
+  <div class="x-cats">${EXC.map(c=>`<button class="chip${ex.cat===c.id?" on":""}" data-act="ex-cat" data-id="${c.id}">${c.e} ${esc(c.n)}</button>`).join("")}</div>
+  <div class="c-actions" style="margin:2px 0 8px"><button class="btn small" data-act="ex-map">🗺 ดูผลทั้งหมดบนแผนที่</button><button class="btn small" data-act="ex-refresh">↻ ค้นใหม่ตรงนี้</button></div>
+  <div id="ex-res" class="x-res">${exResHtml()}</div>
+  <p class="tiny">ข้อมูลจาก OpenStreetMap และ Wikipedia · เวลาเปิดอาจไม่ครบหรือไม่อัปเดต · ระยะทางเป็นเส้นตรง</p></div>`; }
+function renderExplore(){ ex.view="list"; if($("#ex-root")) renderSheet(exploreHtml()); else openSheet(exploreHtml()); }
+function exPaint(){ const r=$("#ex-res"); if(r){ r.innerHTML=exResHtml(); const w=$("#ex-where"); if(w&&ex.where) w.textContent="ค้นรอบ: "+ex.where+(ex.acc?` (GPS ±${Math.round(ex.acc)} ม.)`:""); } }
+function exDetailHtml(r){
+  const t=r.tags||{}; const addr=[t["addr:province"],t["addr:city"],t["addr:quarter"],t["addr:neighbourhood"],t["addr:block_number"],t["addr:housenumber"]].filter(Boolean).join(" ")||t["addr:full"]||"";
+  const site=t.website||t["contact:website"]||"", tel=t.phone||t["contact:phone"]||"";
+  return `<div class="sk">${esc(r.kind||"สถานที่")}</div><h2>${r.star?"★ ":""}${esc(r.name)}</h2>${r.en?`<div class="tiny" style="margin-top:-4px">${esc(r.en)}</div>`:""}
+  ${stripHtml(r.name,5,"",r.en||"",[r.lat,r.lng])}
+  <p style="margin:8px 0 4px">📏 ${distTxt(r.d||0)} จาก${esc(ex.where||"ตำแหน่งนี้")} · <span id="exd-walk">🚶 ~${walkMin(r.d||0)} นาที (ประมาณ)</span></p>
+  ${r.hours?`<p style="margin:4px 0">${ohBadge(r.hours)}<br><span class="tiny mono">${esc(r.hours)}</span></p>`:""}
+  ${(addr||tel||site||t.cuisine)?`<dl class="kv">${t.cuisine?`<dt>อาหาร</dt><dd>${esc(t.cuisine.replace(/;/g,", ").replace(/_/g," "))}</dd>`:""}${addr?`<dt>ที่อยู่</dt><dd>${esc(addr)}</dd>`:""}${tel?`<dt>โทร</dt><dd><a href="tel:${esc(tel.replace(/\s/g,""))}">${esc(tel)}</a></dd>`:""}${site?`<dt>เว็บ</dt><dd><a href="${esc(site)}" target="_blank" rel="noopener">${esc(site.replace(/^https?:\/\//,"").slice(0,40))}</a></dd>`:""}</dl>`:""}
+  <div id="exd-wiki">${r.wp||r.wd?`<div class="tiny">กำลังโหลดข้อมูลจาก Wikipedia…</div>`:""}</div>
+  <div class="c-actions" style="margin-top:10px">${aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng},"walking"),"นำทาง (เดิน)",I.nav,"go")}${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(r.name+(t["addr:city"]?" "+t["addr:city"]:"")),"ดูรีวิวใน Google Maps",I.map||"")}<button class="btn small" data-copy="${esc(r.name)}">${I.copy}คัดลอกชื่อ</button></div>
+  <div class="c-actions"><button class="btn small" data-act="sheet-back">‹ กลับ</button><button class="btn small primary" data-act="ex-add" data-i="${ex.res?ex.res.indexOf(r):-1}">＋ ใส่ในแผนตอนนี้</button></div>`; }
+function exOpenDetail(i,fromMap){ const r=ex.res&&ex.res[i]; if(!r) return; ex.view="detail";
+  if(fromMap){ openSheet(exploreHtml()); }
+  openSubSheet(exDetailHtml(r),()=>{ ex.view="list"; renderSheet(exploreHtml()); });
+  if(ex.ll) osrmRoute(ex.ll,[r.lat,r.lng],"foot").then(rt=>{ const el=$("#exd-walk"); if(rt&&el) el.textContent=`🚶 เดิน ${rt.km} กม. ~${rt.min} นาที (ตามทางเดินจริง)`; });
+  if(r.wp||r.wd) wikiSummary(r.wp,r.wd).then(w=>{ const el=$("#exd-wiki"); if(el) el.innerHTML=w?wikiHtml(w):""; }); }
+function exAdd(i){ const r=ex.res&&ex.res[i]; if(!r) return; const ti=todayIndex(); if(ti>=0&&ti!==curDay) selectDay(ti);
+  const cat=EXC.find(c=>c.id===ex.cat)||{}; const g=guessDur(r.osmk,r.osmv,r.name); const dur=cat.dur||g.m;
+  const back=()=>{ draft=null; renderExplore(); };
+  if(sheetHist){ sheetBack.push(back); try{ history.pushState({sheet:1,sub:sheetBack.length},""); }catch(e){} }
+  openAddStop(); Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng,dur,note:r.hours?"เวลาเปิด "+r.hours:"",durNote:(g.lab||r.kind||"")+" · ตั้งเวลาอยู่ให้อัตโนมัติ "+dur+" นาที ปรับได้"}); renderAddStop(); }
+function exDrawMap(fit){
+  if(!map) return; if(!exLayer) exLayer=L.layerGroup().addTo(map); exLayer.clearLayers(); const L2=exShown(); const pts=[];
+  L2.forEach((r,n)=>{ const i=ex.res.indexOf(r); pts.push([r.lat,r.lng]);
+    L.marker([r.lat,r.lng],{icon:divIcon(`<div class="mk ex${r.star?" star":""}">${n+1}</div>`,24),zIndexOffset:3000,title:r.name}).bindPopup(`<div class="pp-k">${esc(r.kind||"")} · ${distTxt(r.d)} · 🚶 ~${walkMin(r.d)} นาที</div><div class="pp-n">${r.star?"★ ":""}${esc(r.name)}</div>${r.hours?`<div class="muted">${ohBadge(r.hours)}</div>`:""}<div class="pp-a">${aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng},"walking"),"นำทาง",I.nav)}<button class="btn small" data-act="ex-detail" data-i="${i}" data-map="1">รายละเอียด</button><button class="btn small primary" data-act="ex-add" data-i="${i}">＋ แผน</button></div>`).addTo(exLayer); });
+  if(ex.ll){ pts.push(ex.ll); L.circle(ex.ll,{radius:ex.r,interactive:false,color:"#7B3FBF",weight:1,dashArray:"4 4",fillOpacity:.04}).addTo(exLayer); }
+  const cat=EXC.find(c=>c.id===ex.cat)||EXC[0]; let bar=$("#exBar"); if(!bar){ bar=document.createElement("div"); bar.id="exBar"; bar.className="ex-bar"; $("#p-map").appendChild(bar); }
+  bar.innerHTML=`<span>${cat.e} ${esc(cat.n)} · ${L2.length} แห่ง</span><button class="btn small" data-act="ex-open">รายการ</button><button class="btn small" data-act="ex-clear">ล้าง</button>`;
+  if(fit&&pts.length) map.fitBounds(L.latLngBounds(pts).pad(.15),{maxZoom:17}); }
+function exClear(){ if(exLayer) exLayer.clearLayers(); const b=$("#exBar"); b&&b.remove(); }
+document.addEventListener("click",ev=>{
+  const b=ev.target.closest("[data-act^='ex-'],[data-act='sheet-back']"); if(!b) return; const a=b.dataset.act; ev.stopPropagation();
+  if(a==="sheet-back"){ sheetGoBack(); return; }
+  if(a==="ex-open"){ openExplore(); return; }
+  if(a==="ex-src"){ ex.src=b.dataset.id; exLocate(); return; }
+  if(a==="ex-r"){ ex.r=+b.dataset.r; renderExplore(); exRun(); return; }
+  if(a==="ex-cat"){ ex.cat=b.dataset.id; ex.res=null; renderExplore(); exRun(); return; }
+  if(a==="ex-openonly"){ ex.openOnly=!ex.openOnly; renderExplore(); if(exLayer&&$("#exBar")) exDrawMap(false); return; }
+  if(a==="ex-refresh"){ if(ex.src==="gps") gps.pos=null; if(curTab==="map"&&map){ const c=map.getCenter(); ex.mapC=[c.lat,c.lng]; } exCache={}; exLocate(); return; }
+  if(a==="ex-detail"){ if(map) map.closePopup(); exOpenDetail(+b.dataset.i,!!b.dataset.map&&!$("#ex-root")); return; }
+  if(a==="ex-add"){ if(map) map.closePopup(); if(!$("#sheetRoot").innerHTML){ openSheet(exploreHtml()); } exAdd(+b.dataset.i); return; }
+  if(a==="ex-map"){ if(!ex.res||!ex.res.length) return; closeSheet(); showTab("map"); setTimeout(()=>exDrawMap(true),150); return; }
+  if(a==="ex-clear"){ exClear(); return; }
+},true);
+
+/* ----- tap a time on the timeline to change it ----- */
+let qt=null;
+function applyTime(ed,di,key,S,E){
+  const n=ed.list.find(x=>x.key===key); if(!n) return {msg:""};
+  const its0=planItems(di), it0=its0.find(x=>x._i===key); if(!it0) return {msg:""};
+  const curDur=it0.e?toMin(it0.e)-toMin(it0.t):(n.dur!=null?n.dur:origDur(it0));
+  n.dur=(E!=null&&E>S)?E-S:curDur;
+  if(it0.k==="night"||it0.fix){ n.fixAt=fmtMin(S); return {msg:"รายการนี้มีเวลาตายตัว (เช่น จองไว้) เปลี่ยนเป็น "+fmtMin(S)}; }
+  n.at=""; const nat=()=>toMin(planItems(di).find(x=>x._i===key).t);
+  let N=nat(); if(S>=N){ if(S>N) n.at=fmtMin(S); return {msg:S>N?`ว่าง ${S-N} นาทีก่อนรายการนี้`:""}; }
+  const idx=ed.list.indexOf(n), firstReal=ed.list.findIndex(x=>!(x.kind==="base"&&DAYS[di].items[x.src]&&DAYS[di].items[x.src].k==="opt"));
+  if(idx===firstReal){ ed.start=fmtMin(S); n.pre=0; return {msg:"เริ่มวันเร็วขึ้นเป็น "+fmtMin(S)}; }
+  const notes=[]; if(n.pre){ const cut=Math.min(n.pre,N-S); n.pre-=cut; N=nat(); }
+  if(S<N){ for(let j=idx-1;j>=0&&S<N;j--){ const p=ed.list[j]; const pit=its0.find(x=>x._i===p.key); if(!pit||pit.k==="opt") continue;
+      const pd=p.dur!=null?p.dur:(pit.e?toMin(pit.e)-toMin(pit.t):origDur(pit)); const cut=Math.min(Math.max(0,pd-5),N-S);
+      if(cut>0){ p.dur=pd-cut; notes.push(`ลดเวลาที่ "${pit.n}" ลง ${cut} นาที`); N=nat(); }
+      if(S<N&&p.pre){ const c2=Math.min(p.pre,N-S); p.pre-=c2; N=nat(); }
+      break; } }
+  if(S<N){ n.at=fmtMin(S); notes.push(`ยังเร็วกว่าที่ทำได้ ${N-S} นาที แผนจะเริ่มจริงราว ${fmtMin(N)}`); }
+  return {msg:notes.join(" · ")}; }
+function openTime(key){ const di=curDay; const it=planItems(di).find(x=>x._i===key); if(!it) return;
+  if(it.k==="opt"){ openEditItem(key); return; }
+  qt={key,di,s:toMin(it.t),e:it.e?toMin(it.e):null,name:it.n}; renderTime(true); }
+function renderTime(first){ const c=qt; let res={msg:""}; const sim=simulate(c.di,ed=>{ res=applyTime(ed,c.di,c.key,c.s,c.e); });
+  const it=sim.find(x=>x._i===c.key)||{}; const dur=c.e!=null&&c.e>c.s?c.e-c.s:null;
+  const html=`<div class="sk">แก้เวลา · D${DAYS[c.di].n}</div><h2>${esc(c.name||"")}</h2>
+  <div class="grid2"><div><label class="fl" for="qt-s">เริ่ม</label><input type="time" id="qt-s" class="inp" step="300" value="${fmtMin(c.s)}"></div><div><label class="fl" for="qt-e">ถึง</label><input type="time" id="qt-e" class="inp" step="300" value="${c.e!=null?fmtMin(c.e):""}"></div></div>
+  <div class="qt-row"><span class="tiny">เลื่อน</span>${[-30,-15,-5,5,15,30].map(m=>`<button class="chip" data-act="cs-qtshift" data-m="${m}">${m>0?"+":"−"}${Math.abs(m)}</button>`).join("")}</div>
+  ${c.e!=null?`<div class="qt-row"><span class="tiny">อยู่นาน${dur!=null?" "+dur+" นาที":""}</span>${[-30,-15,15,30,60].map(m=>`<button class="chip" data-act="cs-qtdur" data-m="${m}">${m>0?"+":"−"}${Math.abs(m)}</button>`).join("")}</div>`:""}
+  <div class="cs-prev"><b>เวลาใหม่ของแผน</b>${previewList(sim,c.key)}${res.msg?`<p class="tiny" style="margin:6px 0 0">ℹ️ ${esc(res.msg)}</p>`:""}</div>
+  <div class="c-actions" style="margin-top:12px"><button class="btn small" data-act="cs-qtauto">ต่อจากรายการก่อนหน้า (อัตโนมัติ)</button><button class="btn small" data-act="cs-edit" data-key="${esc(c.key)}">ตั้งค่าอื่น…</button><button class="btn small primary" data-act="cs-qtsave">บันทึก</button></div>`;
+  if(first) openSheet(html); else renderSheet(html); }
+document.addEventListener("change",ev=>{ if(!qt) return; const id=ev.target.id; if(id!=="qt-s"&&id!=="qt-e") return; const v=ev.target.value;
+  if(id==="qt-s"&&v){ const ns=toMin(v); if(qt.e!=null) qt.e=ns+(qt.e-qt.s); qt.s=ns; } else if(id==="qt-e"){ qt.e=v?toMin(v):null; if(qt.e!=null&&qt.e<=qt.s) qt.e=qt.s+5; } renderTime(false); });
+
 /* ----- add / edit sheet ----- */
 function openAddStop(afterKey){
   const di=curDay; draft={mode:"add",day:di,afterKey:afterKey||null,key:"cs_"+Date.now().toString(36),name:"",lat:null,lng:null,dur:30,at:"",note:""};
@@ -1632,7 +1872,7 @@ function renderAddStop(){
   <div class="cs-picked">${c.lat!=null?`<b>📌 ${esc(c.name||"จุดที่เลือก")}</b><span class="tiny mono">${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}</span>`:`<span class="tiny">ยังไม่ได้เลือกสถานที่ · ถ้าแค่ฝนตก/รถติด ไม่ต้องเลือก ใส่เวลารอได้เลย</span>`}</div>
   <label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.name)}" placeholder="${c.lat!=null?"ชื่อสถานที่":"เช่น ฝนตก รอที่โรงแรม"}">`:`<div class="c-name" style="font-size:18px;margin:4px 0">${esc(c.title||"")}</div>`}
   <div class="grid2"><div><label class="fl" for="cs-dur">อยู่นาน</label><select id="cs-dur" class="inp">${durOpts(c.dur)}</select>${c.durNote?`<div class="tiny" style="margin-top:3px">${esc(c.durNote)}</div>`:""}</div>
-  <div><label class="fl" for="cs-at">เวลาเริ่ม</label><select id="cs-at" class="inp">${timeOpts(c.at)}</select></div></div>
+  <div><label class="fl" for="cs-at">เริ่มเวลา <span class="tiny">(ว่าง = ต่อจากรายการก่อน)</span></label><div style="display:flex;gap:6px"><input type="time" id="cs-at" class="inp" step="300" value="${esc(c.at||"")}" style="flex:1;min-width:0">${c.at?`<button class="btn small" data-act="cs-atclear" aria-label="ล้างเวลา">✕</button>`:""}</div></div></div>
   ${isCustom?`<label class="fl" for="cs-note">โน้ต</label><input id="cs-note" class="inp" value="${esc(c.note||"")}" placeholder="ไม่ใส่ก็ได้">`:""}
   <div class="cs-prev"><b>เวลาใหม่ของแผน</b>${previewList(sim,c.mode==="add"?c.key:c.key)}<p class="tiny" style="margin:6px 0 0">เวลาขับระหว่างจุดใหม่คำนวณจากระยะทางโดยประมาณ</p></div>
   <div class="c-actions" style="margin-top:12px">${c.mode==="edit"?`<button class="btn small" data-act="cs-del">${isCustom?"ลบจุดนี้":"ข้ามจุดนี้"}</button>`:""}${c.isOpt?`<button class="btn small" data-act="cs-promote">${c.promote?"เอาออกจากแผน":"ใส่ในแผน"}</button>`:""}<button class="btn small primary" data-act="cs-save">บันทึก</button></div>
@@ -1683,13 +1923,65 @@ document.addEventListener("input",ev=>{
   },450);
 });
 document.addEventListener("change",ev=>{ if(["cs-at","cs-dur"].includes(ev.target.id)&&draft){ readDraft(); renderAddStop(); } });
-function startPick(){ readDraft(); pickMode=Object.assign({},draft); closeSheet(); showTab("map");
-  setTimeout(()=>{ if(!map) return; $("#pickBar")&&$("#pickBar").remove(); const b=document.createElement("div"); b.id="pickBar"; b.className="pick-bar"; b.innerHTML=`แตะบนแผนที่เพื่อปักหมุด <button class="btn small" data-act="cs-pickcancel">ยกเลิก</button>`; $("#p-map").appendChild(b); map.getContainer().style.cursor="crosshair"; },120); }
-function endPick(){ pickMode=null; $("#pickBar")&&$("#pickBar").remove(); if(map) map.getContainer().style.cursor=""; }
-function hookMapPick(){ map.on("click",async e=>{ if(!pickMode) return; const ll=[e.latlng.lat,e.latlng.lng]; draft=Object.assign(pickMode,{lat:ll[0],lng:ll[1]}); endPick(); showTab("plan"); if(!draft.name) draft.name=await reverseName(ll)||"จุดที่ปักเอง"; renderAddStop(); }); }
+/* ----- pin a place on the map: tap named places, or tap anywhere and choose a nearby name; Back returns to the form ----- */
+let pickLayer=null, pickPoiT=null, pickPois=new Map(), pickTap=null, pickCands=[];
+function startPick(){ readDraft(); pickMode=Object.assign({},draft); pickTap=null; pickCands=[];
+  $("#sheetRoot").innerHTML=""; sheetBack.length=0;
+  if(sheetHist){ sheetHist=false; try{ history.replaceState({pick:1},""); }catch(e){} } else { try{ history.pushState({pick:1},""); }catch(e){} }
+  document.body.classList.add("picking"); showTab("map");
+  setTimeout(()=>{ if(!map||!pickMode) return; map.getContainer().style.cursor="crosshair"; if(!pickLayer) pickLayer=L.layerGroup().addTo(map); pickLayer.clearLayers();
+    const ctx=xContext(pickMode); const c=pickMode.lat!=null?[pickMode.lat,pickMode.lng]:(gpsLive()?gps.pos.ll:(ctx.prev?[ctx.prev[0],ctx.prev[1]]:(ctx.next?[ctx.next[0],ctx.next[1]]:null)));
+    if(c) map.setView(c,Math.max(map.getZoom(),16),{animate:false});
+    map.on("moveend",pickPoisLoad); pickUi(); pickPoisLoad(); },150); }
+function pickUi(){ if(!pickMode) return; let b=$("#pickBar"); if(!b){ b=document.createElement("div"); b.id="pickBar"; b.className="pick-bar"; $("#p-map").appendChild(b); }
+  const z=map?map.getZoom():0;
+  b.innerHTML=`<button class="btn small" data-act="cs-pickcancel">‹ กลับ</button><span>${z<15?"ซูมเข้าเพื่อดูชื่อสถานที่ หรือแตะจุดที่ต้องการ":"แตะจุดสีม่วงที่มีชื่อ หรือแตะตรงไหนก็ได้"}</span>`;
+  let p=$("#pickPanel"); if(!pickTap){ p&&p.remove(); return; }
+  if(!p){ p=document.createElement("div"); p.id="pickPanel"; p.className="pick-panel"; $("#p-map").appendChild(p); }
+  p.innerHTML=`<div class="pp-k">เลือกชื่อสถานที่ตรงนี้</div>${pickTap.loading?`<div class="tiny">กำลังหาชื่อสถานที่แถวนี้…</div>`:""}
+  <div class="pick-list">${pickCands.map((c,i)=>`<button class="cs-hit${c.sel?" sel":""}" data-act="cs-pickname" data-i="${i}"><b>${c.sel?"✓ ":""}${esc(c.name)}</b><span class="tiny">${esc([c.kind,c.d!=null?distTxt(c.d)+" จากจุดที่แตะ":""].filter(Boolean).join(" · "))}</span></button>`).join("")}
+  ${!pickTap.loading&&!pickCands.length?`<div class="tiny">ไม่พบชื่อสถานที่ใกล้ๆ ใช้ตำแหน่งที่ปักแล้วตั้งชื่อเองได้</div>`:""}</div>
+  <div class="c-actions"><button class="btn small" data-act="cs-pickraw">📌 ใช้ตำแหน่งที่ปัก (ตั้งชื่อเอง)</button><button class="btn small" data-act="cs-pickcancel">‹ กลับไปฟอร์ม</button></div><div class="tiny">แตะที่อื่นบนแผนที่เพื่อปักใหม่</div>`; }
+function pickPoisLoad(){ if(!pickMode||!map) return; pickUi(); clearTimeout(pickPoiT);
+  if(map.getZoom()<15){ pickDrawPois(); return; }
+  pickPoiT=setTimeout(async()=>{ if(!pickMode) return; const b=map.getBounds(), z=map.getZoom();
+    const bb=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(v=>v.toFixed(5)).join(",");
+    const f=['nwr["name"]["tourism"]','nwr["name"]["historic"]','nwr["name"]["amenity"~"^(restaurant|cafe|bar|pub|fast_food|ice_cream|place_of_worship|public_bath|marketplace|townhall|theatre|cinema|food_court)$"]','nwr["name"]["leisure"~"^(park|garden)$"]','nwr["name"]["natural"~"^(peak|waterfall|spring|hot_spring)$"]','nwr["name"]["railway"~"^(station|halt)$"]','nwr["name"]["shop"~"^(mall|department_store|gift|souvenir|confectionery)$"]'];
+    if(z>=17) f.push('nwr["name"]["shop"]','nwr["name"]["amenity"]');
+    const j=await ovFetch(`[out:json][timeout:20][bbox:${bb}];(${f.map(x=>x+";").join("")});out center tags 300;`); if(!j||!pickMode) return;
+    (j.elements||[]).forEach(e=>{ const it=ovItem(e,null); if(it) pickPois.set(it.id,it); }); if(pickPois.size>1500){ const ks=[...pickPois.keys()].slice(0,500); ks.forEach(k=>pickPois.delete(k)); }
+    pickDrawPois(); },500); }
+function pickDrawPois(){ if(!pickLayer||!map) return; pickLayer.clearLayers(); if(!pickMode) return; const z=map.getZoom(), b=map.getBounds().pad(.1);
+  if(z>=15) pickPois.forEach(p=>{ if(!b.contains([p.lat,p.lng])) return;
+    const m=L.circleMarker([p.lat,p.lng],{radius:z>=17?7:6,color:"#fff",weight:2,fillColor:"#7B3FBF",fillOpacity:.95,bubblingMouseEvents:false}).addTo(pickLayer);
+    m.bindTooltip(esc(p.name),{direction:"top",offset:[0,-6],permanent:z>=18,className:"pick-tt"}); m.on("click",()=>pickAt([p.lat,p.lng],p)); });
+  if(pickTap) L.marker(pickTap.ll,{icon:divIcon(`<div class="mk stop" style="width:30px;height:30px;background:#7B3FBF;font-size:15px">📌</div>`,30),zIndexOffset:4000,interactive:false}).addTo(pickLayer); }
+async function pickAt(ll,poi){ if(!pickMode) return; pickTap={ll:poi?[poi.lat,poi.lng]:ll,loading:true}; pickCands=[];
+  const add=c=>{ if(!c||!c.name) return; if(pickCands.some(x=>x.name===c.name&&km([x.lat,x.lng],[c.lat,c.lng])<0.08)) return; c.d=km(pickTap.ll,[c.lat,c.lng]); pickCands.push(c); };
+  if(poi) add(Object.assign({sel:true},poi));
+  pickPois.forEach(p=>{ if(km(pickTap.ll,[p.lat,p.lng])<0.15) add(Object.assign({},p)); });
+  pickCands.sort((a,b)=>(b.sel?1:0)-(a.sel?1:0)||a.d-b.d); pickDrawPois(); pickUi();
+  const tap=pickTap;
+  const [ov,ph]=await Promise.all([
+    ovFetch(`[out:json][timeout:15];(nwr["name"](around:120,${tap.ll[0].toFixed(5)},${tap.ll[1].toFixed(5)}););out center tags 40;`),
+    fetch(`https://photon.komoot.io/reverse?lat=${tap.ll[0]}&lon=${tap.ll[1]}&limit=6&radius=0.15`).then(r=>r.json()).catch(()=>null)]);
+  if(pickTap!==tap) return;
+  ((ov&&ov.elements)||[]).forEach(e=>{ const t=e.tags||{}; if(t.highway&&!t.amenity&&!t.tourism) return; if(t.boundary||t.place||t.landuse) return; add(ovItem(e,null)); });
+  ((ph&&ph.features)||[]).forEach(f=>{ const p=f.properties||{}; if(!p.name) return; const g=f.geometry&&f.geometry.coordinates; if(!g) return; add({name:p.name,kind:OV_TH[p.osm_value]||"",lat:g[1],lng:g[0],osmk:p.osm_key,osmv:p.osm_value}); });
+  pickCands.sort((a,b)=>(b.sel?1:0)-(a.sel?1:0)||a.d-b.d); pickCands=pickCands.slice(0,12); tap.loading=false; pickUi(); }
+function finishPick(o){ const d=pickMode; endPick(); showTab("plan"); draft=Object.assign(d,{lat:o.lat,lng:o.lng,name:o.name||d.name||"จุดที่ปักเอง"});
+  if(o.osmk||o.osmv){ const g=guessDur(o.osmk,o.osmv,o.name); if(g.lab){ draft.dur=g.m; draft.durNote=g.lab+" · ตั้งเวลาอยู่ให้อัตโนมัติ "+g.m+" นาที ปรับได้"; } }
+  if(o.hours&&!draft.note) draft.note="เวลาเปิด "+o.hours;
+  if(history.state&&history.state.pick){ try{ history.replaceState({sheet:1},""); }catch(e){} sheetHist=true; }
+  renderAddStop(); }
+function cancelPick(fromPop){ const d=pickMode; if(!d) return; endPick(); showTab("plan"); draft=d;
+  if(!fromPop&&history.state&&history.state.pick){ try{ history.replaceState({sheet:1},""); }catch(e){} sheetHist=true; }
+  renderAddStop(); }
+function endPick(){ pickMode=null; pickTap=null; pickCands=[]; document.body.classList.remove("picking"); $("#pickBar")&&$("#pickBar").remove(); $("#pickPanel")&&$("#pickPanel").remove(); if(map){ map.getContainer().style.cursor=""; map.off("moveend",pickPoisLoad); } if(pickLayer) pickLayer.clearLayers(); }
+function hookMapPick(){ map.on("click",e=>{ if(!pickMode) return; pickAt([e.latlng.lat,e.latlng.lng],null); }); }
 function customHtml(it,cls,tm){
   const c=it._c; const ll=c.lat!=null;
-  return `<li class="${cls} k-custom" data-key-row="${esc(it._i)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${ll?"📌 จุดแวะที่เพิ่มเอง":"⏱ รอ / เลื่อนเวลา"}</span>${ll?wxChip(it._i,DAYS[curDay].date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${ll&&c.name?stripHtml(c.q||c.name,5,"",latinName(c.name)):""}${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it._late?`<p class="c-warn">⚠ เริ่มช้ากว่าเวลาที่ตั้งไว้</p>`:""}<div class="c-actions">${ll?aBtn(dirUrl({name:c.name,lat:c.lat,lng:c.lng,q:c.q||null}),"นำทาง",I.nav):""}${ll&&c.name?aBtn(imgUrl(c.q||c.name),"ดูรูป",I.img):""}<button class="btn small" data-act="cs-edit" data-key="${esc(it._i)}">แก้ไข</button></div></div></li>`;
+  return `<li class="${cls} k-custom" data-key-row="${esc(it._i)}">${tm}<div class="card">${moveBtns(it)}<div class="c-top"><span class="c-kind">${ll?"📌 จุดแวะที่เพิ่มเอง":"⏱ รอ / เลื่อนเวลา"}</span>${ll?wxChip(it._i,DAYS[curDay].date,it.t):""}</div><div class="c-name">${esc(it.n)}</div>${ll&&c.name?stripHtml(c.q||c.name,5,"",latinName(c.name),[c.lat,c.lng]):""}${it.x?`<p class="c-note">${esc(it.x)}</p>`:""}${it._late?`<p class="c-warn">⚠ เริ่มช้ากว่าเวลาที่ตั้งไว้</p>`:""}<div class="c-actions">${ll?aBtn(dirUrl({name:c.name,lat:c.lat,lng:c.lng,q:c.q||null}),"นำทาง",I.nav):""}${ll&&c.name?aBtn(imgUrl(c.q||c.name),"ดูรูป",I.img):""}<button class="btn small" data-act="cs-edit" data-key="${esc(it._i)}">แก้ไข</button></div></div></li>`;
 }
 function moveBtns(it){ if(it.k==="drive") return ""; return `<div class="mv"><button class="mv-b" data-act="cs-mv" data-key="${esc(it._i)}" data-dir="-1" aria-label="เลื่อนขึ้น">▲</button><button class="mv-b" data-act="cs-mv" data-key="${esc(it._i)}" data-dir="1" aria-label="เลื่อนลง">▼</button><button class="mv-b" data-act="cs-edit" data-key="${esc(it._i)}" aria-label="ปรับเวลา">⋯</button></div>`; }
 function insRow(key){ return `<li class="ins-row"><button class="ins-b" data-act="cs-ins" data-key="${esc(key)}">＋ เพิ่มจุดตรงนี้</button></li>`; }
@@ -1714,11 +2006,19 @@ document.addEventListener("click",ev=>{
   if(a==="cs-xadd"){ readDraft(); const r=draft.xr&&draft.xr.list&&draft.xr.list[+b.dataset.i]; if(!r) return; const cat=XCATS.find(c=>c.id===draft.xc)||{}; const g=guessDur(r.osmk,r.osmv,r.name); const dur=cat.dur||g.m;
     Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng,dur,note:draft.note||(r.hours?"เวลาเปิด "+r.hours:""),durNote:(g.lab||cat.n||"")+" · ตั้งเวลาอยู่ให้อัตโนมัติ "+dur+" นาที ปรับได้"}); renderAddStop(); const pk=$(".cs-picked"); pk&&pk.scrollIntoView({block:"center",behavior:"smooth"}); return; }
   if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng}); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
+  if(a==="cs-atclear"){ readDraft(); draft.at=""; renderAddStop(); return; }
   if(a==="cs-noplace"){ readDraft(); Object.assign(draft,{lat:null,lng:null}); renderAddStop(); return; }
   if(a==="cs-here"){ readDraft(); const use=p=>{ Object.assign(draft,{lat:p[0],lng:p[1]}); reverseName(p).then(n=>{ if(!draft.name) draft.name=n||"ตำแหน่งปัจจุบัน"; renderAddStop(); }); };
     if(gpsLive()) use(gps.pos.ll); else try{ navigator.geolocation.getCurrentPosition(p=>use([p.coords.latitude,p.coords.longitude]),()=>openSheet(gpsHelp()),{enableHighAccuracy:true,timeout:15000}); }catch(e){ openSheet(gpsHelp()); } return; }
   if(a==="cs-pick"){ startPick(); return; }
-  if(a==="cs-pickcancel"){ const d=pickMode; endPick(); showTab("plan"); draft=d; renderAddStop(); return; }
+  if(a==="cs-pickcancel"){ cancelPick(false); return; }
+  if(a==="cs-pickname"){ const c=pickCands[+b.dataset.i]; if(c) finishPick(c); return; }
+  if(a==="cs-pickraw"){ if(!pickTap) return; const ll=pickTap.ll; const near=pickCands[0]; finishPick({lat:ll[0],lng:ll[1],name:pickMode.name||(near&&near.d<0.05?near.name:"")||"จุดที่ปักเอง"}); return; }
+  if(a==="cs-time"){ openTime(b.dataset.key); return; }
+  if(a==="cs-qtshift"){ const m=+b.dataset.m; qt.s+=m; if(qt.e!=null) qt.e+=m; renderTime(false); return; }
+  if(a==="cs-qtdur"){ if(qt.e==null) return; qt.e=Math.max(qt.s+5,qt.e+ +b.dataset.m); renderTime(false); return; }
+  if(a==="cs-qtsave"){ const ed=materialize(qt.di); applyTime(ed,qt.di,qt.key,qt.s,qt.e); saveEdits(); qt=null; closeSheet(); renderPlan(); drawCustoms(); return; }
+  if(a==="cs-qtauto"){ const ed=materialize(qt.di); const n=ed.list.find(x=>x.key===qt.key); if(n){ n.at=""; delete n.fixAt; } saveEdits(); qt=null; closeSheet(); renderPlan(); return; }
   if(a==="cs-promote"){ readDraft(); draft.promote=!draft.promote; renderAddStop(); return; }
   if(a==="cs-save"){ readDraft(); const ed=materialize(draft.day); applyDraft(ed,draft); saveEdits(); draft=null; closeSheet(); renderPlan(); drawCustoms(); return; }
   if(a==="cs-del"){ const ed=materialize(draft.day); ed.list=ed.list.filter(x=>x.key!==draft.key); saveEdits(); draft=null; closeSheet(); renderPlan(); drawCustoms(); return; }
@@ -1742,7 +2042,12 @@ async function srcOpenverse(q,n){
   const j=await (await fetch(`https://api.openverse.org/v1/images/?q=${enc(q)}&page_size=${n+2}&mature=false`)).json();
   return (j.results||[]).filter(r=>r.thumbnail||r.url).map(r=>({src:r.thumbnail||r.url,big:r.url,page:r.foreign_landing_url||r.url,by:(r.creator||"")+(r.source?" · "+r.source:""),lic:(r.license||"").toUpperCase()}));
 }
-function commonsPhotos(q,n,en){
+async function srcCommonsGeo(ll,n,rad){
+  const url=`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=geosearch&ggscoord=${(+ll[0]).toFixed(5)}|${(+ll[1]).toFixed(5)}&ggsradius=${rad||400}&ggsnamespace=6&ggslimit=${n+6}&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640`;
+  const j=await (await fetch(url)).json(); const pages=Object.values((j.query||{}).pages||{});
+  return pages.map(p=>{ const ii=(p.imageinfo||[])[0]||{}; const md=ii.extmetadata||{}; return {src:ii.thumburl,page:ii.descriptionurl,by:((md.Artist||{}).value||"").replace(/<[^>]+>/g,"").slice(0,60)+" · ถ่ายใกล้จุดนี้",lic:((md.LicenseShortName||{}).value||"")}; }).filter(x=>x.src&&!/\.(svg|pdf|tif|webm|ogv)/i.test(x.page||""));
+}
+function commonsPhotos(q,n,en,ll){
   q=cleanQ(q); en=cleanQ(en||""); const key=q+"|"+en+"|"+n;
   if(photoCache[key]&&photoCache[key].length) return Promise.resolve(photoCache[key]);
   if(photoReq[key]) return photoReq[key];
@@ -1752,6 +2057,7 @@ function commonsPhotos(q,n,en){
     await tryS(()=>srcCommons(q,n));
     if(out.length<n&&q.includes(" ")) await tryS(()=>srcCommons(q.split(" ").slice(0,-1).join(" "),n));
     if(out.length<n) await tryS(()=>srcWiki(q,3));
+    if(out.length<n&&ll&&ll.length===2&&!isNaN(ll[0])) await tryS(()=>srcCommonsGeo(ll,n-out.length,400));
     if(out.length<n&&en) await tryS(()=>srcOpenverse(en,n));
     if(out.length<n) await tryS(()=>srcOpenverse(q,n));
     if(!ok) return null;
@@ -1760,11 +2066,11 @@ function commonsPhotos(q,n,en){
   })();
   return photoReq[key];
 }
-function stripHtml(q,n,cls,en){ return `<div class="ph-strip ${cls||""}" data-q="${esc(q)}" data-en="${esc(en||"")}" data-n="${n||5}"><div class="ph-skel"></div><div class="ph-skel"></div><div class="ph-skel"></div></div>`; }
+function stripHtml(q,n,cls,en,ll){ return `<div class="ph-strip ${cls||""}" data-q="${esc(q)}" data-en="${esc(en||"")}" data-n="${n||5}"${ll?` data-ll="${(+ll[0]).toFixed(5)},${(+ll[1]).toFixed(5)}"`:""}><div class="ph-skel"></div><div class="ph-skel"></div><div class="ph-skel"></div></div>`; }
 let phObs=null;
 function hydratePhotos(root){
   const els=$$(".ph-strip:not([data-done])",root||document);
-  const go=async el=>{ el.dataset.done=1; const list=await commonsPhotos(el.dataset.q,+el.dataset.n||5,el.dataset.en);
+  const go=async el=>{ el.dataset.done=1; const list=await commonsPhotos(el.dataset.q,+el.dataset.n||5,el.dataset.en,el.dataset.ll?el.dataset.ll.split(",").map(Number):null);
     if(!list||!list.length){ el.innerHTML=`<a class="ph-none" href="${esc(imgUrl(el.dataset.q))}" target="_blank" rel="noopener">${I.img} ${list?"ยังไม่มีภาพตัวอย่าง":"โหลดภาพไม่ได้"} · ดูรูปใน Google</a>`; return; }
     el.innerHTML=list.map((p,i)=>`<button class="ph" data-ph="${esc(el.dataset.q)}|${el.dataset.n}|${esc(el.dataset.en||"")}" data-pi="${i}"><img src="${esc(p.src)}" alt="" loading="lazy" onerror="this.parentNode.remove()"></button>`).join("")+`<a class="ph more" href="${esc(imgUrl(el.dataset.q))}" target="_blank" rel="noopener">${I.img}<span>ดูเพิ่ม</span></a>`;
   };
@@ -1982,7 +2288,7 @@ function showAlert(e,d){
 
 /* ---------- tabs ---------- */
 function showTab(t){
-  curTab=t; store.set("tab",t);
+  curTab=t; store.set("tab",t); document.body.dataset.tab=t;
   $$(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
   ["plan","map","stories","food","drinks","info"].forEach(k=>{ $("#p-"+k).hidden = k!==t; }); if(t!=="map"&&pickMode){ endPick(); }
   if(t==="map"){ if(!map){ initMap(); } else { setTimeout(()=>map.invalidateSize(),30); } }
@@ -2017,6 +2323,7 @@ document.addEventListener("click",ev=>{
   if(a==="dstop"){ stopDrive(); return; }
   if(a==="dmin"){ if(drive){ drive.min=!drive.min; store.set("drive",drive); renderDrive(); } return; }
   if(a==="gpshelp"){ openSheet(gpsHelp()); return; }
+  if(a==="rate-live"){ b.textContent="กำลังโหลด…"; refreshRate(true).then(()=>{ if(curTab==="info") renderInfo(); }); return; }
   if(a==="backup"){ openSheet(backupHtml()); return; }
   if(a==="bk-copy"){ const t=JSON.stringify(edits); const done=()=>{ b.textContent="คัดลอกแล้ว"; }; try{ navigator.clipboard.writeText(t).then(done,()=>{ const ta=$("#bk-in"); if(ta){ ta.value=t; ta.select(); } }); }catch(e){} return; }
   if(a==="bk-share"){ const t=JSON.stringify(edits); if(navigator.share) navigator.share({title:"แผนฮอกไกโดที่แก้ไว้",text:t}).catch(()=>{}); return; }
@@ -2033,7 +2340,7 @@ document.addEventListener("click",ev=>{
 document.addEventListener("change",ev=>{
   const c=ev.target.closest("[data-check]"); if(c){ const d=store.get("checks",{}); d[c.dataset.check]=c.checked; store.set("checks",d); c.closest(".check").classList.toggle("done",c.checked); }
 });
-document.addEventListener("input",ev=>{ if(ev.target.id==="yen"||ev.target.id==="rate"){ if(ev.target.id==="rate") store.set("rate",parseFloat(ev.target.value)||RATE_DEFAULT); convUpdate(); } });
+document.addEventListener("input",ev=>{ if(ev.target.id==="yen"||ev.target.id==="rate"){ if(ev.target.id==="rate"){ store.set("rate",parseFloat(ev.target.value)||RATE_DEFAULT); store.set("rateManual",true); } convUpdate(); } });
 document.addEventListener("keydown",ev=>{ if(ev.key==="Escape") closeSheet(); });
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&drive) lockScreen(); });
 try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>restyleMap()); }catch(e){}
@@ -2041,7 +2348,7 @@ try{ new MutationObserver(()=>restyleMap()).observe(document.documentElement,{at
 
 /* ---------- boot ---------- */
 mapDay=-1;
-renderDays(); renderPlan(); renderStories(); renderFood(); renderDrinks(); renderInfo(); tickClock(); setTimeout(()=>refreshWx(false),400);
+renderDays(); renderPlan(); renderStories(); renderFood(); renderDrinks(); renderInfo(); tickClock(); setTimeout(()=>refreshWx(false),400); setTimeout(()=>refreshRate(false),1500);
 setInterval(()=>{ tickClock(); },15000);
 setInterval(()=>{ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); },120000);
 showTab(curTab);
