@@ -1799,16 +1799,27 @@ function xLine(ctx,scope){
   const c=ctx.prev||ctx.next||(gps.pos?gps.pos.ll:null); return c?{pts:[[c[0],c[1]]],r:4000,label:"รอบๆ "+(c[2]?P[c[2]][0]:"ตำแหน่งนี้")}:null; }
 function along(pts,ll){ let best=1e9,bi=0; pts.forEach((p,i)=>{ const d=km(p,ll); if(d<best){ best=d; bi=i; } }); let acc=0; for(let i=1;i<=bi;i++) acc+=km(pts[i-1],pts[i]); return {off:best,at:acc}; }
 /* ----- shared helpers: OpenStreetMap (Overpass), opening hours, Wikipedia ----- */
-async function ovFetch(q){ for(const u of OVERPASS){ try{ const r=await fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}}); if(!r.ok) continue; return await r.json(); }catch(e){} } return null; }
+async function ovRun(q,maxS){
+  for(const u of OVERPASS.slice(0,maxS||OVERPASS.length)){ for(let attempt=0;attempt<2;attempt++){ const ctl=("AbortController" in window)?new AbortController():null; const tm=setTimeout(()=>ctl&&ctl.abort(),12000);
+    try{ const r=await fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:ctl?ctl.signal:undefined}); clearTimeout(tm);
+      if(r.status===429||r.status===504){ await new Promise(s=>setTimeout(s,1500+attempt*1500)); continue; }
+      if(!r.ok) break; const j=await r.json(); if(j.remark&&/runtime error|timed out|out of memory/i.test(j.remark)&&!(j.elements||[]).length) break; return j; }
+    catch(e){ clearTimeout(tm); break; } } }
+  return null; }
+let ovBg=Promise.resolve(), ovBusy=0;
+function ovFetch(q,bg){ if(!bg){ ovBusy++; return ovRun(q,2).finally(()=>{ ovBusy--; }); }
+  const job=async()=>{ while(ovBusy>0) await new Promise(s=>setTimeout(s,400)); return ovRun(q); };
+  const p=ovBg.then(job,job); ovBg=p.catch(()=>{}); return p; }
 const OV_TH={restaurant:"ร้านอาหาร",cafe:"คาเฟ่",bar:"บาร์",pub:"ผับ",biergarten:"สวนเบียร์",fast_food:"ฟาสต์ฟู้ด",food_court:"ศูนย์อาหาร",ice_cream:"ไอศกรีม",public_bath:"ออนเซ็น / เซ็นโต",museum:"พิพิธภัณฑ์",gallery:"แกลเลอรี",viewpoint:"จุดชมวิว",attraction:"ที่เที่ยว",zoo:"สวนสัตว์",aquarium:"อควาเรียม",theme_park:"สวนสนุก",park:"สวนสาธารณะ",garden:"สวน",convenience:"คอนบินิ",chemist:"ดรักสโตร์",cosmetics:"เครื่องสำอาง",pharmacy:"ร้านขายยา",mall:"ห้าง",department_store:"ห้างสรรพสินค้า",shoes:"ร้านรองเท้า",clothes:"ร้านเสื้อผ้า",sports:"ร้านกีฬา",outdoor:"ร้านเอาท์ดอร์",boutique:"บูติก",station:"สถานี",halt:"สถานี",tram_stop:"ป้ายรถราง",bus_stop:"ป้ายรถเมล์",toilets:"ห้องน้ำ",atm:"ATM",fuel:"ปั๊มน้ำมัน",hot_spring:"บ่อน้ำพุร้อน",waterfall:"น้ำตก",peak:"ยอดเขา",gift:"ร้านของฝาก",souvenir:"ร้านของฝาก",confectionery:"ร้านขนม",pastry:"ร้านขนม",bakery:"เบเกอรี่",variety_store:"ร้าน 100 เยน / ของจิปาถะ",farm:"ร้านของฟาร์ม",cheese:"ร้านชีส",alcohol:"ร้านเหล้า",wine:"ร้านไวน์",winery:"โรงไวน์",brewery:"โรงเบียร์",distillery:"โรงกลั่น",services:"จุดพักรถ",rest_area:"จุดพักรถ",marketplace:"ตลาด"};
 function ovKind(t){ if(t.amenity==="place_of_worship") return t.religion==="buddhist"?"วัด":t.religion==="shinto"?"ศาลเจ้า":"ศาสนสถาน"; if(t.historic) return "โบราณสถาน / ประวัติศาสตร์";
   for(const k of ["tourism","amenity","shop","leisure","natural","railway","highway","craft"]) if(t[k]&&OV_TH[t[k]]) return OV_TH[t[k]]; return ""; }
 function ovOsm(t){ if(t.amenity==="place_of_worship") return ["amenity",t.religion==="buddhist"?"temple":"shrine"]; for(const k of ["amenity","shop","tourism","leisure","natural","historic","railway"]) if(t[k]) return [k,t[k]]; return ["",""]; }
 function ovItem(e,cat){ const t=e.tags||{}; const lat=e.lat??(e.center&&e.center.lat), lng=e.lon??(e.center&&e.center.lon); if(lat==null) return null;
-  const name=t.name||t["name:ja"]||t["name:en"]||t.brand||(cat&&cat.unnamed)||""; if(!name) return null;
-  const en=t["name:en"]&&t["name:en"]!==name?t["name:en"]:""; const kind=ovKind(t); const [osmk,osmv]=ovOsm(t);
-  const sub=[en,kind,t.cuisine?("อาหาร: "+t.cuisine.replace(/;/g,", ").replace(/_/g," ")):"",t.ele?("สูง "+t.ele+" ม."):""].filter(Boolean).join(" · ");
-  return {id:e.type+e.id,name,en,kind,sub,lat,lng,star:!!(t.wikipedia||t.wikidata),wp:t.wikipedia||"",wd:t.wikidata||"",hours:t.opening_hours||"",tags:t,osmk,osmv}; }
+  const ja=t.name||t["name:ja"]||t.brand||""; const en=t["name:en"]||t["brand:en"]||t["name:ja-Latn"]||"";
+  const name=t["name:th"]||en||ja||(cat&&cat.unnamed)||""; if(!name) return null;
+  const kind=ovKind(t); const [osmk,osmv]=ovOsm(t);
+  const sub=[ja&&ja!==name?ja:"",kind,t.cuisine?("อาหาร: "+t.cuisine.replace(/;/g,", ").replace(/_/g," ")):"",t.ele?("สูง "+t.ele+" ม."):""].filter(Boolean).join(" · ");
+  return {id:e.type+e.id,name,ja,en,q:ja||name,kind,sub,lat,lng,star:!!(t.wikipedia||t.wikidata),wp:t.wikipedia||"",wd:t.wikidata||"",hours:t.opening_hours||"",tags:t,osmk,osmv}; }
 /* opening_hours ("Mo-Fr 10:00-20:00; Sa,Su 09:00-18:00; Tu off") → open now? Unknown formats return null and the raw text is shown */
 function ohState(oh){
   if(!oh) return null; const s=String(oh).trim(); if(/^24\/7$/.test(s)) return {open:true,txt:"เปิด 24 ชม."};
@@ -1871,7 +1882,9 @@ function openExplore(){ renderExplore(); exLocate(ex); }
 function exLocate(st){
   st.err=""; st.res=null; if(st===ex) exMoved=false;
   const done=()=>{ exShow(st); if(st.cat) exRun(st); };
-  if(st.src==="view"&&map){ const b=map.getBounds(), c=map.getCenter(); st.area={type:"bbox",bb:[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()]}; st.ll=gpsLive()&&b.contains(gps.pos.ll)?gps.pos.ll:[c.lat,c.lng]; st.acc=null; st.where="บริเวณที่เห็นบนแผนที่"; return done(); }
+  if(st.src==="view"&&map){ const b=map.getBounds(), c=map.getCenter(); const diag=km([b.getSouth(),b.getWest()],[b.getNorth(),b.getEast()]);
+    if(diag>7){ const dl=2.2/111, dg=2.2/(111*Math.cos(c.lat*Math.PI/180)); st.area={type:"bbox",bb:[c.lat-dl,c.lng-dg,c.lat+dl,c.lng+dg]}; st.ll=[c.lat,c.lng]; st.acc=null; st.where="รอบกลางแผนที่ (ซูมเข้าเพื่อค้นเฉพาะที่เห็น)"; return done(); }
+    st.area={type:"bbox",bb:[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()]}; st.ll=gpsLive()&&b.contains(gps.pos.ll)?gps.pos.ll:[c.lat,c.lng]; st.acc=null; st.where="บริเวณที่เห็นบนแผนที่"; return done(); }
   if(st.src==="view") st.src="gps";
   if(st.src==="route"||st.src==="near"){ const line=xLine(xContext(draft||{day:curDay,atStart:true}),st.src); if(line){ st.area=line.pts.length>1?{type:"line",pts:line.pts,r:line.r}:{type:"around",ll:line.pts[0],r:line.r}; st.ll=line.pts[0]; st.acc=null; st.where=line.label; return done(); } st.src="gps"; }
   if(st.src==="plan"){ const h=planHere(); if(h){ st.ll=[h[0],h[1]]; st.area={type:"around",ll:st.ll,r:st.r}; st.acc=null; st.where=h[2]; return done(); } }
@@ -1892,34 +1905,38 @@ async function exRun(st){
   const cat=EXC.find(c=>c.id===st.cat); if(!cat||!st.area) return; const A=st.area; const key=cat.id+"|"+A.type+"|"+exAreaKey(A); st.key=key;
   const finish=list=>{ st.res=list; st.loading=false; st.err=""; exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(A.type==="around"); };
   if(exCache[key]&&Date.now()-exCache[key].t<20*60e3) return finish(exCache[key].list);
-  st.loading=true; exPaint(st);
+  st.loading=true; st.t0=Date.now(); exPaint(st);
+  try{
   const sel=f=>A.type==="bbox"?f+";":A.type==="line"?f+`(around:${A.r},${A.pts.map(p=>(+p[0]).toFixed(4)+","+(+p[1]).toFixed(4)).join(",")});`:f+`(around:${A.r},${A.ll[0].toFixed(5)},${A.ll[1].toFixed(5)});`;
   const head=A.type==="bbox"?`[out:json][timeout:25][bbox:${A.bb.map(v=>v.toFixed(5)).join(",")}];`:`[out:json][timeout:25];`;
   const inArea=ll=>A.type==="bbox"?(ll[0]>=A.bb[0]&&ll[0]<=A.bb[2]&&ll[1]>=A.bb[1]&&ll[1]<=A.bb[3]):A.type==="line"?along(A.pts,ll).off<=A.r/1000:km(A.ll,ll)<=Math.max(A.r,1500)/1000;
   let list=[], ok=false;
-  if(cat.f.length){ const j=await ovFetch(head+"("+cat.f.map(sel).join("")+");out center tags 200;"); if(j){ ok=true; list=(j.elements||[]).map(e=>ovItem(e,cat)).filter(Boolean); } }
+  const wikiP=cat.wiki?(A.type==="bbox"?(km([A.bb[0],A.bb[1]],[A.bb[2],A.bb[3]])<14?exWiki(null,0,A.bb):Promise.resolve(null)):A.type==="line"?exWikiLine(A):exWiki(A.ll,A.r,null)):Promise.resolve(null);
+  if(cat.wiki) wikiP.then(w=>{ if(st.key!==key||!st.loading||!w||!w.length) return; const pl=w.map(x=>Object.assign({},x)); pl.forEach(r=>{ r.d=km(st.ll,[r.lat,r.lng]); r.q=r.q||r.name; r.oh=null; }); pl.sort((x,y)=>x.d-y.d); st.res=pl; exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); wdEnrich(pl).then(()=>{ pl.forEach(niceName); if(st.res===pl){ exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); } }); });
+  if(cat.f.length){ const j=await ovFetch(head+"("+cat.f.map(sel).join("")+");out center tags 200;"); if(j){ ok=true; list=(j.elements||[]).map(e=>ovItem(e,cat)).filter(Boolean); } else st.osmFail=true; }
   if(cat.mine){ ok=true; FOOD.forEach(f=>{ if(f[4]==null||!inArea([f[4],f[5]])) return; const c=CAT[f[1]]||{e:"🍴",n:"ร้านอาหาร"};
       list.push({id:"f"+f[0],fid:f[0],name:f[2],en:"",kind:c.e+" "+c.n,sub:[f[3],INPLAN[f[0]]?"★ ในแผน: "+INPLAN[f[0]]:"",f[8]].filter(Boolean).join(" · "),lat:f[4],lng:f[5],star:false,wp:"",wd:"",hours:"",tags:{},osmk:"amenity",osmv:f[1]===0?"cafe":"restaurant",q:(latinName(f[2])||f[2])+" "+cityOf(f[3])}); }); }
-  if(cat.wiki){ let w=null; if(A.type==="bbox"){ if(km([A.bb[0],A.bb[1]],[A.bb[2],A.bb[3]])<14) w=await exWiki(null,0,A.bb); } else if(A.type==="line") w=await exWikiLine(A); else w=await exWiki(A.ll,A.r,null);
+  if(cat.wiki){ const w=await wikiP;
     if(w){ ok=true; const near=(a,b)=>km([a.lat,a.lng],[b.lat,b.lng])<0.12; w.forEach(x=>{ const dup=list.find(y=>y.name===x.name||(near(x,y)&&(y.star||y.name.includes(x.name)||x.name.includes(y.name)))); if(dup){ if(!dup.wp) dup.wp=x.wp; dup.star=true; } else list.push(x); }); } }
   if(st.key!==key) return;
-  if(!ok){ st.loading=false; st.err="ค้นหาไม่ได้ตอนนี้ (เน็ตหรือเซิร์ฟเวอร์ OpenStreetMap ไม่ตอบ) ลองใหม่อีกครั้ง"; st.res=null; exPaint(st); return; }
+  if(!ok){ st.loading=false; st.err="เซิร์ฟเวอร์ OpenStreetMap ไม่ตอบตอนนี้ (คนใช้เยอะ) กด \"ลองใหม่\" อีกครั้งในอีกสักครู่"; st.res=null; exPaint(st); return; }
   const seen=new Set(); list=list.filter(r=>{ const k=r.name+"|"+r.lat.toFixed(4)+r.lng.toFixed(4); if(seen.has(k)) return false; seen.add(k); r.q=r.q||r.name; return true; });
   if(A.type==="line"){ list.forEach(r=>{ const a=along(A.pts,[r.lat,r.lng]); r.off=a.off; r.at=a.at; r.det=Math.max(2,Math.round(a.off*2*1.3/30*60)); r.d=km(st.ll,[r.lat,r.lng]); }); list.sort((x,y)=>x.at-y.at); }
   else { list.forEach(r=>{ r.d=km(st.ll,[r.lat,r.lng]); }); list.sort((x,y)=>(x.d-(x.star?0.15:0))-(y.d-(y.star?0.15:0))); }
   list.forEach(r=>{ r.oh=ohState(r.hours); });
   if(list.length>100){ const s2=list.filter(r=>r.star); list=s2.concat(list.filter(r=>!r.star)).slice(0,100); if(A.type==="line") list.sort((x,y)=>x.at-y.at); }
-  exCache[key]={t:Date.now(),list}; finish(list);
-  wdEnrich(list).then(()=>{ list.forEach(r=>{ if(r.th&&r.th!==r.name){ r.sub=[r.name,r.sub].filter(Boolean).join(" · "); r.name=r.th; } }); if(st.res===list){ exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); } }); }
+  if(!st.osmFail) exCache[key]={t:Date.now(),list}; finish(list); st.osmFail=false;
+  wdEnrich(list).then(()=>{ list.forEach(niceName); if(st.res===list){ exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); } }); 
+  }catch(err){ if(st.key===key){ st.loading=false; st.res=null; st.err="ค้นหาไม่สำเร็จ ("+(err&&err.message||"ข้อผิดพลาด")+") กด \"ลองใหม่\""; exPaint(st); } } }
 function exShown(st){ st=st||ex; return (st.res||[]).filter(r=>!st.openOnly||(r.oh&&r.oh.open)); }
 function exMeta(st,r){ if(r.at!=null) return `อีก ~${Math.round(r.at)} กม. · ${r.off<0.3?"ติดถนน":"ออกนอกทาง "+r.off.toFixed(1)+" กม."} · +${r.det} นาที`; return `📏 ${distTxt(r.d||0)} · ${ttTxt(curDay,r.d||0)}`; }
 function exRowHtml(st,r,i,mode){ const cat=EXC.find(c=>c.id===st.cat)||{}; const photo=r.img||r.star||r.fid;
   return `<div class="x-hit">${photo?`<i class="thumb xr-th" ${thumbAttr(r)}></i>`:`<i class="thumb xr-th ph0">${cat.e||"📍"}</i>`}<div class="x-main"><b>${r.star?"★ ":""}${esc(r.name)}</b>${r.sub?`<span class="tiny">${esc(r.sub.length>90?r.sub.slice(0,90)+"…":r.sub)}</span>`:""}<span class="tiny">${esc(r.kind||"")}${r.kind?" · ":""}${exMeta(st,r)} ${ohBadge(r.hours)}</span></div><div class="x-btns">${mode==="pick"?"":aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q},(r.d||0)<1.5?"walking":navMode),"นำทาง",I.nav)}<button class="btn small" data-act="ex-detail" data-st="${st.id}" data-i="${i}">รายละเอียด</button>${mode==="pick"?`<button class="btn small primary" data-act="ex-pick" data-st="xp" data-i="${i}">＋ เลือก</button>`:`<button class="btn small primary" data-act="ex-add" data-st="ex" data-i="${i}">＋ แผน</button>`}</div></div>`; }
 function exResHtml(st,mode){ st=st||ex; mode=mode||"browse";
-  if(st.locating) return `<div class="tiny">กำลังหาตำแหน่ง GPS…</div>`; if(!st.cat) return `<div class="tiny">เลือกประเภทด้านบนเพื่อค้นหา</div>`; if(st.loading) return `<div class="tiny">กำลังค้นหา ${esc(st.where||"")}…</div>`;
-  if(!st.res) return st.err?`<div class="tiny">${esc(st.err)}</div>`:"";
+  if(st.locating) return `<div class="tiny">กำลังหาตำแหน่ง GPS…</div>`; if(!st.cat) return `<div class="tiny">เลือกประเภทด้านบนเพื่อค้นหา</div>`; if(st.loading&&!st.res) return `<div class="tiny">กำลังค้นหา ${esc(st.where||"")}…</div>`;
+  if(!st.res) return st.err?`<div class="tiny">${esc(st.err)} <button class="btn small" data-act="ex-refresh" data-st="${st.id}">ลองใหม่</button></div>`:"";
   const L2=exShown(st); if(!L2.length) return `<div class="tiny">ไม่พบในบริเวณนี้${st.openOnly?" ที่เปิดอยู่ตอนนี้":""} ลองประเภทอื่นหรือเปลี่ยนขอบเขต</div>`;
-  return `<div class="tiny" style="margin:2px 0 6px">${esc(st.where||"")} · ${L2.length} แห่ง · ${st.area&&st.area.type==="line"?"เรียงตามลำดับที่จะผ่าน":"เรียงจากใกล้ไปไกล"} · ★ = มีข้อมูล Wikipedia</div>`+L2.map(r=>exRowHtml(st,r,st.res.indexOf(r),mode)).join(""); }
+  return `<div class="tiny" style="margin:2px 0 6px">${st.loading?"กำลังค้นเพิ่มจาก OpenStreetMap… · ":""}${esc(st.where||"")} · ${L2.length} แห่ง · ${st.area&&st.area.type==="line"?"เรียงตามลำดับที่จะผ่าน":"เรียงจากใกล้ไปไกล"} · ★ = มีข้อมูล Wikipedia</div>`+L2.map(r=>exRowHtml(st,r,st.res.indexOf(r),mode)).join(""); }
 function exChipsHtml(st,mode){
   let scopes;
   if(mode==="pick"){ const ctx=xContext(draft||{day:curDay}); const hasRoute=ctx.prev&&ctx.next&&km(ctx.prev,ctx.next)>2; scopes=[hasRoute?["route","🛣 ระหว่างทางไปจุดถัดไป"]:null,ctx.prev?["near","📍 ใกล้จุดก่อนหน้า"]:null,["gps","🧭 ใกล้ฉันตอนนี้"]]; }
@@ -1982,7 +1999,7 @@ document.addEventListener("click",ev=>{
   if(a==="ex-r"){ st.r=+b.dataset.r; if(st.area&&st.area.type==="around") st.area.r=st.r; exShow(st); exRun(st); return; }
   if(a==="ex-cat"){ if(st===xp) readDraft(); st.cat=b.dataset.id; st.res=null; if(!st.area||st.src==="view") exLocate(st); else { exShow(st); exRun(st); } return; }
   if(a==="ex-openonly"){ st.openOnly=!st.openOnly; exShow(st); if(st===ex&&exLayer) exDrawMap(false); return; }
-  if(a==="ex-refresh"){ if(st.src==="gps") gps.pos=null; exCache={}; exLocate(st); return; }
+  if(a==="ex-refresh"){ if(st.src==="gps") gps.pos=null; Object.keys(exCache).forEach(k=>{ if(k.startsWith((st.cat||"")+"|")) delete exCache[k]; }); exLocate(st); return; }
   if(a==="ex-detail"){ if(map) map.closePopup(); exOpenDetail(st,+b.dataset.i,!!b.dataset.map); return; }
   if(a==="ex-pick"){ readDraft(); if(!exPickApply(+b.dataset.i)) return; if(sheetBack.length&&!$("#xp-root")) sheetGoBack(); else renderAddStop(); setTimeout(()=>{ const pk=$(".cs-picked"); pk&&pk.scrollIntoView({block:"center",behavior:"smooth"}); },120); return; }
   if(a==="ex-add"){ if(map) map.closePopup(); if(!$("#sheetRoot").innerHTML){ openSheet(exploreHtml()); } exAdd(+b.dataset.i); return; }
@@ -2003,8 +2020,9 @@ function dayLine(di){
 /* notable sights near the day's stops (OpenStreetMap places that have a Wikidata entry), with Thai/English names and a photo from Wikidata */
 const AUTO_TTL=5*86400e3; let autoRecs=store.get("autoRecs",{}); const autoQ=new Set();
 function autoSig(di){ return dayStops(di).map(x=>x.p).filter((v,i,a)=>a.indexOf(v)===i).join(","); }
-function ensureAuto(di){ const sig=autoSig(di), c=autoRecs[di]; if(c&&c.sig===sig&&Date.now()-c.t<AUTO_TTL) return c.list;
-  if(sig&&!autoQ.has(di+"|"+sig)){ autoQ.add(di+"|"+sig); setTimeout(()=>fetchAuto(di,sig),300); } return c?c.list:[]; }
+function ensureAuto(di,noFetch){ const sig=autoSig(di), c=autoRecs[di]; if(c&&c.v===2&&c.sig===sig&&Date.now()-c.t<AUTO_TTL) return c.list;
+  if(!noFetch&&sig&&!autoQ.has(di+"|"+sig)){ autoQ.add(di+"|"+sig); setTimeout(()=>fetchAuto(di,sig),300); } return c?c.list:[]; }
+function niceName(r){ const jpOnly=!/[A-Za-z\u0E00-\u0E7F]/.test(r.name||""); const better=r.th||(jpOnly?(r.enLabel||r.en):""); if(better&&better!==r.name){ r.ja=r.ja||r.name; r.q=r.q||r.name; r.sub=[r.ja,r.sub&&r.sub!==r.ja?r.sub:""].filter(Boolean).join(" · "); r.name=better; } return r; }
 async function wdEnrich(list){
   const need=[...new Set(list.filter(r=>!r.wd&&r.wp&&r.wp.startsWith("ja:")).map(r=>r.wp.slice(3)))];
   for(let i=0;i<need.length;i+=40){ try{ const j=await (await fetch(`https://ja.wikipedia.org/w/api.php?action=query&prop=pageprops|pageimages&ppprop=wikibase_item&piprop=thumbnail&pithumbsize=320&titles=${need.slice(i,i+40).map(encodeURIComponent).join("|")}&format=json&origin=*`)).json();
@@ -2023,15 +2041,15 @@ async function fetchAuto(di,sig){
   const st=dayStops(di); if(!st.length) return; const R=di>=CARFREE_DAY?900:2500; const pts=[];
   st.forEach(s=>{ const ll=[P[s.p][1],P[s.p][2]]; if(!pts.some(u=>km(u,ll)<R/2000)) pts.push(ll); });
   const F=['nwr["tourism"~"^(attraction|museum|gallery|viewpoint|zoo|aquarium|theme_park)$"]["name"]["wikidata"]','nwr["historic"]["name"]["wikidata"]','nwr["leisure"~"^(park|garden)$"]["name"]["wikidata"]','nwr["amenity"="place_of_worship"]["name"]["wikidata"]','nwr["natural"~"^(waterfall|peak|hot_spring|spring)$"]["name"]["wikidata"]'];
-  const j=await ovFetch(`[out:json][timeout:30];(${pts.map(ll=>F.map(f=>f+`(around:${R},${ll[0].toFixed(5)},${ll[1].toFixed(5)});`).join("")).join("")});out center tags 200;`); if(!j) { autoQ.delete(di+"|"+sig); return; }
+  const j=await ovFetch(`[out:json][timeout:30];(${pts.map(ll=>F.map(f=>f+`(around:${R},${ll[0].toFixed(5)},${ll[1].toFixed(5)});`).join("")).join("")});out center tags 200;`,true); if(!j) { setTimeout(()=>autoQ.delete(di+"|"+sig),60000); return; }
   const seen=new Set(); let list=(j.elements||[]).map(e=>ovItem(e,null)).filter(r=>{ if(!r) return false; const k=r.wd||r.name; if(seen.has(k)) return false; seen.add(k); return true; });
   await wdEnrich(list);
-  list=list.map(r=>({id:r.id,name:r.name,th:r.th||"",en:r.en||r.enLabel||"",kind:r.kind,desc:r.desc||"",lat:+(+r.lat).toFixed(5),lng:+(+r.lng).toFixed(5),wp:r.wp||"",wd:r.wd||"",img:r.img||"",sl:r.sl||0,hours:r.hours||"",osmk:r.osmk,osmv:r.osmv}));
-  autoRecs[di]={sig,t:Date.now(),list}; try{ store.set("autoRecs",autoRecs); }catch(e){}
+  list=list.map(r=>({id:r.id,name:r.ja||r.name,th:r.th||(/[\u0E00-\u0E7F]/.test(r.name)?r.name:""),en:r.enLabel||r.en||(/[A-Za-z]/.test(r.name)&&!r.ja?r.name:""),kind:r.kind,desc:r.desc||"",lat:+(+r.lat).toFixed(5),lng:+(+r.lng).toFixed(5),wp:r.wp||"",wd:r.wd||"",img:r.img||"",sl:r.sl||0,hours:r.hours||"",osmk:r.osmk,osmv:r.osmv}));
+  autoRecs[di]={v:2,sig,t:Date.now(),list}; try{ store.set("autoRecs",autoRecs); }catch(e){}
   if(curDay===di) renderPlan(); if(map&&curTab==="map") drawMap(false); }
 let recIdx={};
 function haveRecKey(di,key){ const ed=edits[di]; return !!(ed&&ed.list.some(n=>n.key===key)); }
-function dayRecs(di){
+function dayRecs(di,noFetch){
   const stops=dayStops(di), out={}; if(!stops.length) return out;
   const push=(k,r)=>{ r.stopKey=k; r.di=di; recIdx[di+"|"+r.id]=r; (out[k]=out[k]||[]).push(r); };
   const sll=s=>[P[s.p][1],P[s.p][2]];
@@ -2050,9 +2068,10 @@ function dayRecs(di){
   const sameAsPlan=a=>{ const ja=nj(a.name), th=nt(a.th);
     if(ja.length>=3&&planJa.some(t=>t===ja||t.includes(ja)||(t.length>=4&&ja.includes(t)&&t.length>=ja.length*0.7))) return true;
     if(th.length>=4&&planTh.some(t=>t.includes(th))) return true; return false; };
-  ensureAuto(di).forEach(a=>{ const id="a:"+a.id; if(recHidden[id]) return; if(inPlan([a.lat,a.lng])) return; if(REC.some(r=>r.day===di&&km([r.lat,r.lng],[a.lat,a.lng])<0.25)) return;
+  ensureAuto(di,noFetch).forEach(a=>{ const id="a:"+a.id; if(recHidden[id]) return; if(inPlan([a.lat,a.lng])) return; if(REC.some(r=>r.day===di&&km([r.lat,r.lng],[a.lat,a.lng])<0.25)) return;
     if(sameAsPlan(a)||WIKI_SKIP.test(a.name)) return; const [s,d]=near([a.lat,a.lng]); if(!s||d>R) return;
-    (per[s._i]=per[s._i]||[]).push({kind:"place",src:"auto",id,name:a.th||a.name,sub:[a.th?a.name:"",a.en&&a.en!==a.name?a.en:""].filter(Boolean).join(" · "),lat:a.lat,lng:a.lng,d,note:a.desc,kindTh:a.kind||"ที่เที่ยว",img:a.img,q:a.name,en:a.en,dur:guessDur(a.osmk,a.osmv,a.name).m,sl:a.sl,wp:a.wp,wd:a.wd,hours:a.hours}); });
+    const disp=a.th||a.en||a.name;
+    (per[s._i]=per[s._i]||[]).push({kind:"place",src:"auto",id,name:disp,sub:[disp!==a.name?a.name:"",a.th&&a.en?a.en:""].filter(Boolean).join(" · "),lat:a.lat,lng:a.lng,d,note:a.desc,kindTh:a.kind||"ที่เที่ยว",img:a.img,q:a.name,en:a.en,dur:guessDur(a.osmk,a.osmv,a.name).m,sl:a.sl,wp:a.wp,wd:a.wd,hours:a.hours}); });
   Object.entries(per).forEach(([k,l])=>{ l.sort((x,y)=>(y.sl-x.sl)||(x.d-y.d)); l.slice(0,6).forEach(r=>push(k,r)); });
   const inDay=new Set(planItems(di).map(x=>x.food).filter(Boolean));
   const fb=foodByStop(di); Object.entries(fb).forEach(([k,l])=>l.forEach(x=>{ if(inDay.has(x.f[0])) return; push(k,{kind:"food",src:"list",id:"f:"+x.f[0],f:x.f,name:x.f[2],lat:x.f[4],lng:x.f[5],d:x.d}); }));
@@ -2102,7 +2121,7 @@ function drawMap(fit){
     if(mapFlags.scenic){ planItems(i).forEach(it=>(it.sc||[]).forEach(s=>{ const ll=s.ll||SCENIC_LL[s.t]; if(!ll) return;
       const ic=divIcon(`<div class="mk scenic" style="width:24px;height:24px">🍁</div>`,24);
       L.marker(ll,{icon:ic,zIndexOffset:300,title:s.t}).bindPopup(`<div class="pp-k">จุดวิวระหว่างทาง · D${d.n} · ${esc(fmtMin(toMin(it.t)+s.m))}</div><div class="pp-n">${esc(s.t)}</div><div class="muted">${esc(s.x)}</div><div class="pp-a">${aBtn(imgUrl(s.img||s.t),"ดูรูป",I.img)}${s.story?`<button class="btn small" data-act="story" data-id="${s.story}">${I.book}อ่าน</button>`:""}</div>`).addTo(layers.scenic); })); }
-    if(mapFlags.recs||mapFlags.food){ const R=dayRecs(i);
+    if(mapFlags.recs||mapFlags.food){ const R=dayRecs(i,sel<0);
       const offIcon=(html,sz,ll)=>{ const L2=L.latLng(ll); const nearS=stopLL.some(s=>s.distanceTo(L2)<120)||placed.some(s=>s.distanceTo(L2)<50); placed.push(L2); if(!nearS) return divIcon(html,sz);
         const n=placed.filter(s=>s.distanceTo(L2)<120).length; const ang=(-45+(n-1)*55)*Math.PI/180, r=30; const dx=Math.round(Math.cos(ang)*r), dy=Math.round(Math.sin(ang)*r);
         return L.divIcon({html:`<div class="mk-off" style="--dx:${dx}px;--dy:${dy}px">${html}</div>`,className:"",iconSize:[sz,sz],iconAnchor:[sz/2-dx,sz/2-dy],popupAnchor:[0,-sz/2]}); };
@@ -2126,7 +2145,7 @@ function drawCustoms(){ if(map) drawMap(false); }
 let exPanelOn=false, exMoved=false;
 function exPanelHtml(){ const cat=EXC.find(c=>c.id===ex.cat)||EXC[0]; const n=exShown(ex).length;
   return `<div class="ex-top"><b>🔎 สำรวจ</b><span class="tiny" style="flex:1">${ex.where?esc(ex.where):""}</span><button class="ex-x" data-act="ex-close" aria-label="ปิด">✕</button></div>${exChipsHtml(ex,"panel")}
-  <div class="ex-st" id="exStatus"><span>${ex.locating?"กำลังหาตำแหน่ง GPS…":ex.loading?"กำลังค้นหา "+esc(cat.n)+"…":ex.err&&!ex.res?esc(ex.err):ex.res?`${cat.e} ${esc(cat.n)} · ${n} แห่ง`:""}</span>
+  <div class="ex-st" id="exStatus"><span>${ex.locating?"กำลังหาตำแหน่ง GPS…":ex.loading&&!ex.res?"กำลังค้นหา "+esc(cat.n)+"…":ex.err&&!ex.res?esc(ex.err):ex.res?`${cat.e} ${esc(cat.n)} · ${n} แห่ง${ex.loading?" · กำลังค้นเพิ่ม…":""}`:""}</span>${ex.err&&!ex.res&&!ex.loading?`<button class="btn small primary" data-act="ex-refresh" data-st="ex">ลองใหม่</button>`:""}
   ${ex.res?`<button class="btn small" data-act="ex-list">ดูเป็นรายการ</button>`:""}${exMoved&&ex.src==="view"?`<button class="btn small primary" data-act="ex-refresh">↻ ค้นหาบริเวณนี้</button>`:""}</div>`; }
 function exPanelPaint(){ const p=$("#exPanel"); if(p) p.innerHTML=exPanelHtml(); }
 function exPanelOpen(){ if(!map) return; let p=$("#exPanel"); if(!p){ p=document.createElement("div"); p.id="exPanel"; p.className="ex-panel"; $("#p-map").appendChild(p); }
