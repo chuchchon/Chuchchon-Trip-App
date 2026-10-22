@@ -2040,8 +2040,18 @@ function dayRecs(di){
   REC.filter(r=>r.day===di&&!recHidden[r.id]&&!recHidden["rec:"+r.id]&&!haveRecKey(di,"cs_rec_"+r.id)).forEach(r=>{ const s=stops.find(x=>x.p===r.after)||near([r.lat,r.lng])[0]; if(!s) return;
     push(s._i,{kind:"place",src:"rec",id:"rec:"+r.id,rid:r.id,name:r.n,sub:r.jp,lat:r.lat,lng:r.lng,d:km(sll(s),[r.lat,r.lng]),note:r.x,q:r.jp,en:latinName(r.n),dur:r.dur,kindTh:"คัดมาให้"}); });
   const R=di>=CARFREE_DAY?1.0:3, per={};
+  /* a sight is "already in the plan" if it is next to a stop, or its name appears in a stop's name / Japanese name / must-see spots
+     (big parks like Odori Park have their OSM centre far from the stop pin, so distance alone is not enough) */
+  const GENERIC=/^(札幌|北海道|小樽|定山渓|公園|神社|駅|紅葉|夜景|sapporo|hokkaido|park|station)$/i;
+  const nj=s=>String(s||"").replace(/[\s・()（）+\-]/g,"").toLowerCase();
+  const nt=s=>String(s||"").replace(/สวนสาธารณะ/g,"สวน").replace(/[\s()+\-]/g,"");
+  const planJa=[], planTh=[];
+  stops.forEach(s=>{ const p=P[s.p]; [p[4],p[6]].forEach(x=>{ if(!x) return; cleanQ(x).split(/\s+/).forEach(t=>{ if(t.length>=3&&!GENERIC.test(t)) planJa.push(nj(t)); }); }); planTh.push(nt(p[0])); (SPOTP[s.p]||[]).forEach(sp=>{ const t=String(sp.jp||"").split(/\s+/)[0]; if(t.length>=3&&!GENERIC.test(t)) planJa.push(nj(t)); }); });
+  const sameAsPlan=a=>{ const ja=nj(a.name), th=nt(a.th);
+    if(ja.length>=3&&planJa.some(t=>t===ja||t.includes(ja)||(t.length>=4&&ja.includes(t)&&t.length>=ja.length*0.7))) return true;
+    if(th.length>=4&&planTh.some(t=>t.includes(th))) return true; return false; };
   ensureAuto(di).forEach(a=>{ const id="a:"+a.id; if(recHidden[id]) return; if(inPlan([a.lat,a.lng])) return; if(REC.some(r=>r.day===di&&km([r.lat,r.lng],[a.lat,a.lng])<0.25)) return;
-    if(stops.some(s=>P[s.p][0]===a.name)) return; const [s,d]=near([a.lat,a.lng]); if(!s||d>R) return;
+    if(sameAsPlan(a)||WIKI_SKIP.test(a.name)) return; const [s,d]=near([a.lat,a.lng]); if(!s||d>R) return;
     (per[s._i]=per[s._i]||[]).push({kind:"place",src:"auto",id,name:a.th||a.name,sub:[a.th?a.name:"",a.en&&a.en!==a.name?a.en:""].filter(Boolean).join(" · "),lat:a.lat,lng:a.lng,d,note:a.desc,kindTh:a.kind||"ที่เที่ยว",img:a.img,q:a.name,en:a.en,dur:guessDur(a.osmk,a.osmv,a.name).m,sl:a.sl,wp:a.wp,wd:a.wd,hours:a.hours}); });
   Object.entries(per).forEach(([k,l])=>{ l.sort((x,y)=>(y.sl-x.sl)||(x.d-y.d)); l.slice(0,6).forEach(r=>push(k,r)); });
   const inDay=new Set(planItems(di).map(x=>x.food).filter(Boolean));
