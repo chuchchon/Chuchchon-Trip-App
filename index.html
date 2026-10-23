@@ -573,6 +573,71 @@ body.reorder .ins-row,body.reorder .recs-row{display:none}
 .st-ic svg{width:15px;height:15px}
 .gm-chip{background:var(--accent);color:#fff;border-color:var(--accent);display:inline-flex;align-items:center;gap:6px;font-weight:600}
 .gm-chip svg{width:15px;height:15px}
+
+/* ---- visited, our photos, drag, Tripbook ---- */
+.sc-ics{margin-left:auto;display:flex;align-items:center;gap:2px}
+.sc-ics .lnk.ic{margin-left:0!important}
+.vis-b{color:var(--muted)!important;font-weight:600}
+.vis-b svg{width:17px;height:17px}
+.vis-b.on{color:var(--ok)!important}
+.vis-b.on svg circle{fill:var(--ok);stroke:var(--ok)}.vis-b.on svg path{stroke:#fff}
+.pin.done::after{content:"";position:absolute;right:-4px;bottom:-3px;width:14px;height:14px;border-radius:50%;background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center/10px no-repeat;box-shadow:0 0 0 2px var(--bg)}
+.ti.is-done .sc-name{color:var(--ink)}
+.mkph.done::after{content:"";position:absolute;left:-5px;bottom:-5px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;background:#1F8A4C url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center/10px no-repeat}
+.my-ph{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:10px -12px 2px;padding:0 12px}
+.my-ph::-webkit-scrollbar{display:none}
+.my-ph-c{flex:0 0 auto;position:relative;width:76px;height:76px;padding:0;border:0;border-radius:10px;overflow:hidden;background:var(--line);cursor:pointer}
+.my-ph-c img{width:100%;height:100%;object-fit:cover;display:block}
+.my-ph-c span{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45);color:#fff;font-weight:700}
+.leg-body .my-ph{margin:8px 0 2px;padding:0}
+.leg-body .my-ph-c{width:60px;height:60px}
+.dh-ph{display:flex;align-items:center;gap:8px;margin:12px 0 0;padding:8px 8px 8px 10px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.dh-ph-main{display:flex;align-items:center;gap:10px;flex:1 1 auto;min-width:0;border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.dh-ph-main svg{width:22px;height:22px;flex:0 0 auto;color:var(--accent)}
+.dh-ph-main span{display:flex;flex-direction:column;font-size:12.5px;color:var(--muted);line-height:1.3;min-width:0}
+.dh-ph-main b{font-size:14px;color:var(--ink)}
+.dh-ph-th{display:flex;flex:0 0 auto}
+.dh-ph-th img{width:30px;height:30px;border-radius:8px;object-fit:cover;border:2px solid var(--surface);margin-left:-8px;background:var(--line)}
+.dh-ph .btn{flex:0 0 auto;white-space:nowrap}
+@media (max-width:420px){ .dh-ph{flex-wrap:wrap} .dh-ph-main{flex-basis:100%} .dh-ph-th{display:none} }
+.dh-tip{display:none;font-size:13px;color:var(--muted);margin:10px 0 0}
+body.reorder .dh-tip{display:block}
+.ph-prog{margin:12px 0 4px}
+.ph-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.ph-bar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.ph-prog p{font-size:13.5px;margin:6px 0 0}
+.ph-days{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.ph-days span{font-size:12.5px;padding:3px 9px;border-radius:999px;background:color-mix(in srgb,var(--dc) 12%,var(--surface));color:var(--ink)}
+.ph-days b{color:var(--dc)}
+.ph-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px}
+.ph-cell{padding:0;border:0;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--line);cursor:pointer}
+.ph-cell img{width:100%;height:100%;object-fit:cover;display:block}
+.lb.my img{max-height:62vh;min-width:120px;min-height:80px;background:#222}
+.lb.my .lb-cap{color:#eee;text-align:center;margin-top:10px;display:flex;flex-direction:column;gap:2px;max-width:520px;width:100%}
+.lb.my .lb-cap span{font-size:12.5px;color:#bbb}
+.lb.my .lb-cap select{background:#fff;color:#1C2228}
+.btn.danger{background:#C62F2F!important;border-color:#C62F2F!important;color:#fff!important}
+.ti.press .sc{transform:scale(.985);transition:transform .35s ease;box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent)}
+.sc,.leg.k-wait .leg-body{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+body.is-dragging #p-plan .recs-row,body.is-dragging #p-plan .ins-row,body.is-dragging #p-plan .leg-steps,body.is-dragging #p-plan .leg-sc,body.is-dragging #p-plan .leg-act,body.is-dragging #p-plan .leg-note,body.is-dragging #p-plan .my-ph,body.is-dragging #p-plan .sc-note,body.is-dragging #p-plan .sc-act,body.is-dragging #p-plan .sc .mv{display:none!important}
+body.is-dragging{cursor:grabbing}
+.ti.dragging .sc,.leg.k-wait.dragging .leg-body{opacity:.3;border-style:dashed}
+.drag-ghost{position:fixed;z-index:1500;pointer-events:none;margin:0;opacity:.93;box-shadow:0 14px 34px rgba(20,30,45,.28);transform:rotate(-1deg) scale(1.02);background:var(--surface);border-radius:14px;max-height:150px;overflow:hidden}
+.drag-ghost .sc-act,.drag-ghost .my-ph,.drag-ghost .sc-note,.drag-ghost .mv{display:none!important}
+.drop-line{position:fixed;z-index:1499;height:4px;border-radius:2px;background:var(--accent);pointer-events:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.drop-line::before{content:"";position:absolute;left:-6px;top:-4px;width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.ti.flash .sc,.leg.flash .leg-body{box-shadow:0 0 0 3px var(--accent);transition:box-shadow .3s}
+.tb-cta{display:flex;align-items:center;gap:12px;margin:18px 0 6px;padding:14px;border-radius:14px;background:var(--ink);color:var(--bg)}
+.tb-cta div{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;font-size:13px;opacity:.95}
+.tb-cta b{font-size:15.5px}
+.tb-cta .btn{flex:0 0 auto}
+#tbRoot{position:fixed;inset:0;z-index:1400;overflow-y:auto;background:#fff;-webkit-overflow-scrolling:touch}
+#tbRoot[hidden]{display:none}
+.tb-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid #E3E7EB;color:#1C2228}
+.tb-bar b{flex:1 1 auto;font-size:16px}
+.tb-bar .btn{white-space:nowrap}
+body.tb-open{overflow:hidden}
+@media print{ body.tb-open > *:not(#tbRoot){display:none!important} body.tb-open #tbRoot{position:static;overflow:visible} .tb-bar{display:none!important} }
 </style>
 
 <div class="app">
@@ -1270,6 +1335,8 @@ const I = {
   play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>',
   map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/></svg>',
   doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
+  camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l1.6-2.5h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.3" r="3.4"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.7 2.7L16.2 9.5"/></svg>',
   copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'
 };
 const KIND = {stop:"เที่ยว",meal:"มื้ออาหาร",hotel:"ที่พัก",bf:"อาหารเช้า",night:"กลางคืน",opt:"ทางเลือก",drive:"ขับรถ",train:"รถไฟ"};
@@ -1317,11 +1384,13 @@ function renderPlan(){
   navMode=curDay>=CARFREE_DAY?"transit":"driving";
   if(d.hotel&&P[d.hotel]) h+=`<div class="dh-hotel">${I.bed}<span>คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="lnk" data-act="booking" data-id="${d.hotel}">ใบจอง</button><a class="lnk" href="${esc(dirUrl(pointTarget(d.hotel)))}" target="_blank" rel="noopener">นำทาง</a></div>`;
   h+=`<div class="dh-actions"><button class="btn small primary" data-act="gmroute">${I.route}เส้นทางทั้งวันใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}แผนที่</button><button class="btn small" data-act="addstop">${I.plus}เพิ่มจุด</button><button class="btn small" data-act="reorder" aria-pressed="${document.body.classList.contains("reorder")}">${I.sort}จัดลำดับ</button></div>`;
+  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${dp.length} รูป · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${phMeta.length} รูป`:"ดึงรูปจากมือถือมาวางตามจุด"}</span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
+  h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
   h+=`</header><ol class="tl">`;
   let carGoneR=curDay>=CARFREE_DAY; let prevKeyR=null; const RECS=dayRecs(curDay), NUMS=stopNumMap(curDay);
   const tmHtml=(it,k,tAct)=>`<div class="tm${tAct?" tm-ed":""}" ${tAct} ${tAct?'role="button" aria-label="แก้เวลา"':""}><span class="t1">${esc(it.t)}</span>${it.e&&it.e!==it.t?`<small>${esc(it.e)}</small>`:""}${it._sh?`<s class="t0">${esc(it._t0)}</s>`:""}</div>`;
-  const pinHtml=(it,k)=>`<div class="pin${NUMS[k]?"":" none"}">${NUMS[k]||""}</div>`;
+  const pinHtml=(it,k)=>`<div class="pin${NUMS[k]?"":" none"}${isVisited(curDay,k)?" done":""}">${NUMS[k]||""}</div>`;
   planItems(curDay).forEach(it=>{ const pkR=prevKeyR; if(it.k!=="drive"&&it.k!=="opt"&&it.k!=="train") prevKeyR=it._i;
     const k=it._i; navMode=carGoneR?(it.walk?"walking":"transit"):"driving";
     if(it.k==="drive"||it.k==="train"){
@@ -1330,7 +1399,7 @@ function renderPlan(){
       const sc=(it.sc||[]).map(s=>`<li><i class="thumb sc-th" ${s.img?`data-q="${esc(s.img)}" data-en="" ${s.ll?`data-ll="${s.ll[0]},${s.ll[1]}"`:""}`:""}></i><div><b><span class="tnum">${esc(fmtMin(toMin(it.t)+s.m))}</span> ${esc(s.t)}</b><span>${esc(s.x||"")}</span>${s.story?`<button class="lnk" data-act="story" data-id="${s.story}">เรื่องน่ารู้</button>`:""}</div></li>`).join("");
       h+=`<li class="leg k-${it.k}${it.syn?" syn":""}">${tmHtml(it,k,tAct)}<div class="leg-rail"></div><div class="leg-body"><div class="leg-main"><span class="leg-ic">${legIcon(it)}</span><b>${it.min} นาที</b><span class="leg-to">${legLabel(it)}ไป ${esc(P[it.to][0])}</span>${roads}</div>${it.x?`<p class="leg-note">${esc(it.x)}</p>`:""}
         ${it.steps?`<ol class="leg-steps">${it.steps.map(([m,t])=>`<li><span class="st-ic">${I[m]||I.walk}</span><span>${esc(t)}</span></li>`).join("")}</ol>`:(it.transit&&!it.walk?`<p class="leg-note">กด "วิธีไป" แล้ว Google Maps จะบอกตัวเลือก เช่น เดินไปขึ้นรถไฟใต้ดินหรือรถบัสสายไหน ลงป้ายไหน</p>`:"")}
-        <div class="leg-act">${it.k==="drive"?`<button class="lnk strong" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button><a class="lnk" href="${esc(dirUrl(pointTarget(it.to),"driving"))}" target="_blank" rel="noopener">นำทางจากตรงนี้</a><a class="lnk" href="${esc(legUrl(it))}" target="_blank" rel="noopener">ดูเส้นทางช่วงนี้</a><button class="lnk" data-act="cs-explore" data-key="${esc(pkR||"")}">แวะอะไรดีระหว่างทาง</button>`:`<a class="lnk" href="${esc(legUrl(it))}" target="_blank" rel="noopener">${I.route}วิธีไปใน Google Maps</a><a class="lnk" href="${esc(dirUrl(pointTarget(it.to),it.walk?"walking":"transit"))}" target="_blank" rel="noopener">นำทางจากตรงนี้</a>`}</div>${sc?`<ul class="leg-sc">${sc}</ul>`:""}</div></li>`;
+        ${myPhotoStrip(curDay,"leg:"+k)}<div class="leg-act">${it.k==="drive"?`<button class="lnk strong" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button><a class="lnk" href="${esc(dirUrl(pointTarget(it.to),"driving"))}" target="_blank" rel="noopener">นำทางจากตรงนี้</a><a class="lnk" href="${esc(legUrl(it))}" target="_blank" rel="noopener">ดูเส้นทางช่วงนี้</a><button class="lnk" data-act="cs-explore" data-key="${esc(pkR||"")}">แวะอะไรดีระหว่างทาง</button>`:`<a class="lnk" href="${esc(legUrl(it))}" target="_blank" rel="noopener">${I.route}วิธีไปใน Google Maps</a><a class="lnk" href="${esc(dirUrl(pointTarget(it.to),it.walk?"walking":"transit"))}" target="_blank" rel="noopener">นำทางจากตรงนี้</a>`}</div>${sc?`<ul class="leg-sc">${sc}</ul>`:""}</div></li>`;
       return;
     }
     const tAct=`data-act="cs-time" data-key="${esc(k)}"`;
@@ -1339,19 +1408,21 @@ function renderPlan(){
     const p=it.p?P[it.p]:null; const q=isC?(c.q||c.name):(p[4]||p[0]), en=isC?latinName(c.name||""):(p[6]||latinName(p[0])), lat=isC?c.lat:p[1], lng=isC?c.lng:p[2];
     const kind=isC?"เพิ่มเอง":(KIND[it.k]||"");
     const warns=[it.w?`⚠ ${it.w}`:"",it._clash?"⚠ เวลานี้ตายตัว แต่แผนก่อนหน้าเลื่อนมาชนแล้ว":"",it.lim&&it._sh&&toMin(it.t)>toMin(it.lim)?`⚠ เวลาใหม่เลย ${it.lim} แล้ว ${it.k==="hotel"?"เช็คอินอาจไม่ทัน":"อาจไม่ทัน"}`:"",it._late?"⚠ เริ่มช้ากว่าเวลาที่ตั้งไว้":""].filter(Boolean);
-    const acts=[(it.k==="hotel"&&BOOKINGS[it.p])?`<button class="lnk strong" data-act="booking" data-id="${it.p}">ใบยืนยันการจอง</button>`:"",
+    const vis=it.k!=="opt"&&isVisited(curDay,k);
+    const acts=[it.k!=="opt"?`<button class="lnk vis-b${vis?" on":""}" data-act="visit" data-key="${esc(k)}" aria-pressed="${vis}">${I.check}${vis?"ไปแล้ว":"ไปแล้ว?"}</button>`:"",(it.k==="hotel"&&BOOKINGS[it.p])?`<button class="lnk strong" data-act="booking" data-id="${it.p}">ใบยืนยันการจอง</button>`:"",
       `<a class="lnk" href="${esc(dirUrl(isC?{name:c.name,lat:c.lat,lng:c.lng,q:c.q||null}:pointTarget(it.p)))}" target="_blank" rel="noopener">${I.nav}นำทาง</a>`,
       !isC&&SPOTP[it.p]?`<button class="lnk" data-act="spots" data-id="${it.p}">จุดที่ต้องชม ${SPOTP[it.p].length}</button>`:"",
       !isC&&p[5]?`<button class="lnk" data-act="story" data-id="${p[5]}">เรื่องน่ารู้</button>`:"",
       it.food?`<button class="lnk" data-act="food" data-id="${it.food}">ร้านในลิสต์</button>`:"",
-      `<button class="lnk ic" data-act="cs-edit" data-key="${esc(k)}" aria-label="แก้ไข">${I.edit}</button>`].filter(Boolean).join("");
-    h+=`<li class="ti k-${it.k}${k===nowK?" is-now":""}" data-key-row="${esc(k)}">${tmHtml(it,k,tAct)}${pinHtml(it,k)}<article class="sc">${moveBtns(it)}<div class="sc-row"><div class="sc-main"><div class="sc-kind">${k===nowK?`<span class="now">ตอนนี้</span>`:""}<span>${esc(kind)}</span>${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><h3 class="sc-name">${esc(it.n)}</h3>${it.x?`<p class="sc-note">${esc(it.x)}</p>`:""}${warns.map(w=>`<p class="sc-warn">${esc(w)}</p>`).join("")}</div><button class="sc-ph thumb" data-ph="${esc(cleanQ(q))}|5|${esc(cleanQ(en))}" data-pi="0" data-q="${esc(q)}" data-en="${esc(en)}" data-ll="${lat},${lng}" aria-label="ดูรูป ${esc(it.n)}"></button></div><div class="sc-act">${acts}</div></article></li>`;
+      `<span class="sc-ics"><button class="lnk ic" data-act="ph-add" data-key="${esc(k)}" aria-label="เพิ่มรูปของเราที่จุดนี้">${I.camera}</button><button class="lnk ic" data-act="cs-edit" data-key="${esc(k)}" aria-label="แก้ไข">${I.edit}</button></span>`].filter(Boolean).join("");
+    h+=`<li class="ti k-${it.k}${k===nowK?" is-now":""}${vis?" is-done":""}" data-key-row="${esc(k)}">${tmHtml(it,k,tAct)}${pinHtml(it,k)}<article class="sc">${moveBtns(it)}<div class="sc-row"><div class="sc-main"><div class="sc-kind">${k===nowK?`<span class="now">ตอนนี้</span>`:""}<span>${esc(kind)}</span>${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><h3 class="sc-name">${esc(it.n)}</h3>${it.x?`<p class="sc-note">${esc(it.x)}</p>`:""}${warns.map(w=>`<p class="sc-warn">${esc(w)}</p>`).join("")}</div><button class="sc-ph thumb" data-ph="${esc(cleanQ(q))}|5|${esc(cleanQ(en))}" data-pi="0" data-q="${esc(q)}" data-en="${esc(en)}" data-ll="${lat},${lng}" aria-label="ดูรูป ${esc(it.n)}"></button></div>${myPhotoStrip(curDay,k)}<div class="sc-act">${acts}</div></article></li>`;
     if(it.k!=="opt"){ h+=recTilesHtml(curDay,RECS[k]); h+=insRow(k); }
     if(curDay===3&&it.p==="station"&&it.k==="stop") carGoneR=true;
   });
   h+=`</ol>`;
+  if(curDay===DAYS.length-1) h+=`<section class="tb-cta"><div><b>จบทริปแล้ว ทำ Tripbook กัน</b><span>รวมรูปของเราทุกวัน เรียงตามเส้นทาง พร้อมบันทึกเป็นไฟล์หรือ PDF</span></div><button class="btn small primary" data-act="tb-open">${I.book}เปิด Tripbook</button></section>`;
   if(curDay===2) h+=`<p class="day-foot">วันนี้ขับขึ้นเขาสูง ถ้าเช้ามีน้ำแข็งบนถนน ขับช้าและเว้นระยะ พระอาทิตย์ตกราว 16:50 ควรถึงโจซังเคก่อนมืด</p>`;
-  navMode="driving"; el.innerHTML=h; hydratePhotos(el); hydrateThumbs(el); if(map&&curTab==="map") drawMap(false);
+  navMode="driving"; el.innerHTML=h; hydratePhotos(el); hydrateThumbs(el); hydrateMyPhotos(el); if(map&&curTab==="map") drawMap(false);
 }
 
 /* ---------- sheet ---------- */
@@ -2116,7 +2187,7 @@ function drawMap(fit){
     if(mapFlags.stops){ const groups={}; stopSeq(i).forEach(x=>{ (groups[x.it.p]=groups[x.it.p]||[]).push(x); });
       Object.entries(groups).forEach(([pk,g])=>{ const p=P[pk]; const ns=g.map(x=>x.num).filter(Boolean); const isOpt=!ns.length; const ll=[p[1],p[2]]; fitPts.push(ll); stopLL.push(L.latLng(ll));
         let ic; if(sel<0) ic=divIcon(`<div class="mk stop" style="width:20px;height:20px;background:${col};font-size:10px">${d.n}</div>`,20);
-        else { const sz=isOpt?34:46; ic=L.divIcon({className:"",html:mkPhoto(`data-q="${esc(p[4]||p[0])}" data-en="${esc(p[6]||latinName(p[0]))}" data-ll="${p[1]},${p[2]}"`,isOpt?"?":ns.join(","),isOpt?"#8a8f98":col,sz,isOpt?"opt":"stop"),iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2]}); }
+        else { const sz=isOpt?34:46; ic=L.divIcon({className:"",html:mkPhoto(`data-q="${esc(p[4]||p[0])}" data-en="${esc(p[6]||latinName(p[0]))}" data-ll="${p[1]},${p[2]}"`,isOpt?"?":ns.join(","),isOpt?"#8a8f98":col,sz,isOpt?"opt":(g.every(x=>!x.num||isVisited(i,x.it._i))?"stop done":"stop")),iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2]}); }
         L.marker(ll,{icon:ic,zIndexOffset:isOpt?1500:2500,title:g.map(x=>x.it.n).join(" / ")}).bindPopup(stopPopup2(g,d,i)).addTo(layers.stops); }); }
     if(mapFlags.scenic){ planItems(i).forEach(it=>(it.sc||[]).forEach(s=>{ const ll=s.ll||SCENIC_LL[s.t]; if(!ll) return;
       const ic=divIcon(`<div class="mk scenic" style="width:24px;height:24px">🍁</div>`,24);
@@ -2731,11 +2802,244 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>restyleMap()); }catch(e){}
 try{ new MutationObserver(()=>restyleMap()).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]}); }catch(e){}
 
+/* ===================== trip photos: stored on this phone (IndexedDB), sorted into stops by when/where they were taken ===================== */
+const PDB={db:null,
+  open(){ return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{ let r; try{ r=indexedDB.open("hkd26photos",1); }catch(e){ return rej(e); }
+    r.onupgradeneeded=()=>{ const db=r.result; if(!db.objectStoreNames.contains("meta")) db.createObjectStore("meta",{keyPath:"id"}); if(!db.objectStoreNames.contains("blob")) db.createObjectStore("blob",{keyPath:"id"}); };
+    r.onsuccess=()=>{ this.db=r.result; res(this.db); }; r.onerror=()=>rej(r.error); }); },
+  async tx(store,mode,fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction(store,mode); const s=t.objectStore(store); const q=fn(s); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); },
+  all(){ return this.tx("meta","readonly",s=>s.getAll()); },
+  putMeta(m){ return this.tx("meta","readwrite",s=>s.put(m)); },
+  putBlob(b){ return this.tx("blob","readwrite",s=>s.put(b)); },
+  getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
+  del(id){ return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id))]); } };
+var phMeta=[], phReady=false; var phURL={}, phURLfull={};
+PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(phMeta.length){ renderPlan(); if(map&&curTab==="map") drawMap(false); } }).catch(()=>{ phReady=true; });
+function photosFor(di,key){ return phMeta.filter(m=>m.day===di&&m.key===key); }
+async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); if(!b) return ""; cache[id]=URL.createObjectURL(full?b.full:b.thumb); return cache[id]; }
+function hydrateMyPhotos(root){ $$("img[data-phid]:not([data-done])",root||document).forEach(im=>{ im.dataset.done=1; phThumbURL(im.dataset.phid,im.dataset.full==="1").then(u=>{ if(u) im.src=u; }); }); }
+/* --- EXIF: capture time and GPS from JPEG files (phones keep these unless the sharing app strips them) --- */
+function readExif(buf){ try{ const v=new DataView(buf); if(v.byteLength<4||v.getUint16(0)!==0xFFD8) return {}; let o=2;
+  while(o<v.byteLength-10){ const m=v.getUint16(o); if((m&0xFF00)!==0xFF00) break; const len=v.getUint16(o+2);
+    if(m===0xFFE1&&v.getUint32(o+4)===0x45786966) return exifTiff(v,o+10); if(m===0xFFDA) break; o+=2+len; } }catch(e){} return {}; }
+function exifTiff(v,t){ const le=v.getUint16(t)===0x4949; const u16=p=>v.getUint16(p,le), u32=p=>v.getUint32(p,le);
+  const ifd=(off,cb)=>{ const p=t+off; if(!off||p+2>v.byteLength) return; const n=u16(p); for(let i=0;i<n;i++){ const e=p+2+i*12; if(e+12>v.byteLength) return; cb(u16(e),u16(e+2),u32(e+4),e+8); } };
+  const str=(e,cnt)=>{ const p=cnt>4?t+u32(e):e; let s=""; for(let i=0;i<cnt&&p+i<v.byteLength;i++){ const c=v.getUint8(p+i); if(!c) break; s+=String.fromCharCode(c); } return s; };
+  const rat=(e,k)=>{ const q=t+u32(e), out=[]; for(let i=0;i<k;i++){ const a=u32(q+i*8), b=u32(q+i*8+4); out.push(b?a/b:0); } return out; };
+  const r={}; let ex=0, gp=0;
+  ifd(u32(t+4),(tag,type,cnt,e)=>{ if(tag===0x8769) ex=u32(e); else if(tag===0x8825) gp=u32(e); else if(tag===0x0132&&!r.dt) r.dt=str(e,cnt); });
+  ifd(ex,(tag,type,cnt,e)=>{ if(tag===0x9003) r.dt=str(e,cnt); else if(tag===0x9011) r.off=str(e,cnt); });
+  if(gp){ let la=null,lo=null,laR="N",loR="E"; ifd(gp,(tag,type,cnt,e)=>{ if(tag===1) laR=str(e,cnt); else if(tag===2) la=rat(e,3); else if(tag===3) loR=str(e,cnt); else if(tag===4) lo=rat(e,3); });
+    if(la&&lo){ const dd=x=>x[0]+x[1]/60+x[2]/3600; r.lat=dd(la)*(laR==="S"?-1:1); r.lng=dd(lo)*(loR==="W"?-1:1); if(!r.lat&&!r.lng){ delete r.lat; delete r.lng; } } }
+  return r; }
+function exifTime(x){ const m=String(x.dt||"").match(/^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d):(\d\d)/); if(!m) return null;
+  let off=9*60; const o=String(x.off||"").match(/^([+-])(\d\d):(\d\d)/); if(o) off=(o[1]==="-"?-1:1)*(+o[2]*60+ +o[3]);
+  return Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6])-off*60000; }
+async function shrink(file,max,q){ const url=URL.createObjectURL(file); try{ const img=await new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>rej(new Error("decode")); im.src=url; });
+    const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)); const c=document.createElement("canvas"); c.width=Math.max(1,Math.round(img.naturalWidth*s)); c.height=Math.max(1,Math.round(img.naturalHeight*s));
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height); return await new Promise(r=>c.toBlob(b=>r({blob:b,w:c.width,h:c.height}),"image/jpeg",q)); } finally{ URL.revokeObjectURL(url); } }
+function jstDate(ms){ return new Date(ms+9*3600e3).toISOString().slice(0,10); }
+function jstMin(ms){ const d=new Date(ms+9*3600e3); return d.getUTCHours()*60+d.getUTCMinutes(); }
+/* where was this photo taken? GPS first (nearest stop that day), then the plan's timetable */
+function matchPhoto(m){
+  const di=m.takenAt?DAYS.findIndex(d=>d.date===jstDate(m.takenAt)):-1; if(di<0) return {day:null,key:null};
+  const its=planItems(di); const stops=its.filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x.p&&P[x.p]);
+  const R=di>=CARFREE_DAY?1.0:2.5, t=jstMin(m.takenAt);
+  if(m.lat!=null){ let best=null,bd=1e9; stops.forEach(s=>{ const v=km([P[s.p][1],P[s.p][2]],[m.lat,m.lng]); if(v<bd){ bd=v; best=s; } }); if(best&&bd<=R) return {day:di,key:best._i}; }
+  const legAt=its.find(x=>(x.k==="drive"||x.k==="train")&&t>=toMin(x.t)&&t<=toMin(x.t)+(x.min||0));
+  if(legAt) return {day:di,key:"leg:"+legAt._i};
+  const inWin=stops.find(s=>t>=toMin(s.t)-10&&t<=toMin(s.e||s.t)+15); if(inWin) return {day:di,key:inWin._i};
+  let best=null,bd=1e9; stops.forEach(s=>{ const a=toMin(s.t), b=toMin(s.e||s.t); const v=t<a?a-t:t>b?t-b:0; if(v<bd){ bd=v; best=s; } });
+  if(best&&bd<=90) return {day:di,key:best._i}; return {day:di,key:null}; }
+var phImport=null;
+function pickPhotos(forKey){ const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*"; inp.multiple=true; inp.style.display="none";
+  inp.onchange=()=>{ const files=[...inp.files]; inp.remove(); if(files.length) importPhotos(files,forKey); }; document.body.appendChild(inp); inp.click(); }
+async function importPhotos(files,forKey){
+  phImport={n:files.length,done:0,skip:0,dup:0,auto:0,manual:0,none:0}; photoSheetPaint(true);
+  const di0=curDay;
+  for(const f of files){
+    try{ const head=await f.slice(0,262144).arrayBuffer(); const x=readExif(head); let takenAt=exifTime(x), tsrc=takenAt?"exif":null; if(!takenAt&&f.lastModified&&Math.abs(Date.now()-f.lastModified)>30*60e3){ takenAt=f.lastModified; tsrc="file"; }
+      const sig=f.name+"|"+f.size+"|"+(takenAt||0); if(phMeta.some(m=>m.sig===sig)){ phImport.dup++; phImport.done++; photoSheetPaint(); continue; }
+      const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); const id="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+      const m={id,sig,name:f.name,takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,w:full.w,h:full.h,added:Date.now(),src:"device",tsrc};
+      if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.auto=true; if(r.key) phImport.auto++; else phImport.none++; }
+      await PDB.putBlob({id,full:full.blob,thumb:th.blob}); await PDB.putMeta(m); phMeta.push(m); }
+    catch(e){ phImport.skip++; }
+    phImport.done++; photoSheetPaint(); }
+  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phImport.end=true; photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
+function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จัด"; if(!key) return `D${DAYS[di].n} · ยังไม่ได้จัด`; const its=planItems(di);
+  if(key.startsWith("leg:")){ const l=its.find(x=>x._i===key.slice(4)); return `D${DAYS[di].n} · ระหว่างทางไป ${l?P[l.to][0]:""}`; }
+  const it=its.find(x=>x._i===key); const n=stopNumMap(di)[key]; return `D${DAYS[di].n} · ${n?n+". ":""}${it?it.n:"จุดที่ถูกลบ"}`; }
+function photoSheetHtml(){
+  const byDay=DAYS.map((d,i)=>phMeta.filter(m=>m.day===i).length); const loose=phMeta.filter(m=>m.key==null);
+  const imp=phImport; const prog=imp?`<div class="ph-prog"><div class="ph-bar"><i style="width:${Math.round(imp.done/imp.n*100)}%"></i></div><p>${imp.end?`เสร็จแล้ว ${imp.n} รูป: จัดเข้าจุดให้ ${imp.auto} รูป${imp.manual?` เพิ่มเข้าจุดที่เลือก ${imp.manual} รูป`:""}${imp.none?` ยังไม่ได้จัด ${imp.none} รูป`:""}${imp.dup?` ซ้ำกับที่มีอยู่ ${imp.dup} รูป`:""}${imp.skip?` เปิดไม่ได้ ${imp.skip} รูป (เช่นไฟล์ HEIC)`:""}`:`กำลังจัดรูป ${imp.done} / ${imp.n}…`}</p></div>`:"";
+  return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${phMeta.length} รูป</span>`:""}</h2>
+  <p style="margin:0 0 10px">เลือกรูปจากมือถือได้ทีละหลายรูป (บน Android เปิดจาก Google Photos ได้ในหน้าเลือกรูป) แอปจะดูวันเวลาและตำแหน่งที่ถ่ายแล้ววางรูปไว้ที่จุดนั้นในแผนให้เอง รูปเก็บอยู่ในเครื่องนี้เท่านั้น</p>
+  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดรูปใหม่ตามแผนล่าสุด</button>`:""}</div>${prog}
+  ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
+  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length} รูป</h3><p class="tiny">รูปที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป แตะรูปเพื่อเลือกว่าเป็นจุดไหน</p><div class="ph-grid">${loose.map(m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt=""></button>`).join("")}</div>`:""}
+  <p class="tiny" style="margin-top:12px">เคล็ดลับ: ถ้ารูปไม่มีตำแหน่ง (บางแอปตัดข้อมูลตำแหน่งออก) แอปจะใช้เวลาที่ถ่ายเทียบกับตารางในแผนแทน ถ้าวางผิดจุด แตะรูปแล้วกด "ย้ายไปจุดอื่น"</p></div>`; }
+function photoSheetPaint(first){ if(first||!$("#ph-root")) openSheet(photoSheetHtml()); else renderSheet(photoSheetHtml()); setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
+function myPhotoStrip(di,key){ const l=photosFor(di,key); if(!l.length) return ""; const show=l.slice(0,8);
+  return `<div class="my-ph">${show.map((m,i)=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${i===7&&l.length>8?`<span>+${l.length-8}</span>`:""}</button>`).join("")}</div>`; }
+/* own-photo viewer: swipe, move to another stop, remove */
+var phView=null;
+function openMyPhoto(id){ const m=phMeta.find(x=>x.id===id); if(!m) return; const list=phMeta.filter(x=>x.day===m.day&&x.key===m.key); phView={list:list.map(x=>x.id),i:list.findIndex(x=>x.id===id),confirm:false,move:false};
+  if(!lbOpen){ lbOpen=true; try{ history.pushState({lb:1},""); }catch(e){} } drawMyPhoto(); }
+function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; const m=phMeta.find(x=>x.id===id); if(!m){ closeLightbox(false); return; }
+  const when=m.takenAt?new Date(m.takenAt+9*3600e3).toISOString().replace("T"," ").slice(0,16):"ไม่ทราบเวลา";
+  let mv=""; if(v.move){ const opts=[]; DAYS.forEach((d,i)=>{ const its=planItems(i); const nums=stopNumMap(i); its.filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x.p).forEach(x=>opts.push([i+"|"+x._i,`D${d.n} · ${nums[x._i]||""}. ${x.n}`])); });
+    mv=`<select class="inp" id="ph-move" style="margin-top:8px"><option value="">เลือกจุด…</option>${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===m.day+"|"+m.key?" selected":""}>${esc(t)}</option>`).join("")}<option value="-|">ยังไม่ได้จัด</option></select>`; }
+  $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button><img data-phid="${id}" data-full="1" alt=""><div class="lb-cap"><b>${esc(keyLabel(m.day,m.key))}</b><span>${esc(when)}${m.lat!=null?" · มีตำแหน่ง":""}${m.auto?" · จัดให้อัตโนมัติ":""}</span>${mv}</div>
+  <div class="lb-bar"><button class="btn small" data-mp="prev" ${v.i===0?"disabled":""}>‹</button><span class="tiny">${v.i+1}/${v.list.length}</span><button class="btn small" data-mp="next" ${v.i>=v.list.length-1?"disabled":""}>›</button><button class="btn small" data-mp="move">ย้ายไปจุดอื่น</button><button class="btn small" data-mp="cover">${m.cover?"★ รูปปก":"ตั้งเป็นปก"}</button><button class="btn small ${v.confirm?"danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้งเพื่อเอาออก":"เอารูปออก"}</button></div></div>`;
+  hydrateMyPhotos($("#lbRoot"));
+  const root=$("#lbRoot"); root.onclick=async ev=>{ const b=ev.target.closest("[data-mp]"); if(!b) return; ev.stopPropagation(); const a=b.dataset.mp;
+    if(a==="close"){ phView=null; closeLightbox(false); return; } if(a==="prev"&&v.i>0){ v.i--; v.confirm=false; drawMyPhoto(); } if(a==="next"&&v.i<v.list.length-1){ v.i++; v.confirm=false; drawMyPhoto(); }
+    if(a==="move"){ v.move=!v.move; drawMyPhoto(); }
+    if(a==="cover"){ for(const o of phMeta){ if(o.cover&&o.id!==id){ o.cover=false; await PDB.putMeta(o); } } m.cover=!m.cover; await PDB.putMeta(m); drawMyPhoto(); }
+    if(a==="del"){ if(!v.confirm){ v.confirm=true; drawMyPhoto(); return; } await PDB.del(id); phMeta=phMeta.filter(x=>x.id!==id); v.list.splice(v.i,1); v.confirm=false; if(!v.list.length){ phView=null; closeLightbox(false); } else { v.i=Math.min(v.i,v.list.length-1); drawMyPhoto(); } renderPlan(); if($("#ph-root")) photoSheetPaint(); } };
+  root.onchange=async ev=>{ if(ev.target.id!=="ph-move"||!ev.target.value) return; const [dd,kk]=ev.target.value.split("|"); m.day=dd==="-"?null:+dd; m.key=kk||null; m.auto=false; await PDB.putMeta(m); v.move=false; renderPlan(); if($("#ph-root")) photoSheetPaint(); drawMyPhoto(); };
+  let sx=null; root.ontouchstart=e=>{ sx=e.touches[0].clientX; }; root.ontouchend=e=>{ if(sx==null) return; const dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>60){ if(dx<0&&v.i<v.list.length-1){ v.i++; drawMyPhoto(); } else if(dx>0&&v.i>0){ v.i--; drawMyPhoto(); } } }; }
+async function resortPhotos(){ for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); if(r.day!==m.day||r.key!==m.key){ m.day=r.day; m.key=r.key; await PDB.putMeta(m); } } renderPlan(); photoSheetPaint(); }
+/* visited: tapped by you, or any of your photos are at that stop */
+var visited=store.get("visited",{});
+/* a stop counts as visited when ticked, when our photos are there, or when its day is over; untick to say we skipped it */
+function dayPast(di){ const ti=todayIndex(); return ti<0?DAYS[di].date<jst().date:di<ti; }
+function isVisited(di,key){ const v=visited[di]&&visited[di][key]; if(v===false) return false; return !!(v||dayPast(di)||phMeta.some(m=>m.day===di&&m.key===key)); }
+function toggleVisited(di,key){ const was=isVisited(di,key); visited[di]=visited[di]||{}; visited[di][key]=was?false:Date.now(); store.set("visited",visited); renderPlan(); if(map&&curTab==="map") drawMap(false); }
+function tbVisited(di,key){ return isVisited(di,key); }
+
+/* ===================== Tripbook ===================== */
+function routeSketch(di,w,h){ const pts=dayLine(di); if(!pts||pts.length<2) return ""; const la=pts.map(p=>p[0]), lo=pts.map(p=>p[1]); const c=Math.cos((Math.min(...la)+Math.max(...la))/2*Math.PI/180);
+  const x0=Math.min(...lo), x1=Math.max(...lo), y0=Math.min(...la), y1=Math.max(...la); const sx=(x1-x0)*c||1e-3, sy=(y1-y0)||1e-3; const s=Math.min((w-24)/sx,(h-24)/sy);
+  const X=p=>12+((p[1]-x0)*c)*s+((w-24)-sx*s)/2, Y=p=>12+(y1-p[0])*s+((h-24)-sy*s)/2;
+  const st=stopSeq(di).filter(x=>x.num); const col=cssVar(`--d${DAYS[di].n}`)||"#333";
+  return `<svg viewBox="0 0 ${w} ${h}" class="tb-route" role="img" aria-label="เส้นทางวันที่ ${DAYS[di].n}"><polyline points="${pts.map(p=>X(p).toFixed(1)+","+Y(p).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${st.map(x=>{ const p=P[x.it.p]; return `<circle cx="${X([p[1],p[2]]).toFixed(1)}" cy="${Y([p[1],p[2]]).toFixed(1)}" r="8" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${X([p[1],p[2]]).toFixed(1)}" y="${(Y([p[1],p[2]])+3.5).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">${x.num}</text>`; }).join("")}</svg>`; }
+function tripStats(){ let kmT=0; DAYS.forEach((d,i)=>{ const ln=dayLine(i)||[]; for(let j=1;j<ln.length;j++) kmT+=km(ln[j-1],ln[j]); });
+  let vis=0; DAYS.forEach((d,i)=>dayStops(i).forEach(s=>{ if(tbVisited(i,s._i)) vis++; })); return {km:Math.round(kmT/10)*10,vis,photos:phMeta.length}; }
+async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → images embedded */
+  const src=async(m,big)=>{ if(mode!=="export") return await phThumbURL(m.id,big)||""; const b=await PDB.getBlob(m.id); if(!b) return ""; const blob=big?b.full:b.thumb; return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); };
+  const st=tripStats(); const cover=phMeta.find(m=>m.cover)||phMeta.find(m=>m.key&&m.lat!=null)||phMeta[0];
+  let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>ขับรถ 7 วัน · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${st.photos}</b>รูป</li><li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
+  for(let i=0;i<DAYS.length;i++){ const d=DAYS[i]; const seq=stopSeq(i).filter(x=>x.num); const dayPh=phMeta.filter(m=>m.day===i);
+    if(!dayPh.length&&!seq.some(x=>isVisited(i,x.it._i))) continue;   /* a day we haven't reached yet */
+    h+=`<section class="tb-day" style="--dc:${cssVar(`--d${d.n}`)}"><header><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม</p><h2>${esc(d.title)}</h2></div></header>${routeSketch(i,640,220)}`;
+    for(const x of seq){ const k=x.it._i; const ps=dayPh.filter(m=>m.key===k); const vis=tbVisited(i,k);
+      if(!ps.length&&!vis) continue;
+      if(!ps.length){ h+=`<p class="tb-line"><span>${x.num}</span>${esc(x.it.n)}<em>${esc(x.it.t)}</em></p>`; continue; }
+      h+=`<article class="tb-stop"><h3><span>${x.num}</span>${esc(x.it.n)}</h3><p class="tb-t">${esc(x.it.t)}${x.it.e&&x.it.e!==x.it.t?"–"+esc(x.it.e):""}</p>${ps.length?`<div class="tb-grid n${Math.min(ps.length,5)}">${(await Promise.all(ps.slice(0,24).map(async (m,j)=>`<figure><img src="${await src(m,j<3)}" alt="" loading="lazy"></figure>`))).join("")}</div>`:""}</article>`; }
+    const between=dayPh.filter(m=>m.key&&m.key.startsWith("leg:"));
+    if(between.length) h+=`<article class="tb-stop"><h3>ระหว่างทาง</h3><div class="tb-grid n${Math.min(between.length,5)}">${(await Promise.all(between.slice(0,24).map(async m=>`<figure><img src="${await src(m,false)}" alt="" loading="lazy"></figure>`))).join("")}</div></article>`;
+    const loose=dayPh.filter(m=>!m.key); if(loose.length) h+=`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3><div class="tb-grid n${Math.min(loose.length,5)}">${(await Promise.all(loose.slice(0,24).map(async m=>`<figure><img src="${await src(m,false)}" alt="" loading="lazy"></figure>`))).join("")}</div></article>`;
+    h+=`</section>`; }
+  h+=`<footer class="tb-end"><p>ฮอกไกโด ตุลาคม 2026</p></footer>`;
+  return h; }
+const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,sans-serif}
+.tb-cover{position:relative;min-height:88vh;display:flex;align-items:flex-end;background:#1C2228;color:#fff;overflow:hidden}
+.tb-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.78}
+.tb-cv{position:relative;padding:28px 22px 34px;width:100%;background:linear-gradient(transparent,rgba(0,0,0,.55) 40%)}
+.tb-cv h1{font-size:46px;line-height:1.08;margin:6px 0 10px;font-weight:700}
+.tb-cv p{margin:0;font-size:15px;opacity:.92}
+.tb-cv ul{list-style:none;display:flex;gap:22px;padding:0;margin:18px 0 0}
+.tb-cv li{font-size:13px;opacity:.9}.tb-cv li b{display:block;font-size:26px;opacity:1}
+.tb-day{padding:34px 18px 10px;max-width:880px;margin:0 auto}
+.tb-day header{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
+.tb-dn{font-size:54px;line-height:.9;font-weight:700;color:var(--dc)}
+.tb-day header p{margin:4px 0 0;color:#69737D;font-size:14px}.tb-day h2{margin:2px 0 0;font-size:22px;line-height:1.3}
+.tb-route{width:100%;height:auto;background:#F5F7F9;border-radius:14px;margin:6px 0 14px}
+.tb-stop{margin:0 0 22px;break-inside:avoid}
+.tb-stop h3{display:flex;align-items:center;gap:10px;margin:0;font-size:18px}
+.tb-stop h3 span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--dc);color:#fff;font-size:13px;flex:0 0 auto}
+.tb-t{margin:2px 0 8px 36px;color:#69737D;font-size:13px}
+.tb-line{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:15px;font-weight:600}
+.tb-line span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:2px solid var(--dc);color:var(--dc);font-size:11px;flex:0 0 auto}
+.tb-line em{font-style:normal;font-weight:400;color:#69737D;font-size:13px;margin-left:auto}
+.tb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.tb-grid figure{margin:0;overflow:hidden;border-radius:10px;background:#F5F7F9;aspect-ratio:4/3}
+.tb-grid figure img{width:100%;height:100%;object-fit:cover;display:block}
+.tb-grid.n1{grid-template-columns:1fr}.tb-grid.n1 figure{aspect-ratio:3/2}
+.tb-grid figure:first-child{grid-column:1/-1;aspect-ratio:16/10}
+.tb-grid.n2 figure:first-child{grid-column:auto;aspect-ratio:4/3}
+.tb-end{padding:40px 18px 60px;text-align:center;color:#69737D}
+@media (min-width:760px){ .tb-grid{grid-template-columns:repeat(3,1fr)} }
+@media print{ .tb-cover{min-height:auto;height:100vh} .tb-day{page-break-before:always} }`;
+async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
+  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" data-tb="print">พิมพ์ / PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
+  r.hidden=false; document.body.classList.add("tb-open"); try{ history.pushState({tb:1},""); }catch(e){}
+  $("#tbBody").innerHTML=await tripbookHtml("app");
+  r.onclick=async ev=>{ const b=ev.target.closest("[data-tb]"); if(!b) return; const a=b.dataset.tb;
+    if(a==="close"){ closeTripbook(); if(history.state&&history.state.tb) history.back(); }
+    if(a==="print") window.print();
+    if(a==="save"){ b.textContent="กำลังเตรียมไฟล์…"; const body=await tripbookHtml("export");
+      const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ฮอกไกโด 2026</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
+      const url=URL.createObjectURL(new Blob([doc],{type:"text/html"})); const al=document.createElement("a"); al.href=url; al.download="Hokkaido-Tripbook-2026.html"; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); b.textContent="บันทึกเป็นไฟล์"; } }; }
+function closeTripbook(){ const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open"); }
+addEventListener("popstate",()=>{ if(document.body.classList.contains("tb-open")) closeTripbook(); });
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
+  if(a==="visit"){ toggleVisited(curDay,b.dataset.key); return; }
+  if(a==="ph-sheet"){ photoSheetPaint(true); return; }
+  if(a==="ph-pick"){ pickPhotos(null); return; }
+  if(a==="ph-add"){ pickPhotos(b.dataset.key); return; }
+  if(a==="ph-open"){ openMyPhoto(b.dataset.id); return; }
+  if(a==="ph-resort"){ resortPhotos(); return; }
+  if(a==="tb-open"){ const had=!!(history.state&&history.state.sheet)&&!!$("#sheetRoot").innerHTML; closeSheet(); if(!had){ openTripbook(); return; }
+    let done=false; const go=()=>{ if(done) return; done=true; removeEventListener("popstate",hp); openTripbook(); }; const hp=()=>setTimeout(go,0); addEventListener("popstate",hp); setTimeout(go,600); return; }
+},true);
+
+/* ===================== long-press a card, then drag it to a new place in the day ===================== */
+var drag=null, dragSwallow=false;
+function dragRowFrom(t){ if(!t||!t.closest) return null; if(document.body.classList.contains("picking")||$("#sheetRoot").innerHTML) return null;
+  if(t.closest("input,select,textarea,.my-ph,.recs-row,.leg-steps,.ins-row,.mv")) return null;
+  const row=t.closest("#p-plan .tl > li[data-key-row]"); if(!row) return null; if(!t.closest(".sc,.leg-body,.tm,.pin")) return null; return row; }
+function dragArm(row,x,y){ dragCancelArm(); drag={row,key:row.dataset.keyRow,x0:x,y0:y,x,y,on:false,before:undefined,timer:setTimeout(dragStart,420)}; row.classList.add("press"); }
+function dragCancelArm(){ if(drag&&!drag.on){ clearTimeout(drag.timer); drag.row.classList.remove("press"); drag=null; } }
+function dragStart(){ const d=drag; if(!d) return; d.on=true; dragSwallow=true; d.row.classList.remove("press");
+  try{ navigator.vibrate&&navigator.vibrate(15); }catch(e){}
+  const panel=$("#p-plan"); d.panel=panel; const card=d.row.querySelector(".sc")||d.row.querySelector(".leg-body")||d.row;
+  const cr=card.getBoundingClientRect(); const g=card.cloneNode(true); g.classList.add("drag-ghost"); g.removeAttribute("data-key-row");
+  g.style.width=cr.width+"px"; g.style.left=cr.left+"px"; d.gOff=Math.min(d.y-cr.top,60); d.gl=cr.left; d.gw=cr.width; document.body.appendChild(g); d.ghost=g;
+  const before=d.row.getBoundingClientRect().top; document.body.classList.add("is-dragging"); d.row.classList.add("dragging");
+  const after=d.row.getBoundingClientRect().top; panel.scrollTop+=after-before;   /* keep the card under the finger when the list folds up */
+  const line=document.createElement("div"); line.className="drop-line"; document.body.appendChild(line); d.line=line;
+  dragMove(); d.raf=requestAnimationFrame(dragAuto); }
+function dragMove(){ const d=drag; if(!d||!d.on) return; d.ghost.style.top=(d.y-d.gOff)+"px";
+  const rows=$$("#p-plan .tl > li[data-key-row]").filter(r=>r!==d.row); let tgt=null;
+  for(const r of rows){ const b=r.getBoundingClientRect(); if(d.y<b.top+b.height/2){ tgt=r; break; } }
+  d.before=tgt?tgt.dataset.keyRow:null;
+  let y; if(tgt){ y=tgt.getBoundingClientRect().top-6; } else { const last=rows[rows.length-1]; y=last?last.getBoundingClientRect().bottom+4:0; }
+  d.line.style.top=y+"px"; d.line.style.left=d.gl+"px"; d.line.style.width=d.gw+"px"; }
+function dragAuto(){ const d=drag; if(!d||!d.on) return; const pr=d.panel.getBoundingClientRect(); const edge=80;
+  let v=0; if(d.y<pr.top+edge) v=-Math.ceil((pr.top+edge-d.y)/6); else if(d.y>pr.bottom-edge) v=Math.ceil((d.y-(pr.bottom-edge))/6);
+  if(v){ d.panel.scrollTop+=v; dragMove(); } d.raf=requestAnimationFrame(dragAuto); }
+function dragEnd(commit){ const d=drag; drag=null; if(!d) return; clearTimeout(d.timer); cancelAnimationFrame(d.raf);
+  d.ghost&&d.ghost.remove(); d.line&&d.line.remove(); d.row.classList.remove("dragging","press"); document.body.classList.remove("is-dragging");
+  setTimeout(()=>{ dragSwallow=false; },350);
+  if(!commit||d.before===undefined) return;
+  const ed=materialize(curDay); const old=ed.list.map(n=>n.key).join(","); const i=ed.list.findIndex(n=>n.key===d.key); if(i<0) return;
+  const oldNext=ed.list[i+1]; const node=ed.list.splice(i,1)[0];
+  let j=d.before?ed.list.findIndex(n=>n.key===d.before):-1; if(j<0) j=ed.list.length;
+  ed.list.splice(j,0,node); if(ed.list.map(n=>n.key).join(",")===old) return;
+  node.pre=0; if(ed.list[j+1]) ed.list[j+1].pre=0; if(oldNext) oldNext.pre=0;
+  saveEdits(); renderPlan(); drawCustoms();
+  const el=$(`#p-plan [data-key-row="${CSS.escape(d.key)}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); } }
+(()=>{ const pp=$("#p-plan");
+  pp.addEventListener("touchstart",e=>{ if(e.touches.length!==1){ if(drag&&drag.on) dragEnd(false); else dragCancelArm(); return; } const row=dragRowFrom(e.target); if(!row) return; const t=e.touches[0]; dragArm(row,t.clientX,t.clientY); },{passive:true});
+  pp.addEventListener("touchmove",e=>{ if(!drag) return; const t=e.touches[0]; if(!drag.on){ if(Math.hypot(t.clientX-drag.x0,t.clientY-drag.y0)>8) dragCancelArm(); return; } e.preventDefault(); drag.x=t.clientX; drag.y=t.clientY; dragMove(); },{passive:false});
+  pp.addEventListener("touchend",e=>{ if(!drag) return; if(drag.on){ e.preventDefault(); dragEnd(true); } else dragCancelArm(); },{passive:false});
+  pp.addEventListener("touchcancel",()=>{ if(!drag) return; if(drag.on) dragEnd(false); else dragCancelArm(); });
+  pp.addEventListener("contextmenu",e=>{ if(drag) e.preventDefault(); });
+  pp.addEventListener("mousedown",e=>{ if(e.button!==0) return; const row=dragRowFrom(e.target); if(!row) return; dragArm(row,e.clientX,e.clientY); });
+  document.addEventListener("mousemove",e=>{ if(!drag) return; if(!drag.on){ if(Math.hypot(e.clientX-drag.x0,e.clientY-drag.y0)>8) dragCancelArm(); return; } e.preventDefault(); drag.x=e.clientX; drag.y=e.clientY; dragMove(); });
+  document.addEventListener("mouseup",()=>{ if(!drag) return; if(drag.on) dragEnd(true); else dragCancelArm(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&drag&&drag.on) dragEnd(false); });
+  document.addEventListener("click",e=>{ if(dragSwallow){ e.stopPropagation(); e.preventDefault(); dragSwallow=false; } },true);
+})();
+
 /* ---------- boot ---------- */
 mapDay=curDay;
 renderDays(); renderPlan(); renderStories(); renderFood(); renderDrinks(); renderInfo(); tickClock(); setTimeout(()=>refreshWx(false),400); setTimeout(()=>refreshRate(false),1500);
 setInterval(()=>{ tickClock(); },15000);
-setInterval(()=>{ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); },120000);
+setInterval(()=>{ if(curTab==="plan"&&!$("#sheetRoot").innerHTML&&!drag&&!document.body.classList.contains("tb-open")) renderPlan(); },120000);
 showTab(curTab);
 if(!store.get("tourDone",0)) setTimeout(startTour,500);
 if(drive){ if(driveItem()&&Date.now()-drive.start<6*3600e3){ startGps(); renderDrive(); runDrive(); } else stopDrive(); }
