@@ -638,6 +638,17 @@ body.is-dragging{cursor:grabbing}
 .tb-bar .btn{white-space:nowrap}
 body.tb-open{overflow:hidden}
 @media print{ body.tb-open > *:not(#tbRoot){display:none!important} body.tb-open #tbRoot{position:static;overflow:visible} .tb-bar{display:none!important} }
+
+/* ---- search sources ---- */
+.cs-hit b em.src{font-style:normal;font-weight:600;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:4px;vertical-align:1px;background:var(--line);color:var(--muted)}
+.cs-hit b em.s-mine{background:color-mix(in srgb,var(--gold,#C9A227) 22%,var(--surface));color:var(--ink)}
+.cs-hit b em.s-google{background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--accent)}
+.cs-hit b em.s-plan{background:color-mix(in srgb,var(--ok) 15%,var(--surface));color:var(--ok)}
+.cs-foot{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.gk-steps{padding-left:20px;margin:6px 0 8px}.gk-steps li{margin:0 0 8px;font-size:14.5px}
+.gk-steps code{font-size:12.5px;background:var(--line);padding:1px 5px;border-radius:5px;word-break:break-all}
+#gk-in{width:100%;font-family:var(--font-mono,monospace);font-size:14px;margin:4px 0 8px}
+.g-attr{margin-top:8px}
 </style>
 
 <div class="app">
@@ -1542,7 +1553,7 @@ function renderFood(){
 /* ---------- info panel ---------- */
 function renderInfo(){
   const done=store.get("checks",{}); const rate=store.get("rate",RATE_DEFAULT);
-  let h=`<div class="c-actions" style="margin:0 0 12px"><button class="btn small primary" data-act="tour">ดูวิธีใช้แอป</button><button class="btn small" data-act="gpshelp">วิธีเปิด GPS</button></div><div class="box"><h3>เช็คลิสต์</h3>`+CHECKS.map(([id,t])=>`<label class="check${done[id]?" done":""}"><input type="checkbox" id="ck-${id}" data-check="${id}" ${done[id]?"checked":""}><span>${esc(t)}</span></label>`).join("")+`<p class="tiny" style="margin:6px 0 0">ติ๊กแล้วจำไว้ในเครื่องนี้เท่านั้น</p></div>`;
+  let h=`<div class="c-actions" style="margin:0 0 12px"><button class="btn small primary" data-act="tour">ดูวิธีใช้แอป</button><button class="btn small" data-act="gpshelp">วิธีเปิด GPS</button><button class="btn small" data-act="gk-open">ค้นหาด้วย Google ${GKEY?"✓":""}</button></div><div class="box"><h3>เช็คลิสต์</h3>`+CHECKS.map(([id,t])=>`<label class="check${done[id]?" done":""}"><input type="checkbox" id="ck-${id}" data-check="${id}" ${done[id]?"checked":""}><span>${esc(t)}</span></label>`).join("")+`<p class="tiny" style="margin:6px 0 0">ติ๊กแล้วจำไว้ในเครื่องนี้เท่านั้น</p></div>`;
   h+=`<div class="box"><h3>ที่พักและใบยืนยันการจอง</h3>`+Object.entries(BOOKINGS).map(([k,b])=>`<div class="check" style="flex-wrap:wrap"><div style="flex:1;min-width:180px"><b>${esc(b.n)}</b> <span class="muted">· ${esc(b.night)}</span><br><span class="muted" style="font-size:13.5px">${b.rooms.map(r=>esc(r.via)+" "+esc(r.id)).join(" · ")}</span>${b.alerts.length?`<br><span class="c-warn" style="font-size:13.5px">⚠ มีเรื่องที่ต้องจัดการ ${b.alerts.length} ข้อ</span>`:""}</div><div class="c-actions" style="margin:0"><button class="btn small primary" data-act="booking" data-id="${k}">${I.doc}ใบจอง</button>${aBtn(dirUrl(pointTarget(k)),"นำทาง",I.nav)}</div></div>`).join("")+`</div>`;
   h+=`<div class="box"><h3>เบอร์ฉุกเฉิน</h3><dl class="kv"><dt class="mono">110</dt><dd>ตำรวจ / อุบัติเหตุรถ</dd><dt class="mono">119</dt><dd>รถพยาบาล / ดับเพลิง</dd><dt class="mono">#8139</dt><dd>JAF ช่วยเหลือรถเสียบนถนน (โทรจากมือถือ)</dd><dt class="mono">050-3816-2787</dt><dd>Japan Visitor Hotline (JNTO) ภาษาอังกฤษ 24 ชม.</dd><dt class="mono">+81 3-5789-2433</dt><dd>สถานทูตไทย โตเกียว</dd><dt>รถเช่า</dt><dd>ดูเบอร์ใน voucher (เก็บไว้ในรถด้วย)</dd></dl></div>`;
   h+=`<div class="box"><h3>ขับรถในฮอกไกโด</h3><ul class="tipl"><li>ชิดซ้ายเหมือนไทย ป้ายสามเหลี่ยมหัวกลับสีแดง <b>止まれ</b> ต้องหยุดสนิท</li><li>ทางรถไฟตัดผ่าน หยุดก่อนข้ามทุกครั้ง</li><li>ทางด่วนเข้าเลน <b>ETC専用</b> สีม่วงได้เมื่อเสียบบัตร ETC</li><li>ปั๊มส่วนใหญ่เป็นแบบ <b>セルフ</b> หัวจ่ายสีแดง = レギュラー (ธรรมดา) สีเหลือง = ハイオク สีเขียว = ดีเซล ห้ามเติมผิด</li><li>ช่วงเย็นระวังกวางเอโซะและสุนัขจิ้งจอกตัดหน้า ห้ามให้อาหารสุนัขจิ้งจอก</li><li>บนเขามีหมีสีน้ำตาล อย่าเดินออกนอกเส้นทาง</li><li>ปลาย ต.ค. กลางวันราว 10–15°C กลางคืนอาจใกล้ 0°C บนช่องเขา (ค่าเฉลี่ยโดยประมาณ)</li></ul></div>`;
@@ -1984,17 +1995,25 @@ async function exRun(st){
   let list=[], ok=false;
   const wikiP=cat.wiki?(A.type==="bbox"?(km([A.bb[0],A.bb[1]],[A.bb[2],A.bb[3]])<14?exWiki(null,0,A.bb):Promise.resolve(null)):A.type==="line"?exWikiLine(A):exWiki(A.ll,A.r,null)):Promise.resolve(null);
   if(cat.wiki) wikiP.then(w=>{ if(st.key!==key||!st.loading||!w||!w.length) return; const pl=w.map(x=>Object.assign({},x)); pl.forEach(r=>{ r.d=km(st.ll,[r.lat,r.lng]); r.q=r.q||r.name; r.oh=null; }); pl.sort((x,y)=>x.d-y.d); st.res=pl; exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); wdEnrich(pl).then(()=>{ pl.forEach(niceName); if(st.res===pl){ exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); } }); });
+  const gP=(GKEY&&GQ[cat.id])?gSearch(GQ[cat.id],gAreaWhere(A)):Promise.resolve(null);
   if(cat.f.length){ const j=await ovFetch(head+"("+cat.f.map(sel).join("")+");out center tags 200;"); if(j){ ok=true; list=(j.elements||[]).map(e=>ovItem(e,cat)).filter(Boolean); } else st.osmFail=true; }
   if(cat.mine){ ok=true; FOOD.forEach(f=>{ if(f[4]==null||!inArea([f[4],f[5]])) return; const c=CAT[f[1]]||{e:"🍴",n:"ร้านอาหาร"};
       list.push({id:"f"+f[0],fid:f[0],name:f[2],en:"",kind:c.e+" "+c.n,sub:[f[3],INPLAN[f[0]]?"★ ในแผน: "+INPLAN[f[0]]:"",f[8]].filter(Boolean).join(" · "),lat:f[4],lng:f[5],star:false,wp:"",wd:"",hours:"",tags:{},osmk:"amenity",osmv:f[1]===0?"cafe":"restaurant",q:(latinName(f[2])||f[2])+" "+cityOf(f[3])}); }); }
   if(cat.wiki){ const w=await wikiP;
     if(w){ ok=true; const near=(a,b)=>km([a.lat,a.lng],[b.lat,b.lng])<0.12; w.forEach(x=>{ const dup=list.find(y=>y.name===x.name||(near(x,y)&&(y.star||y.name.includes(x.name)||x.name.includes(y.name)))); if(dup){ if(!dup.wp) dup.wp=x.wp; dup.star=true; } else list.push(x); }); } }
+  { const g=await gP; if(g&&g.length){ ok=true; st.gUsed=true; const near=(a,b)=>km([a.lat,a.lng],[b.lat,b.lng])<0.12, nm=x=>normQ(x.name);
+      g.filter(x=>inArea([x.lat,x.lng])).forEach(x=>{ const y=list.find(y=>near(x,y)&&(nm(y).includes(nm(x))||nm(x).includes(nm(y))||(y.en&&normQ(y.en)===nm(x))));
+        if(y){ Object.assign(y,{rating:x.rating,nr:x.nr,gmu:x.gmu,gid:x.gid,open:x.open}); if(x.star) y.star=true; y.sub=[gRateTxt(x),y.sub].filter(Boolean).join(" · "); return; }
+        /* same spot with only a Japanese name in OpenStreetMap: keep Google's entry and show the Japanese name under it */
+        const twin=list.find(y=>!y.gid&&!y._dupG&&km([x.lat,x.lng],[y.lat,y.lng])<0.025&&y.osmv===x.osmv&&!/[A-Za-z]{3,}/.test(y.name));
+        const gx=Object.assign({},x,{id:"g"+x.gid}); if(twin){ twin._dupG=true; gx.ja=twin.name; gx.sub=[gx.sub,twin.name].filter(Boolean).join(" · "); } list.push(gx); });
+      list=list.filter(y=>!y._dupG); } else if(GKEY&&GQ[cat.id]) st.gUsed=false; }
   if(st.key!==key) return;
   if(!ok){ st.loading=false; st.err="เซิร์ฟเวอร์ OpenStreetMap ไม่ตอบตอนนี้ (คนใช้เยอะ) กด \"ลองใหม่\" อีกครั้งในอีกสักครู่"; st.res=null; exPaint(st); return; }
   const seen=new Set(); list=list.filter(r=>{ const k=r.name+"|"+r.lat.toFixed(4)+r.lng.toFixed(4); if(seen.has(k)) return false; seen.add(k); r.q=r.q||r.name; return true; });
   if(A.type==="line"){ list.forEach(r=>{ const a=along(A.pts,[r.lat,r.lng]); r.off=a.off; r.at=a.at; r.det=Math.max(2,Math.round(a.off*2*1.3/30*60)); r.d=km(st.ll,[r.lat,r.lng]); }); list.sort((x,y)=>x.at-y.at); }
   else { list.forEach(r=>{ r.d=km(st.ll,[r.lat,r.lng]); }); list.sort((x,y)=>(x.d-(x.star?0.15:0))-(y.d-(y.star?0.15:0))); }
-  list.forEach(r=>{ r.oh=ohState(r.hours); });
+  list.forEach(r=>{ r.oh=r.open!=null&&!r.hours?{open:r.open,txt:r.open?"เปิดอยู่":"ปิดอยู่"}:ohState(r.hours); });
   if(list.length>100){ const s2=list.filter(r=>r.star); list=s2.concat(list.filter(r=>!r.star)).slice(0,100); if(A.type==="line") list.sort((x,y)=>x.at-y.at); }
   if(!st.osmFail) exCache[key]={t:Date.now(),list}; finish(list); st.osmFail=false;
   wdEnrich(list).then(()=>{ list.forEach(niceName); if(st.res===list){ exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); } }); 
@@ -2002,12 +2021,13 @@ async function exRun(st){
 function exShown(st){ st=st||ex; return (st.res||[]).filter(r=>!st.openOnly||(r.oh&&r.oh.open)); }
 function exMeta(st,r){ if(r.at!=null) return `อีก ~${Math.round(r.at)} กม. · ${r.off<0.3?"ติดถนน":"ออกนอกทาง "+r.off.toFixed(1)+" กม."} · +${r.det} นาที`; return `📏 ${distTxt(r.d||0)} · ${ttTxt(curDay,r.d||0)}`; }
 function exRowHtml(st,r,i,mode){ const cat=EXC.find(c=>c.id===st.cat)||{}; const photo=r.img||r.star||r.fid;
-  return `<div class="x-hit">${photo?`<i class="thumb xr-th" ${thumbAttr(r)}></i>`:`<i class="thumb xr-th ph0">${cat.e||"📍"}</i>`}<div class="x-main"><b>${r.star?"★ ":""}${esc(r.name)}</b>${r.sub?`<span class="tiny">${esc(r.sub.length>90?r.sub.slice(0,90)+"…":r.sub)}</span>`:""}<span class="tiny">${esc(r.kind||"")}${r.kind?" · ":""}${exMeta(st,r)} ${ohBadge(r.hours)}</span></div><div class="x-btns">${mode==="pick"?"":aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q},(r.d||0)<1.5?"walking":navMode),"นำทาง",I.nav)}<button class="btn small" data-act="ex-detail" data-st="${st.id}" data-i="${i}">รายละเอียด</button>${mode==="pick"?`<button class="btn small primary" data-act="ex-pick" data-st="xp" data-i="${i}">＋ เลือก</button>`:`<button class="btn small primary" data-act="ex-add" data-st="ex" data-i="${i}">＋ แผน</button>`}</div></div>`; }
+  return `<div class="x-hit">${photo?`<i class="thumb xr-th" ${thumbAttr(r)}></i>`:`<i class="thumb xr-th ph0">${cat.e||"📍"}</i>`}<div class="x-main"><b>${r.star?"★ ":""}${esc(r.name)}</b>${r.sub?`<span class="tiny">${esc(r.sub.length>90?r.sub.slice(0,90)+"…":r.sub)}</span>`:""}<span class="tiny">${esc(r.kind||"")}${r.kind?" · ":""}${exMeta(st,r)} ${r.open!=null&&!r.hours?`<span class="oh ${r.open?"open":"shut"}">${r.open?"🟢 เปิดอยู่":"🔴 ปิดอยู่"}</span>`:ohBadge(r.hours)}</span></div><div class="x-btns">${mode==="pick"?"":aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q},(r.d||0)<1.5?"walking":navMode),"นำทาง",I.nav)}<button class="btn small" data-act="ex-detail" data-st="${st.id}" data-i="${i}">รายละเอียด</button>${mode==="pick"?`<button class="btn small primary" data-act="ex-pick" data-st="xp" data-i="${i}">＋ เลือก</button>`:`<button class="btn small primary" data-act="ex-add" data-st="ex" data-i="${i}">＋ แผน</button>`}</div></div>`; }
 function exResHtml(st,mode){ st=st||ex; mode=mode||"browse";
   if(st.locating) return `<div class="tiny">กำลังหาตำแหน่ง GPS…</div>`; if(!st.cat) return `<div class="tiny">เลือกประเภทด้านบนเพื่อค้นหา</div>`; if(st.loading&&!st.res) return `<div class="tiny">กำลังค้นหา ${esc(st.where||"")}…</div>`;
   if(!st.res) return st.err?`<div class="tiny">${esc(st.err)} <button class="btn small" data-act="ex-refresh" data-st="${st.id}">ลองใหม่</button></div>`:"";
   const L2=exShown(st); if(!L2.length) return `<div class="tiny">ไม่พบในบริเวณนี้${st.openOnly?" ที่เปิดอยู่ตอนนี้":""} ลองประเภทอื่นหรือเปลี่ยนขอบเขต</div>`;
-  return `<div class="tiny" style="margin:2px 0 6px">${st.loading?"กำลังค้นเพิ่มจาก OpenStreetMap… · ":""}${esc(st.where||"")} · ${L2.length} แห่ง · ${st.area&&st.area.type==="line"?"เรียงตามลำดับที่จะผ่าน":"เรียงจากใกล้ไปไกล"} · ★ = มีข้อมูล Wikipedia</div>`+L2.map(r=>exRowHtml(st,r,st.res.indexOf(r),mode)).join(""); }
+  return `<div class="tiny" style="margin:2px 0 6px">${st.loading?"กำลังค้นเพิ่มจาก OpenStreetMap… · ":""}${esc(st.where||"")} · ${L2.length} แห่ง · ${st.area&&st.area.type==="line"?"เรียงตามลำดับที่จะผ่าน":"เรียงจากใกล้ไปไกล"} · ★ = ${st.gUsed?"คนรีวิวเยอะใน Google หรือ":""}มีข้อมูล Wikipedia</div>`+L2.map(r=>exRowHtml(st,r,st.res.indexOf(r),mode)).join("")
+    +(st.gUsed?`<p class="tiny g-attr">ข้อมูลร้านและคะแนนบางส่วนจาก Google Maps</p>`:GKEY?(gErr?`<p class="tiny">Google ใช้ไม่ได้ตอนนี้: ${esc(gErr.replace(/^net:/,""))}</p>`:""):`<p class="tiny">อยากเห็นร้านดังพร้อมคะแนนรีวิว <button class="lnk" data-act="gk-open">ต่อ Google Places</button></p>`); }
 function exChipsHtml(st,mode){
   let scopes;
   if(mode==="pick"){ const ctx=xContext(draft||{day:curDay}); const hasRoute=ctx.prev&&ctx.next&&km(ctx.prev,ctx.next)>2; scopes=[hasRoute?["route","🛣 ระหว่างทางไปจุดถัดไป"]:null,ctx.prev?["near","📍 ใกล้จุดก่อนหน้า"]:null,["gps","🧭 ใกล้ฉันตอนนี้"]]; }
@@ -2036,7 +2056,7 @@ function exDetailHtml(st,r,i){ const t=r.tags||{}; const addr=[t["addr:province"
   ${r.hours?`<p style="margin:4px 0">${ohBadge(r.hours)}<br><span class="tiny mono">${esc(r.hours)}</span></p>`:""}
   ${(addr||tel||site||t.cuisine)?`<dl class="kv">${t.cuisine?`<dt>อาหาร</dt><dd>${esc(t.cuisine.replace(/;/g,", ").replace(/_/g," "))}</dd>`:""}${addr?`<dt>ที่อยู่</dt><dd>${esc(addr)}</dd>`:""}${tel?`<dt>โทร</dt><dd><a href="tel:${esc(tel.replace(/\s/g,""))}">${esc(tel)}</a></dd>`:""}${site?`<dt>เว็บ</dt><dd><a href="${esc(site)}" target="_blank" rel="noopener">${esc(site.replace(/^https?:\/\//,"").slice(0,40))}</a></dd>`:""}</dl>`:""}
   <div id="exd-wiki">${r.wp||r.wd?`<div class="tiny">กำลังโหลดข้อมูลจาก Wikipedia…</div>`:""}</div>
-  <div class="c-actions" style="margin-top:10px">${aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q},(r.d||0)<1.5?"walking":navMode),"นำทาง",I.nav,"go")}${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(r.q||r.name),"ดูรีวิวใน Google Maps",I.map||"")}<button class="btn small" data-copy="${esc(r.q||r.name)}">${I.copy}คัดลอกชื่อ</button></div>
+  <div class="c-actions" style="margin-top:10px">${aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q},(r.d||0)<1.5?"walking":navMode),"นำทาง",I.nav,"go")}${aBtn(r.gmu||("https://www.google.com/maps/search/?api=1&query="+enc(r.q||r.name)),r.rating?`ดูรีวิว ${gRateTxt(r)} ใน Google Maps`:"ดูรีวิวใน Google Maps",I.map||"")}<button class="btn small" data-copy="${esc(r.q||r.name)}">${I.copy}คัดลอกชื่อ</button></div>
   <div class="c-actions"><button class="btn small" data-act="sheet-back">‹ กลับ</button>${pick?`<button class="btn small primary" data-act="ex-pick" data-st="xp" data-i="${i}">＋ เลือกที่นี่</button>`:`<button class="btn small primary" data-act="ex-add" data-st="ex" data-i="${i}">＋ ใส่ในแผน</button>`}</div>`; }
 function exOpenDetail(st,i,fromMap){ const r=st.res&&st.res[i]; if(!r) return;
   if(st===xp){ readDraft(); openSubSheet(exDetailHtml(st,r,i),()=>renderAddStop()); }
@@ -2157,7 +2177,7 @@ function recDetailHtml(r){
   ${stripHtml(r.q||r.name,5,"",r.en||"",[r.lat,r.lng])}${r.note?`<p>${esc(r.note)}</p>`:""}${r.hours?`<p>${ohBadge(r.hours)}</p>`:""}
   <p class="tiny">อยู่ใกล้จุดที่ ${stopNumMap(r.di)[r.stopKey]||"-"} ในแผน · ${distTxt(r.d)} ${ttTxt(r.di,r.d)} · แนะนำอยู่ราว ${r.dur||30} นาที</p>
   <div id="rd-wiki">${r.wp||r.wd?`<div class="tiny">กำลังโหลดข้อมูลจาก Wikipedia…</div>`:""}</div>
-  <div class="c-actions">${aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q}),"นำทาง",I.nav,"go")}${aBtn("https://www.google.com/maps/search/?api=1&query="+enc(r.q||r.name),"ดูรีวิวใน Google Maps",I.map||"")}<button class="btn small primary" data-act="cs-recplus" data-k="${esc(r.di+"|"+r.id)}">${I.plus}ใส่ในแผน</button><button class="btn small" data-act="rec-x" data-id="${esc(r.id)}">ไม่สนใจที่นี่</button></div>`; }
+  <div class="c-actions">${aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q}),"นำทาง",I.nav,"go")}${aBtn(r.gmu||("https://www.google.com/maps/search/?api=1&query="+enc(r.q||r.name)),r.rating?`ดูรีวิว ${gRateTxt(r)} ใน Google Maps`:"ดูรีวิวใน Google Maps",I.map||"")}<button class="btn small primary" data-act="cs-recplus" data-k="${esc(r.di+"|"+r.id)}">${I.plus}ใส่ในแผน</button><button class="btn small" data-act="rec-x" data-id="${esc(r.id)}">ไม่สนใจที่นี่</button></div>`; }
 function openRec(k){ const r=recIdx[k]; if(!r) return; if(r.kind==="food"){ openSheet(foodHtml(r.f[0])); return; }
   openSheet(recDetailHtml(r)); if(r.wp||r.wd) wikiSummary(r.wp,r.wd).then(w=>{ const el=$("#rd-wiki"); if(el) el.innerHTML=w?wikiHtml(w):""; }); }
 let thObs=null;
@@ -2342,21 +2362,33 @@ function guessDur(k,v,name){
 }
 async function geoSearch(q){
   const bias=gps.pos?gps.pos.ll:(()=>{ const r=DAYS[curDay].route; return r[Math.floor(r.length/2)]; })();
-  const m=q.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{2,3}\.\d+)/); if(m) return [{name:"พิกัดที่ใส่",sub:q,lat:+m[1],lng:+m[2]}];
-  try{ const r=await fetch(`https://photon.komoot.io/api/?q=${enc(q)}&lat=${bias[0]}&lon=${bias[1]}&limit=8&bbox=${HKD_BBOX}`); const j=await r.json();
-    const out=(j.features||[]).map(f=>{ const p=f.properties||{}; const g=guessDur(p.osm_key,p.osm_value,p.name); return {name:p.name||p.street||q,sub:[g.lab,p.city||p.town||p.village||p.county,p.state].filter(Boolean).join(" · "),lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0],dur:g.m,lab:g.lab}; });
-    if(out.length) return out; }catch(e){}
-  try{ const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${enc(q)}&countrycodes=jp&viewbox=139.3,45.6,146.0,41.3&bounded=1&limit=8&accept-language=ja,en`); const j=await r.json();
-    return j.map(x=>({name:(x.name||x.display_name.split(",")[0]),sub:x.display_name.split(",").slice(1,3).join(","),lat:+x.lat,lng:+x.lon})); }catch(e){ return null; }
+  const ll=parseLL(q); if(ll) return [{name:ll.name||"ตำแหน่งที่วาง",sub:"จากพิกัด/ลิงก์ Google Maps ที่วาง · "+ll.lat.toFixed(5)+", "+ll.lng.toFixed(5),lat:ll.lat,lng:ll.lng,src:"ll",needName:!ll.name}];
+  const loc=localSearch(q); let web=null; geoSrc="";
+  if(GKEY){ web=await gSearch(q,{ll:bias,r:30000,n:8}); if(web) geoSrc="google"; }
+  if(!web){ web=await osmSearch(q,bias); if(web) geoSrc="osm"; }
+  if(web==null&&!loc.length) return null;
+  const near=(a,b)=>km([a.lat,a.lng],[b.lat,b.lng])<0.08; return loc.concat((web||[]).filter(w=>!loc.some(x=>near(x,w))));
 }
+var geoSrc="";
+async function osmSearch(q,bias){ let answered=false;
+  try{ const r=await fetch(`https://photon.komoot.io/api/?q=${enc(q)}&lat=${bias[0]}&lon=${bias[1]}&limit=8&bbox=${HKD_BBOX}`); const j=await r.json();
+    const out=(j.features||[]).map(f=>{ const p=f.properties||{}; const g=guessDur(p.osm_key,p.osm_value,p.name); return {name:p.name||p.street||q,sub:[g.lab,p.city||p.town||p.village||p.county,p.state].filter(Boolean).join(" · "),lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0],dur:g.m,lab:g.lab,src:"osm"}; });
+    answered=true; if(out.length) return out; }catch(e){}
+  try{ const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${enc(q)}&countrycodes=jp&viewbox=139.3,45.6,146.0,41.3&bounded=1&limit=8&accept-language=ja,en`); const j=await r.json();
+    return j.map(x=>({name:(x.name||x.display_name.split(",")[0]),sub:x.display_name.split(",").slice(1,3).join(","),lat:+x.lat,lng:+x.lon,src:"osm"})); }catch(e){ return answered?[]:null; }
+}
+function geoFoot(q){ const area=(()=>{ const d=DAYS[curDay]; return /ซัปโปโร|Sapporo/i.test(d.title)?"Sapporo":/โอตารุ|Otaru/i.test(d.title)?"Otaru":"Hokkaido"; })();
+  return `<div class="cs-foot"><a class="btn small" href="https://www.google.com/maps/search/?api=1&query=${enc(q+" "+area)}" target="_blank" rel="noopener">${I.map}ค้นใน Google Maps</a>${GKEY?"":`<button class="btn small" data-act="gk-open">ให้ค้นเจอทุกร้าน (ต่อ Google)</button>`}</div>
+  <p class="tiny">${geoSrc==="google"?"ผลจาก Google Maps":geoSrc==="osm"?"ผลจาก OpenStreetMap ซึ่งมีร้านเล็กในญี่ปุ่นไม่ครบ":""}${geoSrc?" · ":""}เจอใน Google Maps แต่ไม่มีที่นี่: กดค้างบนแผนที่ Google ให้ขึ้นหมุด แล้วคัดลอกพิกัด (เช่น 43.0567, 141.3577) มาวางในช่องค้นหา</p>`; }
 async function reverseName(ll){ try{ const r=await fetch(`https://photon.komoot.io/reverse?lat=${ll[0]}&lon=${ll[1]}&limit=1`); const j=await r.json(); const p=(j.features&&j.features[0]&&j.features[0].properties)||{}; return p.name||[p.street,p.city||p.town].filter(Boolean).join(" ")||""; }catch(e){ return ""; } }
 document.addEventListener("input",ev=>{
   if(ev.target.id!=="cs-q") return; const q=ev.target.value.trim(); clearTimeout(searchT);
   const box=$("#cs-res"); if(q.length<2){ box.innerHTML=""; return; } box.innerHTML=`<div class="tiny">กำลังค้นหา…</div>`;
-  searchT=setTimeout(async()=>{ const res=await geoSearch(q); if(!$("#cs-res")) return;
-    if(res==null){ $("#cs-res").innerHTML=`<div class="tiny">ค้นหาไม่ได้ ลองใช้ "แตะเลือกบนแผนที่" หรือใส่พิกัด เช่น 42.55,141.35</div>`; return; }
-    lastRes=res; $("#cs-res").innerHTML=res.length?res.map((r,i)=>`<button class="cs-hit" data-act="cs-hit" data-i="${i}"><b>${esc(r.name)}</b><span class="tiny">${esc(r.sub||"")}</span></button>`).join(""):`<div class="tiny">ไม่พบ ลองพิมพ์ภาษาอังกฤษ/ญี่ปุ่น หรือแตะเลือกบนแผนที่</div>`;
-  },450);
+  searchT=setTimeout(async()=>{ const res=await geoSearch(q); if(!$("#cs-res")||($("#cs-q")&&$("#cs-q").value.trim()!==q)) return;
+    if(res==null){ $("#cs-res").innerHTML=`<div class="tiny">ค้นหาไม่ได้ตอนนี้${GKEY&&gErr?" ("+esc(gErr.replace(/^net:/,""))+")":""} ลองใช้ "แตะเลือกบนแผนที่" หรือวางพิกัด</div>`+geoFoot(q); return; }
+    const SRC={mine:"ในลิสต์ของฉัน",plan:"ในทริป",google:"Google",osm:"OSM",ll:"พิกัด"};
+    lastRes=res; $("#cs-res").innerHTML=(res.length?res.map((r,i)=>`<button class="cs-hit" data-act="cs-hit" data-i="${i}"><b>${esc(r.name)} <em class="src s-${r.src||"osm"}">${SRC[r.src]||""}</em></b><span class="tiny">${esc(r.sub||"")}</span></button>`).join(""):`<div class="tiny">ไม่พบ "${esc(q)}"${geoSrc==="osm"?" ใน OpenStreetMap":""}</div>`)+geoFoot(q);
+  },GKEY?650:450);
 });
 document.addEventListener("change",ev=>{ if(["cs-at","cs-dur"].includes(ev.target.id)&&draft){ readDraft(); renderAddStop(); } });
 /* ----- pin a place on the map: tap named places, or tap anywhere and choose a nearby name; Back returns to the form ----- */
@@ -2432,7 +2464,7 @@ document.addEventListener("click",ev=>{
   if(a==="cs-leg"){ openSheet(legSheet(b.dataset.from,b.dataset.to,+b.dataset.min)); return; }
   if(a==="cs-legsave"||a==="cs-legclear"){ const ed=materialize(curDay); ed.legs=ed.legs||{}; const k=b.dataset.from+">"+b.dataset.to; if(a==="cs-legsave") ed.legs[k]=+$("#leg-min").value; else delete ed.legs[k]; saveEdits(); closeSheet(); renderPlan(); return; }
   if(a==="cs-explore"){ openAddStop(b.dataset.key||undefined); if(draft){ xp.cat="view"; exLocate(xp); } return; }
-  if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng}); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
+  if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng,q:r.q||null}); if(r.needName) reverseName([r.lat,r.lng]).then(n=>{ if(n&&draft&&draft.lat===r.lat&&draft.name==="ตำแหน่งที่วาง"){ draft.name=n; renderAddStop(); } }); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
   if(a==="cs-atclear"){ readDraft(); draft.at=""; renderAddStop(); return; }
   if(a==="cs-noplace"){ readDraft(); Object.assign(draft,{lat:null,lng:null}); renderAddStop(); return; }
   if(a==="cs-here"){ readDraft(); const use=p=>{ Object.assign(draft,{lat:p[0],lng:p[1]}); reverseName(p).then(n=>{ if(!draft.name) draft.name=n||"ตำแหน่งปัจจุบัน"; renderAddStop(); }); };
@@ -2801,6 +2833,92 @@ document.addEventListener("keydown",ev=>{ if(ev.key==="Escape") closeSheet(); })
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&drive) lockScreen(); });
 try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>restyleMap()); }catch(e){}
 try{ new MutationObserver(()=>restyleMap()).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]}); }catch(e){}
+
+/* ===================== Google Places, with the trip owner's own key (kept on the phone, never in the public page) ===================== */
+var GKEY=store.get("gkey","");
+(()=>{ const m=(location.hash||"").match(/gkey=([A-Za-z0-9_\-]{20,})/); if(m){ GKEY=m[1]; store.set("gkey",GKEY); try{ history.replaceState(history.state,"",location.pathname+location.search); }catch(e){} } })();
+const G_FIELDS=["id","displayName","formattedAddress","shortFormattedAddress","location","primaryType","primaryTypeDisplayName","types","rating","userRatingCount","googleMapsUri","currentOpeningHours.openNow"];
+const GQ={top:"tourist attractions",food:"restaurants",cafe:"cafe sweets",bar:"izakaya bar",view:"scenic viewpoint",park:"park garden",onsen:"onsen hot spring",shrine:"shrine temple",museum:"museum",michi:"michi no eki roadside station",farm:"farm dairy winery",shop:"shopping mall souvenir",shoes:"shoes clothing store",drug:"drugstore",konbini:"convenience store",fuel:"gas station",station:"train station",atm:"ATM"};
+var gCache={}, gErr="", gStatus=0, gVia=store.get("gvia","rest"), gUsed=store.get("gused",{});
+function gCount(){ const k=jst().date.slice(0,7); gUsed[k]=(gUsed[k]||0)+1; store.set("gused",gUsed); }
+function gMonthUse(){ return gUsed[jst().date.slice(0,7)]||0; }
+function gOsm(types){ types=types||[]; const has=t=>types.includes(t); const any=re=>types.some(t=>re.test(t));
+  if(any(/onsen|spa|public_bath|sauna/)) return ["amenity","spa"]; if(any(/cafe|coffee|dessert|ice_cream|confectionery|tea_house/)) return ["amenity","cafe"]; if(has("bakery")) return ["shop","bakery"];
+  if(any(/bar$|pub|izakaya|wine_bar/)) return ["amenity","bar"]; if(any(/restaurant|food_court|meal_takeaway|ramen|sushi/)) return ["amenity","restaurant"];
+  if(any(/museum|art_gallery/)) return ["tourism","museum"]; if(any(/park|garden|national_park|hiking/)) return ["leisure","park"];
+  if(any(/shopping_mall/)) return ["shop","mall"]; if(has("department_store")) return ["shop","department_store"]; if(any(/convenience_store|supermarket|grocery/)) return ["shop","convenience"];
+  if(any(/train_station|subway_station|transit_station|bus_station/)) return ["railway","station"]; if(has("gas_station")) return ["amenity","fuel"];
+  if(any(/place_of_worship|shrine|temple|church/)) return ["amenity","place_of_worship"]; if(any(/tourist_attraction|observation_deck|scenic|landmark|historical/)) return ["tourism","attraction"];
+  if(any(/store|shop/)) return ["shop","yes"]; return ["",""]; }
+function gItem(p,via){ const js=via==="js"; const name=js?p.displayName:(p.displayName&&p.displayName.text)||""; const loc=p.location; const lat=js?loc.lat():loc.latitude, lng=js?loc.lng():loc.longitude;
+  const types=p.types||[]; const [k,v]=gOsm([p.primaryType].concat(types)); const g=guessDur(k,v,name);
+  const typ=js?(p.primaryTypeDisplayName||""):(p.primaryTypeDisplayName&&p.primaryTypeDisplayName.text)||""; const addr=p.shortFormattedAddress||p.formattedAddress||"";
+  const open=js?null:(p.currentOpeningHours&&typeof p.currentOpeningHours.openNow==="boolean"?p.currentOpeningHours.openNow:null);
+  return {name,en:name,gid:p.id,rating:p.rating||0,nr:p.userRatingCount||0,open,gmu:(js?p.googleMapsURI:p.googleMapsUri)||"",addr,typ,lat,lng,osmk:k,osmv:v,dur:g.m,lab:g.lab,
+    q:name+(addr?" "+addr.split(",").slice(-2).join(" ").trim():""),src:"google",star:(p.rating||0)>=4.0&&(p.userRatingCount||0)>=150,
+    tags:{"addr:full":p.formattedAddress||""},hours:"",wp:"",wd:"",kind:typ?"📍 "+typ:"📍 Google",sub:""}; }
+function gSub(r){ return [gRateTxt(r),r.typ,r.open===true?"เปิดอยู่":r.open===false?"ปิดอยู่":"",r.addr].filter(Boolean).join(" · "); }
+function gRateTxt(r){ return r.rating?`★${r.rating.toFixed(1)}${r.nr?` (${r.nr>=1000?(r.nr/1000).toFixed(1).replace(/\.0$/,"")+"k":r.nr})`:""}`:""; }
+function gRect(bb){ return {low:{latitude:bb[0],longitude:bb[1]},high:{latitude:bb[2],longitude:bb[3]}}; }
+/* text search: REST first (Places API New), then the Maps JavaScript library if the browser call is refused */
+async function gSearch(textQuery,where){ if(!GKEY) return null; const ck=textQuery+"|"+JSON.stringify(where); if(gCache[ck]&&Date.now()-gCache[ck].t<30*60e3) return gCache[ck].list;
+  let list=null;
+  if(gVia!=="js"){ list=await gRest(textQuery,where); if(list==null&&(gErr.startsWith("net:")||gStatus===403)){ const e0=gErr; const j=await gJs(textQuery,where); if(j){ list=j; gVia="js"; store.set("gvia","js"); } else gErr=e0+" / "+gErr; } }
+  else list=await gJs(textQuery,where);
+  if(list) gCache[ck]={t:Date.now(),list}; return list; }
+async function gRest(textQuery,where){ const body={textQuery,languageCode:"en",regionCode:"JP",pageSize:where.n||10};
+  if(where.bb) body.locationRestriction={rectangle:gRect(where.bb)}; else if(where.ll) body.locationBias={circle:{center:{latitude:where.ll[0],longitude:where.ll[1]},radius:Math.min(50000,where.r||20000)}};
+  const ac=new AbortController(); const to=setTimeout(()=>ac.abort(),10000);
+  try{ gCount(); const r=await fetch("https://places.googleapis.com/v1/places:searchText",{method:"POST",headers:{"Content-Type":"application/json","X-Goog-Api-Key":GKEY,"X-Goog-FieldMask":G_FIELDS.map(f=>"places."+f).join(",")},body:JSON.stringify(body),signal:ac.signal});
+    let j={}; try{ j=await r.json(); }catch(e){}
+    gStatus=r.status; if(!r.ok){ gErr=(j.error&&j.error.message)||("HTTP "+r.status); return null; } gErr=""; return (j.places||[]).filter(p=>p.location).map(p=>gItem(p,"rest")).map(r=>(r.sub=gSub(r),r)); }
+  catch(e){ gErr=e.name==="AbortError"?"Google ไม่ตอบภายใน 10 วินาที":"net:"+(e.message||e); return null; } finally{ clearTimeout(to); } }
+var gLib=null;
+function gLoadJs(){ if(gLib) return gLib; gLib=new Promise((res,rej)=>{ window.__hkdGm=()=>{ google.maps.importLibrary("places").then(res,rej); }; const s=document.createElement("script"); s.async=true;
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${enc(GKEY)}&v=weekly&loading=async&language=en&region=JP&callback=__hkdGm`; s.onerror=()=>{ gLib=null; rej(new Error("โหลด Google Maps ไม่ได้")); }; document.head.appendChild(s); setTimeout(()=>rej(new Error("timeout")),12000); }); return gLib; }
+async function gJs(textQuery,where){ try{ const lib=await gLoadJs(); const req={textQuery,fields:["id","displayName","formattedAddress","location","primaryType","primaryTypeDisplayName","types","rating","userRatingCount","googleMapsURI"],language:"en",region:"jp",maxResultCount:where.n||10};
+    if(where.bb) req.locationRestriction={south:where.bb[0],west:where.bb[1],north:where.bb[2],east:where.bb[3]}; else if(where.ll) req.locationBias={center:{lat:where.ll[0],lng:where.ll[1]},radius:Math.min(50000,where.r||20000)};
+    gCount(); const {places}=await lib.Place.searchByText(req); gErr=""; return (places||[]).filter(p=>p.location).map(p=>gItem(p,"js")).map(r=>(r.sub=gSub(r),r)); }
+  catch(e){ gErr=String(e&&e.message||e); return null; } }
+function gAreaWhere(A){ if(A.type==="bbox") return {bb:A.bb,n:20}; const pad=(lat,dm)=>[dm/111320, dm/(111320*Math.cos(lat*Math.PI/180))];
+  if(A.type==="line"){ const la=A.pts.map(p=>+p[0]), lo=A.pts.map(p=>+p[1]); const [dy,dx]=pad(la[0],A.r); return {bb:[Math.min(...la)-dy,Math.min(...lo)-dx,Math.max(...la)+dy,Math.max(...lo)+dx],n:20}; }
+  const r=Math.max(A.r||800,400); const [dy,dx]=pad(A.ll[0],r); return {bb:[A.ll[0]-dy,A.ll[1]-dx,A.ll[0]+dy,A.ll[1]+dx],n:20}; }
+/* the local lists first: my Food List and places already in the trip */
+function normQ(s){ return String(s||"").toLowerCase().normalize("NFKC").replace(/[\s\-・·()（）'’`.,/+&]/g,""); }
+function localSearch(q){ const n=normQ(q); if(n.length<2) return []; const out=[], seen=new Set();
+  FOOD.forEach(f=>{ if(f[4]==null) return; if(!normQ(f[2]).includes(n)) return; const c=CAT[f[1]]||{n:"ร้านอาหาร"}; seen.add(f[4].toFixed(4)+f[5].toFixed(4));
+    out.push({name:f[2],sub:`★ ร้านในลิสต์ของฉัน · ${c.n} · ${f[3]}`,lat:f[4],lng:f[5],dur:f[1]===0?30:60,lab:f[1]===0?"อาหารเช้า/ของว่าง":"มื้ออาหาร",q:(latinName(f[2])||f[2])+" "+cityOf(f[3]),src:"mine"}); });
+  Object.entries(P).forEach(([k,p])=>{ if(p[1]==null) return; if(![p[0],p[4],p[6]].some(x=>x&&normQ(x).includes(n))) return; const kk=(+p[1]).toFixed(4)+(+p[2]).toFixed(4); if(seen.has(kk)) return; seen.add(kk);
+    out.push({name:p[0],sub:"จุดที่อยู่ในทริปนี้",lat:p[1],lng:p[2],q:p[4]||p[0],src:"plan"}); });
+  return out.slice(0,6); }
+/* a Google Maps link or coordinates pasted into the search box */
+function parseLL(q){ const s=decodeURIComponent(String(q||""));
+  let m=s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||s.match(/[?&](?:q|query|ll|destination|center)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||s.match(/^\s*\(?(-?\d{1,2}\.\d+)\s*,\s*(-?\d{2,3}\.\d+)\)?\s*$/);
+  if(!m) return null; const lat=+m[1], lng=+m[2]; if(Math.abs(lat)>90||Math.abs(lng)>180) return null;
+  const nm=(s.match(/\/place\/([^/@]+)/)||[])[1]; return {lat,lng,name:nm?nm.replace(/\+/g," "):""}; }
+function gSetupHtml(msg){ const has=!!GKEY; const use=gMonthUse();
+  return `<div class="sk">แหล่งข้อมูลสถานที่</div><h2>ค้นหาด้วย Google Places</h2>
+  <p>ตอนนี้แอปค้นจาก OpenStreetMap ซึ่งฟรีแต่มีร้านเล็กในญี่ปุ่นไม่ครบ ถ้าใส่ API key ของ Google เอง การค้นหาและปุ่มสำรวจจะเจอร้านแบบเดียวกับใน Google Maps พร้อมคะแนนรีวิว</p>
+  ${msg?`<p class="sc-warn">${esc(msg)}</p>`:""}
+  <label class="tiny" for="gk-in">Google API key ${has?"(ใส่ไว้แล้ว)":""}</label><input id="gk-in" class="inp" autocomplete="off" spellcheck="false" placeholder="AIza…" value="${esc(GKEY)}">
+  <div class="c-actions"><button class="btn small primary" data-act="gk-save">บันทึกและทดสอบ</button>${has?`<button class="btn small" data-act="gk-share">ส่ง key ให้เพื่อนร่วมทริป</button><button class="btn small" data-act="gk-del">ลบ key</button>`:""}</div>
+  <p class="tiny" id="gk-msg">${has?`เดือนนี้ใช้ค้นไปแล้วประมาณ ${use} ครั้ง (นับจากเครื่องนี้)`:""}</p>
+  <h3 class="sp-h">ขอ key ครั้งเดียว ประมาณ 10 นาที</h3>
+  <ol class="gk-steps">
+   <li>เปิด <a href="https://console.cloud.google.com/google/maps-apis/start" target="_blank" rel="noopener">Google Maps Platform</a> ด้วย Gmail ส่วนตัว แล้วทำตามขั้นตอน (สร้างโปรเจกต์ + ผูกบัตร) Google จะสร้าง API key ให้</li>
+   <li>เปิดใช้ <a href="https://console.cloud.google.com/apis/library/places.googleapis.com" target="_blank" rel="noopener">Places API (New)</a> และ <a href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com" target="_blank" rel="noopener">Maps JavaScript API</a></li>
+   <li>ที่หน้า <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credentials</a> กดที่ key แล้วจำกัดการใช้: Application restrictions = Websites ใส่ <code>${esc(/^https?:/.test(location.origin)?location.origin:"https://ชื่อของคุณ.github.io")}/*</code> และ API restrictions = 2 ตัวข้างบน</li>
+   <li>คัดลอก key มาวางในช่องด้านบน</li></ol>
+  <p class="tiny">ค่าใช้จ่าย: Google ให้ค้นแบบมีคะแนนรีวิวฟรีเดือนละ 1,000 ครั้ง ทริปนี้ใช้ไม่ถึง ถ้าอยากให้ไม่มีทางเสียเงินเลย ตั้งเพดานจำนวนครั้งได้ที่หน้า <a href="https://console.cloud.google.com/apis/api/places.googleapis.com/quotas" target="_blank" rel="noopener">Quotas</a> · key เก็บอยู่ในมือถือเครื่องนี้เท่านั้น ไม่ได้อยู่ในหน้าเว็บสาธารณะ</p>`; }
+document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='gk-']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
+  if(a==="gk-open"){ openSheet(gSetupHtml()); return; }
+  if(a==="gk-save"){ const v=($("#gk-in")||{}).value||""; GKEY=v.trim(); store.set("gkey",GKEY); gCache={}; gVia="rest"; store.set("gvia","rest"); exCache={};
+    if(!GKEY){ renderSheet(gSetupHtml()); return; } $("#gk-msg").textContent="กำลังทดสอบ…";
+    const t=await gSearch("Nijo Market Sapporo",{ll:[43.0567,141.3577],r:3000,n:1}); $("#gk-msg").innerHTML=t&&t.length?`ใช้ได้แล้ว ✓ เจอ "${esc(t[0].name)}" ${esc(gRateTxt(t[0]))}`:`ยังใช้ไม่ได้: ${esc(gErr.replace(/^net:/,"เชื่อมต่อไม่ได้ "))}`; return; }
+  if(a==="gk-del"){ GKEY=""; store.set("gkey",""); gCache={}; exCache={}; renderSheet(gSetupHtml()); return; }
+  if(a==="gk-share"){ const url=location.origin+location.pathname+"#gkey="+GKEY; const t="เปิดลิงก์นี้ในมือถือ แอปทริปฮอกไกโดจะค้นร้านผ่าน Google ได้: "+url;
+    if(navigator.share) navigator.share({title:"key ค้นหาสถานที่",text:t}).catch(()=>{}); else { try{ await navigator.clipboard.writeText(url); b.textContent="คัดลอกลิงก์แล้ว"; }catch(e){} } return; }
+},true);
 
 /* ===================== trip photos: stored on this phone (IndexedDB), sorted into stops by when/where they were taken ===================== */
 const PDB={db:null,
