@@ -2972,7 +2972,11 @@ async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElem
     if(a==="print") window.print();
     if(a==="save"){ b.textContent="กำลังเตรียมไฟล์…"; const body=await tripbookHtml("export");
       const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ฮอกไกโด 2026</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
-      const url=URL.createObjectURL(new Blob([doc],{type:"text/html"})); const al=document.createElement("a"); al.href=url; al.download="Hokkaido-Tripbook-2026.html"; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); b.textContent="บันทึกเป็นไฟล์"; } }; }
+      const blob=new Blob([doc],{type:"text/html"}), fn="Hokkaido-Tripbook-2026.html";
+      /* inside the claude.ai viewer a page may only offer files through its downloads capability */
+      let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
+      if(dl){ try{ await dl.save({filename:fn,data:blob}); b.textContent="บันทึกเป็นไฟล์"; } catch(e){ b.textContent=e&&e.code==="declined"?"บันทึกเป็นไฟล์":"บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; } return; }
+      const url=URL.createObjectURL(blob); const al=document.createElement("a"); al.href=url; al.download=fn; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); b.textContent="บันทึกเป็นไฟล์"; } }; }
 function closeTripbook(){ const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open"); }
 addEventListener("popstate",()=>{ if(document.body.classList.contains("tb-open")) closeTripbook(); });
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
