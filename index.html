@@ -649,6 +649,12 @@ body.tb-open{overflow:hidden}
 .gk-steps code{font-size:12.5px;background:var(--line);padding:1px 5px;border-radius:5px;word-break:break-all}
 #gk-in{width:100%;font-family:var(--font-mono,monospace);font-size:14px;margin:4px 0 8px}
 .g-attr{margin-top:8px}
+
+/* ---- data safety ---- */
+.fresh{margin:12px 0 0;padding:12px;border-radius:14px;background:color-mix(in srgb,var(--maple) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--maple) 30%,var(--line))}
+.fresh b{font-size:15px}.fresh p{margin:4px 0 8px;font-size:14px;color:var(--ink)}
+.dh-ph-warn{font-style:normal;color:var(--maple);font-weight:600}
+#bk-file .kv{margin:0 0 6px}
 </style>
 
 <div class="app">
@@ -1291,6 +1297,7 @@ const store = {
   get(k,d){ try{ const v=localStorage.getItem("hkd26:"+k); return v==null?d:JSON.parse(v);}catch(e){ return d; } },
   set(k,v){ try{ localStorage.setItem("hkd26:"+k,JSON.stringify(v)); }catch(e){} }
 };
+const HAD_DATA=(()=>{ try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith("hkd26:")) return true; } }catch(e){} return false; })();
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 /* ---------- time ---------- */
@@ -1395,7 +1402,8 @@ function renderPlan(){
   navMode=curDay>=CARFREE_DAY?"transit":"driving";
   if(d.hotel&&P[d.hotel]) h+=`<div class="dh-hotel">${I.bed}<span>คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="lnk" data-act="booking" data-id="${d.hotel}">ใบจอง</button><a class="lnk" href="${esc(dirUrl(pointTarget(d.hotel)))}" target="_blank" rel="noopener">นำทาง</a></div>`;
   h+=`<div class="dh-actions"><button class="btn small primary" data-act="gmroute">${I.route}เส้นทางทั้งวันใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}แผนที่</button><button class="btn small" data-act="addstop">${I.plus}เพิ่มจุด</button><button class="btn small" data-act="reorder" aria-pressed="${document.body.classList.contains("reorder")}">${I.sort}จัดลำดับ</button></div>`;
-  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${dp.length} รูป · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${phMeta.length} รูป`:"ดึงรูปจากมือถือมาวางตามจุด"}</span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
+  h+=freshBanner();
+  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${dp.length} รูป · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${phMeta.length} รูป`:"ดึงรูปจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}</span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
   h+=`</header><ol class="tl">`;
@@ -1560,7 +1568,7 @@ function renderInfo(){
   h+=`<div class="box"><h3>แปลงเงิน</h3><div class="conv"><input id="yen" inputmode="numeric" value="1000" aria-label="จำนวนเยน"><span>¥ =</span><span class="out" id="baht">–</span><span>บาท</span></div><p class="tiny" style="margin:8px 0 0">เรท <input id="rate" value="${rate}" inputmode="decimal" style="width:80px;font:inherit;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink)" aria-label="เรทบาทต่อเยน"> บาทต่อ ¥1 · ${store.get("rateManual",false)?"ตั้งเอง":store.get("rateSrc","")?"เรทวันนี้จาก "+esc(store.get("rateSrc","")):"เรทเดิม (ยังไม่ได้ออนไลน์)"} <button class="linkbtn" data-act="rate-live">ใช้เรทวันนี้</button></p></div>`;
   h+=`<div class="box"><h3>ประโยคภาษาญี่ปุ่น</h3>`+PHRASES.map(([jp,ro,th])=>`<div class="phrase"><span class="jp">${esc(jp)}</span><span class="ro">${esc(ro)}</span><span class="th">${esc(th)}</span><button class="btn small" data-copy="${esc(jp)}">${I.copy}คัดลอก</button></div>`).join("")+`<p class="tiny" style="margin:6px 0 0">กดคัดลอกแล้ววางใน Google Translate หรือยื่นหน้าจอให้พนักงานอ่าน</p></div>`;
   h+=`<div class="box"><h3>สภาพอากาศ</h3><div class="c-actions">${["洞爺湖","ニセコ","中山峠","定山渓","小樽","札幌"].map(n=>aBtn("https://www.google.com/search?q="+enc(n+" 天気"),n,"")).join("")}</div></div>`;
-  h+=`<div class="box"><h3>สำรอง / กู้คืนแผนที่แก้ไว้</h3><p style="margin:0 0 8px;font-size:15px">แอปเก็บประวัติการแก้แผน (จุดแวะที่เพิ่ม ลำดับ เวลา) ไว้ในเครื่องนี้อัตโนมัติ และคัดลอกเป็นรหัสไปเปิดในเครื่องอื่นได้</p><div class="c-actions"><button class="btn small primary" data-act="backup">เปิดสำรอง / กู้คืน</button></div></div>`;
+  h+=`<div class="box"><h3>สำรอง / กู้คืน</h3><p style="margin:0 0 8px;font-size:15px">ข้อมูลที่แก้ในแอปและรูปของเราเก็บอยู่ในเบราว์เซอร์ของเครื่องนี้ ทำไฟล์สำรองไว้ใน Google Drive แล้วเปิดในเครื่องไหนก็ได้</p><div class="c-actions"><button class="btn small primary" data-act="backup">เปิดสำรอง / กู้คืน</button></div></div>`;
   h+=`<div class="box"><h3>แชร์ให้เพื่อนร่วมทริป</h3><p style="margin:0;font-size:15px">ส่งลิงก์ของหน้านี้ให้ทุกคน เปิดบนมือถือได้เลย ทุกคนใช้โหมดขับรถและแผนที่ได้เหมือนกัน (เช็คลิสต์แยกกันในแต่ละเครื่อง)</p></div>`;
   $("#p-info").innerHTML=h; convUpdate();
 }
@@ -1755,7 +1763,7 @@ function editsSummary(e){ const days=Object.keys(e||{}).filter(k=>e[k]&&e[k].lis
 function backupHtml(){
   const h=store.get("editsHist",[]);
   const fmt=ts=>{ const d=new Date(ts); return d.toLocaleString("th-TH",{timeZone:"Asia/Tokyo",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); };
-  return `<div class="sk">สำรองข้อมูล</div><h2>สำรอง / กู้คืนแผนที่แก้ไว้</h2><div class="box"><h3>ตอนนี้</h3><p style="margin:0 0 8px">${esc(editsSummary(edits))}</p><div class="c-actions"><button class="btn small primary" data-act="bk-copy">${I.copy}คัดลอกรหัสสำรอง</button>${navigator.share?`<button class="btn small" data-act="bk-share">แชร์ไปเครื่องอื่น</button>`:""}</div></div>
+  return `<div class="sk">สำรองข้อมูล</div><h2>สำรอง / กู้คืน</h2>${bkFileHtml()}<div class="box"><h3>รหัสสำรองแผน (ไม่รวมรูป)</h3><p style="margin:0 0 8px">${esc(editsSummary(edits))}</p><div class="c-actions"><button class="btn small primary" data-act="bk-copy">${I.copy}คัดลอกรหัสสำรอง</button>${navigator.share?`<button class="btn small" data-act="bk-share">แชร์ไปเครื่องอื่น</button>`:""}</div></div>
   <div class="box"><h3>กู้คืนจากรหัส</h3><textarea id="bk-in" rows="3" style="width:100%;font:13px/1.4 var(--mono,monospace);border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--surface-2);color:var(--ink)" placeholder="วางรหัสสำรองที่คัดลอกมาจากเครื่องอื่น"></textarea><div class="c-actions"><button class="btn small" data-act="bk-import">กู้คืนจากรหัสนี้</button></div></div>
   <div class="box"><h3>ประวัติในเครื่องนี้</h3>${h.length?h.map((s,i)=>{ let e={}; try{ e=JSON.parse(s.js); }catch(x){} return `<div class="check" style="flex-wrap:wrap"><div style="flex:1;min-width:180px"><b>${esc(fmt(s.ts))}</b><br><span class="tiny">${esc(editsSummary(e))}</span></div><button class="btn small" data-act="bk-restore" data-i="${i}">กู้คืน</button></div>`; }).join(""):`<p class="tiny" style="margin:0">ยังไม่มีประวัติ จะเริ่มเก็บตั้งแต่ตอนนี้</p>`}</div>`;
 }
@@ -2932,7 +2940,7 @@ const PDB={db:null,
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
   del(id){ return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
-PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(phMeta.length){ renderPlan(); if(map&&curTab==="map") drawMap(false); } }).catch(()=>{ phReady=true; });
+PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 function photosFor(di,key){ return phMeta.filter(m=>m.day===di&&m.key===key); }
 async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); if(!b) return ""; cache[id]=URL.createObjectURL(full?b.full:b.thumb); return cache[id]; }
 function hydrateMyPhotos(root){ $$("img[data-phid]:not([data-done])",root||document).forEach(im=>{ im.dataset.done=1; phThumbURL(im.dataset.phid,im.dataset.full==="1").then(u=>{ if(u) im.src=u; }); }); }
@@ -2984,7 +2992,7 @@ async function importPhotos(files,forKey){
       await PDB.putBlob({id,full:full.blob,thumb:th.blob}); await PDB.putMeta(m); phMeta.push(m); }
     catch(e){ phImport.skip++; }
     phImport.done++; photoSheetPaint(); }
-  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phImport.end=true; photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
+  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phImport.end=true; ensurePersist(); photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
 function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จัด"; if(!key) return `D${DAYS[di].n} · ยังไม่ได้จัด`; const its=planItems(di);
   if(key.startsWith("leg:")){ const l=its.find(x=>x._i===key.slice(4)); return `D${DAYS[di].n} · ระหว่างทางไป ${l?P[l.to][0]:""}`; }
   const it=its.find(x=>x._i===key); const n=stopNumMap(di)[key]; return `D${DAYS[di].n} · ${n?n+". ":""}${it?it.n:"จุดที่ถูกลบ"}`; }
@@ -2993,7 +3001,7 @@ function photoSheetHtml(){
   const imp=phImport; const prog=imp?`<div class="ph-prog"><div class="ph-bar"><i style="width:${Math.round(imp.done/imp.n*100)}%"></i></div><p>${imp.end?`เสร็จแล้ว ${imp.n} รูป: จัดเข้าจุดให้ ${imp.auto} รูป${imp.manual?` เพิ่มเข้าจุดที่เลือก ${imp.manual} รูป`:""}${imp.none?` ยังไม่ได้จัด ${imp.none} รูป`:""}${imp.dup?` ซ้ำกับที่มีอยู่ ${imp.dup} รูป`:""}${imp.skip?` เปิดไม่ได้ ${imp.skip} รูป (เช่นไฟล์ HEIC)`:""}`:`กำลังจัดรูป ${imp.done} / ${imp.n}…`}</p></div>`:"";
   return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${phMeta.length} รูป</span>`:""}</h2>
   <p style="margin:0 0 10px">เลือกรูปจากมือถือได้ทีละหลายรูป (บน Android เปิดจาก Google Photos ได้ในหน้าเลือกรูป) แอปจะดูวันเวลาและตำแหน่งที่ถ่ายแล้ววางรูปไว้ที่จุดนั้นในแผนให้เอง รูปเก็บอยู่ในเครื่องนี้เท่านั้น</p>
-  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดรูปใหม่ตามแผนล่าสุด</button>`:""}</div>${prog}
+  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดรูปใหม่ตามแผนล่าสุด</button><button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>${prog}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
   ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length} รูป</h3><p class="tiny">รูปที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป แตะรูปเพื่อเลือกว่าเป็นจุดไหน</p><div class="ph-grid">${loose.map(m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt=""></button>`).join("")}</div>`:""}
   <p class="tiny" style="margin-top:12px">เคล็ดลับ: ถ้ารูปไม่มีตำแหน่ง (บางแอปตัดข้อมูลตำแหน่งออก) แอปจะใช้เวลาที่ถ่ายเทียบกับตารางในแผนแทน ถ้าวางผิดจุด แตะรูปแล้วกด "ย้ายไปจุดอื่น"</p></div>`; }
@@ -3107,6 +3115,62 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='p
   if(a==="tb-open"){ const had=!!(history.state&&history.state.sheet)&&!!$("#sheetRoot").innerHTML; closeSheet(); if(!had){ openTripbook(); return; }
     let done=false; const go=()=>{ if(done) return; done=true; removeEventListener("popstate",hp); openTripbook(); }; const hp=()=>setTimeout(go,0); addEventListener("popstate",hp); setTimeout(go,600); return; }
 },true);
+
+/* ===================== keeping data safe: persistent storage, where the data lives, full backup file ===================== */
+function runCtx(){ const ua=navigator.userAgent||""; let sa=false; try{ sa=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true; }catch(e){}
+  const inapp=/\bLine\/|FBAN|FBAV|FB_IAB|Instagram|Messenger|KAKAOTALK|MicroMessenger|; wv\)/i.test(ua);
+  const br=/SamsungBrowser/i.test(ua)?"Samsung Internet":/EdgA?\//.test(ua)?"Edge":/Firefox|FxiOS/.test(ua)?"Firefox":/CriOS/.test(ua)?"Chrome":/Chrome\//.test(ua)?"Chrome":/Safari/.test(ua)?"Safari":"เบราว์เซอร์";
+  const app=/\bLine\//i.test(ua)?"LINE":/FBAN|FBAV|FB_IAB|Messenger/i.test(ua)?"Facebook/Messenger":/Instagram/i.test(ua)?"Instagram":"";
+  return {sa,inapp,br,where:sa?`แอป Hokkaido ที่ติดตั้ง (ใช้ที่เก็บของ ${br})`:inapp?`หน้าเว็บใน${app||"แอปแชต"} (ที่เก็บแยกต่างหาก)`:`หน้าเว็บใน ${br}`}; }
+var persisted=null;
+async function ensurePersist(){ try{ if(!navigator.storage||!navigator.storage.persist) return null; persisted=await navigator.storage.persisted(); if(!persisted) persisted=await navigator.storage.persist(); return persisted; }catch(e){ return null; } }
+/* a brand-new storage during the trip means this browser/app has never seen our data: say so instead of looking empty */
+var firstSeen=store.get("firstSeen",0); if(!firstSeen){ firstSeen=HAD_DATA?1:Date.now(); store.set("firstSeen",firstSeen); }
+function looksFresh(){ return Date.now()-firstSeen<36*3600e3&&jst().date>DAYS[0].date&&!Object.keys(edits).length&&!phMeta.length&&phReady&&!store.get("lastBackup",0)&&!store.get("freshOk",0); }
+function freshBanner(){ if(!looksFresh()) return ""; const c=runCtx();
+  return `<div class="fresh"><b>ไม่เจอข้อมูลที่เคยบันทึกในที่นี้</b><p>ตอนนี้เปิดจาก${esc(c.where)} ข้อมูลที่แก้ในแอปและรูปของเราเก็บแยกตามเบราว์เซอร์ ถ้าเมื่อก่อนเปิดจากที่อื่น (Chrome, Samsung Internet, ลิงก์ใน LINE) ข้อมูลน่าจะยังอยู่ที่นั่น</p>
+  <div class="c-actions"><button class="btn small primary" data-act="bk-file-open">เปิดไฟล์สำรอง</button><button class="btn small" data-act="ph-pick">นำรูปทริปเข้าใหม่</button><button class="btn small" data-act="fresh-ok">ปิด</button></div></div>`; }
+function bkFileHtml(){ const c=runCtx(); const last=store.get("lastBackup",0); const nd=Object.keys(edits).filter(k=>edits[k]&&edits[k].list).length; const nv=Object.values(visited).reduce((a,o)=>a+Object.values(o||{}).filter(Boolean).length,0);
+  return `<div class="box" id="bk-file"><h3>ข้อมูลในเครื่องนี้</h3>
+  <dl class="kv"><dt>เปิดจาก</dt><dd>${esc(c.where)}</dd><dt>กันระบบลบ</dt><dd id="bk-pers">${persisted===true?"เปิดแล้ว ✓":persisted===false?"เบราว์เซอร์ยังไม่อนุญาต (ติดตั้งแอปหรือใช้บ่อยขึ้นแล้วจะได้เอง)":"กำลังตรวจ…"}</dd><dt>แผนที่แก้</dt><dd>${nd} วัน</dd><dt>รูปของเรา</dt><dd>${phMeta.length} รูป</dd><dt>ติ๊กไปแล้ว</dt><dd>${nv} จุด</dd><dt>สำรองล่าสุด</dt><dd>${last?esc(new Date(last).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})):"ยังไม่เคย"}</dd></dl>
+  ${c.inapp?`<p class="sc-warn">หน้านี้เปิดอยู่ในแอปแชต ข้อมูลจะไม่ไปอยู่ในแอป Hokkaido ที่ติดตั้ง และอาจหายเมื่อปิด ควรเปิดลิงก์ใน Chrome</p>`:""}
+  <p style="margin:6px 0 8px;font-size:14.5px">ไฟล์สำรองเก็บทุกอย่างไว้ในไฟล์เดียว: แผนที่แก้ จุดที่ติ๊ก และรูปของเรา ส่งเข้า Google Drive หรือ LINE Keep ไว้ แล้วเปิดในเครื่องไหนก็ได้</p>
+  <label class="check" style="margin:0 0 8px"><input type="checkbox" id="bk-withph" ${phMeta.length?"checked":""}> รวมรูปด้วย${phMeta.length?` (${phMeta.length} รูป)`:""}</label>
+  <div class="c-actions"><button class="btn small primary" data-act="bk-file-make">${I.doc||""}สร้างไฟล์สำรอง</button><button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button></div><div id="bk-file-out"></div></div>`; }
+var bkFile=null;
+async function makeBackup(withPh,out){ const parts=[]; const ls={}; ["edits","editsHist","visited","checks","mapFlags2","day"].forEach(k=>{ const v=store.get(k,undefined); if(v!==undefined) ls[k]=v; });
+  parts.push(JSON.stringify({app:"hkd26",v:1,ts:Date.now(),ls}).slice(0,-1)+',"photos":[');
+  const list=withPh?phMeta.slice():[]; let n=0;
+  for(const m of list){ const b=await PDB.getBlob(m.id); if(!b||!b.full) continue; const du=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.onerror=()=>r(""); fr.readAsDataURL(b.full); }); if(!du) continue;
+    parts.push((n?",":"")+JSON.stringify({meta:m,full:du})); n++; if(out) out.textContent=`กำลังเตรียม ${n}/${list.length} รูป…`; }
+  parts.push("]}"); const d=jst().date.replace(/-/g,""); return new File(parts,`hokkaido-backup-${d}.json`,{type:"application/json"}); }
+function dataUrlBlob(du){ const [h,b64]=du.split(","); const mime=(h.match(/data:([^;]+)/)||[])[1]||"image/jpeg"; const bin=atob(b64); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new Blob([u],{type:mime}); }
+async function restoreBackup(file,out){ let j; try{ j=JSON.parse(await file.text()); }catch(e){ out.textContent="อ่านไฟล์ไม่ได้ ต้องเป็นไฟล์ hokkaido-backup-….json"; return; }
+  if(!j||j.app!=="hkd26"){ out.textContent="ไฟล์นี้ไม่ใช่ไฟล์สำรองของแอปนี้"; return; }
+  const ls=j.ls||{}; let addPh=0, skip=0;
+  if(ls.edits&&typeof ls.edits==="object"&&Object.keys(ls.edits).length){ snapEdits("ก่อนกู้คืนไฟล์"); edits=ls.edits; Object.values(edits).forEach(ed=>(ed&&ed.list||[]).forEach(regCustom)); reconcileAll(); store.set("edits",edits); snapEdits("กู้คืนไฟล์"); }
+  if(Array.isArray(ls.editsHist)){ const h=store.get("editsHist",[]); ls.editsHist.forEach(s=>{ if(!h.some(x=>x.ts===s.ts)) h.push(s); }); h.sort((a,b)=>b.ts-a.ts); store.set("editsHist",h.slice(0,25)); }
+  if(ls.visited){ for(const [d,o] of Object.entries(ls.visited)){ visited[d]=Object.assign({},o,visited[d]||{}); } store.set("visited",visited); }
+  if(ls.checks){ store.set("checks",Object.assign({},ls.checks,store.get("checks",{}))); }
+  const ps=j.photos||[]; let i=0;
+  for(const p of ps){ i++; out.textContent=`กำลังคืนรูป ${i}/${ps.length}…`; const m=p.meta; if(!m||!p.full||phMeta.some(x=>x.id===m.id||(m.sig&&x.sig===m.sig))){ skip++; continue; }
+    try{ const full=dataUrlBlob(p.full); const th=await shrink(full,420,.78); await PDB.putBlob({id:m.id,full,thumb:th.blob}); await PDB.putMeta(m); phMeta.push(m); addPh++; }catch(e){ skip++; } }
+  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); store.set("freshOk",1); if(!store.get("lastBackup",0)) store.set("lastBackup",j.ts||Date.now()); ensurePersist();
+  out.textContent=`กู้คืนแล้ว: แผนที่แก้ ${Object.keys(ls.edits||{}).length} วัน · รูป ${addPh} รูป${skip?` (ข้าม ${skip} รูปที่มีอยู่แล้ว)`:""}`; renderPlan(); renderInfo(); if(map&&curTab==="map") drawMap(false); }
+document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act='bk-file-make'],[data-act='bk-file-open'],[data-act='bk-file-share'],[data-act='bk-file-dl'],[data-act='fresh-ok']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
+  if(a==="fresh-ok"){ store.set("freshOk",1); renderPlan(); return; }
+  if(a==="bk-file-open"){ const inp=document.createElement("input"); inp.type="file"; inp.accept=".json,application/json"; inp.style.display="none";
+    inp.onchange=async()=>{ const f=inp.files[0]; inp.remove(); if(!f) return; if(!$("#bk-file")) openSheet(`<div class="sk">สำรองข้อมูล</div><h2>เปิดไฟล์สำรอง</h2>`+bkFileHtml()); const out=$("#bk-file-out"); out.innerHTML=`<p class="tiny">กำลังอ่านไฟล์…</p>`; await restoreBackup(f,out.firstChild||out); };
+    document.body.appendChild(inp); inp.click(); return; }
+  if(a==="bk-file-make"){ const out=$("#bk-file-out"); out.innerHTML=`<p class="tiny">กำลังเตรียมไฟล์…</p>`; const withPh=!!($("#bk-withph")||{}).checked;
+    bkFile=await makeBackup(withPh,out.firstChild); const mb=(bkFile.size/1048576).toFixed(1); const canShare=!!(navigator.canShare&&navigator.canShare({files:[bkFile]}));
+    out.innerHTML=`<p class="tiny">ไฟล์พร้อมแล้ว ${esc(bkFile.name)} · ${mb} MB</p><div class="c-actions">${canShare?`<button class="btn small primary" data-act="bk-file-share">ส่งไปเก็บ (Google Drive / LINE)</button>`:""}<button class="btn small" data-act="bk-file-dl">ดาวน์โหลด</button></div>`; return; }
+  if(a==="bk-file-share"&&bkFile){ try{ await navigator.share({files:[bkFile],title:"สำรองแอปทริปฮอกไกโด"}); store.set("lastBackup",Date.now()); b.textContent="ส่งแล้ว ✓"; }catch(e){ if(e&&e.name!=="AbortError") b.textContent="ส่งไม่ได้ ใช้ปุ่มดาวน์โหลดแทน"; } return; }
+  if(a==="bk-file-dl"&&bkFile){ let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
+    if(dl){ try{ await dl.save({filename:bkFile.name,data:bkFile}); store.set("lastBackup",Date.now()); b.textContent="บันทึกแล้ว ✓"; }catch(e){} return; }
+    const url=URL.createObjectURL(bkFile); const al=document.createElement("a"); al.href=url; al.download=bkFile.name; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); store.set("lastBackup",Date.now()); b.textContent="ดาวน์โหลดแล้ว ✓"; return; }
+},true);
+setTimeout(()=>{ ensurePersist().then(v=>{ const el=$("#bk-pers"); if(el) el.textContent=v===true?"เปิดแล้ว ✓":v===false?"เบราว์เซอร์ยังไม่อนุญาต (ติดตั้งแอปหรือใช้บ่อยขึ้นแล้วจะได้เอง)":"เบราว์เซอร์นี้ไม่รองรับ"; }); },1200);
 
 /* ===================== long-press a card, then drag it to a new place in the day ===================== */
 var drag=null, dragSwallow=false;
