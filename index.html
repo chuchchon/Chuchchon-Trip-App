@@ -678,6 +678,8 @@ body.tb-open{overflow:hidden}
 .zip-how{margin-top:6px}.zip-how summary{cursor:pointer;color:var(--accent,#1D4E9E);font-weight:600}.zip-how ol{margin:6px 0 4px;padding-left:20px}.zip-how p{margin:0}
 .ph-geo-note{border:1px solid var(--line,#D3D8DE);border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14px}
 .burst-tg{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted,#5B6570);margin:8px 0 2px}.burst-tg input{margin-top:3px;width:18px;height:18px;flex:0 0 auto}
+.imp-rows{margin:6px 0;padding-left:18px;font-size:14px}.imp-rows li{margin:2px 0}.ph-prog.done{border:1px solid var(--line,#D3D8DE);border-radius:12px;padding:10px 12px}
+.dh-ph-prog{display:block;font-style:normal;color:var(--accent,#C2361F);font-size:12px}.dh-ph-prog:empty{display:none}
 </style>
 
 <div class="app">
@@ -1426,7 +1428,7 @@ function renderPlan(){
   if(d.hotel&&P[d.hotel]) h+=`<div class="dh-hotel">${I.bed}<span>คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="lnk" data-act="booking" data-id="${d.hotel}">ใบจอง</button><a class="lnk" href="${esc(dirUrl(pointTarget(d.hotel)))}" target="_blank" rel="noopener">นำทาง</a></div>`;
   h+=`<div class="dh-actions"><button class="btn small primary" data-act="gmroute">${I.route}เส้นทางทั้งวันใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}แผนที่</button><button class="btn small" data-act="addstop">${I.plus}เพิ่มจุด</button><button class="btn small" data-act="reorder" aria-pressed="${document.body.classList.contains("reorder")}">${I.sort}จัดลำดับ</button></div>`;
   h+=freshBanner();
-  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}</span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
+  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}<em class="dh-ph-prog">${phImport&&!phImport.end?impShort(phImport):""}</em></span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
   h+=`</header><ol class="tl">`+(typeof sugByStop==="function"?(sugByStop(curDay)._top||[]).map(sugRowHtml).join(""):"");
@@ -3024,10 +3026,16 @@ async function zipBlob(entries,prog){ const parts=[], cd=[]; let off=0; const te
   return new Blob(parts.concat(cd,[eo.buffer]),{type:"application/zip"}); }
 async function unzipIndex(file){ const tail=Math.min(file.size,65557); const u=new Uint8Array(await file.slice(file.size-tail).arrayBuffer()); let p=-1;
   for(let i=u.length-22;i>=0;i--){ if(u[i]===0x50&&u[i+1]===0x4b&&u[i+2]===5&&u[i+3]===6){ p=i; break; } } if(p<0) throw new Error("ไม่ใช่ไฟล์ zip");
-  const dv=new DataView(u.buffer,p); const n=dv.getUint16(10,true), cdSize=dv.getUint32(12,true), cdOff=dv.getUint32(16,true);
+  const dv=new DataView(u.buffer,p); let n=dv.getUint16(10,true), cdSize=dv.getUint32(12,true), cdOff=dv.getUint32(16,true);
+  const u64=(v,o)=>v.getUint32(o,true)+v.getUint32(o+4,true)*4294967296;
+  if(n===0xFFFF||cdSize===0xFFFFFFFF||cdOff===0xFFFFFFFF){ /* ZIP64: big archives (over 4 GB or 65,535 files) */
+    const lp=file.size-tail+p-20; const loc=new DataView(await file.slice(lp,lp+20).arrayBuffer()); if(loc.getUint32(0,true)!==0x07064b50) throw new Error("zip64");
+    const ro=u64(loc,8); const r=new DataView(await file.slice(ro,ro+56).arrayBuffer()); if(r.getUint32(0,true)!==0x06064b50) throw new Error("zip64");
+    n=u64(r,32); cdSize=u64(r,40); cdOff=u64(r,48); }
   const cd=new DataView(await file.slice(cdOff,cdOff+cdSize).arrayBuffer()); const out={}; let q=0; const dec=new TextDecoder();
-  for(let k=0;k<n;k++){ const method=cd.getUint16(q+10,true), sz=cd.getUint32(q+20,true), nl=cd.getUint16(q+28,true), xl=cd.getUint16(q+30,true), cl=cd.getUint16(q+32,true), lo=cd.getUint32(q+42,true);
-    out[dec.decode(new Uint8Array(cd.buffer,q+46,nl))]={method,sz,lo}; q+=46+nl+xl+cl; } return out; }
+  for(let k=0;k<n&&q+46<=cd.byteLength;k++){ const method=cd.getUint16(q+10,true); let sz=cd.getUint32(q+20,true), usz=cd.getUint32(q+24,true); const nl=cd.getUint16(q+28,true), xl=cd.getUint16(q+30,true), cl=cd.getUint16(q+32,true); let lo=cd.getUint32(q+42,true);
+    if(sz===0xFFFFFFFF||usz===0xFFFFFFFF||lo===0xFFFFFFFF){ let x=q+46+nl; const xe=x+xl; while(x+4<=xe){ const id=cd.getUint16(x,true), len=cd.getUint16(x+2,true); if(id===1){ let o=x+4; if(usz===0xFFFFFFFF){ usz=u64(cd,o); o+=8; } if(sz===0xFFFFFFFF){ sz=u64(cd,o); o+=8; } if(lo===0xFFFFFFFF){ lo=u64(cd,o); o+=8; } break; } x+=4+len; } }
+    out[dec.decode(new Uint8Array(cd.buffer,q+46,nl))]={method,sz,usz,lo}; q+=46+nl+xl+cl; } return out; }
 async function unzipGet(file,e,type){ const h=new DataView(await file.slice(e.lo,e.lo+30).arrayBuffer()); const st=e.lo+30+h.getUint16(26,true)+h.getUint16(28,true); return file.slice(st,st+e.sz,type||""); }
 
 /* ===================== trip photos: stored on this phone (IndexedDB), sorted into stops by when/where they were taken ===================== */
@@ -3058,7 +3066,8 @@ function exifTiff(v,t){ const le=v.getUint16(t)===0x4949; const u16=p=>v.getUint
   ifd(u32(t+4),(tag,type,cnt,e)=>{ if(tag===0x8769) ex=u32(e); else if(tag===0x8825) gp=u32(e); else if(tag===0x0132&&!r.dt) r.dt=str(e,cnt); else if(tag===0x0110) r.model=str(e,cnt); });
   ifd(ex,(tag,type,cnt,e)=>{ if(tag===0x9003) r.dt=str(e,cnt); else if(tag===0x9011) r.off=str(e,cnt); });
   if(gp){ let la=null,lo=null,laR="N",loR="E"; ifd(gp,(tag,type,cnt,e)=>{ if(tag===1) laR=str(e,cnt); else if(tag===2) la=rat(e,3); else if(tag===3) loR=str(e,cnt); else if(tag===4) lo=rat(e,3); });
-    if(la&&lo){ const dd=x=>x[0]+x[1]/60+x[2]/3600; r.lat=dd(la)*(laR==="S"?-1:1); r.lng=dd(lo)*(loR==="W"?-1:1); if(!r.lat&&!r.lng){ delete r.lat; delete r.lng; } } }
+    if(la&&lo){ const dd=x=>x[0]+x[1]/60+x[2]/3600; r.lat=dd(la)*(laR==="S"?-1:1); r.lng=dd(lo)*(loR==="W"?-1:1); if(!r.lat&&!r.lng){ delete r.lat; delete r.lng; } }
+    if(r.lat==null) r.gz=true; }
   return r; }
 function exifTime(x){ const m=String(x.dt||"").match(/^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d):(\d\d)/); if(!m) return null;
   let off=9*60; const o=String(x.off||"").match(/^([+-])(\d\d):(\d\d)/); if(o) off=(o[1]==="-"?-1:1)*(+o[2]*60+ +o[3]);
@@ -3095,57 +3104,112 @@ var phImport=null;
 function pickPhotos(forKey,viaFiles){ const inp=document.createElement("input"); inp.type="file"; inp.accept=viaFiles?"image/*,video/*,.heic,.mov":"image/*,video/*"; if(viaFiles) inp.accept=""; inp.multiple=true; inp.style.display="none";
   inp.onchange=()=>{ const files=[...inp.files]; inp.remove(); if(files.length) importPhotos(files,forKey); }; document.body.appendChild(inp); inp.click(); }
 const MEDIA_EXT=/\.(jpe?g|png|heic|heif|webp|mp4|mov|m4v)$/i;
-async function expandZips(files){ const out=[]; for(const f of files){ if(!/\.zip$/i.test(f.name||"")&&f.type!=="application/zip"){ out.push(f); continue; }
-    try{ const idx=await unzipIndex(f); for(const [nm,e] of Object.entries(idx)){ const base=nm.split("/").pop(); if(!MEDIA_EXT.test(base)||/^\._/.test(base)) continue;
-        const ext=base.split(".").pop().toLowerCase(); const type=/mp4|m4v/.test(ext)?"video/mp4":ext==="mov"?"video/quicktime":ext==="png"?"image/png":/hei/.test(ext)?"image/heic":ext==="webp"?"image/webp":"image/jpeg";
-        let blob=await unzipGet(f,e,""); if(e.method===8){ if(typeof DecompressionStream==="undefined") continue; blob=await new Response(blob.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob(); } else if(e.method!==0) continue;
-        out.push(new File([blob],base,{type,lastModified:Date.now()})); } }catch(err){ out.push(f); } }
+var zipErr="";
+const isZip=f=>/\.zip$/i.test(f.name||"")||/zip/.test(f.type||"");
+/* one picked file, or one photo inside a ZIP. Nothing is read until needed, so a big ZIP never sits in memory at once */
+function srcOf(f){ return {name:f.name,size:f.size,type:f.type,lastModified:f.lastModified,head:n=>f.slice(0,n).arrayBuffer(),file:async()=>f}; }
+function zipItems(f,idx){ const out=[]; for(const [nm,e] of Object.entries(idx)){ const base=nm.split("/").pop(); if(!MEDIA_EXT.test(base)||/^\._/.test(base)||/__MACOSX/.test(nm)) continue;
+    if(e.method!==0&&!(e.method===8&&typeof DecompressionStream!=="undefined")) continue;
+    const ext=base.split(".").pop().toLowerCase(); const type=/mp4|m4v/.test(ext)?"video/mp4":ext==="mov"?"video/quicktime":ext==="png"?"image/png":/hei/.test(ext)?"image/heic":ext==="webp"?"image/webp":"image/jpeg";
+    const raw=()=>unzipGet(f,e,"");
+    const inflate=b=>b.stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    out.push({name:base,size:e.usz||e.sz,type,lastModified:Date.now(),zip:true,
+      file:async()=>{ let b=await raw(); if(e.method===8) b=await new Response(inflate(b)).blob(); return new File([b],base,{type}); },
+      head:async n=>{ const b=await raw(); if(e.method===0) return b.slice(0,n).arrayBuffer(); const rd=inflate(b).getReader(); const parts=[]; let got=0;
+        while(got<n){ const {done,value}=await rd.read(); if(done) break; parts.push(value); got+=value.length; } try{ await rd.cancel(); }catch(err){} return new Blob(parts).slice(0,n).arrayBuffer(); } }); }
   return out; }
 const BURST_MS=3000;
 /* sharpness = variance of the Laplacian on a small greyscale copy: blurred or shaken frames score low */
 async function sharpness(f){ try{ const bm=await createImageBitmap(f,{resizeWidth:320,resizeQuality:"medium"}); const w=bm.width,h=bm.height; const c=document.createElement("canvas"); c.width=w; c.height=h; const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bm,0,0); bm.close&&bm.close();
     const d=g.getImageData(0,0,w,h).data, y=new Float32Array(w*h); for(let i=0;i<w*h;i++) y[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
     let n=0,sum=0,sq=0; for(let r=1;r<h-1;r++) for(let x=1;x<w-1;x++){ const i=r*w+x; const v=4*y[i]-y[i-1]-y[i+1]-y[i-w]-y[i+w]; sum+=v; sq+=v*v; n++; } return n?sq/n-(sum/n)**2:0; }catch(e){ return null; } }
-async function burstScore(groups){ for(const g of groups) if(g.list.length>1) for(const o of g.list){ const v=await sharpness(o.f); if(v!=null) o.sharp=v; } }
 function burstGroups(L){ L.sort((a,b)=>a.t-b.t); const groups=[]; L.forEach(o=>{ const g=groups.find(g=>g.mo===o.mo&&o.t-g.last<=BURST_MS); if(g){ g.list.push(o); g.last=o.t; } else groups.push({mo:o.mo,last:o.t,list:[o]}); }); return groups; }
-function burstDrop(groups){ const drop=new Set();
-  const old=phMeta.filter(m=>m.kind!=="video"&&m.tsrc==="meta"&&m.takenAt);
-  groups.forEach(g=>{ const lo=g.list[0].t-BURST_MS, hi=g.last+BURST_MS;
+const oldShot=m=>m.kind!=="video"&&m.takenAt&&(m.tsrc==="meta"||!m.tsrc);   /* photos added before the time source was recorded count too */
+async function burstDrop(groups,tick){ const drop=new Set(); const old=phMeta.filter(oldShot);
+  for(const g of groups){ if(g.list.length<2){ tick(1); continue; } const lo=g.list[0].t-BURST_MS, hi=g.last+BURST_MS;
     const have=old.filter(m=>m.takenAt>=lo&&m.takenAt<=hi&&(!m.model||!g.mo||m.model===g.mo));
     let keep=null;
-    if(have.length){ /* already have a shot from this burst: keep only the same shot (so its location gets filled in), nothing new */
-      keep=g.list.find(o=>have.some(m=>m.name===o.f.name&&Math.abs(m.takenAt-o.t)<1000))||g.list.find(o=>have.some(m=>Math.abs(m.takenAt-o.t)<1000&&m.lat==null))||null; }
-    else keep=g.list.reduce((b,o)=>(o.sharp??o.f.size)>(b.sharp??b.f.size)?o:b,g.list[0]);
-    g.list.forEach(o=>{ if(o!==keep) drop.add(o.f); }); });
+    if(have.length){ /* already have a shot from this burst: keep only that same shot (so its location gets filled in), nothing new */
+      keep=g.list.find(o=>have.some(m=>m.name===o.it.name&&Math.abs(m.takenAt-o.t)<1000))||g.list.find(o=>have.some(m=>Math.abs(m.takenAt-o.t)<1000&&m.lat==null))||null; tick(g.list.length); }
+    else { for(const o of g.list){ const v=await sharpness(await o.it.file()); if(v!=null) o.sharp=v; tick(1); } keep=g.list.reduce((b,o)=>(o.sharp??o.it.size)>(b.sharp??b.it.size)?o:b,g.list[0]); }
+    g.list.forEach(o=>{ if(o!==keep) drop.add(o.it); }); }
   return drop; }
+/* the same shot twice (same file name, same second): keep the one that knows where it was taken, carry over anything you set by hand */
+async function mergeTwins(){ let n=0; const by={}; phMeta.forEach(m=>{ if(!m.takenAt||!m.name) return; const k=(m.kind||"p")+"|"+m.name+"|"+Math.round(m.takenAt/1000); (by[k]=by[k]||[]).push(m); });
+  for(const L of Object.values(by)){ if(L.length<2) continue; L.sort((a,b)=>(b.lat!=null)-(a.lat!=null)||(a.added||0)-(b.added||0)); const keep=L[0];
+    for(const m of L.slice(1)){ if(m.auto===false&&keep.auto!==false){ Object.assign(keep,{day:m.day,key:m.key,place:m.place||null,auto:false,byTime:false}); } if(m.cover) keep.cover=true;
+      await PDB.del(m.id); phMeta=phMeta.filter(x=>x!==m); n++; } await PDB.putMeta(keep); }
+  return n; }
+var phPaintT=0;
+function impShort(imp){ return imp.stage==="import"?`กำลังนำเข้า ${imp.done} / ${imp.n}`:imp.stage==="scan"||imp.stage==="sharp"?`กำลังตรวจรูป ${imp.sd} / ${imp.sn}`:"กำลังนำเข้า…"; }
+/* during an import only the progress block is redrawn; if you closed the sheet, the plan header shows the count instead */
+function phTick(force){ const now=Date.now(); if(!force&&now-phPaintT<300) return; phPaintT=now;
+  const pr=$("#ph-root .ph-prog"); if(pr){ pr.outerHTML=importHtml(phImport); return; } if($("#ph-root")){ photoSheetPaint(); return; }
+  $$(".dh-ph-prog").forEach(e=>{ e.textContent=impShort(phImport); }); }
 async function importPhotos(files,forKey){
-  if(files.some(f=>/\.zip$/i.test(f.name||"")||f.type==="application/zip")){ phImport={n:files.length,done:0,skip:0,dup:0,auto:0,manual:0,none:0,geo:0,vid:0,off:0,unz:true}; photoSheetPaint(true); files=await expandZips(files); }
-  phImport={n:files.length,done:0,skip:0,dup:0,auto:0,manual:0,none:0,geo:0,vid:0,off:0,fix:0,burst:0}; photoSheetPaint(true);
+  phImport={n:0,done:0,stage:"open",sd:0,sn:0,skip:0,dup:0,auto:0,manual:0,none:0,geo:0,vid:0,off:0,fix:0,burst:0,pics:0,gz:0,gn:0,zip:files.some(isZip),merged:0}; zipErr=""; photoSheetPaint(true);
+  let items=[];
+  for(const f of files){ if(!isZip(f)){ items.push(srcOf(f)); continue; }
+    try{ items=items.concat(zipItems(f,await unzipIndex(f))); }catch(err){ zipErr=/zip64/.test(err&&err.message)?"big":"bad"; } }
+  phImport.n=items.length;
   const di0=curDay, mine=[], exc=new Map(); let drop=new Set();
-  if(!forKey&&store.get("burst",true)){ /* shots fired within 3 s on the same camera: keep one (the largest file, usually the sharpest) */
-    const L=[]; for(const f of files){ if(isVideo(f)) continue; try{ const x=readExif(await f.slice(0,262144).arrayBuffer()); exc.set(f,x); const t=exifTime(x); if(t) L.push({f,t,mo:x.model||""}); }catch(e){} }
-    const G=burstGroups(L); await burstScore(G); drop=burstDrop(G); }
-  for(const f of files){
-    if(drop.has(f)){ phImport.burst++; phImport.done++; photoSheetPaint(); continue; }
-    try{ const vid=isVideo(f); let x={}, takenAt=null, tsrc=null;
-      if(vid){ const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; }
-      else { x=exc.get(f)||readExif(await f.slice(0,262144).arrayBuffer()); takenAt=exifTime(x); }
-      if(takenAt) tsrc="meta"; else if(f.lastModified&&Math.abs(Date.now()-f.lastModified)>30*60e3){ takenAt=f.lastModified; tsrc="file"; }
-      const sig=f.name+"|"+f.size+"|"+(takenAt||0); if(phMeta.some(m=>m.sig===sig)){ phImport.dup++; phImport.done++; photoSheetPaint(); continue; }
-      if(tsrc==="meta"){ /* same shot already here (e.g. picked earlier through the gallery, which strips location): fill in where it was taken, don't add a copy */
-        const tw=phMeta.filter(m=>m.tsrc==="meta"&&m.takenAt&&Math.abs(m.takenAt-takenAt)<1000&&(m.kind==="video")===vid&&(!m.model||!x.model||m.model===x.model));
-        const twin=tw.find(m=>m.name===f.name)||tw.find(m=>m.lat==null)||tw[0];
-        if(twin){ if(twin.lat==null&&x.lat!=null){ twin.lat=x.lat; twin.lng=x.lng; if(twin.auto){ const r=matchPhoto(twin); twin.day=r.day; twin.key=r.key; twin.place=r.place||null; twin.byTime=!!r.byTime; } await PDB.putMeta(twin); phImport.fix++; phImport.geo++; } else phImport.dup++;
-          phImport.done++; photoSheetPaint(); continue; } }
+  if(!forKey&&store.get("burst",true)&&items.length>1){ /* shots fired within 3 s on the same camera: keep one, the sharpest */
+    phImport.stage="scan"; phImport.sn=items.length; phImport.sd=0; phTick(true);
+    const L=[]; for(const it of items){ if(!isVideo(it)){ try{ const x=readExif(await it.head(262144)); exc.set(it,x); const t=exifTime(x); if(t) L.push({it,t,mo:x.model||""}); }catch(e){} } phImport.sd++; phTick(); }
+    const G=burstGroups(L); phImport.stage="sharp"; phImport.sn=L.length; phImport.sd=0; phTick(true);
+    drop=await burstDrop(G,k=>{ phImport.sd+=k; phTick(); }); }
+  phImport.stage="import"; phTick(true);
+  for(const it of items){
+    if(drop.has(it)){ phImport.burst++; phImport.done++; phTick(); continue; }
+    try{ const vid=isVideo(it); let x={}, takenAt=null, tsrc=null, f=null;
+      if(vid){ f=await it.file(); const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; }
+      else { x=exc.get(it)||readExif(await it.head(262144)); takenAt=exifTime(x); phImport.pics++; if(x.lat==null){ if(x.gz) phImport.gz++; else phImport.gn++; } }
+      if(takenAt) tsrc="meta"; else if(it.lastModified&&!it.zip&&Math.abs(Date.now()-it.lastModified)>30*60e3){ takenAt=it.lastModified; tsrc="file"; }
+      const sig=it.name+"|"+it.size+"|"+(takenAt||0);
+      /* already have this shot? (same file, or the copy the gallery handed over without location): fill in where it was taken, never add a second copy */
+      let twin=phMeta.find(m=>m.sig===sig);
+      if(!twin&&tsrc==="meta"){ const tw=phMeta.filter(m=>(m.tsrc==="meta"||!m.tsrc)&&m.takenAt&&Math.abs(m.takenAt-takenAt)<1000&&(m.kind==="video")===vid&&(!m.model||!x.model||m.model===x.model));
+        twin=tw.find(m=>m.name===it.name)||tw.find(m=>m.lat==null)||tw[0]; }
+      if(twin){ if(twin.lat==null&&x.lat!=null){ twin.lat=x.lat; twin.lng=x.lng; if(!twin.model&&x.model) twin.model=x.model; if(twin.auto){ const r=matchPhoto(twin); twin.day=r.day; twin.key=r.key; twin.place=r.place||null; twin.byTime=!!r.byTime; twin.bySess=false; } await PDB.putMeta(twin); phImport.fix++; phImport.geo++; } else phImport.dup++;
+        phImport.done++; phTick(); continue; }
+      f=f||await it.file();
       const id=(vid?"v":"p")+Date.now().toString(36)+Math.random().toString(36).slice(2,7); let rec, m;
-      if(vid){ const pv=await videoPoster(f); rec={id,full:f,thumb:pv&&pv.blob||null}; m={id,sig,name:f.name,kind:"video",mime:f.type||"video/mp4",ext:((f.name||"").match(/\.(\w+)$/)||[,"mp4"])[1].toLowerCase(),size:f.size,dur:pv&&pv.dur||null,w:pv&&pv.w||null,h:pv&&pv.h||null}; phImport.vid++; }
-      else { const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); rec={id,full:full.blob,thumb:th.blob}; m={id,sig,name:f.name,w:full.w,h:full.h}; }
+      if(vid){ const pv=await videoPoster(f); rec={id,full:f,thumb:pv&&pv.blob||null}; m={id,sig,name:it.name,kind:"video",mime:f.type||"video/mp4",ext:((it.name||"").match(/\.(\w+)$/)||[,"mp4"])[1].toLowerCase(),size:it.size,dur:pv&&pv.dur||null,w:pv&&pv.w||null,h:pv&&pv.h||null}; phImport.vid++; }
+      else { const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); rec={id,full:full.blob,thumb:th.blob}; m={id,sig,name:it.name,w:full.w,h:full.h}; }
       Object.assign(m,{takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,added:Date.now(),src:"device",tsrc}); if(x.model) m.model=x.model; if(m.lat!=null) phImport.geo++;
-      if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.auto=true; if(r.key) phImport.auto++; else if(r.place) phImport.off++; else phImport.none++; }
+      if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.auto=true; }
       await PDB.putBlob(rec); await PDB.putMeta(m); phMeta.push(m); mine.push(m); }
     catch(e){ phImport.skip++; }
-    phImport.done++; photoSheetPaint(); }
-  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); if(!forKey){ await sessionFix(); phImport.auto=mine.filter(m=>m.key).length; phImport.off=mine.filter(m=>!m.key&&m.place).length; phImport.none=mine.filter(m=>!m.key&&!m.place).length; } phImport.end=true; ensurePersist(); fillSuggestions(); photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
+    phImport.done++; phTick(); }
+  phImport.stage="finish"; phTick(true);
+  phImport.merged=await mergeTwins();
+  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); if(!forKey) await sessionFix();
+  const live=mine.filter(m=>phMeta.includes(m)); phImport.added=live.length; phImport.auto=live.filter(m=>m.key&&m.auto).length; phImport.off=live.filter(m=>!m.key&&m.place).length; phImport.none=live.filter(m=>!m.key&&!m.place).length;
+  phImport.end=true; ensurePersist(); fillSuggestions(); photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
+/* progress and result, in plain words */
+function importHtml(imp){
+  if(!imp.end){ const st=imp.stage; const [a,b,lbl]=st==="scan"?[imp.sd,imp.sn,"อ่านวันเวลาและตำแหน่งในไฟล์"]:st==="sharp"?[imp.sd,imp.sn,"หารูปที่กดรัว แล้วเลือกรูปที่ชัดสุด"]:st==="import"?[imp.done,imp.n,"นำเข้า"]:st==="finish"?[1,1,"เกือบเสร็จ กำลังจัดรูปเข้าแผน"]:[0,1,imp.zip?"กำลังเปิดไฟล์ ZIP":"กำลังเริ่ม"];
+    const pct=b?Math.round(a/b*100):0;
+    return `<div class="ph-prog"><div class="ph-bar"><i style="width:${pct}%"></i></div><p><b>${lbl}${b>1?` ${a} / ${b}`:""}</b>${imp.n?` <span class="tiny">· ทั้งหมด ${imp.n} ไฟล์ · ขั้นที่ ${({open:1,scan:1,sharp:2,import:3,finish:4})[st]||1} จาก 4</span>`:""}
+      ${st==="import"?`<br><span class="tiny">เพิ่มใหม่ ${imp.done-imp.dup-imp.fix-imp.burst-imp.skip} · เติมตำแหน่งให้รูปเดิม ${imp.fix} · มีอยู่แล้ว ${imp.dup}${imp.burst?` · ข้ามรูปกดรัว ${imp.burst}`:""}</span>`:""}
+      <br><span class="tiny">ปิดหน้านี้ได้ แต่อย่าปิดแอปจนกว่าจะเสร็จ</span></p></div>`; }
+  const rows=[];
+  if(imp.added) rows.push(`เพิ่มรูปใหม่ <b>${imp.added}</b>${imp.vid?` (วิดีโอ ${imp.vid})`:""}: จัดเข้าจุดในแผน ${imp.auto}${imp.off?` · ถ่ายที่ที่ไม่อยู่ในแผน ${imp.off}`:""}${imp.manual?` · ใส่จุดที่เลือก ${imp.manual}`:""}${imp.none?` · ยังไม่ได้จัด ${imp.none}`:""}`);
+  if(imp.fix) rows.push(`เติมตำแหน่งให้รูปที่มีอยู่แล้ว <b>${imp.fix}</b> แล้วจัดที่ใหม่ตามตำแหน่ง`);
+  if(imp.dup) rows.push(`มีอยู่ในแอปแล้ว ข้าม ${imp.dup}`);
+  if(imp.burst) rows.push(`รูปกดรัว ข้าม ${imp.burst} (เก็บรูปที่ชัดสุดไว้)`);
+  if(imp.merged) rows.push(`รวมรูปที่ซ้ำกันในแอป ${imp.merged} (เก็บไฟล์ที่มีตำแหน่งไว้)`);
+  if(imp.skip) rows.push(`เปิดไม่ได้ ${imp.skip} (เช่นไฟล์ HEIC)`);
+  if(zipErr) rows.push(`<b>${zipErr==="big"?"อ่านไฟล์ ZIP นี้ไม่ได้ ลองแบ่งเป็นหลายไฟล์ เช่น ZIP ละวัน":"เปิดไฟล์ ZIP นี้ไม่ได้ ลองบีบอัดใหม่"}</b>`);
+  if(!rows.length) rows.push("ไม่มีไฟล์รูปหรือวิดีโอที่นำเข้าได้");
+  let geo="";
+  if(imp.pics){ const noLoc=imp.gz+imp.gn;
+    if(!noLoc) geo=`ทุกรูปมีตำแหน่งที่ถ่าย`;
+    else { geo=`รูปที่มีตำแหน่งที่ถ่าย ${imp.pics-noLoc} จาก ${imp.pics}`;
+      if(imp.gz) geo+=`<br>${imp.gz} รูป ตำแหน่งถูกลบออกจากไฟล์ (ค่าเป็น 0) ${imp.zip?"แปลว่าไฟล์ใน ZIP นี้ถูกตัดตำแหน่งมาตั้งแต่ตอนบีบอัด":"หน้าเลือกรูปของมือถือตัดออกก่อนส่งให้แอป"}`;
+      if(imp.gn) geo+=`<br>${imp.gn} รูป ไม่มีข้อมูลตำแหน่งในไฟล์เลย (กล้องไม่ได้บันทึก หรือเป็นรูปที่ได้มาทาง LINE/แชท)`;
+      geo+=`<br>รูปที่ไม่มีตำแหน่งจะจัดตามเวลาในแผนและรูปที่ถ่ายต่อเนื่องกัน`; if(imp.gz&&!imp.zip) geo+=` ${zipHow()}`; } }
+  return `<div class="ph-prog done"><p><b>นำเข้าเสร็จแล้ว</b> <span class="tiny">${imp.n} ไฟล์</span></p><ul class="imp-rows">${rows.map(r=>`<li>${r}</li>`).join("")}</ul>${geo?`<p class="tiny">${geo}</p>`:""}</div>`; }
 async function undoResort(){ const u=store.get("phUndo",null); if(!u) return; for(const p of u.prev){ const m=phMeta.find(x=>x.id===p.id); if(!m) continue; Object.assign(m,{day:p.day,key:p.key,place:p.place,byTime:p.byTime,bySess:!!p.bySess}); await PDB.putMeta(m); } store.set("phUndo",null); renderPlan(); photoSheetPaint(); }
 function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จัด"; if(!key) return `D${DAYS[di].n} · ยังไม่ได้จัด`; const its=planItems(di);
   if(key.startsWith("leg:")){ const l=its.find(x=>x._i===key.slice(4)); return `D${DAYS[di].n} · ระหว่างทางไป ${l?P[l.to][0]:""}`; }
@@ -3153,11 +3217,11 @@ function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จ�
 function zipHow(){ return `<details class="zip-how"><summary>เอาตำแหน่งกลับมา (ส่งเป็นไฟล์ ZIP)</summary><ol><li>เปิดแอป My Files (ไฟล์ของฉัน) ไปที่ DCIM › Camera</li><li>กดค้างเลือกรูปของทริป › เมนู ⋮ › บีบอัด (Compress) เป็น .zip</li><li>กลับมาที่นี่ กด <button class="lnk" data-act="ph-pick-files">เลือกผ่านแอปไฟล์</button> แล้วเลือกไฟล์ .zip</li></ol><p>ไฟล์ใน ZIP ไม่ถูกตัดตำแหน่ง รูปที่มีอยู่แล้วจะถูกเติมตำแหน่งและจัดที่ใหม่ ไม่เพิ่มรูปซ้ำ รูปที่คุณย้ายเองอยู่ที่เดิม</p></details>`; }
 function photoSheetHtml(){
   const byDay=DAYS.map((d,i)=>phMeta.filter(m=>m.day===i).length); const loose=phMeta.filter(m=>m.key==null&&!m.place); const groups=placeGroups();
-  const imp=phImport; const prog=imp?`<div class="ph-prog"><div class="ph-bar"><i style="width:${Math.round(imp.done/imp.n*100)}%"></i></div><p>${imp.end?`เสร็จแล้ว ${imp.n} ไฟล์${imp.vid?` (วิดีโอ ${imp.vid})`:""}: จัดเข้าจุดในแผน ${imp.auto}${imp.off?` · ถ่ายที่ที่ไม่อยู่ในแผน ${imp.off}`:""}${imp.manual?` · เพิ่มเข้าจุดที่เลือก ${imp.manual}`:""}${imp.none?` · ยังไม่ได้จัด ${imp.none}`:""}${imp.fix?` · เติมตำแหน่งให้รูปที่มีอยู่แล้ว ${imp.fix}`:""}${imp.burst?` · ข้ามรูปถ่ายรัว ${imp.burst}`:""}${imp.dup?` · ซ้ำกับที่มีอยู่ ${imp.dup}`:""}${imp.skip?` · เปิดไม่ได้ ${imp.skip} (เช่นไฟล์ HEIC)`:""}<br><span class="tiny">มีตำแหน่งที่ถ่าย ${imp.geo} จาก ${imp.n-imp.dup-imp.skip-(imp.burst||0)} ไฟล์${imp.n-imp.dup-imp.skip-(imp.burst||0)>0&&imp.geo<(imp.n-imp.dup-imp.skip-(imp.burst||0))/2?` · หน้าเลือกรูปของมือถือตัดตำแหน่งออก ${zipHow()}`:""}</span>`:`กำลังจัด ${imp.done} / ${imp.n}…`}</p></div>`:"";
+  const imp=phImport; const prog=imp?importHtml(imp):"";
   const cell=m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
   return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปและวิดีโอของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${mediaWord(phMeta)}</span>`:""}</h2>
   <p style="margin:0 0 10px">เลือกรูปและวิดีโอจากมือถือได้ทีละหลายไฟล์ (บน Android เปิดจาก Google Photos ได้ในหน้าเลือก) แอปดูตำแหน่งที่ถ่ายก่อน ถ้าไม่มีตำแหน่งจะเทียบเวลากับตารางในแผน ไฟล์เก็บอยู่ในเครื่องนี้เท่านั้น</p>
-  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>
+  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button><button class="btn small" data-act="ph-pick-files">นำเข้าไฟล์ ZIP</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>
   <label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียว คือรูปที่คมชัดที่สุด</label>${prog}
   ${!imp&&phMeta.filter(m=>m.kind!=="video").length>=5&&phMeta.filter(m=>m.lat!=null).length<phMeta.length/2?`<div class="ph-geo-note"><b>${phMeta.filter(m=>m.lat==null).length} ไฟล์ไม่มีตำแหน่งที่ถ่าย</b> จึงจัดตามเวลาในแผนได้อย่างเดียว ${zipHow()}</div>`:""}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
