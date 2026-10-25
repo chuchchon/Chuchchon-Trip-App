@@ -677,6 +677,7 @@ body.tb-open{overflow:hidden}
 .pg-own{display:flex;gap:6px}.pg-own .inp{flex:1;min-width:0}
 .zip-how{margin-top:6px}.zip-how summary{cursor:pointer;color:var(--accent,#1D4E9E);font-weight:600}.zip-how ol{margin:6px 0 4px;padding-left:20px}.zip-how p{margin:0}
 .ph-geo-note{border:1px solid var(--line,#D3D8DE);border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14px}
+.burst-tg{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted,#5B6570);margin:8px 0 2px}.burst-tg input{margin-top:3px;width:18px;height:18px;flex:0 0 auto}
 </style>
 
 <div class="app">
@@ -2420,6 +2421,7 @@ document.addEventListener("input",ev=>{
     lastRes=res; $("#cs-res").innerHTML=(res.length?res.map((r,i)=>`<button class="cs-hit" data-act="cs-hit" data-i="${i}"><b>${esc(r.name)} <em class="src s-${r.src||"osm"}">${SRC[r.src]||""}</em></b><span class="tiny">${esc(r.sub||"")}</span></button>`).join(""):`<div class="tiny">ไม่พบ "${esc(q)}"${geoSrc==="osm"?" ใน OpenStreetMap":""}</div>`)+geoFoot(q);
   },GKEY?650:450);
 });
+document.addEventListener("change",ev=>{ if(ev.target.id==="burst-tg") store.set("burst",!!ev.target.checked); });
 document.addEventListener("change",ev=>{ if(["cs-at","cs-dur"].includes(ev.target.id)&&draft){ readDraft(); renderAddStop(); } });
 /* ----- pin a place on the map: tap named places, or tap anywhere and choose a nearby name; Back returns to the form ----- */
 let pickLayer=null, pickPoiT=null, pickPois=new Map(), pickTap=null, pickCands=[];
@@ -3051,7 +3053,7 @@ function exifTiff(v,t){ const le=v.getUint16(t)===0x4949; const u16=p=>v.getUint
   const str=(e,cnt)=>{ const p=cnt>4?t+u32(e):e; let s=""; for(let i=0;i<cnt&&p+i<v.byteLength;i++){ const c=v.getUint8(p+i); if(!c) break; s+=String.fromCharCode(c); } return s; };
   const rat=(e,k)=>{ const q=t+u32(e), out=[]; for(let i=0;i<k;i++){ const a=u32(q+i*8), b=u32(q+i*8+4); out.push(b?a/b:0); } return out; };
   const r={}; let ex=0, gp=0;
-  ifd(u32(t+4),(tag,type,cnt,e)=>{ if(tag===0x8769) ex=u32(e); else if(tag===0x8825) gp=u32(e); else if(tag===0x0132&&!r.dt) r.dt=str(e,cnt); });
+  ifd(u32(t+4),(tag,type,cnt,e)=>{ if(tag===0x8769) ex=u32(e); else if(tag===0x8825) gp=u32(e); else if(tag===0x0132&&!r.dt) r.dt=str(e,cnt); else if(tag===0x0110) r.model=str(e,cnt); });
   ifd(ex,(tag,type,cnt,e)=>{ if(tag===0x9003) r.dt=str(e,cnt); else if(tag===0x9011) r.off=str(e,cnt); });
   if(gp){ let la=null,lo=null,laR="N",loR="E"; ifd(gp,(tag,type,cnt,e)=>{ if(tag===1) laR=str(e,cnt); else if(tag===2) la=rat(e,3); else if(tag===3) loR=str(e,cnt); else if(tag===4) lo=rat(e,3); });
     if(la&&lo){ const dd=x=>x[0]+x[1]/60+x[2]/3600; r.lat=dd(la)*(laR==="S"?-1:1); r.lng=dd(lo)*(loR==="W"?-1:1); if(!r.lat&&!r.lng){ delete r.lat; delete r.lng; } } }
@@ -3097,25 +3099,46 @@ async function expandZips(files){ const out=[]; for(const f of files){ if(!/\.zi
         let blob=await unzipGet(f,e,""); if(e.method===8){ if(typeof DecompressionStream==="undefined") continue; blob=await new Response(blob.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob(); } else if(e.method!==0) continue;
         out.push(new File([blob],base,{type,lastModified:Date.now()})); } }catch(err){ out.push(f); } }
   return out; }
+const BURST_MS=3000;
+/* sharpness = variance of the Laplacian on a small greyscale copy: blurred or shaken frames score low */
+async function sharpness(f){ try{ const bm=await createImageBitmap(f,{resizeWidth:320,resizeQuality:"medium"}); const w=bm.width,h=bm.height; const c=document.createElement("canvas"); c.width=w; c.height=h; const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bm,0,0); bm.close&&bm.close();
+    const d=g.getImageData(0,0,w,h).data, y=new Float32Array(w*h); for(let i=0;i<w*h;i++) y[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+    let n=0,sum=0,sq=0; for(let r=1;r<h-1;r++) for(let x=1;x<w-1;x++){ const i=r*w+x; const v=4*y[i]-y[i-1]-y[i+1]-y[i-w]-y[i+w]; sum+=v; sq+=v*v; n++; } return n?sq/n-(sum/n)**2:0; }catch(e){ return null; } }
+async function burstScore(groups){ for(const g of groups) if(g.list.length>1) for(const o of g.list){ const v=await sharpness(o.f); if(v!=null) o.sharp=v; } }
+function burstGroups(L){ L.sort((a,b)=>a.t-b.t); const groups=[]; L.forEach(o=>{ const g=groups.find(g=>g.mo===o.mo&&o.t-g.last<=BURST_MS); if(g){ g.list.push(o); g.last=o.t; } else groups.push({mo:o.mo,last:o.t,list:[o]}); }); return groups; }
+function burstDrop(groups){ const drop=new Set();
+  const old=phMeta.filter(m=>m.kind!=="video"&&m.tsrc==="meta"&&m.takenAt);
+  groups.forEach(g=>{ const lo=g.list[0].t-BURST_MS, hi=g.last+BURST_MS;
+    const have=old.filter(m=>m.takenAt>=lo&&m.takenAt<=hi&&(!m.model||!g.mo||m.model===g.mo));
+    let keep=null;
+    if(have.length){ /* already have a shot from this burst: keep only the same shot (so its location gets filled in), nothing new */
+      keep=g.list.find(o=>have.some(m=>m.name===o.f.name&&Math.abs(m.takenAt-o.t)<1000))||g.list.find(o=>have.some(m=>Math.abs(m.takenAt-o.t)<1000&&m.lat==null))||null; }
+    else keep=g.list.reduce((b,o)=>(o.sharp??o.f.size)>(b.sharp??b.f.size)?o:b,g.list[0]);
+    g.list.forEach(o=>{ if(o!==keep) drop.add(o.f); }); });
+  return drop; }
 async function importPhotos(files,forKey){
   if(files.some(f=>/\.zip$/i.test(f.name||"")||f.type==="application/zip")){ phImport={n:files.length,done:0,skip:0,dup:0,auto:0,manual:0,none:0,geo:0,vid:0,off:0,unz:true}; photoSheetPaint(true); files=await expandZips(files); }
-  phImport={n:files.length,done:0,skip:0,dup:0,auto:0,manual:0,none:0,geo:0,vid:0,off:0,fix:0}; photoSheetPaint(true);
-  const di0=curDay, mine=[];
+  phImport={n:files.length,done:0,skip:0,dup:0,auto:0,manual:0,none:0,geo:0,vid:0,off:0,fix:0,burst:0}; photoSheetPaint(true);
+  const di0=curDay, mine=[], exc=new Map(); let drop=new Set();
+  if(!forKey&&store.get("burst",true)){ /* shots fired within 3 s on the same camera: keep one (the largest file, usually the sharpest) */
+    const L=[]; for(const f of files){ if(isVideo(f)) continue; try{ const x=readExif(await f.slice(0,262144).arrayBuffer()); exc.set(f,x); const t=exifTime(x); if(t) L.push({f,t,mo:x.model||""}); }catch(e){} }
+    const G=burstGroups(L); await burstScore(G); drop=burstDrop(G); }
   for(const f of files){
+    if(drop.has(f)){ phImport.burst++; phImport.done++; photoSheetPaint(); continue; }
     try{ const vid=isVideo(f); let x={}, takenAt=null, tsrc=null;
       if(vid){ const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; }
-      else { const head=await f.slice(0,262144).arrayBuffer(); x=readExif(head); takenAt=exifTime(x); }
+      else { x=exc.get(f)||readExif(await f.slice(0,262144).arrayBuffer()); takenAt=exifTime(x); }
       if(takenAt) tsrc="meta"; else if(f.lastModified&&Math.abs(Date.now()-f.lastModified)>30*60e3){ takenAt=f.lastModified; tsrc="file"; }
       const sig=f.name+"|"+f.size+"|"+(takenAt||0); if(phMeta.some(m=>m.sig===sig)){ phImport.dup++; phImport.done++; photoSheetPaint(); continue; }
       if(tsrc==="meta"){ /* same shot already here (e.g. picked earlier through the gallery, which strips location): fill in where it was taken, don't add a copy */
-        const tw=phMeta.filter(m=>m.tsrc==="meta"&&m.takenAt&&Math.abs(m.takenAt-takenAt)<1000&&(m.kind==="video")===vid);
+        const tw=phMeta.filter(m=>m.tsrc==="meta"&&m.takenAt&&Math.abs(m.takenAt-takenAt)<1000&&(m.kind==="video")===vid&&(!m.model||!x.model||m.model===x.model));
         const twin=tw.find(m=>m.name===f.name)||tw.find(m=>m.lat==null)||tw[0];
         if(twin){ if(twin.lat==null&&x.lat!=null){ twin.lat=x.lat; twin.lng=x.lng; if(twin.auto){ const r=matchPhoto(twin); twin.day=r.day; twin.key=r.key; twin.place=r.place||null; twin.byTime=!!r.byTime; } await PDB.putMeta(twin); phImport.fix++; phImport.geo++; } else phImport.dup++;
           phImport.done++; photoSheetPaint(); continue; } }
       const id=(vid?"v":"p")+Date.now().toString(36)+Math.random().toString(36).slice(2,7); let rec, m;
       if(vid){ const pv=await videoPoster(f); rec={id,full:f,thumb:pv&&pv.blob||null}; m={id,sig,name:f.name,kind:"video",mime:f.type||"video/mp4",ext:((f.name||"").match(/\.(\w+)$/)||[,"mp4"])[1].toLowerCase(),size:f.size,dur:pv&&pv.dur||null,w:pv&&pv.w||null,h:pv&&pv.h||null}; phImport.vid++; }
       else { const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); rec={id,full:full.blob,thumb:th.blob}; m={id,sig,name:f.name,w:full.w,h:full.h}; }
-      Object.assign(m,{takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,added:Date.now(),src:"device",tsrc}); if(m.lat!=null) phImport.geo++;
+      Object.assign(m,{takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,added:Date.now(),src:"device",tsrc}); if(x.model) m.model=x.model; if(m.lat!=null) phImport.geo++;
       if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.auto=true; if(r.key) phImport.auto++; else if(r.place) phImport.off++; else phImport.none++; }
       await PDB.putBlob(rec); await PDB.putMeta(m); phMeta.push(m); mine.push(m); }
     catch(e){ phImport.skip++; }
@@ -3128,11 +3151,12 @@ function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จ�
 function zipHow(){ return `<details class="zip-how"><summary>เอาตำแหน่งกลับมา (ส่งเป็นไฟล์ ZIP)</summary><ol><li>เปิดแอป My Files (ไฟล์ของฉัน) ไปที่ DCIM › Camera</li><li>กดค้างเลือกรูปของทริป › เมนู ⋮ › บีบอัด (Compress) เป็น .zip</li><li>กลับมาที่นี่ กด <button class="lnk" data-act="ph-pick-files">เลือกผ่านแอปไฟล์</button> แล้วเลือกไฟล์ .zip</li></ol><p>ไฟล์ใน ZIP ไม่ถูกตัดตำแหน่ง รูปที่มีอยู่แล้วจะถูกเติมตำแหน่งและจัดที่ใหม่ ไม่เพิ่มรูปซ้ำ รูปที่คุณย้ายเองอยู่ที่เดิม</p></details>`; }
 function photoSheetHtml(){
   const byDay=DAYS.map((d,i)=>phMeta.filter(m=>m.day===i).length); const loose=phMeta.filter(m=>m.key==null&&!m.place); const groups=placeGroups();
-  const imp=phImport; const prog=imp?`<div class="ph-prog"><div class="ph-bar"><i style="width:${Math.round(imp.done/imp.n*100)}%"></i></div><p>${imp.end?`เสร็จแล้ว ${imp.n} ไฟล์${imp.vid?` (วิดีโอ ${imp.vid})`:""}: จัดเข้าจุดในแผน ${imp.auto}${imp.off?` · ถ่ายที่ที่ไม่อยู่ในแผน ${imp.off}`:""}${imp.manual?` · เพิ่มเข้าจุดที่เลือก ${imp.manual}`:""}${imp.none?` · ยังไม่ได้จัด ${imp.none}`:""}${imp.fix?` · เติมตำแหน่งให้รูปที่มีอยู่แล้ว ${imp.fix}`:""}${imp.dup?` · ซ้ำกับที่มีอยู่ ${imp.dup}`:""}${imp.skip?` · เปิดไม่ได้ ${imp.skip} (เช่นไฟล์ HEIC)`:""}<br><span class="tiny">มีตำแหน่งที่ถ่าย ${imp.geo} จาก ${imp.n-imp.dup-imp.skip} ไฟล์${imp.geo<(imp.n-imp.dup-imp.skip)/2?` · หน้าเลือกรูปของมือถือตัดตำแหน่งออก ${zipHow()}`:""}</span>`:`กำลังจัด ${imp.done} / ${imp.n}…`}</p></div>`:"";
+  const imp=phImport; const prog=imp?`<div class="ph-prog"><div class="ph-bar"><i style="width:${Math.round(imp.done/imp.n*100)}%"></i></div><p>${imp.end?`เสร็จแล้ว ${imp.n} ไฟล์${imp.vid?` (วิดีโอ ${imp.vid})`:""}: จัดเข้าจุดในแผน ${imp.auto}${imp.off?` · ถ่ายที่ที่ไม่อยู่ในแผน ${imp.off}`:""}${imp.manual?` · เพิ่มเข้าจุดที่เลือก ${imp.manual}`:""}${imp.none?` · ยังไม่ได้จัด ${imp.none}`:""}${imp.fix?` · เติมตำแหน่งให้รูปที่มีอยู่แล้ว ${imp.fix}`:""}${imp.burst?` · ข้ามรูปถ่ายรัว ${imp.burst}`:""}${imp.dup?` · ซ้ำกับที่มีอยู่ ${imp.dup}`:""}${imp.skip?` · เปิดไม่ได้ ${imp.skip} (เช่นไฟล์ HEIC)`:""}<br><span class="tiny">มีตำแหน่งที่ถ่าย ${imp.geo} จาก ${imp.n-imp.dup-imp.skip-(imp.burst||0)} ไฟล์${imp.n-imp.dup-imp.skip-(imp.burst||0)>0&&imp.geo<(imp.n-imp.dup-imp.skip-(imp.burst||0))/2?` · หน้าเลือกรูปของมือถือตัดตำแหน่งออก ${zipHow()}`:""}</span>`:`กำลังจัด ${imp.done} / ${imp.n}…`}</p></div>`:"";
   const cell=m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
   return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปและวิดีโอของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${mediaWord(phMeta)}</span>`:""}</h2>
   <p style="margin:0 0 10px">เลือกรูปและวิดีโอจากมือถือได้ทีละหลายไฟล์ (บน Android เปิดจาก Google Photos ได้ในหน้าเลือก) แอปดูตำแหน่งที่ถ่ายก่อน ถ้าไม่มีตำแหน่งจะเทียบเวลากับตารางในแผน ไฟล์เก็บอยู่ในเครื่องนี้เท่านั้น</p>
-  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>${prog}
+  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>
+  <label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียว คือรูปที่คมชัดที่สุด</label>${prog}
   ${!imp&&phMeta.filter(m=>m.kind!=="video").length>=5&&phMeta.filter(m=>m.lat!=null).length<phMeta.length/2?`<div class="ph-geo-note"><b>${phMeta.filter(m=>m.lat==null).length} ไฟล์ไม่มีตำแหน่งที่ถ่าย</b> จึงจัดตามเวลาในแผนได้อย่างเดียว ${zipHow()}</div>`:""}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
   ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน แอปหาชื่อสถานที่ที่ใกล้ที่สุดมาให้ กด "เพิ่มเข้าแผน" ได้เลย หรือเลือกชื่อที่ถูกก่อน · รายการนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map((g,gi)=>`<div class="pg"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(g.place.name||"ตำแหน่ง "+(+g.place.lat).toFixed(4)+", "+(+g.place.lng).toFixed(4))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span></div><div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="btn small" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button></div>${pgOpen===g.id?pgPickHtml(g):""}</div>`).join("")}`:""}
