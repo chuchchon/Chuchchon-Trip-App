@@ -664,6 +664,17 @@ body.tb-open{overflow:hidden}
 .lb-grp{display:flex;gap:6px;align-items:center;font-size:13px;color:#ddd;margin-top:6px;justify-content:center}
 .pg{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
 .pg-h{display:flex;flex-direction:column;margin-bottom:6px}
+
+/* ---- suggestions from our photos ---- */
+.ti.k-sug .sc{border:1.5px dashed var(--accent);background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.pin.sug{background:var(--surface)!important;color:var(--accent);border:2px dashed var(--accent)}
+.sug-tag{font-weight:700;color:var(--accent)}
+.k-sug .sc-act{gap:6px 14px;padding-top:6px}
+.pg-pick{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.pg-c{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;font:inherit;color:inherit;cursor:pointer;min-height:44px}
+.pg-c span{font-size:12px;color:var(--muted)}
+.pg-c.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.pg-own{display:flex;gap:6px}.pg-own .inp{flex:1;min-width:0}
 </style>
 
 <div class="app">
@@ -1415,8 +1426,8 @@ function renderPlan(){
   { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}</span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
-  h+=`</header><ol class="tl">`;
-  let carGoneR=curDay>=CARFREE_DAY; let prevKeyR=null; const RECS=dayRecs(curDay), NUMS=stopNumMap(curDay);
+  h+=`</header><ol class="tl">`+(typeof sugByStop==="function"?(sugByStop(curDay)._top||[]).map(sugRowHtml).join(""):"");
+  let carGoneR=curDay>=CARFREE_DAY; let prevKeyR=null; const SUG=sugByStop(curDay); const RECS=dayRecs(curDay), NUMS=stopNumMap(curDay);
   const tmHtml=(it,k,tAct)=>`<div class="tm${tAct?" tm-ed":""}" ${tAct} ${tAct?'role="button" aria-label="แก้เวลา"':""}><span class="t1">${esc(it.t)}</span>${it.e&&it.e!==it.t?`<small>${esc(it.e)}</small>`:""}${it._sh?`<s class="t0">${esc(it._t0)}</s>`:""}</div>`;
   const pinHtml=(it,k)=>`<div class="pin${NUMS[k]?"":" none"}${isVisited(curDay,k)?" done":""}">${NUMS[k]||""}</div>`;
   planItems(curDay).forEach(it=>{ const pkR=prevKeyR; if(it.k!=="drive"&&it.k!=="opt"&&it.k!=="train") prevKeyR=it._i;
@@ -1444,7 +1455,7 @@ function renderPlan(){
       it.food?`<button class="lnk" data-act="food" data-id="${it.food}">ร้านในลิสต์</button>`:"",
       `<span class="sc-ics"><button class="lnk ic" data-act="ph-add" data-key="${esc(k)}" aria-label="เพิ่มรูปของเราที่จุดนี้">${I.camera}</button><button class="lnk ic" data-act="cs-edit" data-key="${esc(k)}" aria-label="แก้ไข">${I.edit}</button></span>`].filter(Boolean).join("");
     h+=`<li class="ti k-${it.k}${k===nowK?" is-now":""}${vis?" is-done":""}" data-key-row="${esc(k)}">${tmHtml(it,k,tAct)}${pinHtml(it,k)}<article class="sc">${moveBtns(it)}<div class="sc-row"><div class="sc-main"><div class="sc-kind">${k===nowK?`<span class="now">ตอนนี้</span>`:""}<span>${esc(kind)}</span>${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><h3 class="sc-name">${esc(it.n)}</h3>${it.x?`<p class="sc-note">${esc(it.x)}</p>`:""}${warns.map(w=>`<p class="sc-warn">${esc(w)}</p>`).join("")}</div><button class="sc-ph thumb" data-ph="${esc(cleanQ(q))}|5|${esc(cleanQ(en))}" data-pi="0" data-q="${esc(q)}" data-en="${esc(en)}" data-ll="${lat},${lng}" aria-label="ดูรูป ${esc(it.n)}"></button></div>${myPhotoStrip(curDay,k)}<div class="sc-act">${acts}</div></article></li>`;
-    if(it.k!=="opt"){ h+=recTilesHtml(curDay,RECS[k]); h+=insRow(k); }
+    if(it.k!=="opt"){ h+=recTilesHtml(curDay,RECS[k]); h+=insRow(k); (SUG[k]||[]).forEach(g=>{ h+=sugRowHtml(g); }); }
     if(curDay===3&&it.p==="station"&&it.k==="stop") carGoneR=true;
   });
   h+=`</ol>`;
@@ -2962,6 +2973,29 @@ function nearKnown(lat,lng){ let best=null,bd=0.12; FOOD.forEach(f=>{ if(f[4]==n
   if(best) return best; bd=0.2; Object.entries(P).forEach(([k,p])=>{ if(p[1]==null||/^cs_/.test(k)) return; const d=km([p[1],p[2]],[lat,lng]); if(d<bd){ bd=d; best={name:p[0],lat:p[1],lng:p[2],pk:k}; } }); return best; }
 function placeGroups(){ const g={}; phMeta.forEach(m=>{ if(m.day==null||m.key||!m.place) return; const id=m.day+"|"+(m.place.fid!=null?"f"+m.place.fid:m.place.pk?"p"+m.place.pk:(+m.place.lat).toFixed(3)+","+(+m.place.lng).toFixed(3));
     (g[id]=g[id]||{id,day:m.day,place:m.place,list:[]}).list.push(m); }); return Object.values(g).sort((a,b)=>a.day-b.day||(a.list[0].takenAt||0)-(b.list[0].takenAt||0)); }
+var plSug=store.get("plSug",{}), plBusy=false, pgOpen=null;
+async function placeCands(lat,lng){ const k=(+lat).toFixed(3)+","+(+lng).toFixed(3); if(plSug[k]) return plSug[k]; let out=[];
+  if(GKEY){ try{ const r=await fetch("https://places.googleapis.com/v1/places:searchNearby",{method:"POST",headers:{"Content-Type":"application/json","X-Goog-Api-Key":GKEY,"X-Goog-FieldMask":"places.id,places.displayName,places.location,places.primaryTypeDisplayName,places.googleMapsUri"},
+      body:JSON.stringify({locationRestriction:{circle:{center:{latitude:+lat,longitude:+lng},radius:120}},maxResultCount:6,rankPreference:"DISTANCE",languageCode:"en"})}); gCount();
+      const j=await r.json(); out=(j.places||[]).filter(p=>p.location&&p.displayName).map(p=>({name:p.displayName.text,lat:p.location.latitude,lng:p.location.longitude,kind:(p.primaryTypeDisplayName&&p.primaryTypeDisplayName.text)||"",src:"Google"})); }catch(e){} }
+  if(!out.length){ try{ const r=await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&limit=8&radius=0.15`); const j=await r.json();
+      out=(j.features||[]).map(f=>{ const p=f.properties||{}; return {name:p.name||"",lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0],kind:guessDur(p.osm_key,p.osm_value,p.name).lab||"",src:"OSM"}; }).filter(c=>c.name);
+      const seen=new Set(); out=out.filter(c=>!seen.has(c.name)&&seen.add(c.name)); }catch(e){} }
+  out=out.slice(0,5); if(out.length){ plSug[k]=out; store.set("plSug",plSug); } return out; }
+async function fillSuggestions(){ if(plBusy) return; plBusy=true; let ch=false;
+  try{ for(const g of placeGroups()){ if(g.place.name||g.place.cands) continue; const c=await placeCands(g.place.lat,g.place.lng);
+      for(const m of g.list){ m.place=Object.assign({},m.place,{cands:c,name:c[0]?c[0].name:"",guess:true}); if(c[0]){ m.place.lat=m.place.lat; } await PDB.putMeta(m); } ch=true; } }
+  finally{ plBusy=false; } if(ch){ renderPlan(); if($("#ph-root")) photoSheetPaint(); } }
+async function renameGroup(g,c){ for(const m of g.list){ m.place=Object.assign({},m.place,{name:c.name,lat:c.lat!=null?c.lat:m.place.lat,lng:c.lng!=null?c.lng:m.place.lng,guess:false,picked:true}); await PDB.putMeta(m); } pgOpen=null; renderPlan(); if($("#ph-root")) photoSheetPaint(); }
+function sugByStop(di){ const its=planItems(di).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"); const out={}; placeGroups().filter(g=>g.day===di).forEach(g=>{ const t=g.list[0].takenAt?jstMin(g.list[0].takenAt):null; let after="_top"; if(t!=null) its.forEach(x=>{ if(toMin(x.t)<=t) after=x._i; }); (out[after]=out[after]||[]).push(g); }); return out; }
+function sugRowHtml(g){ const t=g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""; const nm=g.place.name||"กำลังหาชื่อสถานที่จากตำแหน่ง…";
+  const why=g.place.fid!=null?"ร้านในลิสต์ของฉัน":g.place.pk?"จุดในทริปนี้ (วันอื่น)":g.place.picked?"ชื่อที่คุณเลือก":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย":"";
+  return `<li class="ti k-sug" data-sug="${esc(g.id)}"><div class="tm"><span class="t1">${esc(t)}</span></div><div class="pin sug">?</div><article class="sc"><div class="sc-kind"><span class="sug-tag">แนะนำจากรูปของเรา</span><span>${esc(why)}</span></div><h3 class="sc-name">${esc(nm)}</h3><p class="sc-note">ถ่ายที่นี่ ${esc(mediaWord(g.list))} · ไม่ตรงกับจุดไหนในแผน</p>
+    <div class="my-ph">${g.list.slice(0,6).map(m=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`).join("")}</div>
+    <div class="sc-act"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="lnk" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="lnk" data-act="ph-gmove" data-g="${esc(g.id)}">ย้ายไปจุดในแผน</button></div>
+    ${pgOpen===g.id?pgPickHtml(g):""}</article></li>`; }
+function pgPickHtml(g){ const c=g.place.cands||[]; return `<div class="pg-pick">${c.length?`<p class="tiny">สถานที่ใกล้ตำแหน่งที่ถ่าย</p>${c.map((x,i)=>`<button class="pg-c${x.name===g.place.name?" on":""}" data-act="ph-gpick" data-g="${esc(g.id)}" data-i="${i}"><b>${esc(x.name)}</b><span>${esc([x.kind,x.src].filter(Boolean).join(" · "))}</span></button>`).join("")}`:`<p class="tiny">ยังหาชื่อที่ใกล้ ๆ ไม่ได้${navigator.onLine?"":" (ออฟไลน์)"}</p>`}
+  <div class="pg-own"><input class="inp" id="pg-in" placeholder="หรือพิมพ์ชื่อเอง" value=""><button class="btn small" data-act="ph-gname" data-g="${esc(g.id)}">ใช้ชื่อนี้</button></div></div>`; }
 async function addStopFromPhotos(di,ids,place){ const ps=phMeta.filter(m=>ids.includes(m.id)); if(!ps.length||!place) return null;
   const ts=ps.map(m=>m.takenAt).filter(Boolean); const t0=ts.length?Math.min(...ts):null, t1=ts.length?Math.max(...ts):null;
   let name=place.name; if(!name) name=(await reverseName([place.lat,place.lng]))||"จุดที่ถ่ายรูป";
@@ -3002,7 +3036,7 @@ const PDB={db:null,
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
   del(id){ return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
-PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
+PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(fillSuggestions,1500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 function photosFor(di,key){ return phMeta.filter(m=>m.day===di&&m.key===key); }
 async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); const bl=b&&(full?b.full:b.thumb); if(!bl) return ""; cache[id]=URL.createObjectURL(bl); return cache[id]; }
 function hydrateMyPhotos(root){ $$("img[data-phid]:not([data-done])",root||document).forEach(im=>{ im.dataset.done=1; phThumbURL(im.dataset.phid,im.dataset.full==="1").then(u=>{ if(u) im.src=u; }); }); }
@@ -3036,11 +3070,13 @@ function matchPhoto(m){
   const legAt=its.find(x=>(x.k==="drive"||x.k==="train")&&t>=toMin(x.t)&&t<=toMin(x.t)+(x.min||0));
   if(m.lat!=null){ /* where it was taken decides; the timetable only breaks ties between nearby stops */
     const near=stops.map(s=>({s,d:km([P[s.p][1],P[s.p][2]],[m.lat,m.lng])})).filter(o=>o.d<=R).sort((a,b)=>a.d-b.d);
-    const inT=o=>t>=toMin(o.s.t)-30&&t<=toMin(o.s.e||o.s.t)+30;
-    const hit=near.find(o=>o.d<=0.35&&inT(o))||near.find(o=>o.d<=0.35)||near.find(inT); if(hit) return {day:di,key:hit.s._i};
-    const kn=nearKnown(m.lat,m.lng); if(kn) return {day:di,key:null,place:kn};
+    const gap=o=>{ const a=toMin(o.s.t), b=toMin(o.s.e||o.s.t); return t<a?a-t:t>b?t-b:0; };
+    const here=near.filter(o=>o.d<=0.5);   /* same place as a planned stop: plans move, so the clock only picks between stops at that place */
+    if(here.length){ here.sort((a,b)=>gap(a)-gap(b)||a.d-b.d); return {day:di,key:here[0].s._i}; }
+    const big=near.find(o=>gap(o)<=60); if(big) return {day:di,key:big.s._i};   /* large sites (old town, park, dam area) */
+    const kn=nearKnown(m.lat,m.lng); if(kn) return {day:di,key:null,place:Object.assign({},kn,{guess:false})};
     if(legAt) return {day:di,key:"leg:"+legAt._i};
-    return {day:di,key:null,place:{name:"",lat:m.lat,lng:m.lng}}; }
+    return {day:di,key:null,place:{name:"",lat:m.lat,lng:m.lng,guess:true}}; }
   if(legAt) return {day:di,key:"leg:"+legAt._i,byTime:true};
   const inWin=stops.find(s=>t>=toMin(s.t)-10&&t<=toMin(s.e||s.t)+15); if(inWin) return {day:di,key:inWin._i,byTime:true};
   /* outside every time window: only a near miss counts, and never a hotel once its slot is over (people go out to eat after checking in) */
@@ -3066,7 +3102,7 @@ async function importPhotos(files,forKey){
       await PDB.putBlob(rec); await PDB.putMeta(m); phMeta.push(m); }
     catch(e){ phImport.skip++; }
     phImport.done++; photoSheetPaint(); }
-  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phImport.end=true; ensurePersist(); photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
+  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phImport.end=true; ensurePersist(); fillSuggestions(); photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
 async function undoResort(){ const u=store.get("phUndo",null); if(!u) return; for(const p of u.prev){ const m=phMeta.find(x=>x.id===p.id); if(!m) continue; Object.assign(m,{day:p.day,key:p.key,place:p.place,byTime:p.byTime}); await PDB.putMeta(m); } store.set("phUndo",null); renderPlan(); photoSheetPaint(); }
 function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จัด"; if(!key) return `D${DAYS[di].n} · ยังไม่ได้จัด`; const its=planItems(di);
   if(key.startsWith("leg:")){ const l=its.find(x=>x._i===key.slice(4)); return `D${DAYS[di].n} · ระหว่างทางไป ${l?P[l.to][0]:""}`; }
@@ -3079,7 +3115,7 @@ function photoSheetHtml(){
   <p style="margin:0 0 10px">เลือกรูปและวิดีโอจากมือถือได้ทีละหลายไฟล์ (บน Android เปิดจาก Google Photos ได้ในหน้าเลือก) แอปดูตำแหน่งที่ถ่ายก่อน ถ้าไม่มีตำแหน่งจะเทียบเวลากับตารางในแผน ไฟล์เก็บอยู่ในเครื่องนี้เท่านั้น</p>
   <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>${prog}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
-  ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">แอปรู้จากตำแหน่งในรูปว่าไม่ได้ถ่ายที่จุดไหนในแผน กด "เพิ่มเข้าแผน" เพื่อสร้างจุดใหม่ตามเวลาที่ถ่าย แล้วรูปจะย้ายไปอยู่ที่จุดนั้น</p>${groups.map((g,gi)=>`<div class="pg"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(g.place.name||"ตำแหน่ง "+(+g.place.lat).toFixed(4)+", "+(+g.place.lng).toFixed(4))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span></div><div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button></div></div>`).join("")}`:""}
+  ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน แอปหาชื่อสถานที่ที่ใกล้ที่สุดมาให้ กด "เพิ่มเข้าแผน" ได้เลย หรือเลือกชื่อที่ถูกก่อน · รายการนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map((g,gi)=>`<div class="pg"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(g.place.name||"ตำแหน่ง "+(+g.place.lat).toFixed(4)+", "+(+g.place.lng).toFixed(4))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span></div><div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="btn small" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button></div>${pgOpen===g.id?pgPickHtml(g):""}</div>`).join("")}`:""}
   ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">ไฟล์ที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป แตะเพื่อเลือกว่าเป็นจุดไหน</p><div class="ph-grid">${loose.map(cell).join("")}</div>`:""}
   <p class="tiny" style="margin-top:12px">"จัดใหม่" ขยับเฉพาะไฟล์ที่แอปจัดให้เอง ไฟล์ที่คุณย้ายเองจะอยู่ที่เดิม และย้อนกลับได้ · ถ้าวางผิดจุด แตะรูปแล้วกด "ย้ายไปจุดอื่น" เลือกให้ย้ายรูปที่ถ่ายช่วงเดียวกันไปพร้อมกันได้ หรือเลือกร้านในลิสต์เพื่อสร้างจุดใหม่ในแผน</p></div>`; }
 function photoSheetPaint(first){ if(first||!$("#ph-root")) openSheet(photoSheetHtml()); else renderSheet(photoSheetHtml()); setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
@@ -3114,7 +3150,7 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
     v.move=false; renderPlan(); if($("#ph-root")) photoSheetPaint(); drawMyPhoto(); };
   let sx=null; root.ontouchstart=e=>{ sx=e.touches[0].clientX; }; root.ontouchend=e=>{ if(sx==null) return; const dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>60){ if(dx<0&&v.i<v.list.length-1){ v.i++; drawMyPhoto(); } else if(dx>0&&v.i>0){ v.i--; drawMyPhoto(); } } }; }
 async function resortPhotos(){ store.set("phUndo",{ts:Date.now(),prev:phMeta.filter(m=>m.auto).map(m=>({id:m.id,day:m.day,key:m.key,place:m.place||null,byTime:!!m.byTime}))});
-  for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; await PDB.putMeta(m); } renderPlan(); photoSheetPaint(); }
+  for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); if(m.place&&m.place.picked&&r.place&&!r.key) continue; m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; await PDB.putMeta(m); } renderPlan(); photoSheetPaint(); }
 /* visited: tapped by you, or any of your photos are at that stop */
 var visited=store.get("visited",{});
 /* a stop counts as visited when ticked, when our photos are there, or when its day is over; untick to say we skipped it */
@@ -3207,6 +3243,10 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='p
   if(a==="ph-pick-files"){ pickPhotos(null,true); return; }
   if(a==="ph-addstop"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ b.disabled=true; b.textContent="กำลังเพิ่ม…"; addStopFromPhotos(g.day,g.list.map(m=>m.id),g.place).then(()=>{ if($("#ph-root")) photoSheetPaint(); }); } return; }
   if(a==="ph-add"){ pickPhotos(b.dataset.key); return; }
+  if(a==="ph-gopen"){ pgOpen=pgOpen===b.dataset.g?null:b.dataset.g; { const g=placeGroups().find(x=>x.id===b.dataset.g); if(pgOpen&&g&&!g.place.cands) placeCands(g.place.lat,g.place.lng).then(async c=>{ for(const m of g.list){ m.place=Object.assign({},m.place,{cands:c}); await PDB.putMeta(m); } renderPlan(); if($("#ph-root")) photoSheetPaint(); }); } renderPlan(); if($("#ph-root")) photoSheetPaint(); const el=$(`[data-sug="${CSS.escape(b.dataset.g)}"]`); el&&el.scrollIntoView({block:"nearest"}); return; }
+  if(a==="ph-gpick"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g&&g.place.cands) renameGroup(g,g.place.cands[+b.dataset.i]); return; }
+  if(a==="ph-gname"){ const g=placeGroups().find(x=>x.id===b.dataset.g); const v=(($("#pg-in")||{}).value||"").trim(); if(g&&v) renameGroup(g,{name:v}); return; }
+  if(a==="ph-gmove"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ openMyPhoto(g.list[0].id); phView.move=true; drawMyPhoto(); } return; }
   if(a==="ph-open"){ openMyPhoto(b.dataset.id); return; }
   if(a==="ph-resort"){ resortPhotos(); return; }
   if(a==="ph-undo"){ undoResort(); return; }
