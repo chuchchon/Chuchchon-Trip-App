@@ -3071,7 +3071,7 @@ function matchPhoto(m){
   if(m.lat!=null){ /* where it was taken decides; the timetable only breaks ties between nearby stops */
     const near=stops.map(s=>({s,d:km([P[s.p][1],P[s.p][2]],[m.lat,m.lng])})).filter(o=>o.d<=R).sort((a,b)=>a.d-b.d);
     const gap=o=>{ const a=toMin(o.s.t), b=toMin(o.s.e||o.s.t); return t<a?a-t:t>b?t-b:0; };
-    const here=near.filter(o=>o.d<=0.5);   /* same place as a planned stop: plans move, so the clock only picks between stops at that place */
+    const here=near.filter(o=>o.d<=(/สนามบิน|airport/i.test(P[o.s.p][0])?2.5:0.5));   /* an airport spans km of terminals and gates */   /* same place as a planned stop: plans move, so the clock only picks between stops at that place */
     if(here.length){ here.sort((a,b)=>gap(a)-gap(b)||a.d-b.d); return {day:di,key:here[0].s._i}; }
     const big=near.find(o=>gap(o)<=60); if(big) return {day:di,key:big.s._i};   /* large sites (old town, park, dam area) */
     const kn=nearKnown(m.lat,m.lng); if(kn) return {day:di,key:null,place:Object.assign({},kn,{guess:false})};
@@ -3081,7 +3081,10 @@ function matchPhoto(m){
   const inWin=stops.find(s=>t>=toMin(s.t)-10&&t<=toMin(s.e||s.t)+15); if(inWin) return {day:di,key:inWin._i,byTime:true};
   /* outside every time window: only a near miss counts, and never a hotel once its slot is over (people go out to eat after checking in) */
   let best=null,bd=1e9; stops.forEach(s=>{ const a=toMin(s.t), b=toMin(s.e||s.t); if(s.k==="hotel"&&t>b+15) return; const v=t<a?a-t:t>b?t-b:0; if(v<bd){ bd=v; best=s; } });
-  if(best&&bd<=40) return {day:di,key:best._i,byTime:true}; return {day:di,key:null}; }
+  if(best&&bd<=40) return {day:di,key:best._i,byTime:true};
+  /* before the day's first stop (landing, immigration, breakfast before leaving): that first stop */
+  const first=stops.slice().sort((x,y)=>toMin(x.t)-toMin(y.t))[0]; if(first&&t<toMin(first.t)&&toMin(first.t)-t<=240) return {day:di,key:first._i,byTime:true};
+  return {day:di,key:null}; }
 var phImport=null;
 function pickPhotos(forKey,viaFiles){ const inp=document.createElement("input"); inp.type="file"; inp.accept=viaFiles?"image/*,video/*,.heic,.mov":"image/*,video/*"; if(viaFiles) inp.accept=""; inp.multiple=true; inp.style.display="none";
   inp.onchange=()=>{ const files=[...inp.files]; inp.remove(); if(files.length) importPhotos(files,forKey); }; document.body.appendChild(inp); inp.click(); }
@@ -3135,7 +3138,7 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
       order.concat(Object.keys(RC)).forEach(k=>(RC[k]||[]).forEach(r=>{ if(r.lat==null||seen.has(r.id)||have.some(p=>km([p[1],p[2]],[r.lat,r.lng])<0.08)) return; seen.add(r.id); recs.push(r); })); }
     mv=`<select class="inp" id="ph-move" style="margin-top:8px"><option value="">เลือกจุด…</option><optgroup label="จุดในแผน">${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===m.day+"|"+m.key?" selected":""}>${esc(t)}</option>`).join("")}</optgroup>${recs.length?`<optgroup label="เพิ่มเป็นจุดใหม่ใน D${DAYS[m.day].n} (ร้าน/ที่แนะนำ)">${recs.map(r=>`<option value="${esc("r|"+m.day+"|"+r.id)}">${r.kind==="food"?"🍴 ":"📍 "}${esc(r.name)}</option>`).join("")}</optgroup>`:""}${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}<option value="-|">ยังไม่ได้จัด</option></select>
     ${grp.length>1?`<label class="lb-grp"><input type="checkbox" id="ph-grp" checked> ย้ายรูปที่ถ่ายช่วงเดียวกัน (±45 นาที) ไปด้วย ${grp.length} ไฟล์</label>`:""}`; }
-  $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button>${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}<div class="lb-cap"><b>${esc(keyLabel(m.day,m.key))}</b><span>${esc(when)}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${m.place?" · ถ่ายที่ที่ไม่อยู่ในแผน":m.auto&&m.key?(m.byTime||m.lat==null?" · จัดตามเวลาในแผน":" · จัดตามตำแหน่ง"):""}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>${mv}</div>
+  $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button>${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}<div class="lb-cap"><b>${esc(keyLabel(m.day,m.key))}</b><span>${esc(when)}${m.tsrc==="file"?" (เวลาจากวันที่ไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${m.place?" · ถ่ายที่ที่ไม่อยู่ในแผน":m.auto&&m.key?(m.byTime||m.lat==null?" · จัดตามเวลาในแผน":" · จัดตามตำแหน่ง"):""}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>${mv}</div>
   <div class="lb-bar"><button class="btn small" data-mp="prev" ${v.i===0?"disabled":""}>‹</button><span class="tiny">${v.i+1}/${v.list.length}</span><button class="btn small" data-mp="next" ${v.i>=v.list.length-1?"disabled":""}>›</button><button class="btn small" data-mp="move">ย้ายไปจุดอื่น</button><button class="btn small" data-mp="cover">${m.cover?"★ รูปปก":"ตั้งเป็นปก"}</button><button class="btn small ${v.confirm?"danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้งเพื่อเอาออก":"เอารูปออก"}</button></div></div>`;
   hydrateMyPhotos($("#lbRoot")); { const ve=$("#lbRoot video[data-vid]"); if(ve){ phThumbURL(id,false).then(u=>{ if(u) ve.poster=u; }); phThumbURL(id,true).then(u=>{ if(u) ve.src=u; }); } }
   const root=$("#lbRoot"); root.onclick=async ev=>{ const b=ev.target.closest("[data-mp]"); if(!b) return; ev.stopPropagation(); const a=b.dataset.mp;
@@ -3149,8 +3152,10 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
     else { const [dd,kk]=val.split("|"); for(const x of all){ x.day=dd==="-"?null:+dd; x.key=kk||null; x.place=null; x.auto=false; await PDB.putMeta(x); } }
     v.move=false; renderPlan(); if($("#ph-root")) photoSheetPaint(); drawMyPhoto(); };
   let sx=null; root.ontouchstart=e=>{ sx=e.touches[0].clientX; }; root.ontouchend=e=>{ if(sx==null) return; const dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>60){ if(dx<0&&v.i<v.list.length-1){ v.i++; drawMyPhoto(); } else if(dx>0&&v.i>0){ v.i--; drawMyPhoto(); } } }; }
+function isHotelKey(di,key){ if(di==null||!key||key.startsWith("leg:")) return false; const it=planItems(di).find(x=>x._i===key); return !!(it&&it.k==="hotel"); }
 async function resortPhotos(){ store.set("phUndo",{ts:Date.now(),prev:phMeta.filter(m=>m.auto).map(m=>({id:m.id,day:m.day,key:m.key,place:m.place||null,byTime:!!m.byTime}))});
-  for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); if(m.place&&m.place.picked&&r.place&&!r.key) continue; m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; await PDB.putMeta(m); } renderPlan(); photoSheetPaint(); }
+  for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); if(m.place&&m.place.picked&&r.place&&!r.key) continue;
+    if((m.key||m.place)&&!r.key&&!r.place&&!isHotelKey(m.day,m.key)) continue;   /* never knock a placed photo back to "not sorted" (except off a hotel: that was the evening-out mistake) */ m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; await PDB.putMeta(m); } renderPlan(); photoSheetPaint(); }
 /* visited: tapped by you, or any of your photos are at that stop */
 var visited=store.get("visited",{});
 /* a stop counts as visited when ticked, when our photos are there, or when its day is over; untick to say we skipped it */
