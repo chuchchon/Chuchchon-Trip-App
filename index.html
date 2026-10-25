@@ -3000,7 +3000,7 @@ function sugRowHtml(g){ const t=g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenA
   const why=g.place.fid!=null?"ร้านในลิสต์ของฉัน":g.place.pk?"จุดในทริปนี้ (วันอื่น)":g.place.picked?"ชื่อที่คุณเลือก":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย":"";
   return `<li class="ti k-sug" data-sug="${esc(g.id)}"><div class="tm"><span class="t1">${esc(t)}</span></div><div class="pin sug">?</div><article class="sc"><div class="sc-kind"><span class="sug-tag">แนะนำจากรูปของเรา</span><span>${esc(why)}</span></div><h3 class="sc-name">${esc(nm)}</h3><p class="sc-note">ถ่ายที่นี่ ${esc(mediaWord(g.list))} · ไม่ตรงกับจุดไหนในแผน</p>
     <div class="my-ph">${g.list.slice(0,6).map(m=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`).join("")}</div>
-    <div class="sc-act"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="lnk" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="lnk" data-act="ph-gmove" data-g="${esc(g.id)}">ย้ายไปจุดในแผน</button></div>
+    <div class="sc-act"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="lnk" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="lnk" data-act="ph-gleg" data-g="${esc(g.id)}">ถ่ายระหว่างทาง</button><button class="lnk" data-act="ph-gmove" data-g="${esc(g.id)}">ย้ายไปจุดในแผน</button></div>
     ${pgOpen===g.id?pgPickHtml(g):""}</article></li>`; }
 function pgPickHtml(g){ const c=g.place.cands||[]; return `<div class="pg-pick">${c.length?`<p class="tiny">สถานที่ใกล้ตำแหน่งที่ถ่าย</p>${c.map((x,i)=>`<button class="pg-c${x.name===g.place.name?" on":""}" data-act="ph-gpick" data-g="${esc(g.id)}" data-i="${i}"><b>${esc(x.name)}</b><span>${esc([x.kind,x.src].filter(Boolean).join(" · "))}</span></button>`).join("")}`:`<p class="tiny">ยังหาชื่อที่ใกล้ ๆ ไม่ได้${navigator.onLine?"":" (ออฟไลน์)"}</p>`}
   <div class="pg-own"><input class="inp" id="pg-in" placeholder="หรือพิมพ์ชื่อเอง" value=""><button class="btn small" data-act="ph-gname" data-g="${esc(g.id)}">ใช้ชื่อนี้</button></div></div>`; }
@@ -3078,6 +3078,16 @@ async function shrink(file,max,q){ const url=URL.createObjectURL(file); try{ con
 function jstDate(ms){ return new Date(ms+9*3600e3).toISOString().slice(0,10); }
 function jstMin(ms){ const d=new Date(ms+9*3600e3); return d.getUTCHours()*60+d.getUTCMinutes(); }
 /* where was this photo taken? GPS first (nearest stop that day), then the plan's timetable */
+/* distance (km) from a point to a line of [lat,lng] points */
+function distToLine(p,line){ const c=Math.cos(p[0]*Math.PI/180), X=q=>[(q[1]-p[1])*111.32*c,(q[0]-p[0])*110.57]; if(line.length===1) return Math.hypot(...X(line[0])); let best=1e9;
+  for(let i=0;i<line.length-1;i++){ const a=X(line[i]), b=X(line[i+1]); const dx=b[0]-a[0], dy=b[1]-a[1], L=dx*dx+dy*dy; let u=L?-(a[0]*dx+a[1]*dy)/L:0; u=Math.max(0,Math.min(1,u)); best=Math.min(best,Math.hypot(a[0]+u*dx,a[1]+u*dy)); } return best; }
+function legLine(l){ const a=l.from, b=l.to; if(!P[a]||!P[b]) return null; const c=routeCache[a+">"+b]||routeCache[a+">"+b+"|foot"];
+  return c&&c.g&&c.g.length>1?{line:c.g,road:true}:{line:[[P[a][1],P[a][2]],[P[b][1],P[b][2]]],road:false}; }
+/* which drive of the day passes where this was taken; the clock picks between drives on the same road. loose = nearest drive even off the road line */
+function legNear(di,lat,lng,t,loose){ let best=null,bs=1e9;
+  planItems(di).filter(x=>(x.k==="drive"||x.k==="train")&&x.from&&x.to).forEach(l=>{ const g=legLine(l); if(!g) return; const d=distToLine([lat,lng],g.line);
+    const lim=g.road?2:Math.max(3,km(g.line[0],g.line[g.line.length-1])*0.3); if(!loose&&d>lim) return;
+    const a=toMin(l.t), b=a+(l.min||0), gap=t==null?0:t<a?a-t:t>b?t-b:0, sc=gap+d*(loose?6:2); if(sc<bs){ bs=sc; best=l; } }); return best; }
 function matchPhoto(m){
   const di=m.takenAt?DAYS.findIndex(d=>d.date===jstDate(m.takenAt)):-1; if(di<0) return {day:null,key:null};
   const its=planItems(di); const stops=its.filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x.p&&P[x.p]);
@@ -3090,6 +3100,7 @@ function matchPhoto(m){
     if(here.length){ here.sort((a,b)=>gap(a)-gap(b)||a.d-b.d); return {day:di,key:here[0].s._i}; }
     const big=near.find(o=>gap(o)<=60); if(big) return {day:di,key:big.s._i};   /* large sites (old town, park, dam area) */
     const kn=nearKnown(m.lat,m.lng); if(kn) return {day:di,key:null,place:Object.assign({},kn,{guess:false})};
+    const lg=legNear(di,m.lat,m.lng,t,false); if(lg) return {day:di,key:"leg:"+lg._i};   /* on the road of one of the day's drives */
     if(legAt) return {day:di,key:"leg:"+legAt._i};
     return {day:di,key:null,place:{name:"",lat:m.lat,lng:m.lng,guess:true}}; }
   if(legAt) return {day:di,key:"leg:"+legAt._i,byTime:true};
@@ -3183,7 +3194,7 @@ async function importPhotos(files,forKey){
     phImport.done++; phTick(); }
   phImport.stage="finish"; phTick(true);
   phImport.merged=await mergeTwins();
-  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); if(!forKey) await sessionFix();
+  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); if(!forKey){ await roadStops(); await sessionFix(); }
   const live=mine.filter(m=>phMeta.includes(m)); phImport.added=live.length; phImport.auto=live.filter(m=>m.key&&m.auto).length; phImport.off=live.filter(m=>!m.key&&m.place).length; phImport.none=live.filter(m=>!m.key&&!m.place).length;
   phImport.end=true; ensurePersist(); fillSuggestions(); photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
 /* progress and result, in plain words */
@@ -3225,7 +3236,7 @@ function photoSheetHtml(){
   <label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียว คือรูปที่คมชัดที่สุด</label>${prog}
   ${!imp&&phMeta.filter(m=>m.kind!=="video").length>=5&&phMeta.filter(m=>m.lat!=null).length<phMeta.length/2?`<div class="ph-geo-note"><b>${phMeta.filter(m=>m.lat==null).length} ไฟล์ไม่มีตำแหน่งที่ถ่าย</b> จึงจัดตามเวลาในแผนได้อย่างเดียว ${zipHow()}</div>`:""}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
-  ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน แอปหาชื่อสถานที่ที่ใกล้ที่สุดมาให้ กด "เพิ่มเข้าแผน" ได้เลย หรือเลือกชื่อที่ถูกก่อน · รายการนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map((g,gi)=>`<div class="pg"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(g.place.name||"ตำแหน่ง "+(+g.place.lat).toFixed(4)+", "+(+g.place.lng).toFixed(4))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span></div><div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="btn small" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button></div>${pgOpen===g.id?pgPickHtml(g):""}</div>`).join("")}`:""}
+  ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน แอปหาชื่อสถานที่ที่ใกล้ที่สุดมาให้ กด "เพิ่มเข้าแผน" ได้เลย หรือเลือกชื่อที่ถูกก่อน · รายการนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map((g,gi)=>`<div class="pg"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(g.place.name||"ตำแหน่ง "+(+g.place.lat).toFixed(4)+", "+(+g.place.lng).toFixed(4))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span></div><div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="btn small" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="btn small" data-act="ph-gleg" data-g="${esc(g.id)}">ถ่ายระหว่างทาง</button></div>${pgOpen===g.id?pgPickHtml(g):""}</div>`).join("")}`:""}
   ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">ไฟล์ที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป แตะเพื่อเลือกว่าเป็นจุดไหน</p><div class="ph-grid">${loose.map(cell).join("")}</div>`:""}
   <p class="tiny" style="margin-top:12px">"จัดใหม่" ขยับเฉพาะไฟล์ที่แอปจัดให้เอง ไฟล์ที่คุณย้ายเองจะอยู่ที่เดิม และย้อนกลับได้ · ถ้าวางผิดจุด แตะรูปแล้วกด "ย้ายไปจุดอื่น" เลือกให้ย้ายรูปที่ถ่ายช่วงเดียวกันไปพร้อมกันได้ หรือเลือกร้านในลิสต์เพื่อสร้างจุดใหม่ในแผน</p></div>`; }
 function photoSheetPaint(first){ if(first||!$("#ph-root")) openSheet(photoSheetHtml()); else renderSheet(photoSheetHtml()); setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
@@ -3233,6 +3244,7 @@ function myPhotoStrip(di,key){ const l=photosFor(di,key); if(!l.length) return "
   return `<div class="my-ph">${show.map((m,i)=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}${i===7&&l.length>8?`<span>+${l.length-8}</span>`:""}</button>`).join("")}</div>`; }
 /* own-photo viewer: swipe, move to another stop, remove */
 var phView=null;
+function fmtLegOpt(x){ return `${x.t||""} ระหว่างทาง ${P[x.from]?P[x.from][0]+" → ":""}${P[x.to][0]}`; }
 function openMyPhoto(id){ const m=phMeta.find(x=>x.id===id); if(!m) return; const list=phMeta.filter(x=>x.day===m.day&&x.key===m.key); phView={list:list.map(x=>x.id),i:list.findIndex(x=>x.id===id),confirm:false,move:false};
   if(!lbOpen){ lbOpen=true; try{ history.pushState({lb:1},""); }catch(e){} } drawMyPhoto(); }
 function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; const m=phMeta.find(x=>x.id===id); if(!m){ closeLightbox(false); return; }
@@ -3243,7 +3255,7 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
       const order=planItems(m.day).filter(x=>RC[x._i]).sort((a,b)=>t==null?0:Math.abs(toMin(a.t)-t)-Math.abs(toMin(b.t)-t)).map(x=>x._i);
       const have=dayStops(m.day).map(x=>P[x.p]).filter(Boolean);
       order.concat(Object.keys(RC)).forEach(k=>(RC[k]||[]).forEach(r=>{ if(r.lat==null||seen.has(r.id)||have.some(p=>km([p[1],p[2]],[r.lat,r.lng])<0.08)) return; seen.add(r.id); recs.push(r); })); }
-    mv=`<select class="inp" id="ph-move" style="margin-top:8px"><option value="">เลือกจุด…</option><optgroup label="จุดในแผน">${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===m.day+"|"+m.key?" selected":""}>${esc(t)}</option>`).join("")}</optgroup>${recs.length?`<optgroup label="เพิ่มเป็นจุดใหม่ใน D${DAYS[m.day].n} (ร้าน/ที่แนะนำ)">${recs.map(r=>`<option value="${esc("r|"+m.day+"|"+r.id)}">${r.kind==="food"?"🍴 ":"📍 "}${esc(r.name)}</option>`).join("")}</optgroup>`:""}${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}<option value="-|">ยังไม่ได้จัด</option></select>
+    mv=`<select class="inp" id="ph-move" style="margin-top:8px"><option value="">เลือกจุด…</option><optgroup label="จุดในแผน">${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===m.day+"|"+m.key?" selected":""}>${esc(t)}</option>`).join("")}</optgroup>${m.day!=null?`<optgroup label="ระหว่างทาง D${DAYS[m.day].n}">${planItems(m.day).filter(x=>(x.k==="drive"||x.k==="train")&&x.to&&P[x.to]).map(x=>`<option value="${esc(m.day+"|leg:"+x._i)}"${m.key==="leg:"+x._i?" selected":""}>${esc(fmtLegOpt(x))}</option>`).join("")}</optgroup>`:""}${recs.length?`<optgroup label="เพิ่มเป็นจุดใหม่ใน D${DAYS[m.day].n} (ร้าน/ที่แนะนำ)">${recs.map(r=>`<option value="${esc("r|"+m.day+"|"+r.id)}">${r.kind==="food"?"🍴 ":"📍 "}${esc(r.name)}</option>`).join("")}</optgroup>`:""}${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}<option value="-|">ยังไม่ได้จัด</option></select>
     ${grp.length>1?`<label class="lb-grp"><input type="checkbox" id="ph-grp" checked> ย้ายรูปที่ถ่ายช่วงเดียวกัน (±45 นาที) ไปด้วย ${grp.length} ไฟล์</label>`:""}`; }
   $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button>${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}<div class="lb-cap"><b>${esc(keyLabel(m.day,m.key))}</b><span>${esc(when)}${m.tsrc==="file"?" (เวลาจากวันที่ไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${m.place?" · ถ่ายที่ที่ไม่อยู่ในแผน":m.auto&&m.key?(m.bySess?" · จัดตามรูปที่ถ่ายต่อเนื่องกัน":m.byTime||m.lat==null?" · จัดตามเวลาในแผน":" · จัดตามตำแหน่ง"):""}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>${mv}</div>
   <div class="lb-bar"><button class="btn small" data-mp="prev" ${v.i===0?"disabled":""}>‹</button><span class="tiny">${v.i+1}/${v.list.length}</span><button class="btn small" data-mp="next" ${v.i>=v.list.length-1?"disabled":""}>›</button><button class="btn small" data-mp="move">ย้ายไปจุดอื่น</button><button class="btn small" data-mp="cover">${m.cover?"★ รูปปก":"ตั้งเป็นปก"}</button><button class="btn small ${v.confirm?"danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้งเพื่อเอาออก":"เอารูปออก"}</button></div></div>`;
@@ -3263,6 +3275,10 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
    the nearest photo in the run that has a location, or else the planned stop the run touches. This fixes "arrived early / left late"
    being filed as "on the way". */
 const SESS_GAP=12*60e3;
+async function roadStops(){ const ch=[]; DAYS.forEach((d,di)=>{ const L=phMeta.filter(m=>m.day===di&&m.auto&&m.lat!=null&&m.takenAt&&m.key&&m.key.startsWith("leg:")).sort((a,b)=>a.takenAt-b.takenAt);
+    const used=new Set(); L.forEach(m=>{ if(used.has(m)) return; const near=L.filter(x=>!used.has(x)&&km([x.lat,x.lng],[m.lat,m.lng])<=0.15&&Math.abs(x.takenAt-m.takenAt)<=40*60e3);
+      if(near.length>=2&&near[near.length-1].takenAt-near[0].takenAt>=3*60e3){ near.forEach(x=>{ used.add(x); x.key=null; x.place={name:"",lat:near[0].lat,lng:near[0].lng,guess:true}; ch.push(x); }); } }); });
+  for(const m of ch) await PDB.putMeta(m); return ch.length; }
 async function sessionFix(){ const ch=[]; DAYS.forEach((d,di)=>{ const L=phMeta.filter(m=>m.day===di&&m.takenAt).sort((a,b)=>a.takenAt-b.takenAt); let run=[];
     const flush=()=>{ if(run.length>1) fixRun(run,ch); run=[]; }; L.forEach(m=>{ if(run.length&&m.takenAt-run[run.length-1].takenAt>SESS_GAP) flush(); run.push(m); }); flush(); });
   for(const m of ch) await PDB.putMeta(m); return ch.length; }
@@ -3276,7 +3292,7 @@ function fixRun(run,ch){ const isStop=m=>!!m.key&&!m.key.startsWith("leg:");
 function isHotelKey(di,key){ if(di==null||!key||key.startsWith("leg:")) return false; const it=planItems(di).find(x=>x._i===key); return !!(it&&it.k==="hotel"); }
 async function resortPhotos(){ store.set("phUndo",{ts:Date.now(),prev:phMeta.filter(m=>m.auto).map(m=>({id:m.id,day:m.day,key:m.key,place:m.place||null,byTime:!!m.byTime,bySess:!!m.bySess}))});
   for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); if(m.place&&m.place.picked&&r.place&&!r.key) continue;
-    if((m.key||m.place)&&!r.key&&!r.place&&!isHotelKey(m.day,m.key)) continue;   /* never knock a placed photo back to "not sorted" (except off a hotel: that was the evening-out mistake) */ m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; await PDB.putMeta(m); } await sessionFix(); renderPlan(); photoSheetPaint(); }
+    if((m.key||m.place)&&!r.key&&!r.place&&!isHotelKey(m.day,m.key)) continue;   /* never knock a placed photo back to "not sorted" (except off a hotel: that was the evening-out mistake) */ m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; await PDB.putMeta(m); } await roadStops(); await sessionFix(); fillSuggestions(); renderPlan(); photoSheetPaint(); }
 /* visited: tapped by you, or any of your photos are at that stop */
 var visited=store.get("visited",{});
 /* a stop counts as visited when ticked, when our photos are there, or when its day is over; untick to say we skipped it */
@@ -3372,6 +3388,8 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='p
   if(a==="ph-gopen"){ pgOpen=pgOpen===b.dataset.g?null:b.dataset.g; { const g=placeGroups().find(x=>x.id===b.dataset.g); if(pgOpen&&g&&!g.place.cands) placeCands(g.place.lat,g.place.lng).then(async c=>{ for(const m of g.list){ m.place=Object.assign({},m.place,{cands:c}); await PDB.putMeta(m); } renderPlan(); if($("#ph-root")) photoSheetPaint(); }); } renderPlan(); if($("#ph-root")) photoSheetPaint(); const el=$(`[data-sug="${CSS.escape(b.dataset.g)}"]`); el&&el.scrollIntoView({block:"nearest"}); return; }
   if(a==="ph-gpick"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g&&g.place.cands) renameGroup(g,g.place.cands[+b.dataset.i]); return; }
   if(a==="ph-gname"){ const g=placeGroups().find(x=>x.id===b.dataset.g); const v=(($("#pg-in")||{}).value||"").trim(); if(g&&v) renameGroup(g,{name:v}); return; }
+  if(a==="ph-gleg"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ (async()=>{ for(const m of g.list){ const l=legNear(m.day,m.lat??g.place.lat,m.lng??g.place.lng,m.takenAt?jstMin(m.takenAt):null,true); if(!l) continue; m.key="leg:"+l._i; m.place=null; m.auto=false; await PDB.putMeta(m); }
+      renderPlan(); if($("#ph-root")) photoSheetPaint(); })(); } return; }
   if(a==="ph-gmove"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ openMyPhoto(g.list[0].id); phView.move=true; drawMyPhoto(); } return; }
   if(a==="ph-open"){ openMyPhoto(b.dataset.id); return; }
   if(a==="ph-resort"){ resortPhotos(); return; }
