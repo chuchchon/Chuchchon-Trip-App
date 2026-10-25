@@ -655,6 +655,15 @@ body.tb-open{overflow:hidden}
 .fresh b{font-size:15px}.fresh p{margin:4px 0 8px;font-size:14px;color:var(--ink)}
 .dh-ph-warn{font-style:normal;color:var(--maple);font-weight:600}
 #bk-file .kv{margin:0 0 6px}
+
+/* ---- video & off-plan places ---- */
+.my-ph-c,.ph-cell{position:relative}
+.my-ph-c:has(.vb),.ph-cell:has(.vb){background:#1C2228}
+.vb{position:absolute;left:4px;bottom:4px;font-style:normal;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.6);padding:1px 6px;border-radius:999px;pointer-events:none}
+.lb.my video{max-width:100%;max-height:62vh;border-radius:10px;background:#000}
+.lb-grp{display:flex;gap:6px;align-items:center;font-size:13px;color:#ddd;margin-top:6px;justify-content:center}
+.pg{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
+.pg-h{display:flex;flex-direction:column;margin-bottom:6px}
 </style>
 
 <div class="app">
@@ -1403,7 +1412,7 @@ function renderPlan(){
   if(d.hotel&&P[d.hotel]) h+=`<div class="dh-hotel">${I.bed}<span>คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="lnk" data-act="booking" data-id="${d.hotel}">ใบจอง</button><a class="lnk" href="${esc(dirUrl(pointTarget(d.hotel)))}" target="_blank" rel="noopener">นำทาง</a></div>`;
   h+=`<div class="dh-actions"><button class="btn small primary" data-act="gmroute">${I.route}เส้นทางทั้งวันใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}แผนที่</button><button class="btn small" data-act="addstop">${I.plus}เพิ่มจุด</button><button class="btn small" data-act="reorder" aria-pressed="${document.body.classList.contains("reorder")}">${I.sort}จัดลำดับ</button></div>`;
   h+=freshBanner();
-  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${dp.length} รูป · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${phMeta.length} รูป`:"ดึงรูปจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}</span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
+  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}</span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
   h+=`</header><ol class="tl">`;
@@ -2928,6 +2937,59 @@ document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-a
     if(navigator.share) navigator.share({title:"key ค้นหาสถานที่",text:t}).catch(()=>{}); else { try{ await navigator.clipboard.writeText(url); b.textContent="คัดลอกลิงก์แล้ว"; }catch(e){} } return; }
 },true);
 
+/* --- video: capture time and place from the MP4/MOV header, a still frame for the thumbnail --- */
+function isVideo(f){ return /^video\//.test(f.type||"")||/\.(mp4|mov|m4v|3gp|webm)$/i.test(f.name||""); }
+function latin1(u){ let s=""; for(let i=0;i<u.length;i+=8192) s+=String.fromCharCode.apply(null,u.subarray(i,i+8192)); return s; }
+async function readMp4Meta(file){ const out={}; try{ let pos=0, moov=null; const size=file.size;
+    for(let i=0;i<80&&pos+8<=size;i++){ const h=new DataView(await file.slice(pos,pos+16).arrayBuffer()); let len=h.getUint32(0); const typ=String.fromCharCode(h.getUint8(4),h.getUint8(5),h.getUint8(6),h.getUint8(7));
+      if(len===1&&h.byteLength>=16) len=Number(h.getBigUint64(8)); else if(len===0) len=size-pos;
+      if(typ==="moov"){ if(len<96*1048576) moov=new Uint8Array(await file.slice(pos,pos+len).arrayBuffer()); break; } if(len<8) break; pos+=len; }
+    if(!moov) return out; const s=latin1(moov); const k=s.indexOf("mvhd");
+    if(k>0){ const dv=new DataView(moov.buffer,moov.byteOffset+k+4); const ver=dv.getUint8(0); const ct=ver===1?Number(dv.getBigUint64(4)):dv.getUint32(4); const ms=(ct-2082844800)*1000; if(ms>946684800000) out.t=ms; }
+    const g=s.match(/([+-]\d{1,2}\.\d{3,})([+-]\d{1,3}\.\d{3,})(?:[+-]\d+(?:\.\d+)?)?\//); if(g){ out.lat=+g[1]; out.lng=+g[2]; }
+  }catch(e){} return out; }
+function videoPoster(file){ return new Promise(res=>{ const v=document.createElement("video"); const url=URL.createObjectURL(file); let done=false;
+  const fin=r=>{ if(done) return; done=true; try{ v.removeAttribute("src"); v.load(); }catch(e){} URL.revokeObjectURL(url); res(r); };
+  v.muted=true; v.playsInline=true; v.preload="metadata"; v.src=url;
+  v.onloadedmetadata=()=>{ try{ v.currentTime=Math.min(1,(isFinite(v.duration)?v.duration:2)/3); }catch(e){ fin({blob:null,dur:v.duration}); } };
+  v.onseeked=()=>{ try{ const s=Math.min(1,420/Math.max(v.videoWidth||420,v.videoHeight||236)); const c=document.createElement("canvas"); c.width=Math.round((v.videoWidth||420)*s); c.height=Math.round((v.videoHeight||236)*s); c.getContext("2d").drawImage(v,0,0,c.width,c.height); c.toBlob(b=>fin({blob:b,dur:v.duration,w:v.videoWidth,h:v.videoHeight}),"image/jpeg",.78); }catch(e){ fin({blob:null,dur:v.duration}); } };
+  v.onerror=()=>fin(null); setTimeout(()=>fin(null),15000); }); }
+function fmtDur(s){ if(!s||!isFinite(s)) return ""; s=Math.round(s); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function phBadge(m){ return m.kind==="video"?`<i class="vb">▶${m.dur?" "+fmtDur(m.dur):""}</i>`:""; }
+function mediaWord(list){ const v=list.filter(m=>m.kind==="video").length, p=list.length-v; return [p?p+" รูป":"",v?v+" วิดีโอ":""].filter(Boolean).join(" · ")||"0 รูป"; }
+/* --- photos taken somewhere that is not a stop in the plan --- */
+function nearKnown(lat,lng){ let best=null,bd=0.12; FOOD.forEach(f=>{ if(f[4]==null) return; const d=km([f[4],f[5]],[lat,lng]); if(d<bd){ bd=d; best={name:f[2],lat:f[4],lng:f[5],fid:f[0]}; } });
+  if(best) return best; bd=0.2; Object.entries(P).forEach(([k,p])=>{ if(p[1]==null||/^cs_/.test(k)) return; const d=km([p[1],p[2]],[lat,lng]); if(d<bd){ bd=d; best={name:p[0],lat:p[1],lng:p[2],pk:k}; } }); return best; }
+function placeGroups(){ const g={}; phMeta.forEach(m=>{ if(m.day==null||m.key||!m.place) return; const id=m.day+"|"+(m.place.fid!=null?"f"+m.place.fid:m.place.pk?"p"+m.place.pk:(+m.place.lat).toFixed(3)+","+(+m.place.lng).toFixed(3));
+    (g[id]=g[id]||{id,day:m.day,place:m.place,list:[]}).list.push(m); }); return Object.values(g).sort((a,b)=>a.day-b.day||(a.list[0].takenAt||0)-(b.list[0].takenAt||0)); }
+async function addStopFromPhotos(di,ids,place){ const ps=phMeta.filter(m=>ids.includes(m.id)); if(!ps.length||!place) return null;
+  const ts=ps.map(m=>m.takenAt).filter(Boolean); const t0=ts.length?Math.min(...ts):null, t1=ts.length?Math.max(...ts):null;
+  let name=place.name; if(!name) name=(await reverseName([place.lat,place.lng]))||"จุดที่ถ่ายรูป";
+  const ed=materialize(di); const tm=t0?jstMin(t0):null; const its=planItems(di);
+  const before=tm==null?null:its.filter(x=>x.k!=="drive"&&x.k!=="train"&&toMin(x.t)<=tm&&ed.list.some(n=>n.key===x._i)).pop();
+  const n={key:"cs_"+Date.now().toString(36),kind:"custom",name,lat:place.lat,lng:place.lng,note:"เพิ่มจากรูปของเรา",dur:t0?Math.max(30,Math.round((t1-t0)/60000)+20):45,at:tm!=null?fmtMin(tm):"",pre:0}; regCustom(n);
+  const i=before?ed.list.findIndex(x=>x.key===before._i):-1; ed.list.splice(i+1,0,n); saveEdits();
+  for(const m of ps){ m.day=di; m.key=n.key; m.place=null; m.auto=false; await PDB.putMeta(m); }
+  renderPlan(); drawCustoms(); return n; }
+/* --- backup as a plain ZIP (stored, no compression): data.json + the original media, no base64 --- */
+const CRCT=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+async function crcBlob(b){ let c=0xFFFFFFFF; const CH=4<<20; for(let o=0;o<b.size;o+=CH){ const u=new Uint8Array(await b.slice(o,o+CH).arrayBuffer()); for(let i=0;i<u.length;i++) c=CRCT[(c^u[i])&255]^(c>>>8); } return (c^0xFFFFFFFF)>>>0; }
+async function zipBlob(entries,prog){ const parts=[], cd=[]; let off=0; const te=new TextEncoder();
+  for(let i=0;i<entries.length;i++){ const e=entries[i]; const nm=te.encode(e.name); const crc=await crcBlob(e.blob); const sz=e.blob.size;
+    const lh=new DataView(new ArrayBuffer(30)); lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(12,0x21,true); lh.setUint32(14,crc,true); lh.setUint32(18,sz,true); lh.setUint32(22,sz,true); lh.setUint16(26,nm.length,true);
+    parts.push(lh.buffer,nm,e.blob);
+    const ch=new DataView(new ArrayBuffer(46)); ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(14,0x21,true); ch.setUint32(16,crc,true); ch.setUint32(20,sz,true); ch.setUint32(24,sz,true); ch.setUint16(28,nm.length,true); ch.setUint32(42,off,true);
+    cd.push(ch.buffer,nm); off+=30+nm.length+sz; if(prog) prog(i+1,entries.length); }
+  const cdSize=cd.reduce((a,p)=>a+p.byteLength,0); const eo=new DataView(new ArrayBuffer(22)); eo.setUint32(0,0x06054b50,true); eo.setUint16(8,entries.length,true); eo.setUint16(10,entries.length,true); eo.setUint32(12,cdSize,true); eo.setUint32(16,off,true);
+  return new Blob(parts.concat(cd,[eo.buffer]),{type:"application/zip"}); }
+async function unzipIndex(file){ const tail=Math.min(file.size,65557); const u=new Uint8Array(await file.slice(file.size-tail).arrayBuffer()); let p=-1;
+  for(let i=u.length-22;i>=0;i--){ if(u[i]===0x50&&u[i+1]===0x4b&&u[i+2]===5&&u[i+3]===6){ p=i; break; } } if(p<0) throw new Error("ไม่ใช่ไฟล์ zip");
+  const dv=new DataView(u.buffer,p); const n=dv.getUint16(10,true), cdSize=dv.getUint32(12,true), cdOff=dv.getUint32(16,true);
+  const cd=new DataView(await file.slice(cdOff,cdOff+cdSize).arrayBuffer()); const out={}; let q=0; const dec=new TextDecoder();
+  for(let k=0;k<n;k++){ const method=cd.getUint16(q+10,true), sz=cd.getUint32(q+20,true), nl=cd.getUint16(q+28,true), xl=cd.getUint16(q+30,true), cl=cd.getUint16(q+32,true), lo=cd.getUint32(q+42,true);
+    out[dec.decode(new Uint8Array(cd.buffer,q+46,nl))]={method,sz,lo}; q+=46+nl+xl+cl; } return out; }
+async function unzipGet(file,e,type){ const h=new DataView(await file.slice(e.lo,e.lo+30).arrayBuffer()); const st=e.lo+30+h.getUint16(26,true)+h.getUint16(28,true); return file.slice(st,st+e.sz,type||""); }
+
 /* ===================== trip photos: stored on this phone (IndexedDB), sorted into stops by when/where they were taken ===================== */
 const PDB={db:null,
   open(){ return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{ let r; try{ r=indexedDB.open("hkd26photos",1); }catch(e){ return rej(e); }
@@ -2942,7 +3004,7 @@ const PDB={db:null,
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
 PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 function photosFor(di,key){ return phMeta.filter(m=>m.day===di&&m.key===key); }
-async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); if(!b) return ""; cache[id]=URL.createObjectURL(full?b.full:b.thumb); return cache[id]; }
+async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); const bl=b&&(full?b.full:b.thumb); if(!bl) return ""; cache[id]=URL.createObjectURL(bl); return cache[id]; }
 function hydrateMyPhotos(root){ $$("img[data-phid]:not([data-done])",root||document).forEach(im=>{ im.dataset.done=1; phThumbURL(im.dataset.phid,im.dataset.full==="1").then(u=>{ if(u) im.src=u; }); }); }
 /* --- EXIF: capture time and GPS from JPEG files (phones keep these unless the sharing app strips them) --- */
 function readExif(buf){ try{ const v=new DataView(buf); if(v.byteLength<4||v.getUint16(0)!==0xFFD8) return {}; let o=2;
@@ -2971,25 +3033,36 @@ function matchPhoto(m){
   const di=m.takenAt?DAYS.findIndex(d=>d.date===jstDate(m.takenAt)):-1; if(di<0) return {day:null,key:null};
   const its=planItems(di); const stops=its.filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x.p&&P[x.p]);
   const R=di>=CARFREE_DAY?1.0:2.5, t=jstMin(m.takenAt);
-  if(m.lat!=null){ let best=null,bd=1e9; stops.forEach(s=>{ const v=km([P[s.p][1],P[s.p][2]],[m.lat,m.lng]); if(v<bd){ bd=v; best=s; } }); if(best&&bd<=R) return {day:di,key:best._i}; }
   const legAt=its.find(x=>(x.k==="drive"||x.k==="train")&&t>=toMin(x.t)&&t<=toMin(x.t)+(x.min||0));
-  if(legAt) return {day:di,key:"leg:"+legAt._i};
-  const inWin=stops.find(s=>t>=toMin(s.t)-10&&t<=toMin(s.e||s.t)+15); if(inWin) return {day:di,key:inWin._i};
+  if(m.lat!=null){ /* where it was taken decides; the timetable only breaks ties between nearby stops */
+    const near=stops.map(s=>({s,d:km([P[s.p][1],P[s.p][2]],[m.lat,m.lng])})).filter(o=>o.d<=R).sort((a,b)=>a.d-b.d);
+    const inT=o=>t>=toMin(o.s.t)-30&&t<=toMin(o.s.e||o.s.t)+30;
+    const hit=near.find(o=>o.d<=0.35&&inT(o))||near.find(o=>o.d<=0.35)||near.find(inT); if(hit) return {day:di,key:hit.s._i};
+    const kn=nearKnown(m.lat,m.lng); if(kn) return {day:di,key:null,place:kn};
+    if(legAt) return {day:di,key:"leg:"+legAt._i};
+    return {day:di,key:null,place:{name:"",lat:m.lat,lng:m.lng}}; }
+  if(legAt) return {day:di,key:"leg:"+legAt._i,byTime:true};
+  const inWin=stops.find(s=>t>=toMin(s.t)-10&&t<=toMin(s.e||s.t)+15); if(inWin) return {day:di,key:inWin._i,byTime:true};
   let best=null,bd=1e9; stops.forEach(s=>{ const a=toMin(s.t), b=toMin(s.e||s.t); const v=t<a?a-t:t>b?t-b:0; if(v<bd){ bd=v; best=s; } });
-  if(best&&bd<=90) return {day:di,key:best._i}; return {day:di,key:null}; }
+  if(best&&bd<=90) return {day:di,key:best._i,byTime:true}; return {day:di,key:null}; }
 var phImport=null;
-function pickPhotos(forKey){ const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*"; inp.multiple=true; inp.style.display="none";
+function pickPhotos(forKey,viaFiles){ const inp=document.createElement("input"); inp.type="file"; inp.accept=viaFiles?"image/*,video/*,.heic,.mov":"image/*,video/*"; if(viaFiles) inp.accept=""; inp.multiple=true; inp.style.display="none";
   inp.onchange=()=>{ const files=[...inp.files]; inp.remove(); if(files.length) importPhotos(files,forKey); }; document.body.appendChild(inp); inp.click(); }
 async function importPhotos(files,forKey){
-  phImport={n:files.length,done:0,skip:0,dup:0,auto:0,manual:0,none:0}; photoSheetPaint(true);
+  phImport={n:files.length,done:0,skip:0,dup:0,auto:0,manual:0,none:0,geo:0,vid:0,off:0}; photoSheetPaint(true);
   const di0=curDay;
   for(const f of files){
-    try{ const head=await f.slice(0,262144).arrayBuffer(); const x=readExif(head); let takenAt=exifTime(x), tsrc=takenAt?"exif":null; if(!takenAt&&f.lastModified&&Math.abs(Date.now()-f.lastModified)>30*60e3){ takenAt=f.lastModified; tsrc="file"; }
+    try{ const vid=isVideo(f); let x={}, takenAt=null, tsrc=null;
+      if(vid){ const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; }
+      else { const head=await f.slice(0,262144).arrayBuffer(); x=readExif(head); takenAt=exifTime(x); }
+      if(takenAt) tsrc="meta"; else if(f.lastModified&&Math.abs(Date.now()-f.lastModified)>30*60e3){ takenAt=f.lastModified; tsrc="file"; }
       const sig=f.name+"|"+f.size+"|"+(takenAt||0); if(phMeta.some(m=>m.sig===sig)){ phImport.dup++; phImport.done++; photoSheetPaint(); continue; }
-      const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); const id="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-      const m={id,sig,name:f.name,takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,w:full.w,h:full.h,added:Date.now(),src:"device",tsrc};
-      if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.auto=true; if(r.key) phImport.auto++; else phImport.none++; }
-      await PDB.putBlob({id,full:full.blob,thumb:th.blob}); await PDB.putMeta(m); phMeta.push(m); }
+      const id=(vid?"v":"p")+Date.now().toString(36)+Math.random().toString(36).slice(2,7); let rec, m;
+      if(vid){ const pv=await videoPoster(f); rec={id,full:f,thumb:pv&&pv.blob||null}; m={id,sig,name:f.name,kind:"video",mime:f.type||"video/mp4",ext:((f.name||"").match(/\.(\w+)$/)||[,"mp4"])[1].toLowerCase(),size:f.size,dur:pv&&pv.dur||null,w:pv&&pv.w||null,h:pv&&pv.h||null}; phImport.vid++; }
+      else { const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); rec={id,full:full.blob,thumb:th.blob}; m={id,sig,name:f.name,w:full.w,h:full.h}; }
+      Object.assign(m,{takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,added:Date.now(),src:"device",tsrc}); if(m.lat!=null) phImport.geo++;
+      if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.auto=true; if(r.key) phImport.auto++; else if(r.place) phImport.off++; else phImport.none++; }
+      await PDB.putBlob(rec); await PDB.putMeta(m); phMeta.push(m); }
     catch(e){ phImport.skip++; }
     phImport.done++; photoSheetPaint(); }
   phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phImport.end=true; ensurePersist(); photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
@@ -2997,36 +3070,48 @@ function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จ�
   if(key.startsWith("leg:")){ const l=its.find(x=>x._i===key.slice(4)); return `D${DAYS[di].n} · ระหว่างทางไป ${l?P[l.to][0]:""}`; }
   const it=its.find(x=>x._i===key); const n=stopNumMap(di)[key]; return `D${DAYS[di].n} · ${n?n+". ":""}${it?it.n:"จุดที่ถูกลบ"}`; }
 function photoSheetHtml(){
-  const byDay=DAYS.map((d,i)=>phMeta.filter(m=>m.day===i).length); const loose=phMeta.filter(m=>m.key==null);
-  const imp=phImport; const prog=imp?`<div class="ph-prog"><div class="ph-bar"><i style="width:${Math.round(imp.done/imp.n*100)}%"></i></div><p>${imp.end?`เสร็จแล้ว ${imp.n} รูป: จัดเข้าจุดให้ ${imp.auto} รูป${imp.manual?` เพิ่มเข้าจุดที่เลือก ${imp.manual} รูป`:""}${imp.none?` ยังไม่ได้จัด ${imp.none} รูป`:""}${imp.dup?` ซ้ำกับที่มีอยู่ ${imp.dup} รูป`:""}${imp.skip?` เปิดไม่ได้ ${imp.skip} รูป (เช่นไฟล์ HEIC)`:""}`:`กำลังจัดรูป ${imp.done} / ${imp.n}…`}</p></div>`:"";
-  return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${phMeta.length} รูป</span>`:""}</h2>
-  <p style="margin:0 0 10px">เลือกรูปจากมือถือได้ทีละหลายรูป (บน Android เปิดจาก Google Photos ได้ในหน้าเลือกรูป) แอปจะดูวันเวลาและตำแหน่งที่ถ่ายแล้ววางรูปไว้ที่จุดนั้นในแผนให้เอง รูปเก็บอยู่ในเครื่องนี้เท่านั้น</p>
-  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดรูปใหม่ตามแผนล่าสุด</button><button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>${prog}
+  const byDay=DAYS.map((d,i)=>phMeta.filter(m=>m.day===i).length); const loose=phMeta.filter(m=>m.key==null&&!m.place); const groups=placeGroups();
+  const imp=phImport; const prog=imp?`<div class="ph-prog"><div class="ph-bar"><i style="width:${Math.round(imp.done/imp.n*100)}%"></i></div><p>${imp.end?`เสร็จแล้ว ${imp.n} ไฟล์${imp.vid?` (วิดีโอ ${imp.vid})`:""}: จัดเข้าจุดในแผน ${imp.auto}${imp.off?` · ถ่ายที่ที่ไม่อยู่ในแผน ${imp.off}`:""}${imp.manual?` · เพิ่มเข้าจุดที่เลือก ${imp.manual}`:""}${imp.none?` · ยังไม่ได้จัด ${imp.none}`:""}${imp.dup?` · ซ้ำกับที่มีอยู่ ${imp.dup}`:""}${imp.skip?` · เปิดไม่ได้ ${imp.skip} (เช่นไฟล์ HEIC)`:""}<br><span class="tiny">มีตำแหน่งที่ถ่าย ${imp.geo} จาก ${imp.n-imp.dup-imp.skip} ไฟล์${imp.geo<(imp.n-imp.dup-imp.skip)/2?" · ไฟล์ที่ไม่มีตำแหน่งจะจัดตามเวลาในแผน ถ้าอยากได้ตำแหน่งลอง <button class=\"lnk\" data-act=\"ph-pick-files\">เลือกผ่านแอปไฟล์</button>":""}</span>`:`กำลังจัด ${imp.done} / ${imp.n}…`}</p></div>`:"";
+  const cell=m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
+  return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปและวิดีโอของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${mediaWord(phMeta)}</span>`:""}</h2>
+  <p style="margin:0 0 10px">เลือกรูปและวิดีโอจากมือถือได้ทีละหลายไฟล์ (บน Android เปิดจาก Google Photos ได้ในหน้าเลือก) แอปดูตำแหน่งที่ถ่ายก่อน ถ้าไม่มีตำแหน่งจะเทียบเวลากับตารางในแผน ไฟล์เก็บอยู่ในเครื่องนี้เท่านั้น</p>
+  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button><button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>${prog}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
-  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length} รูป</h3><p class="tiny">รูปที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป แตะรูปเพื่อเลือกว่าเป็นจุดไหน</p><div class="ph-grid">${loose.map(m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt=""></button>`).join("")}</div>`:""}
-  <p class="tiny" style="margin-top:12px">เคล็ดลับ: ถ้ารูปไม่มีตำแหน่ง (บางแอปตัดข้อมูลตำแหน่งออก) แอปจะใช้เวลาที่ถ่ายเทียบกับตารางในแผนแทน ถ้าวางผิดจุด แตะรูปแล้วกด "ย้ายไปจุดอื่น"</p></div>`; }
+  ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">แอปรู้จากตำแหน่งในรูปว่าไม่ได้ถ่ายที่จุดไหนในแผน กด "เพิ่มเข้าแผน" เพื่อสร้างจุดใหม่ตามเวลาที่ถ่าย แล้วรูปจะย้ายไปอยู่ที่จุดนั้น</p>${groups.map((g,gi)=>`<div class="pg"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(g.place.name||"ตำแหน่ง "+(+g.place.lat).toFixed(4)+", "+(+g.place.lng).toFixed(4))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span></div><div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button></div></div>`).join("")}`:""}
+  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">ไฟล์ที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป แตะเพื่อเลือกว่าเป็นจุดไหน</p><div class="ph-grid">${loose.map(cell).join("")}</div>`:""}
+  <p class="tiny" style="margin-top:12px">ถ้าวางผิดจุด แตะรูปแล้วกด "ย้ายไปจุดอื่น" เลือกให้ย้ายรูปที่ถ่ายช่วงเดียวกันไปพร้อมกันได้ หรือเลือกร้านในลิสต์เพื่อสร้างจุดใหม่ในแผน</p></div>`; }
 function photoSheetPaint(first){ if(first||!$("#ph-root")) openSheet(photoSheetHtml()); else renderSheet(photoSheetHtml()); setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
 function myPhotoStrip(di,key){ const l=photosFor(di,key); if(!l.length) return ""; const show=l.slice(0,8);
-  return `<div class="my-ph">${show.map((m,i)=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${i===7&&l.length>8?`<span>+${l.length-8}</span>`:""}</button>`).join("")}</div>`; }
+  return `<div class="my-ph">${show.map((m,i)=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}${i===7&&l.length>8?`<span>+${l.length-8}</span>`:""}</button>`).join("")}</div>`; }
 /* own-photo viewer: swipe, move to another stop, remove */
 var phView=null;
 function openMyPhoto(id){ const m=phMeta.find(x=>x.id===id); if(!m) return; const list=phMeta.filter(x=>x.day===m.day&&x.key===m.key); phView={list:list.map(x=>x.id),i:list.findIndex(x=>x.id===id),confirm:false,move:false};
   if(!lbOpen){ lbOpen=true; try{ history.pushState({lb:1},""); }catch(e){} } drawMyPhoto(); }
 function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; const m=phMeta.find(x=>x.id===id); if(!m){ closeLightbox(false); return; }
   const when=m.takenAt?new Date(m.takenAt+9*3600e3).toISOString().replace("T"," ").slice(0,16):"ไม่ทราบเวลา";
+  const grp=phMeta.filter(x=>x.day===m.day&&x.key===m.key&&(x.place&&m.place?x.place.name===m.place.name:true)&&x.takenAt&&m.takenAt&&Math.abs(x.takenAt-m.takenAt)<=45*60e3);
   let mv=""; if(v.move){ const opts=[]; DAYS.forEach((d,i)=>{ const its=planItems(i); const nums=stopNumMap(i); its.filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x.p).forEach(x=>opts.push([i+"|"+x._i,`D${d.n} · ${nums[x._i]||""}. ${x.n}`])); });
-    mv=`<select class="inp" id="ph-move" style="margin-top:8px"><option value="">เลือกจุด…</option>${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===m.day+"|"+m.key?" selected":""}>${esc(t)}</option>`).join("")}<option value="-|">ยังไม่ได้จัด</option></select>`; }
-  $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button><img data-phid="${id}" data-full="1" alt=""><div class="lb-cap"><b>${esc(keyLabel(m.day,m.key))}</b><span>${esc(when)}${m.lat!=null?" · มีตำแหน่ง":""}${m.auto?" · จัดให้อัตโนมัติ":""}</span>${mv}</div>
+    const recs=[]; if(m.day!=null){ const seen=new Set(); const RC=dayRecs(m.day,true)||{}; const t=m.takenAt?jstMin(m.takenAt):null;
+      const order=planItems(m.day).filter(x=>RC[x._i]).sort((a,b)=>t==null?0:Math.abs(toMin(a.t)-t)-Math.abs(toMin(b.t)-t)).map(x=>x._i);
+      const have=dayStops(m.day).map(x=>P[x.p]).filter(Boolean);
+      order.concat(Object.keys(RC)).forEach(k=>(RC[k]||[]).forEach(r=>{ if(r.lat==null||seen.has(r.id)||have.some(p=>km([p[1],p[2]],[r.lat,r.lng])<0.08)) return; seen.add(r.id); recs.push(r); })); }
+    mv=`<select class="inp" id="ph-move" style="margin-top:8px"><option value="">เลือกจุด…</option><optgroup label="จุดในแผน">${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===m.day+"|"+m.key?" selected":""}>${esc(t)}</option>`).join("")}</optgroup>${recs.length?`<optgroup label="เพิ่มเป็นจุดใหม่ใน D${DAYS[m.day].n} (ร้าน/ที่แนะนำ)">${recs.map(r=>`<option value="${esc("r|"+m.day+"|"+r.id)}">${r.kind==="food"?"🍴 ":"📍 "}${esc(r.name)}</option>`).join("")}</optgroup>`:""}${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}<option value="-|">ยังไม่ได้จัด</option></select>
+    ${grp.length>1?`<label class="lb-grp"><input type="checkbox" id="ph-grp" checked> ย้ายรูปที่ถ่ายช่วงเดียวกัน (±45 นาที) ไปด้วย ${grp.length} ไฟล์</label>`:""}`; }
+  $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button>${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}<div class="lb-cap"><b>${esc(keyLabel(m.day,m.key))}</b><span>${esc(when)}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${m.place?" · ถ่ายที่ที่ไม่อยู่ในแผน":m.auto&&m.key?(m.byTime?" · จัดตามเวลาในแผน":" · จัดตามตำแหน่ง"):""}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>${mv}</div>
   <div class="lb-bar"><button class="btn small" data-mp="prev" ${v.i===0?"disabled":""}>‹</button><span class="tiny">${v.i+1}/${v.list.length}</span><button class="btn small" data-mp="next" ${v.i>=v.list.length-1?"disabled":""}>›</button><button class="btn small" data-mp="move">ย้ายไปจุดอื่น</button><button class="btn small" data-mp="cover">${m.cover?"★ รูปปก":"ตั้งเป็นปก"}</button><button class="btn small ${v.confirm?"danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้งเพื่อเอาออก":"เอารูปออก"}</button></div></div>`;
-  hydrateMyPhotos($("#lbRoot"));
+  hydrateMyPhotos($("#lbRoot")); { const ve=$("#lbRoot video[data-vid]"); if(ve){ phThumbURL(id,false).then(u=>{ if(u) ve.poster=u; }); phThumbURL(id,true).then(u=>{ if(u) ve.src=u; }); } }
   const root=$("#lbRoot"); root.onclick=async ev=>{ const b=ev.target.closest("[data-mp]"); if(!b) return; ev.stopPropagation(); const a=b.dataset.mp;
     if(a==="close"){ phView=null; closeLightbox(false); return; } if(a==="prev"&&v.i>0){ v.i--; v.confirm=false; drawMyPhoto(); } if(a==="next"&&v.i<v.list.length-1){ v.i++; v.confirm=false; drawMyPhoto(); }
     if(a==="move"){ v.move=!v.move; drawMyPhoto(); }
     if(a==="cover"){ for(const o of phMeta){ if(o.cover&&o.id!==id){ o.cover=false; await PDB.putMeta(o); } } m.cover=!m.cover; await PDB.putMeta(m); drawMyPhoto(); }
     if(a==="del"){ if(!v.confirm){ v.confirm=true; drawMyPhoto(); return; } await PDB.del(id); phMeta=phMeta.filter(x=>x.id!==id); v.list.splice(v.i,1); v.confirm=false; if(!v.list.length){ phView=null; closeLightbox(false); } else { v.i=Math.min(v.i,v.list.length-1); drawMyPhoto(); } renderPlan(); if($("#ph-root")) photoSheetPaint(); } };
-  root.onchange=async ev=>{ if(ev.target.id!=="ph-move"||!ev.target.value) return; const [dd,kk]=ev.target.value.split("|"); m.day=dd==="-"?null:+dd; m.key=kk||null; m.auto=false; await PDB.putMeta(m); v.move=false; renderPlan(); if($("#ph-root")) photoSheetPaint(); drawMyPhoto(); };
+  root.onchange=async ev=>{ if(ev.target.id!=="ph-move"||!ev.target.value) return; const val=ev.target.value; const all=($("#ph-grp")||{}).checked?grp:[m];
+    if(val.startsWith("r|")){ const [,dd,rid]=val.split("|"); const r=recIdx[dd+"|"+rid]||Object.values(dayRecs(+dd,true)||{}).flat().find(x=>x.id===rid); if(r){ ev.target.disabled=true; await addStopFromPhotos(+dd,all.map(x=>x.id),{name:r.name,lat:r.lat,lng:r.lng}); } }
+    else if(val==="here|"){ ev.target.disabled=true; await addStopFromPhotos(m.day,all.map(x=>x.id),m.place); }
+    else { const [dd,kk]=val.split("|"); for(const x of all){ x.day=dd==="-"?null:+dd; x.key=kk||null; x.place=null; x.auto=false; await PDB.putMeta(x); } }
+    v.move=false; renderPlan(); if($("#ph-root")) photoSheetPaint(); drawMyPhoto(); };
   let sx=null; root.ontouchstart=e=>{ sx=e.touches[0].clientX; }; root.ontouchend=e=>{ if(sx==null) return; const dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>60){ if(dx<0&&v.i<v.list.length-1){ v.i++; drawMyPhoto(); } else if(dx>0&&v.i>0){ v.i--; drawMyPhoto(); } } }; }
-async function resortPhotos(){ for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); if(r.day!==m.day||r.key!==m.key){ m.day=r.day; m.key=r.key; await PDB.putMeta(m); } } renderPlan(); photoSheetPaint(); }
+async function resortPhotos(){ for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; await PDB.putMeta(m); } renderPlan(); photoSheetPaint(); }
 /* visited: tapped by you, or any of your photos are at that stop */
 var visited=store.get("visited",{});
 /* a stop counts as visited when ticked, when our photos are there, or when its day is over; untick to say we skipped it */
@@ -3045,18 +3130,24 @@ function tripStats(){ let kmT=0; DAYS.forEach((d,i)=>{ const ln=dayLine(i)||[]; 
   let vis=0; DAYS.forEach((d,i)=>dayStops(i).forEach(s=>{ if(tbVisited(i,s._i)) vis++; })); return {km:Math.round(kmT/10)*10,vis,photos:phMeta.length}; }
 async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → images embedded */
   const src=async(m,big)=>{ if(mode!=="export") return await phThumbURL(m.id,big)||""; const b=await PDB.getBlob(m.id); if(!b) return ""; const blob=big?b.full:b.thumb; return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); };
-  const st=tripStats(); const cover=phMeta.find(m=>m.cover)||phMeta.find(m=>m.key&&m.lat!=null)||phMeta[0];
-  let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>ขับรถ 7 วัน · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${st.photos}</b>รูป</li><li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
+  const fig=async(m,big)=>{ if(m.kind!=="video") return `<figure><img src="${await src(m,big)}" alt="" loading="lazy"></figure>`;
+    const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); }):"")):await phThumbURL(m.id,false);
+    if(mode==="export") return `<figure class="v">${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}</i></figure>`;
+    return `<figure class="v"><video src="${await phThumbURL(m.id,true)}" ${po?`poster="${po}"`:""} controls playsinline preload="none"></video></figure>`; };
+  const grid=async(list,bigN)=>`<div class="tb-grid n${Math.min(list.length,5)}">${(await Promise.all(list.slice(0,24).map((m,j)=>fig(m,j<bigN)))).join("")}</div>`;
+  const st=tripStats(); const pics=phMeta.filter(m=>m.kind!=="video"); const cover=pics.find(m=>m.cover)||pics.find(m=>m.key&&m.lat!=null)||pics[0];
+  let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>ขับรถ 7 วัน · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${pics.length}</b>รูป</li>${phMeta.length>pics.length?`<li><b>${phMeta.length-pics.length}</b>วิดีโอ</li>`:""}<li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
   for(let i=0;i<DAYS.length;i++){ const d=DAYS[i]; const seq=stopSeq(i).filter(x=>x.num); const dayPh=phMeta.filter(m=>m.day===i);
     if(!dayPh.length&&!seq.some(x=>isVisited(i,x.it._i))) continue;   /* a day we haven't reached yet */
     h+=`<section class="tb-day" style="--dc:${cssVar(`--d${d.n}`)}"><header><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม</p><h2>${esc(d.title)}</h2></div></header>${routeSketch(i,640,220)}`;
     for(const x of seq){ const k=x.it._i; const ps=dayPh.filter(m=>m.key===k); const vis=tbVisited(i,k);
       if(!ps.length&&!vis) continue;
       if(!ps.length){ h+=`<p class="tb-line"><span>${x.num}</span>${esc(x.it.n)}<em>${esc(x.it.t)}</em></p>`; continue; }
-      h+=`<article class="tb-stop"><h3><span>${x.num}</span>${esc(x.it.n)}</h3><p class="tb-t">${esc(x.it.t)}${x.it.e&&x.it.e!==x.it.t?"–"+esc(x.it.e):""}</p>${ps.length?`<div class="tb-grid n${Math.min(ps.length,5)}">${(await Promise.all(ps.slice(0,24).map(async (m,j)=>`<figure><img src="${await src(m,j<3)}" alt="" loading="lazy"></figure>`))).join("")}</div>`:""}</article>`; }
+      h+=`<article class="tb-stop"><h3><span>${x.num}</span>${esc(x.it.n)}</h3><p class="tb-t">${esc(x.it.t)}${x.it.e&&x.it.e!==x.it.t?"–"+esc(x.it.e):""}</p>${ps.length?await grid(ps,3):""}</article>`; }
     const between=dayPh.filter(m=>m.key&&m.key.startsWith("leg:"));
-    if(between.length) h+=`<article class="tb-stop"><h3>ระหว่างทาง</h3><div class="tb-grid n${Math.min(between.length,5)}">${(await Promise.all(between.slice(0,24).map(async m=>`<figure><img src="${await src(m,false)}" alt="" loading="lazy"></figure>`))).join("")}</div></article>`;
-    const loose=dayPh.filter(m=>!m.key); if(loose.length) h+=`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3><div class="tb-grid n${Math.min(loose.length,5)}">${(await Promise.all(loose.slice(0,24).map(async m=>`<figure><img src="${await src(m,false)}" alt="" loading="lazy"></figure>`))).join("")}</div></article>`;
+    if(between.length) h+=`<article class="tb-stop"><h3>ระหว่างทาง</h3>${await grid(between,0)}</article>`;
+    for(const g of placeGroups().filter(g=>g.day===i)) h+=`<article class="tb-stop"><h3>${esc(g.place.name||"แวะระหว่างวัน")}</h3>${g.list[0].takenAt?`<p class="tb-t" style="margin-left:0">${fmtMin(jstMin(g.list[0].takenAt))}</p>`:""}${await grid(g.list,1)}</article>`;
+    const loose=dayPh.filter(m=>!m.key&&!m.place); if(loose.length) h+=`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3>${await grid(loose,0)}</article>`;
     h+=`</section>`; }
   h+=`<footer class="tb-end"><p>ฮอกไกโด ตุลาคม 2026</p></footer>`;
   return h; }
@@ -3082,7 +3173,8 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-line em{font-style:normal;font-weight:400;color:#69737D;font-size:13px;margin-left:auto}
 .tb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
 .tb-grid figure{margin:0;overflow:hidden;border-radius:10px;background:#F5F7F9;aspect-ratio:4/3}
-.tb-grid figure img{width:100%;height:100%;object-fit:cover;display:block}
+.tb-grid figure img,.tb-grid figure video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.tb-grid figure.v{position:relative}.tb-grid figure.v i{position:absolute;left:8px;bottom:8px;font-style:normal;font-size:12px;color:#fff;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:999px}
 .tb-grid.n1{grid-template-columns:1fr}.tb-grid.n1 figure{aspect-ratio:3/2}
 .tb-grid figure:first-child{grid-column:1/-1;aspect-ratio:16/10}
 .tb-grid.n2 figure:first-child{grid-column:auto;aspect-ratio:4/3}
@@ -3109,6 +3201,8 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='p
   if(a==="visit"){ toggleVisited(curDay,b.dataset.key); return; }
   if(a==="ph-sheet"){ photoSheetPaint(true); return; }
   if(a==="ph-pick"){ pickPhotos(null); return; }
+  if(a==="ph-pick-files"){ pickPhotos(null,true); return; }
+  if(a==="ph-addstop"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ b.disabled=true; b.textContent="กำลังเพิ่ม…"; addStopFromPhotos(g.day,g.list.map(m=>m.id),g.place).then(()=>{ if($("#ph-root")) photoSheetPaint(); }); } return; }
   if(a==="ph-add"){ pickPhotos(b.dataset.key); return; }
   if(a==="ph-open"){ openMyPhoto(b.dataset.id); return; }
   if(a==="ph-resort"){ resortPhotos(); return; }
@@ -3134,36 +3228,49 @@ function bkFileHtml(){ const c=runCtx(); const last=store.get("lastBackup",0); c
   return `<div class="box" id="bk-file"><h3>ข้อมูลในเครื่องนี้</h3>
   <dl class="kv"><dt>เปิดจาก</dt><dd>${esc(c.where)}</dd><dt>กันระบบลบ</dt><dd id="bk-pers">${persisted===true?"เปิดแล้ว ✓":persisted===false?"เบราว์เซอร์ยังไม่อนุญาต (ติดตั้งแอปหรือใช้บ่อยขึ้นแล้วจะได้เอง)":"กำลังตรวจ…"}</dd><dt>แผนที่แก้</dt><dd>${nd} วัน</dd><dt>รูปของเรา</dt><dd>${phMeta.length} รูป</dd><dt>ติ๊กไปแล้ว</dt><dd>${nv} จุด</dd><dt>สำรองล่าสุด</dt><dd>${last?esc(new Date(last).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})):"ยังไม่เคย"}</dd></dl>
   ${c.inapp?`<p class="sc-warn">หน้านี้เปิดอยู่ในแอปแชต ข้อมูลจะไม่ไปอยู่ในแอป Hokkaido ที่ติดตั้ง และอาจหายเมื่อปิด ควรเปิดลิงก์ใน Chrome</p>`:""}
-  <p style="margin:6px 0 8px;font-size:14.5px">ไฟล์สำรองเก็บทุกอย่างไว้ในไฟล์เดียว: แผนที่แก้ จุดที่ติ๊ก และรูปของเรา ส่งเข้า Google Drive หรือ LINE Keep ไว้ แล้วเปิดในเครื่องไหนก็ได้</p>
-  <label class="check" style="margin:0 0 8px"><input type="checkbox" id="bk-withph" ${phMeta.length?"checked":""}> รวมรูปด้วย${phMeta.length?` (${phMeta.length} รูป)`:""}</label>
+  <p style="margin:6px 0 8px;font-size:14.5px">ไฟล์สำรอง (.zip) เก็บทุกอย่างไว้ในไฟล์เดียว: แผนที่แก้ จุดที่ติ๊ก รูปและวิดีโอของเรา ส่งเข้า Google Drive หรือ LINE Keep ไว้ แล้วเปิดในเครื่องไหนก็ได้</p>
+  ${(()=>{ const nv=phMeta.filter(m=>m.kind==="video"), np=phMeta.length-nv.length; const mb=nv.reduce((a,m)=>a+(m.size||0),0)/1048576;
+    return `<label class="check" style="margin:0 0 4px"><input type="checkbox" id="bk-withph" ${np?"checked":""}> รวมรูปด้วย${np?` (${np} รูป)`:""}</label><label class="check" style="margin:0 0 8px"><input type="checkbox" id="bk-withvid" ${nv.length?"checked":""}> รวมวิดีโอด้วย${nv.length?` (${nv.length} ไฟล์ ~${mb.toFixed(0)} MB)`:""}</label>`; })()}
   <div class="c-actions"><button class="btn small primary" data-act="bk-file-make">${I.doc||""}สร้างไฟล์สำรอง</button><button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button></div><div id="bk-file-out"></div></div>`; }
 var bkFile=null;
-async function makeBackup(withPh,out){ const parts=[]; const ls={}; ["edits","editsHist","visited","checks","mapFlags2","day"].forEach(k=>{ const v=store.get(k,undefined); if(v!==undefined) ls[k]=v; });
-  parts.push(JSON.stringify({app:"hkd26",v:1,ts:Date.now(),ls}).slice(0,-1)+',"photos":[');
-  const list=withPh?phMeta.slice():[]; let n=0;
-  for(const m of list){ const b=await PDB.getBlob(m.id); if(!b||!b.full) continue; const du=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.onerror=()=>r(""); fr.readAsDataURL(b.full); }); if(!du) continue;
-    parts.push((n?",":"")+JSON.stringify({meta:m,full:du})); n++; if(out) out.textContent=`กำลังเตรียม ${n}/${list.length} รูป…`; }
-  parts.push("]}"); const d=jst().date.replace(/-/g,""); return new File(parts,`hokkaido-backup-${d}.json`,{type:"application/json"}); }
-function dataUrlBlob(du){ const [h,b64]=du.split(","); const mime=(h.match(/data:([^;]+)/)||[])[1]||"image/jpeg"; const bin=atob(b64); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new Blob([u],{type:mime}); }
-async function restoreBackup(file,out){ let j; try{ j=JSON.parse(await file.text()); }catch(e){ out.textContent="อ่านไฟล์ไม่ได้ ต้องเป็นไฟล์ hokkaido-backup-….json"; return; }
-  if(!j||j.app!=="hkd26"){ out.textContent="ไฟล์นี้ไม่ใช่ไฟล์สำรองของแอปนี้"; return; }
-  const ls=j.ls||{}; let addPh=0, skip=0;
+async function makeBackup(opt,out){ const ls={}; ["edits","editsHist","visited","checks","mapFlags2","day"].forEach(k=>{ const v=store.get(k,undefined); if(v!==undefined) ls[k]=v; });
+  const list=phMeta.filter(m=>m.kind==="video"?opt.vid:opt.ph); const entries=[], metas=[];
+  for(const m of list){ const b=await PDB.getBlob(m.id); if(!b||!b.full) continue; metas.push(m);
+    entries.push({name:`media/${m.id}.${m.kind==="video"?(m.ext||"mp4"):"jpg"}`,blob:b.full}); if(b.thumb) entries.push({name:`thumbs/${m.id}.jpg`,blob:b.thumb}); }
+  entries.unshift({name:"data.json",blob:new Blob([JSON.stringify({app:"hkd26",v:2,ts:Date.now(),ls,media:metas})],{type:"application/json"})});
+  const z=await zipBlob(entries,(k,n)=>{ if(out) out.textContent=`กำลังรวมไฟล์ ${k}/${n}…`; });
+  return new File([z],`hokkaido-backup-${jst().date.replace(/-/g,"")}.zip`,{type:"application/zip"}); }
+function applyLs(ls){
   if(ls.edits&&typeof ls.edits==="object"&&Object.keys(ls.edits).length){ snapEdits("ก่อนกู้คืนไฟล์"); edits=ls.edits; Object.values(edits).forEach(ed=>(ed&&ed.list||[]).forEach(regCustom)); reconcileAll(); store.set("edits",edits); snapEdits("กู้คืนไฟล์"); }
   if(Array.isArray(ls.editsHist)){ const h=store.get("editsHist",[]); ls.editsHist.forEach(s=>{ if(!h.some(x=>x.ts===s.ts)) h.push(s); }); h.sort((a,b)=>b.ts-a.ts); store.set("editsHist",h.slice(0,25)); }
   if(ls.visited){ for(const [d,o] of Object.entries(ls.visited)){ visited[d]=Object.assign({},o,visited[d]||{}); } store.set("visited",visited); }
-  if(ls.checks){ store.set("checks",Object.assign({},ls.checks,store.get("checks",{}))); }
-  const ps=j.photos||[]; let i=0;
-  for(const p of ps){ i++; out.textContent=`กำลังคืนรูป ${i}/${ps.length}…`; const m=p.meta; if(!m||!p.full||phMeta.some(x=>x.id===m.id||(m.sig&&x.sig===m.sig))){ skip++; continue; }
-    try{ const full=dataUrlBlob(p.full); const th=await shrink(full,420,.78); await PDB.putBlob({id:m.id,full,thumb:th.blob}); await PDB.putMeta(m); phMeta.push(m); addPh++; }catch(e){ skip++; } }
-  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); store.set("freshOk",1); if(!store.get("lastBackup",0)) store.set("lastBackup",j.ts||Date.now()); ensurePersist();
-  out.textContent=`กู้คืนแล้ว: แผนที่แก้ ${Object.keys(ls.edits||{}).length} วัน · รูป ${addPh} รูป${skip?` (ข้าม ${skip} รูปที่มีอยู่แล้ว)`:""}`; renderPlan(); renderInfo(); if(map&&curTab==="map") drawMap(false); }
+  if(ls.checks){ store.set("checks",Object.assign({},ls.checks,store.get("checks",{}))); } }
+function dataUrlBlob(du){ const [h,b64]=du.split(","); const mime=(h.match(/data:([^;]+)/)||[])[1]||"image/jpeg"; const bin=atob(b64); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new Blob([u],{type:mime}); }
+async function restoreBackup(file,out){ let addPh=0, skip=0, ls={}, ts=0, nEd=0;
+  const head=new Uint8Array(await file.slice(0,2).arrayBuffer()); const dup=m=>phMeta.some(x=>x.id===m.id||(m.sig&&x.sig===m.sig));
+  try{
+    if(head[0]===0x50&&head[1]===0x4b){ const idx=await unzipIndex(file); if(!idx["data.json"]) throw new Error("ไม่มี data.json");
+      const j=JSON.parse(await (await unzipGet(file,idx["data.json"])).text()); if(!j||j.app!=="hkd26") throw new Error("ไม่ใช่ไฟล์สำรองของแอปนี้");
+      ls=j.ls||{}; ts=j.ts; nEd=Object.keys(ls.edits||{}).length; applyLs(ls); const media=j.media||[]; let i=0;
+      for(const m of media){ i++; out.textContent=`กำลังคืนไฟล์ ${i}/${media.length}…`; if(dup(m)){ skip++; continue; }
+        const me=idx[`media/${m.id}.${m.kind==="video"?(m.ext||"mp4"):"jpg"}`]; if(!me){ skip++; continue; }
+        try{ const full=await unzipGet(file,me,m.kind==="video"?(m.mime||"video/mp4"):"image/jpeg"); let thumb=idx[`thumbs/${m.id}.jpg`]?await unzipGet(file,idx[`thumbs/${m.id}.jpg`],"image/jpeg"):null;
+          if(!thumb&&m.kind!=="video") thumb=(await shrink(full,420,.78)).blob;
+          await PDB.putBlob({id:m.id,full,thumb}); await PDB.putMeta(m); phMeta.push(m); addPh++; }catch(e){ skip++; } } }
+    else { const j=JSON.parse(await file.text()); if(!j||j.app!=="hkd26") throw new Error("ไม่ใช่ไฟล์สำรองของแอปนี้");
+      ls=j.ls||{}; ts=j.ts; nEd=Object.keys(ls.edits||{}).length; applyLs(ls); const ps=j.photos||[]; let i=0;
+      for(const p of ps){ i++; out.textContent=`กำลังคืนรูป ${i}/${ps.length}…`; const m=p.meta; if(!m||!p.full||dup(m)){ skip++; continue; }
+        try{ const full=dataUrlBlob(p.full); const th=await shrink(full,420,.78); await PDB.putBlob({id:m.id,full,thumb:th.blob}); await PDB.putMeta(m); phMeta.push(m); addPh++; }catch(e){ skip++; } } }
+  }catch(e){ out.textContent="เปิดไฟล์นี้ไม่ได้: "+(e&&e.message||e); return; }
+  phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); store.set("freshOk",1); if(!store.get("lastBackup",0)) store.set("lastBackup",ts||Date.now()); ensurePersist();
+  out.textContent=`กู้คืนแล้ว: แผนที่แก้ ${nEd} วัน · รูปและวิดีโอ ${addPh} ไฟล์${skip?` (ข้าม ${skip} ไฟล์ที่มีอยู่แล้ว)`:""}`; renderPlan(); renderInfo(); if(map&&curTab==="map") drawMap(false); }
 document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act='bk-file-make'],[data-act='bk-file-open'],[data-act='bk-file-share'],[data-act='bk-file-dl'],[data-act='fresh-ok']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="fresh-ok"){ store.set("freshOk",1); renderPlan(); return; }
-  if(a==="bk-file-open"){ const inp=document.createElement("input"); inp.type="file"; inp.accept=".json,application/json"; inp.style.display="none";
+  if(a==="bk-file-open"){ const inp=document.createElement("input"); inp.type="file"; inp.accept=".zip,.json,application/zip,application/json"; inp.style.display="none";
     inp.onchange=async()=>{ const f=inp.files[0]; inp.remove(); if(!f) return; if(!$("#bk-file")) openSheet(`<div class="sk">สำรองข้อมูล</div><h2>เปิดไฟล์สำรอง</h2>`+bkFileHtml()); const out=$("#bk-file-out"); out.innerHTML=`<p class="tiny">กำลังอ่านไฟล์…</p>`; await restoreBackup(f,out.firstChild||out); };
     document.body.appendChild(inp); inp.click(); return; }
   if(a==="bk-file-make"){ const out=$("#bk-file-out"); out.innerHTML=`<p class="tiny">กำลังเตรียมไฟล์…</p>`; const withPh=!!($("#bk-withph")||{}).checked;
-    bkFile=await makeBackup(withPh,out.firstChild); const mb=(bkFile.size/1048576).toFixed(1); const canShare=!!(navigator.canShare&&navigator.canShare({files:[bkFile]}));
+    bkFile=await makeBackup({ph:withPh,vid:!!($("#bk-withvid")||{}).checked},out.firstChild); const mb=(bkFile.size/1048576).toFixed(1); const canShare=!!(navigator.canShare&&navigator.canShare({files:[bkFile]}));
     out.innerHTML=`<p class="tiny">ไฟล์พร้อมแล้ว ${esc(bkFile.name)} · ${mb} MB</p><div class="c-actions">${canShare?`<button class="btn small primary" data-act="bk-file-share">ส่งไปเก็บ (Google Drive / LINE)</button>`:""}<button class="btn small" data-act="bk-file-dl">ดาวน์โหลด</button></div>`; return; }
   if(a==="bk-file-share"&&bkFile){ try{ await navigator.share({files:[bkFile],title:"สำรองแอปทริปฮอกไกโด"}); store.set("lastBackup",Date.now()); b.textContent="ส่งแล้ว ✓"; }catch(e){ if(e&&e.name!=="AbortError") b.textContent="ส่งไม่ได้ ใช้ปุ่มดาวน์โหลดแทน"; } return; }
   if(a==="bk-file-dl"&&bkFile){ let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
