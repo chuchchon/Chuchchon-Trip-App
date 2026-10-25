@@ -2868,7 +2868,7 @@ try{ new MutationObserver(()=>restyleMap()).observe(document.documentElement,{at
 
 /* ===================== Google Places, with the trip owner's own key (kept on the phone, never in the public page) ===================== */
 var GKEY=store.get("gkey","");
-(()=>{ const m=(location.hash||"").match(/gkey=([A-Za-z0-9_\-]{20,})/); if(m){ GKEY=m[1]; store.set("gkey",GKEY); try{ history.replaceState(history.state,"",location.pathname+location.search); }catch(e){} } })();
+(()=>{ const m=(location.hash||"").match(/gkey=([A-Za-z0-9_\-]{20,})/); if(m){ GKEY=m[1]; store.set("gkey",GKEY); store.set("glite",false); try{ history.replaceState(history.state,"",location.pathname+location.search); }catch(e){} } })();
 const G_FIELDS=["id","displayName","formattedAddress","shortFormattedAddress","location","primaryType","primaryTypeDisplayName","types","rating","userRatingCount","googleMapsUri","currentOpeningHours.openNow"];
 const GQ={top:"tourist attractions",food:"restaurants",cafe:"cafe sweets",bar:"izakaya bar",view:"scenic viewpoint",park:"park garden",onsen:"onsen hot spring",shrine:"shrine temple",museum:"museum",michi:"michi no eki roadside station",farm:"farm dairy winery",shop:"shopping mall souvenir",shoes:"shoes clothing store",drug:"drugstore",konbini:"convenience store",fuel:"gas station",station:"train station",atm:"ATM"};
 var gCache={}, gErr="", gStatus=0, gVia=store.get("gvia","rest"), gUsed=store.get("gused",{});
@@ -2898,11 +2898,13 @@ async function gSearch(textQuery,where){ if(!GKEY) return null; const ck=textQue
   if(gVia!=="js"){ list=await gRest(textQuery,where); if(list==null&&(gErr.startsWith("net:")||gStatus===403)){ const e0=gErr; const j=await gJs(textQuery,where); if(j){ list=j; gVia="js"; store.set("gvia","js"); } else gErr=e0+" / "+gErr; } }
   else list=await gJs(textQuery,where);
   if(list) gCache[ck]={t:Date.now(),list}; return list; }
-async function gRest(textQuery,where){ const body={textQuery,languageCode:"en",regionCode:"JP",pageSize:where.n||10};
+var gLite=store.get("glite",false);   /* demo / restricted keys may refuse rating fields: ask again without them */
+async function gRest(textQuery,where,again){ const body={textQuery,languageCode:"en",regionCode:"JP",pageSize:where.n||10};
   if(where.bb) body.locationRestriction={rectangle:gRect(where.bb)}; else if(where.ll) body.locationBias={circle:{center:{latitude:where.ll[0],longitude:where.ll[1]},radius:Math.min(50000,where.r||20000)}};
   const ac=new AbortController(); const to=setTimeout(()=>ac.abort(),10000);
-  try{ gCount(); const r=await fetch("https://places.googleapis.com/v1/places:searchText",{method:"POST",headers:{"Content-Type":"application/json","X-Goog-Api-Key":GKEY,"X-Goog-FieldMask":G_FIELDS.map(f=>"places."+f).join(",")},body:JSON.stringify(body),signal:ac.signal});
+  try{ gCount(); const r=await fetch("https://places.googleapis.com/v1/places:searchText",{method:"POST",headers:{"Content-Type":"application/json","X-Goog-Api-Key":GKEY,"X-Goog-FieldMask":G_FIELDS.filter(f=>!gLite||!/rating|userRatingCount/i.test(f)).map(f=>"places."+f).join(",")},body:JSON.stringify(body),signal:ac.signal});
     let j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok&&(r.status===400||r.status===403)&&!gLite&&!again&&!/API key not valid|API_KEY_INVALID|referer|not been used|disabled/i.test((j.error&&j.error.message)||"")){ gLite=true; store.set("glite",true); clearTimeout(to); return gRest(textQuery,where,true); }
     gStatus=r.status; if(!r.ok){ gErr=(j.error&&j.error.message)||("HTTP "+r.status); return null; } gErr=""; return (j.places||[]).filter(p=>p.location).map(p=>gItem(p,"rest")).map(r=>(r.sub=gSub(r),r)); }
   catch(e){ gErr=e.name==="AbortError"?"Google ไม่ตอบภายใน 10 วินาที":"net:"+(e.message||e); return null; } finally{ clearTimeout(to); } }
 var gLib=null;
@@ -2944,7 +2946,7 @@ function gSetupHtml(msg){ const has=!!GKEY; const use=gMonthUse();
   <p class="tiny">ค่าใช้จ่าย: Google ให้ค้นแบบมีคะแนนรีวิวฟรีเดือนละ 1,000 ครั้ง ทริปนี้ใช้ไม่ถึง ถ้าอยากให้ไม่มีทางเสียเงินเลย ตั้งเพดานจำนวนครั้งได้ที่หน้า <a href="https://console.cloud.google.com/apis/api/places.googleapis.com/quotas" target="_blank" rel="noopener">Quotas</a> · key เก็บอยู่ในมือถือเครื่องนี้เท่านั้น ไม่ได้อยู่ในหน้าเว็บสาธารณะ</p>`; }
 document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='gk-']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="gk-open"){ openSheet(gSetupHtml()); return; }
-  if(a==="gk-save"){ const v=($("#gk-in")||{}).value||""; GKEY=v.trim(); store.set("gkey",GKEY); gCache={}; gVia="rest"; store.set("gvia","rest"); exCache={};
+  if(a==="gk-save"){ const v=($("#gk-in")||{}).value||""; GKEY=v.trim(); store.set("gkey",GKEY); gLite=false; store.set("glite",false); gCache={}; gVia="rest"; store.set("gvia","rest"); exCache={};
     if(!GKEY){ renderSheet(gSetupHtml()); return; } $("#gk-msg").textContent="กำลังทดสอบ…";
     const t=await gSearch("Nijo Market Sapporo",{ll:[43.0567,141.3577],r:3000,n:1}); $("#gk-msg").innerHTML=t&&t.length?`ใช้ได้แล้ว ✓ เจอ "${esc(t[0].name)}" ${esc(gRateTxt(t[0]))}`:`ยังใช้ไม่ได้: ${esc(gErr.replace(/^net:/,"เชื่อมต่อไม่ได้ "))}`; return; }
   if(a==="gk-del"){ GKEY=""; store.set("gkey",""); gCache={}; exCache={}; renderSheet(gSetupHtml()); return; }
