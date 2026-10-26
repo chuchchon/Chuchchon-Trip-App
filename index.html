@@ -684,6 +684,25 @@ body.tb-open{overflow:hidden}
 @keyframes pgflash{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent,#C2361F) 35%,transparent)}}
 .pg-just{margin-top:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--accent,#C2361F) 10%,var(--surface,#fff))}.pg-just p{margin:0 0 8px}
 @media (prefers-reduced-motion:reduce){.pg.just,.ti.k-sug.just .sc{animation:none}}
+#tbBody figure[data-tbid]{position:relative;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;cursor:pointer;transition:transform .12s}
+#tbBody figure[data-tbid] video{pointer-events:none}
+#tbBody figure.v i{position:absolute;left:8px;bottom:8px;font-style:normal;font-size:12px;color:#fff;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:999px;pointer-events:none}
+#tbBody figure.press{transform:scale(.96)}
+#tbBody figure.sel{outline:4px solid #1D4E9E;outline-offset:-4px}
+#tbBody figure.sel::after{content:"✓";position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:#1D4E9E;color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+body.tb-selecting #tbBody figure[data-tbid]:not(.sel)::after{content:"";position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.25)}
+#tbBody figure.hid{opacity:.35}#tbBody figure.hid::before{content:"เอาออกแล้ว";position:absolute;left:8px;top:8px;z-index:1;font-size:11px;background:#1C2228;color:#fff;padding:1px 6px;border-radius:6px}
+#tbBody figure.cov::before{content:"★ ปก";position:absolute;left:8px;top:8px;z-index:1;font-size:11px;background:#B9820F;color:#fff;padding:1px 6px;border-radius:6px}
+#tbBody figure.lifting{opacity:.3}
+#tbBody figure.tb-drop-b{box-shadow:-5px 0 0 0 #1D4E9E}#tbBody figure.tb-drop-a{box-shadow:5px 0 0 0 #1D4E9E}
+.tb-ghost{position:fixed;z-index:1500;width:72px;height:72px;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:none;background:#1C2228}
+.tb-ghost img{width:100%;height:100%;object-fit:cover}.tb-ghost b{position:absolute;right:4px;top:4px;background:#1D4E9E;color:#fff;border-radius:999px;font-size:12px;padding:0 7px}
+body.tb-dragging{overflow:hidden}
+.tb-more{margin:8px 0 0}
+.tb-selbar{position:sticky;bottom:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid #E3E7EB;color:#1C2228}
+.tb-selbar b{margin-right:4px}.tb-selbar.hint{justify-content:center;font-size:13px;color:#69737D;padding-block:8px calc(8px + env(safe-area-inset-bottom,0px))}
+.tb-selbar .btn.danger{background:#B3261E;color:#fff;border-color:#B3261E}
+@media print{ .tb-selbar,.tb-more{display:none!important} }
 </style>
 
 <div class="app">
@@ -3091,7 +3110,7 @@ const PDB={db:null,
   del(id){ return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
 PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(fillSuggestions,1500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
-function photosFor(di,key){ return phMeta.filter(m=>m.day===di&&m.key===key); }
+function photosFor(di,key){ return tbSort(phMeta.filter(m=>m.day===di&&m.key===key)); }
 async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); const bl=b&&(full?b.full:b.thumb); if(!bl) return ""; cache[id]=URL.createObjectURL(bl); return cache[id]; }
 function hydrateMyPhotos(root){ $$("img[data-phid]:not([data-done])",root||document).forEach(im=>{ im.dataset.done=1; phThumbURL(im.dataset.phid,im.dataset.full==="1").then(u=>{ if(u) im.src=u; }); }); }
 /* --- EXIF: capture time and GPS from JPEG files (phones keep these unless the sharing app strips them) --- */
@@ -3352,25 +3371,29 @@ function routeSketch(di,w,h){ const pts=dayLine(di); if(!pts||pts.length<2) retu
 function tripStats(){ let kmT=0; DAYS.forEach((d,i)=>{ const ln=dayLine(i)||[]; for(let j=1;j<ln.length;j++) kmT+=km(ln[j-1],ln[j]); });
   let vis=0; DAYS.forEach((d,i)=>dayStops(i).forEach(s=>{ if(tbVisited(i,s._i)) vis++; })); return {km:Math.round(kmT/10)*10,vis,photos:phMeta.length}; }
 async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → images embedded */
+  const app=mode!=="export"; const shown=m=>!m.tbHide||(app&&tbShowHid); if(app) tbGrids={};
   const src=async(m,big)=>{ if(mode!=="export") return await phThumbURL(m.id,big)||""; const b=await PDB.getBlob(m.id); if(!b) return ""; const blob=big?b.full:b.thumb; return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); };
-  const fig=async(m,big)=>{ if(m.kind!=="video") return `<figure><img src="${await src(m,big)}" alt="" loading="lazy"></figure>`;
+  const fa=m=>app?` data-tbid="${m.id}" class="${m.kind==="video"?"v":""}${m.tbHide?" hid":""}${tbSel&&tbSel.has(m.id)?" sel":""}${m.cover?" cov":""}"`:(m.kind==="video"?` class="v"`:"");
+  const fig=async(m,big)=>{ if(m.kind!=="video") return `<figure${fa(m)}><img src="${await src(m,big)}" alt="" loading="lazy" draggable="false"></figure>`;
     const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); }):"")):await phThumbURL(m.id,false);
     if(mode==="export") return `<figure class="v">${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}</i></figure>`;
-    return `<figure class="v"><video src="${await phThumbURL(m.id,true)}" ${po?`poster="${po}"`:""} controls playsinline preload="none"></video></figure>`; };
-  const grid=async(list,bigN)=>`<div class="tb-grid n${Math.min(list.length,5)}">${(await Promise.all(list.slice(0,24).map((m,j)=>fig(m,j<bigN)))).join("")}</div>`;
-  const st=tripStats(); const pics=phMeta.filter(m=>m.kind!=="video"); const cover=pics.find(m=>m.cover)||pics.find(m=>m.key&&m.lat!=null)||pics[0];
-  let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>ขับรถ 7 วัน · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${pics.length}</b>รูป</li>${phMeta.length>pics.length?`<li><b>${phMeta.length-pics.length}</b>วิดีโอ</li>`:""}<li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
-  for(let i=0;i<DAYS.length;i++){ const d=DAYS[i]; const seq=stopSeq(i).filter(x=>x.num); const dayPh=phMeta.filter(m=>m.day===i);
+    return `<figure${fa(m)}><video src="${await phThumbURL(m.id,true)}" ${po?`poster="${po}"`:""} playsinline preload="none"></video><i>▶ ${fmtDur(m.dur)}</i></figure>`; };
+  const grid=async(list,bigN,gk)=>{ list=tbSort(list.filter(shown)); if(!list.length) return ""; if(app) tbGrids[gk]=list.map(m=>m.id);
+    const lim=app&&tbMore.has(gk)?list.length:24, show=list.slice(0,lim);
+    return `<div class="tb-grid n${Math.min(show.length,5)}"${app?` data-tbg="${esc(gk)}"`:""}>${(await Promise.all(show.map((m,j)=>fig(m,j<bigN)))).join("")}</div>${app&&list.length>lim?`<button class="btn small tb-more" data-tb="more" data-g="${esc(gk)}">ดูอีก ${list.length-lim} รูปของจุดนี้</button>`:""}`; };
+  const st=tripStats(); const pics=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide); const vids=phMeta.filter(m=>m.kind==="video"&&!m.tbHide).length; const cover=pics.find(m=>m.cover)||pics.find(m=>m.key&&m.lat!=null)||pics[0];
+  let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>ขับรถ 7 วัน · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${pics.length}</b>รูป</li>${vids?`<li><b>${vids}</b>วิดีโอ</li>`:""}<li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
+  for(let i=0;i<DAYS.length;i++){ const d=DAYS[i]; const seq=stopSeq(i).filter(x=>x.num); const dayPh=phMeta.filter(m=>m.day===i&&shown(m));
     if(!dayPh.length&&!seq.some(x=>isVisited(i,x.it._i))) continue;   /* a day we haven't reached yet */
     h+=`<section class="tb-day" style="--dc:${cssVar(`--d${d.n}`)}"><header><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม</p><h2>${esc(d.title)}</h2></div></header>${routeSketch(i,640,220)}`;
     for(const x of seq){ const k=x.it._i; const ps=dayPh.filter(m=>m.key===k); const vis=tbVisited(i,k);
       if(!ps.length&&!vis) continue;
       if(!ps.length){ h+=`<p class="tb-line"><span>${x.num}</span>${esc(x.it.n)}<em>${esc(x.it.t)}</em></p>`; continue; }
-      h+=`<article class="tb-stop"><h3><span>${x.num}</span>${esc(x.it.n)}</h3><p class="tb-t">${esc(x.it.t)}${x.it.e&&x.it.e!==x.it.t?"–"+esc(x.it.e):""}</p>${ps.length?await grid(ps,3):""}</article>`; }
+      h+=`<article class="tb-stop"><h3><span>${x.num}</span>${esc(x.it.n)}</h3><p class="tb-t">${esc(x.it.t)}${x.it.e&&x.it.e!==x.it.t?"–"+esc(x.it.e):""}</p>${ps.length?await grid(ps,3,i+"|"+k):""}</article>`; }
     const between=dayPh.filter(m=>m.key&&m.key.startsWith("leg:"));
-    if(between.length) h+=`<article class="tb-stop"><h3>ระหว่างทาง</h3>${await grid(between,0)}</article>`;
-    for(const g of placeGroups().filter(g=>g.day===i)) h+=`<article class="tb-stop"><h3>${esc(g.place.name||"แวะระหว่างวัน")}</h3>${g.list[0].takenAt?`<p class="tb-t" style="margin-left:0">${fmtMin(jstMin(g.list[0].takenAt))}</p>`:""}${await grid(g.list,1)}</article>`;
-    const loose=dayPh.filter(m=>!m.key&&!m.place); if(loose.length) h+=`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3>${await grid(loose,0)}</article>`;
+    if(between.length) h+=`<article class="tb-stop"><h3>ระหว่างทาง</h3>${await grid(between,0,i+"|leg")}</article>`;
+    for(const g of placeGroups().filter(g=>g.day===i&&g.list.some(shown))) h+=`<article class="tb-stop"><h3>${esc(g.place.name||"แวะระหว่างวัน")}</h3>${g.list[0].takenAt?`<p class="tb-t" style="margin-left:0">${fmtMin(jstMin(g.list[0].takenAt))}</p>`:""}${await grid(g.list,1,"g|"+g.id)}</article>`;
+    const loose=dayPh.filter(m=>!m.key&&!m.place); if(loose.length) h+=`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3>${await grid(loose,0,i+"|loose")}</article>`;
     h+=`</section>`; }
   h+=`<footer class="tb-end"><p>ฮอกไกโด ตุลาคม 2026</p></footer>`;
   return h; }
@@ -3405,10 +3428,13 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 @media (min-width:760px){ .tb-grid{grid-template-columns:repeat(3,1fr)} }
 @media print{ .tb-cover{min-height:auto;height:100vh} .tb-day{page-break-before:always} }`;
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
-  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" data-tb="print">พิมพ์ / PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
+  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">พิมพ์ / PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); try{ history.pushState({tb:1},""); }catch(e){}
-  $("#tbBody").innerHTML=await tripbookHtml("app");
+  tbSel=null; tbDel=false; $("#tbBody").innerHTML=await tripbookHtml("app"); tbWire(r); tbBarPaint();
   r.onclick=async ev=>{ const b=ev.target.closest("[data-tb]"); if(!b) return; const a=b.dataset.tb;
+    if(a.startsWith("s-")){ tbSelAction(a); return; }
+    if(a==="more"){ tbMore.add(b.dataset.g); await tbRender(); tbMark(); return; }
+    if(a==="hid"){ tbShowHid=!tbShowHid; await tbRender(); tbMark(); return; }
     if(a==="close"){ closeTripbook(); if(history.state&&history.state.tb) history.back(); }
     if(a==="print") window.print();
     if(a==="save"){ b.textContent="กำลังเตรียมไฟล์…"; const body=await tripbookHtml("export");
@@ -3418,7 +3444,7 @@ async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElem
       let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
       if(dl){ try{ await dl.save({filename:fn,data:blob}); b.textContent="บันทึกเป็นไฟล์"; } catch(e){ b.textContent=e&&e.code==="declined"?"บันทึกเป็นไฟล์":"บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; } return; }
       const url=URL.createObjectURL(blob); const al=document.createElement("a"); al.href=url; al.download=fn; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); b.textContent="บันทึกเป็นไฟล์"; } }; }
-function closeTripbook(){ const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open"); }
+function closeTripbook(){ const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open","tb-selecting","tb-dragging"); tbSel=null; tbPress=null; }
 addEventListener("popstate",()=>{ if(document.body.classList.contains("tb-open")) closeTripbook(); });
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="visit"){ toggleVisited(curDay,b.dataset.key); return; }
@@ -3571,6 +3597,66 @@ function dragEnd(commit){ const d=drag; drag=null; if(!d) return; clearTimeout(d
   document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&drag&&drag.on) dragEnd(false); });
   document.addEventListener("click",e=>{ if(dragSwallow){ e.stopPropagation(); e.preventDefault(); dragSwallow=false; } },true);
 })();
+
+/* ===================== Tripbook editing: long-press a photo to select it; drag to reorder; cover / hide / delete ===================== */
+const tbOrd=m=>m.ord??m.takenAt??0;
+const tbSort=L=>L.slice().sort((a,b)=>tbOrd(a)-tbOrd(b));
+var tbSel=null, tbShowHid=false, tbMore=new Set(), tbDel=false, tbGrids={}, tbPress=null, tbSwallow=false;
+async function tbRender(){ const r=$("#tbRoot"), body=$("#tbBody"); if(!r||!body) return; const top=r.scrollTop; body.innerHTML=await tripbookHtml("app"); r.scrollTop=top; tbBarPaint(); }
+function tbHidN(){ return phMeta.filter(m=>m.tbHide).length; }
+function tbBarPaint(){ const r=$("#tbRoot"); if(!r) return; let bar=$("#tbSelBar"); if(!bar){ bar=document.createElement("div"); bar.id="tbSelBar"; r.appendChild(bar); }
+  const hb=$("#tbHidBtn"); const hn=tbHidN(); if(hb){ hb.style.display=!hn&&!tbShowHid?"none":""; hb.textContent=tbShowHid?"ซ่อนรูปที่เอาออก":`รูปที่เอาออก ${hn}`; }
+  if(!tbSel||!tbSel.size){ bar.className="tb-selbar hint"; bar.innerHTML=`<span>แตะค้างที่รูปเพื่อเลือก · ค้างแล้วลากเพื่อย้ายลำดับ</span>`; return; }
+  const ids=[...tbSel], ms=phMeta.filter(m=>tbSel.has(m.id)); const allHid=ms.every(m=>m.tbHide); const one=ms.length===1&&ms[0].kind!=="video"?ms[0]:null;
+  bar.className="tb-selbar";
+  bar.innerHTML=`<b>เลือก ${ids.length}</b>
+    ${one?`<button class="btn small" data-tb="s-cover">${one.cover?"★ เป็นปกอยู่":"ตั้งเป็นปก"}</button>`:""}
+    <button class="btn small" data-tb="s-first">ย้ายไปแรกสุด</button>
+    ${allHid?`<button class="btn small" data-tb="s-unhide">เอากลับเข้า Tripbook</button>`:`<button class="btn small" data-tb="s-hide">เอาออกจาก Tripbook</button>`}
+    <button class="btn small ${tbDel?"danger":""}" data-tb="s-del">${tbDel?`แตะอีกครั้ง ลบ ${ids.length} ไฟล์ถาวร`:"ลบจากแอป"}</button>
+    <button class="btn small primary" data-tb="s-done">เสร็จ</button>`; }
+function tbMark(){ $$("#tbBody figure[data-tbid]").forEach(f=>f.classList.toggle("sel",!!tbSel&&tbSel.has(f.dataset.tbid))); document.body.classList.toggle("tb-selecting",!!(tbSel&&tbSel.size)); tbBarPaint(); }
+function tbToggle(id){ if(!tbSel) tbSel=new Set(); tbSel.has(id)?tbSel.delete(id):tbSel.add(id); tbDel=false; tbMark(); }
+/* give photos of one grid a new order; ord values reuse the group's own time values so new photos still fall in by time */
+async function tbReorder(gk,newIds){ const ms=newIds.map(id=>phMeta.find(m=>m.id===id)).filter(Boolean); const T=ms.map(tbOrd).sort((a,b)=>a-b);
+  for(let i=0;i<ms.length;i++){ const v=T[i]+i; if(ms[i].ord!==v){ ms[i].ord=v; await PDB.putMeta(ms[i]); } } }
+async function tbSelAction(a){ const ids=[...(tbSel||[])]; const ms=phMeta.filter(m=>tbSel&&tbSel.has(m.id));
+  if(a==="s-done"){ tbSel=null; tbDel=false; tbMark(); return; }
+  if(a==="s-cover"){ const m=ms[0]; if(!m) return; for(const o of phMeta){ if(o.cover&&o.id!==m.id){ o.cover=false; await PDB.putMeta(o); } } m.cover=!m.cover; await PDB.putMeta(m); tbSel=null; await tbRender(); $("#tbRoot").scrollTop=0; return; }
+  if(a==="s-first"){ for(const [gk,list] of Object.entries(tbGrids)){ const mine=list.filter(id=>tbSel.has(id)); if(!mine.length) continue; await tbReorder(gk,mine.concat(list.filter(id=>!tbSel.has(id)))); } await tbRender(); tbMark(); return; }
+  if(a==="s-hide"||a==="s-unhide"){ for(const m of ms){ m.tbHide=a==="s-hide"; await PDB.putMeta(m); } tbSel=null; await tbRender(); tbMark(); return; }
+  if(a==="s-del"){ if(!tbDel){ tbDel=true; tbBarPaint(); return; } for(const id of ids){ await PDB.del(id); } phMeta=phMeta.filter(m=>!tbSel.has(m.id)); tbSel=null; tbDel=false; await tbRender(); tbMark(); renderPlan(); return; } }
+/* long-press: select; keep holding and move: drag the selection to a new place in the same group */
+function tbArm(fig,x,y){ tbDisarm(); tbPress={fig,id:fig.dataset.tbid,gk:fig.closest("[data-tbg]")?.dataset.tbg,x0:x,y0:y,x,y,on:false,drag:false,timer:setTimeout(tbLong,450)}; fig.classList.add("press"); }
+function tbDisarm(){ if(tbPress&&!tbPress.on){ clearTimeout(tbPress.timer); tbPress.fig.classList.remove("press"); tbPress=null; } }
+function tbLong(){ const p=tbPress; if(!p) return; p.on=true; tbSwallow=true; p.fig.classList.remove("press"); try{ navigator.vibrate&&navigator.vibrate(15); }catch(e){}
+  if(!tbSel) tbSel=new Set(); tbSel.add(p.id); tbDel=false; tbMark(); }
+function tbDragStart(){ const p=tbPress; p.drag=true; const list=tbGrids[p.gk]||[]; p.ids=list.filter(id=>tbSel.has(id)); if(!p.ids.includes(p.id)) p.ids=[p.id];
+  const g=document.createElement("div"); g.className="tb-ghost"; const img=p.fig.querySelector("img,video"); g.innerHTML=`${img&&img.tagName==="IMG"?`<img src="${img.src}" alt="">`:""}${p.ids.length>1?`<b>${p.ids.length}</b>`:""}`; document.body.appendChild(g); p.ghost=g;
+  $$("#tbBody figure[data-tbid]").forEach(f=>{ if(p.ids.includes(f.dataset.tbid)) f.classList.add("lifting"); }); document.body.classList.add("tb-dragging"); p.raf=requestAnimationFrame(tbAuto); tbDragMove(); }
+function tbDragMove(){ const p=tbPress; if(!p||!p.drag) return; p.ghost.style.left=(p.x-36)+"px"; p.ghost.style.top=(p.y-36)+"px";
+  $$(".tb-drop-b,.tb-drop-a").forEach(e=>e.classList.remove("tb-drop-b","tb-drop-a")); p.tgt=null;
+  const grid=$(`#tbBody [data-tbg="${CSS.escape(p.gk)}"]`); if(!grid) return; let best=null,bd=1e9;
+  grid.querySelectorAll("figure[data-tbid]").forEach(f=>{ if(p.ids.includes(f.dataset.tbid)) return; const b=f.getBoundingClientRect(); const d=Math.hypot(p.x-(b.left+b.width/2),p.y-(b.top+b.height/2)); if(d<bd){ bd=d; best={f,after:p.x>b.left+b.width/2||p.y>b.bottom}; } });
+  if(best&&bd<400){ p.tgt=best; best.f.classList.add(best.after?"tb-drop-a":"tb-drop-b"); } }
+function tbAuto(){ const p=tbPress; if(!p||!p.drag) return; const r=$("#tbRoot"); const h=innerHeight, e=90; let v=0; if(p.y<e+50) v=-Math.ceil((e+50-p.y)/5); else if(p.y>h-e) v=Math.ceil((p.y-(h-e))/5); if(v){ r.scrollTop+=v; tbDragMove(); } p.raf=requestAnimationFrame(tbAuto); }
+async function tbEnd(commit){ const p=tbPress; tbPress=null; if(!p) return; clearTimeout(p.timer); cancelAnimationFrame(p.raf); p.fig.classList.remove("press"); setTimeout(()=>{ tbSwallow=false; },350);
+  if(!p.drag) return; p.ghost.remove(); $$(".tb-drop-b,.tb-drop-a").forEach(e=>e.classList.remove("tb-drop-b","tb-drop-a")); $$("#tbBody figure.lifting").forEach(f=>f.classList.remove("lifting")); document.body.classList.remove("tb-dragging");
+  if(!commit||!p.tgt) return; const list=(tbGrids[p.gk]||[]).filter(id=>!p.ids.includes(id)); let j=list.indexOf(p.tgt.f.dataset.tbid); if(j<0) return; if(p.tgt.after) j++;
+  list.splice(j,0,...p.ids); await tbReorder(p.gk,list); await tbRender(); tbMark(); }
+function tbWire(r){ const body=$("#tbBody"); const first=!r._tbw; r._tbw=true; const figOf=t=>t&&t.closest&&t.closest("#tbBody figure[data-tbid]");
+  body.addEventListener("touchstart",e=>{ if(e.touches.length!==1){ tbPress&&tbPress.on?tbEnd(false):tbDisarm(); return; } const f=figOf(e.target); if(!f) return; const t=e.touches[0]; tbArm(f,t.clientX,t.clientY); },{passive:true});
+  body.addEventListener("touchmove",e=>{ const p=tbPress; if(!p) return; const t=e.touches[0]; p.x=t.clientX; p.y=t.clientY;
+    if(!p.on){ if(Math.hypot(p.x-p.x0,p.y-p.y0)>10) tbDisarm(); return; } e.preventDefault(); if(!p.drag&&Math.hypot(p.x-p.x0,p.y-p.y0)>8) tbDragStart(); else tbDragMove(); },{passive:false});
+  body.addEventListener("touchend",e=>{ const p=tbPress; if(!p) return; if(p.on){ e.preventDefault(); tbEnd(true); } else tbDisarm(); },{passive:false});
+  body.addEventListener("touchcancel",()=>{ tbPress&&tbPress.on?tbEnd(false):tbDisarm(); });
+  body.addEventListener("contextmenu",e=>{ if(figOf(e.target)) e.preventDefault(); });
+  body.addEventListener("mousedown",e=>{ if(e.button!==0) return; const f=figOf(e.target); if(!f) return; e.preventDefault(); tbArm(f,e.clientX,e.clientY); });
+  if(first) r.addEventListener("mousemove",e=>{ const p=tbPress; if(!p) return; p.x=e.clientX; p.y=e.clientY; if(!p.on){ if(Math.hypot(p.x-p.x0,p.y-p.y0)>10) tbDisarm(); return; } if(!p.drag&&Math.hypot(p.x-p.x0,p.y-p.y0)>8) tbDragStart(); else tbDragMove(); });
+  if(first) r.addEventListener("mouseup",()=>{ const p=tbPress; if(!p) return; if(p.on) tbEnd(true); else tbDisarm(); });
+  body.addEventListener("click",e=>{ if(tbSwallow){ e.preventDefault(); e.stopPropagation(); tbSwallow=false; return; } const f=figOf(e.target); if(!f) return;
+    if(tbSel&&tbSel.size){ e.preventDefault(); tbToggle(f.dataset.tbid); return; }
+    const v=f.querySelector("video"); if(v){ v.controls=true; v.paused?v.play().catch(()=>{}):v.pause(); } },true); }
 
 /* ---------- boot ---------- */
 mapDay=curDay;
