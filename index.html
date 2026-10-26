@@ -703,6 +703,7 @@ body.tb-dragging{overflow:hidden}
 .tb-selbar b{margin-right:4px}.tb-selbar.hint{justify-content:center;font-size:13px;color:#69737D;padding-block:8px calc(8px + env(safe-area-inset-bottom,0px))}
 .tb-selbar .btn.danger{background:#B3261E;color:#fff;border-color:#B3261E}
 @media print{ .tb-selbar,.tb-more{display:none!important} }
+.phx-outs{list-style:none;padding:0;margin:10px 0}.phx-outs li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line,#E3E7EB)}.phx-outs li b{flex:1 1 auto}
 </style>
 
 <div class="app">
@@ -3077,9 +3078,9 @@ const CRCT=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n;
 async function crcBlob(b){ let c=0xFFFFFFFF; const CH=4<<20; for(let o=0;o<b.size;o+=CH){ const u=new Uint8Array(await b.slice(o,o+CH).arrayBuffer()); for(let i=0;i<u.length;i++) c=CRCT[(c^u[i])&255]^(c>>>8); } return (c^0xFFFFFFFF)>>>0; }
 async function zipBlob(entries,prog){ const parts=[], cd=[]; let off=0; const te=new TextEncoder();
   for(let i=0;i<entries.length;i++){ const e=entries[i]; const nm=te.encode(e.name); const crc=await crcBlob(e.blob); const sz=e.blob.size;
-    const lh=new DataView(new ArrayBuffer(30)); lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(12,0x21,true); lh.setUint32(14,crc,true); lh.setUint32(18,sz,true); lh.setUint32(22,sz,true); lh.setUint16(26,nm.length,true);
+    const lh=new DataView(new ArrayBuffer(30)); lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); const dos=e.mt?(()=>{ const d=new Date(e.mt+9*3600e3); return [(d.getUTCHours()<<11)|(d.getUTCMinutes()<<5)|(d.getUTCSeconds()>>1),((d.getUTCFullYear()-1980)<<9)|((d.getUTCMonth()+1)<<5)|d.getUTCDate()]; })():[0,0x21]; lh.setUint16(10,dos[0],true); lh.setUint16(12,dos[1],true); lh.setUint32(14,crc,true); lh.setUint32(18,sz,true); lh.setUint32(22,sz,true); lh.setUint16(26,nm.length,true);
     parts.push(lh.buffer,nm,e.blob);
-    const ch=new DataView(new ArrayBuffer(46)); ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(14,0x21,true); ch.setUint32(16,crc,true); ch.setUint32(20,sz,true); ch.setUint32(24,sz,true); ch.setUint16(28,nm.length,true); ch.setUint32(42,off,true);
+    const ch=new DataView(new ArrayBuffer(46)); ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(12,dos[0],true); ch.setUint16(14,dos[1],true); ch.setUint32(16,crc,true); ch.setUint32(20,sz,true); ch.setUint32(24,sz,true); ch.setUint16(28,nm.length,true); ch.setUint32(42,off,true);
     cd.push(ch.buffer,nm); off+=30+nm.length+sz; if(prog) prog(i+1,entries.length); }
   const cdSize=cd.reduce((a,p)=>a+p.byteLength,0); const eo=new DataView(new ArrayBuffer(22)); eo.setUint32(0,0x06054b50,true); eo.setUint16(8,entries.length,true); eo.setUint16(10,entries.length,true); eo.setUint32(12,cdSize,true); eo.setUint32(16,off,true);
   return new Blob(parts.concat(cd,[eo.buffer]),{type:"application/zip"}); }
@@ -3122,7 +3123,7 @@ function exifTiff(v,t){ const le=v.getUint16(t)===0x4949; const u16=p=>v.getUint
   const str=(e,cnt)=>{ const p=cnt>4?t+u32(e):e; let s=""; for(let i=0;i<cnt&&p+i<v.byteLength;i++){ const c=v.getUint8(p+i); if(!c) break; s+=String.fromCharCode(c); } return s; };
   const rat=(e,k)=>{ const q=t+u32(e), out=[]; for(let i=0;i<k;i++){ const a=u32(q+i*8), b=u32(q+i*8+4); out.push(b?a/b:0); } return out; };
   const r={}; let ex=0, gp=0;
-  ifd(u32(t+4),(tag,type,cnt,e)=>{ if(tag===0x8769) ex=u32(e); else if(tag===0x8825) gp=u32(e); else if(tag===0x0132&&!r.dt) r.dt=str(e,cnt); else if(tag===0x0110) r.model=str(e,cnt); });
+  ifd(u32(t+4),(tag,type,cnt,e)=>{ if(tag===0x8769) ex=u32(e); else if(tag===0x8825) gp=u32(e); else if(tag===0x0132&&!r.dt) r.dt=str(e,cnt); else if(tag===0x0110) r.model=str(e,cnt); else if(tag===0x010F) r.make=str(e,cnt); else if(tag===0x0112) r.ori=v.getUint16(e,le); });
   ifd(ex,(tag,type,cnt,e)=>{ if(tag===0x9003) r.dt=str(e,cnt); else if(tag===0x9011) r.off=str(e,cnt); });
   if(gp){ let la=null,lo=null,laR="N",loR="E"; ifd(gp,(tag,type,cnt,e)=>{ if(tag===1) laR=str(e,cnt); else if(tag===2) la=rat(e,3); else if(tag===3) loR=str(e,cnt); else if(tag===4) lo=rat(e,3); });
     if(la&&lo){ const dd=x=>x[0]+x[1]/60+x[2]/3600; r.lat=dd(la)*(laR==="S"?-1:1); r.lng=dd(lo)*(loR==="W"?-1:1); if(!r.lat&&!r.lng){ delete r.lat; delete r.lng; } }
@@ -3298,7 +3299,7 @@ function photoSheetHtml(){
   const cell=m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
   return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปและวิดีโอของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${mediaWord(phMeta)}</span>`:""}</h2>
   <p style="margin:0 0 10px">เลือกรูปและวิดีโอจากมือถือได้ทีละหลายไฟล์ (บน Android เปิดจาก Google Photos ได้ในหน้าเลือก) แอปดูตำแหน่งที่ถ่ายก่อน ถ้าไม่มีตำแหน่งจะเทียบเวลากับตารางในแผน ไฟล์เก็บอยู่ในเครื่องนี้เท่านั้น</p>
-  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button><button class="btn small" data-act="ph-pick-files">นำเข้าไฟล์ ZIP</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button>`:""}</div>
+  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button><button class="btn small" data-act="ph-pick-files">นำเข้าไฟล์ ZIP</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button><button class="btn small" data-act="phx-open">ดาวน์โหลดรูปทั้งหมด</button>`:""}</div>
   <label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียว คือรูปที่คมชัดที่สุด</label>${prog}
   ${!imp&&phMeta.filter(m=>m.kind!=="video").length>=5&&phMeta.filter(m=>m.lat!=null).length<phMeta.length/2?`<div class="ph-geo-note"><b>${phMeta.filter(m=>m.lat==null).length} ไฟล์ไม่มีตำแหน่งที่ถ่าย</b> จึงจัดตามเวลาในแผนได้อย่างเดียว ${zipHow()}</div>`:""}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
@@ -3664,6 +3665,124 @@ function tbWire(r){ const body=$("#tbBody"); const first=!r._tbw; r._tbw=true; c
   body.addEventListener("click",e=>{ if(tbSwallow){ e.preventDefault(); e.stopPropagation(); tbSwallow=false; return; } const f=figOf(e.target); if(!f) return;
     if(tbSel&&tbSel.size){ e.preventDefault(); tbToggle(f.dataset.tbid); return; }
     const v=f.querySelector("video"); if(v){ v.controls=true; v.paused?v.play().catch(()=>{}):v.pause(); } },true); }
+
+/* ===================== download every photo, with date and place written into the files ===================== */
+/* what the app knows about a photo: when (its own time, or the planned time of the stop it sits at) and where (its own GPS, or the stop's place) */
+function exportFacts(m){ const out={dt:null,ll:null,tReal:false,llReal:false,label:""};
+  if(m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name"||(!m.tsrc&&m.lat!=null))){ out.dt=m.takenAt; out.tReal=true; }
+  if(m.lat!=null){ out.ll=[m.lat,m.lng]; out.llReal=true; }
+  if(m.day==null) return out;
+  const its=planItems(m.day), d=DAYS[m.day]; let it=null;
+  if(m.key&&m.key.startsWith("leg:")){ it=its.find(x=>x._i===m.key.slice(4)); out.label=`D${d.n} ระหว่างทาง${it&&P[it.to]?" ไป "+P[it.to][0]:""}`;
+    if(!out.ll&&it){ const g=legLine(it); if(g){ const a=toMin(it.t), dur=Math.max(1,it.min||1); const t=out.dt?jstMin(out.dt):a+dur/2; out.ll=alongLine(g.line,Math.min(1,Math.max(0,(t-a)/dur))); } } }
+  else if(m.key){ it=its.find(x=>x._i===m.key); out.label=`D${d.n} ${it?it.n:""}`; if(!out.ll&&it){ const l=stopLoc(it); if(l) out.ll=l; } }
+  else if(m.place){ out.label=`D${d.n} ${m.place.name||""}`; if(!out.ll&&m.place.lat!=null) out.ll=[+m.place.lat,+m.place.lng]; }
+  else out.label=`D${d.n}`;
+  if(!out.dt){ /* no shot time: the planned time of where it sits, one second apart so the order you set is kept */
+    const same=tbSort(phMeta.filter(x=>x.day===m.day&&x.key===m.key&&(!m.place||x.place&&x.place.name===m.place.name))); const i=Math.max(0,same.findIndex(x=>x.id===m.id));
+    const hhmm=it&&it.t?it.t:"12:00"; out.dt=Date.parse(`${d.date}T${hhmm}:00+09:00`)+i*1000; }
+  return out; }
+/* the point a fraction of the way along a line of [lat,lng] (where the car was, by the clock) */
+function alongLine(line,f){ if(line.length<2) return line[0]; const seg=[]; let tot=0; for(let i=1;i<line.length;i++){ const d=km(line[i-1],line[i]); seg.push(d); tot+=d; }
+  let want=tot*f; for(let i=0;i<seg.length;i++){ if(want<=seg[i]||i===seg.length-1){ const u=seg[i]?Math.min(1,want/seg[i]):0; const a=line[i], b=line[i+1]; return [+(a[0]+(b[0]-a[0])*u).toFixed(5),+(a[1]+(b[1]-a[1])*u).toFixed(5)]; } want-=seg[i]; } return line[line.length-1]; }
+function exifDT(ms){ return new Date(ms+9*3600e3).toISOString().slice(0,19).replace("T"," ").replace(/-/g,":"); }
+/* a fresh EXIF block (little-endian TIFF): date, +09:00, GPS, orientation, camera, and a Windows comment with the place */
+function exifBlock(o){ const te=new TextEncoder();
+  const A=s=>({t:2,b:new Uint8Array([...te.encode(s),0])}), S=v=>({t:3,b:(()=>{ const b=new Uint8Array(2); new DataView(b.buffer).setUint16(0,v,true); return b; })()}),
+    L=v=>({t:4,b:(()=>{ const b=new Uint8Array(4); new DataView(b.buffer).setUint32(0,v,true); return b; })()}),
+    R=arr=>({t:5,b:(()=>{ const b=new Uint8Array(arr.length*8); const dv=new DataView(b.buffer); arr.forEach(([n,d],i)=>{ dv.setUint32(i*8,n,true); dv.setUint32(i*8+4,d,true); }); return b; })()}),
+    U=bytes=>({t:7,b:bytes}), B=bytes=>({t:1,b:bytes});
+  const dms=v=>{ v=Math.abs(v); const d=Math.floor(v), mf=(v-d)*60, mi=Math.floor(mf), se=Math.round((mf-mi)*60*10000); return [[d,1],[mi,1],[se,10000]]; };
+  const ifd0={}, ex={}, gp={};
+  if(o.make) ifd0[0x010F]=A(o.make); if(o.model) ifd0[0x0110]=A(o.model); ifd0[0x0112]=S(o.ori||1);
+  if(o.dt){ const s=exifDT(o.dt); ifd0[0x0132]=A(s); ex[0x9003]=A(s); ex[0x9004]=A(s); ex[0x9010]=A("+09:00"); ex[0x9011]=A("+09:00"); }
+  ex[0x9000]=U(te.encode("0232"));
+  if(o.label){ const s=o.label+"\0"; const b=new Uint8Array(s.length*2); for(let i=0;i<s.length;i++){ const c=s.charCodeAt(i); b[i*2]=c&255; b[i*2+1]=c>>8; } ifd0[0x9C9C]=B(b); }
+  if(o.ll){ gp[0]=B(new Uint8Array([2,3,0,0])); gp[1]=A(o.ll[0]>=0?"N":"S"); gp[2]=R(dms(o.ll[0])); gp[3]=A(o.ll[1]>=0?"E":"W"); gp[4]=R(dms(o.ll[1])); }
+  const size=e=>{ const n=Object.keys(e).length; return 2+n*12+4+Object.values(e).reduce((a,v)=>a+(v.b.length>4?v.b.length+(v.b.length&1):0),0); };
+  ifd0[0x8769]=L(0); if(o.ll) ifd0[0x8825]=L(0);
+  const o0=8, oEx=o0+size(ifd0), oGp=oEx+size(ex), total=oGp+(o.ll?size(gp):0);
+  ifd0[0x8769]=L(oEx); if(o.ll) ifd0[0x8825]=L(oGp);
+  const buf=new Uint8Array(total), dv=new DataView(buf.buffer); buf.set([0x49,0x49,42,0],0); dv.setUint32(4,o0,true);
+  const write=(e,at)=>{ const tags=Object.keys(e).map(Number).sort((a,b)=>a-b); dv.setUint16(at,tags.length,true); let data=at+2+tags.length*12+4;
+    tags.forEach((tag,i)=>{ const v=e[tag], p=at+2+i*12, cnt=v.t===5?v.b.length/8:v.t===3?v.b.length/2:v.t===4?v.b.length/4:v.b.length;
+      dv.setUint16(p,tag,true); dv.setUint16(p+2,v.t,true); dv.setUint32(p+4,cnt,true);
+      if(v.b.length<=4) buf.set(v.b,p+8); else { dv.setUint32(p+8,data,true); buf.set(v.b,data); data+=v.b.length+(v.b.length&1); } });
+    dv.setUint32(at+2+tags.length*12,0,true); };
+  write(ifd0,o0); write(ex,oEx); if(o.ll) write(gp,oGp);
+  const head=te.encode("Exif\0\0"); const seg=new Uint8Array(4+head.length+buf.length); seg[0]=0xFF; seg[1]=0xE1; const len=2+head.length+buf.length; seg[2]=len>>8; seg[3]=len&255; seg.set(head,4); seg.set(buf,4+head.length); return seg; }
+/* swap the EXIF block of a JPEG without reading the whole file: SOI + new APP1 + everything after the old one */
+async function jpegWithExif(file,o){ const head=new Uint8Array(await file.slice(0,Math.min(file.size,262144)).arrayBuffer()); if(head[0]!==0xFF||head[1]!==0xD8) return null;
+  let p=2, cut=[]; while(p+4<head.length&&head[p]===0xFF){ const mk=head[p+1]; if(mk===0xDA) break; const len=(head[p+2]<<8)|head[p+3];
+    if(mk===0xE1&&head[p+4]===0x45&&head[p+5]===0x78&&head[p+6]===0x69&&head[p+7]===0x66) cut.push([p,p+2+len]); p+=2+len; }
+  const parts=[new Uint8Array([0xFF,0xD8]),exifBlock(o)]; let at=2; for(const [a,b] of cut){ if(a>at) parts.push(file.slice(at,a)); at=b; } parts.push(file.slice(at));
+  return new Blob(parts,{type:"image/jpeg"}); }
+/* what a file already carries */
+async function fileFacts(it){ if(isVideo(it)) return {video:true}; try{ const x=readExif(await it.head(262144)); return {jpeg:true,x,dt:exifTime(x),ll:x.lat!=null}; }catch(e){ return {}; } }
+function safeName(s){ return String(s||"").replace(/[\\/:*?"<>|\u0000-\u001f]/g," ").replace(/\s+/g," ").trim().slice(0,60)||"ไม่มีชื่อ"; }
+function exportFolder(m){ if(m.day==null) return "ยังไม่ได้จัด"; const d=DAYS[m.day]; const day=`D${d.n} ${Number(d.date.slice(8))} ต.ค.`;
+  if(m.key&&m.key.startsWith("leg:")) return `${day}/ระหว่างทาง`; if(m.key){ const it=planItems(m.day).find(x=>x._i===m.key); const n=stopNumMap(m.day)[m.key]; return `${day}/${n?String(n).padStart(2,"0")+" ":""}${safeName(it?it.n:"จุดที่ถูกลบ")}`; }
+  if(m.place) return `${day}/${safeName(m.place.name||"แวะระหว่างวัน")}`; return `${day}/ยังไม่ได้จัด`; }
+/* match an original file to the photo the app keeps for it */
+function matchMeta(it,dt){ const sig=it.name+"|"+it.size+"|"+(dt||nameTime(it.name)||0);
+  return phMeta.find(m=>m.sig===sig)||phMeta.find(m=>m.name===it.name&&dt&&m.takenAt&&Math.abs(m.takenAt-dt)<1000)||phMeta.find(m=>m.name===it.name&&(m.size===it.size||m.sig&&m.sig.split("|")[1]==it.size))||(()=>{ const L=phMeta.filter(m=>m.name===it.name); return L.length===1?L[0]:null; })(); }
+var exState=null;
+function exportHtml(){ const s=exState||{}; const ms=phMeta; const facts=ms.map(m=>[m,exportFacts(m)]);
+  const fixT=facts.filter(([m,f])=>m.kind!=="video"&&f.dt&&!f.tReal).length, fixL=facts.filter(([m,f])=>m.kind!=="video"&&f.ll&&!f.llReal).length, none=ms.filter(m=>m.day==null).length;
+  const prog=s.busy?`<div class="ph-prog"><div class="ph-bar"><i style="width:${s.n?Math.round(s.i/s.n*100):0}%"></i></div><p><b>${esc(s.msg||"")}</b>${s.n?` ${s.i} / ${s.n}`:""}</p></div>`:"";
+  const outs=(s.outs||[]).map((o,i)=>`<li><b>${esc(o.name)}</b> <span class="tiny">${o.count} ไฟล์ · ${(o.blob.size/1048576).toFixed(0)} MB</span> <button class="btn small" data-act="phx-dl" data-i="${i}">${o.done?"ดาวน์โหลดแล้ว ✓":"ดาวน์โหลด"}</button></li>`).join("");
+  return `<div id="phx-root"><div class="sk">รูปทริป</div><h2>ดาวน์โหลดรูปทั้งหมด</h2>
+  <p>ได้เป็นไฟล์ ZIP แยกโฟลเดอร์ตามวันและจุดที่จัดไว้ รูปที่ไม่มีวันเวลาหรือตำแหน่งจะถูกเขียนข้อมูลลงไฟล์ตามที่จัดในแอป เอาไปลง Google Photos หรือคอมแล้วเรียงตามวันและขึ้นแผนที่ได้ถูกต้อง</p>
+  <ul class="imp-rows"><li>เติมวันเวลาให้ <b>${fixT}</b> รูป (ใช้เวลาของจุดในแผน เรียงตามลำดับที่คุณจัด)</li><li>เติมตำแหน่งให้ <b>${fixL}</b> รูป (ใช้ตำแหน่งของจุดที่รูปอยู่)</li>${none?`<li>${none} ไฟล์ยังไม่ได้จัดเข้าวันไหน จะอยู่ในโฟลเดอร์ "ยังไม่ได้จัด" โดยไม่เติมข้อมูล</li>`:""}<li class="tiny">รูปที่มีวันเวลาและตำแหน่งอยู่แล้วไม่ถูกแตะ · วิดีโอส่งออกตามเดิม (ไม่เขียนข้อมูลลงวิดีโอ)</li></ul>
+  <label class="burst-tg"><input type="checkbox" id="phx-vid"${s.vid===false?"":" checked"}> รวมวิดีโอด้วย</label>
+  <h3 class="sp-h">1. คมชัดเต็ม จากไฟล์ต้นฉบับ (แนะนำ)</h3>
+  <p class="tiny">แอปเก็บรูปไว้แบบย่อเพื่อประหยัดที่ จึงต้องเลือกไฟล์ต้นฉบับอีกครั้ง (ไฟล์ ZIP ชุดเดิมหรือเลือกรูปจากเครื่อง) แอปจะจับคู่กับรูปที่จัดไว้ให้เอง</p>
+  <div class="c-actions"><button class="btn small primary" data-act="phx-orig" ${s.busy?"disabled":""}>เลือกไฟล์ต้นฉบับ / ZIP</button></div>
+  <h3 class="sp-h">2. จากรูปในแอป (ย่อเหลือด้านยาว 1,600 px)</h3>
+  <div class="c-actions"><button class="btn small" data-act="phx-app" ${s.busy?"disabled":""}>สร้างไฟล์จากรูปในแอป</button></div>
+  ${prog}${s.report?`<p class="tiny">${s.report}</p>`:""}${outs?`<ul class="phx-outs">${outs}</ul>`:""}</div>`; }
+function exportPaint(first){ if(first||!$("#phx-root")) openSheet(exportHtml()); else { const sc=$("#sheetRoot .sheet"), top=sc?sc.scrollTop:0; renderSheet(exportHtml()); const s2=$("#sheetRoot .sheet"); if(s2) s2.scrollTop=top; } }
+function exTick(){ const now=Date.now(); if(exState._t&&now-exState._t<300) return; exState._t=now; exportPaint(); }
+/* group files into ZIPs: one per day, split so none passes ~3.5 GB */
+async function exportZips(list){ const byDay={}; list.forEach(e=>{ const k=e.m.day==null?"x":e.m.day; (byDay[k]=byDay[k]||[]).push(e); });
+  const outs=[]; const keys=Object.keys(byDay).sort((a,b)=>a==="x"?1:b==="x"?-1:a-b); exState.msg="กำลังรวมเป็นไฟล์ ZIP"; exState.n=list.length; exState.i=0;
+  for(const k of keys){ const L=byDay[k]; let part=[], size=0, pn=1; const base=k==="x"?"ยังไม่ได้จัด":`D${DAYS[k].n}`;
+    const flush=async last=>{ if(!part.length) return; const blob=await zipBlob(part.map(e=>({name:e.path,blob:e.blob,mt:e.mt})),()=>{ exState.i++; exTick(); });
+      outs.push({name:`Hokkaido-2026-${base}${pn>1||!last?"-"+pn:""}.zip`,blob,count:part.length}); part=[]; size=0; pn++; };
+    for(const e of L){ if(size+e.blob.size>3.5*2**30&&part.length) await flush(false); part.push(e); size+=e.blob.size; }
+    await flush(true); }
+  return outs; }
+async function exportRun(kind,files){ const vid=!!($("#phx-vid")||{checked:true}).checked; exState={busy:true,msg:"กำลังเตรียม",i:0,n:0,vid,outs:[]}; exportPaint();
+  const list=[]; let fixed=0, same=0, unknown=0, skipped=0; const used=new Set(); const seenPath={};
+  const add=(m,blob,name)=>{ let path=exportFolder(m)+"/"+name; if(seenPath[path]){ const i=name.lastIndexOf("."); path=exportFolder(m)+"/"+(i>0?name.slice(0,i)+"-"+seenPath[path]+name.slice(i):name+"-"+seenPath[path]); } seenPath[exportFolder(m)+"/"+name]=(seenPath[exportFolder(m)+"/"+name]||1)+1; list.push({m,blob,path,mt:exportFacts(m).dt}); };
+  try{
+    if(kind==="app"){ const ms=phMeta.filter(m=>vid||m.kind!=="video"); exState.msg="กำลังเขียนข้อมูลลงรูป"; exState.n=ms.length;
+      for(const m of ms){ const b=await PDB.getBlob(m.id); exState.i++; exTick(); if(!b||!b.full){ skipped++; continue; }
+        const nm=(m.name||m.id).replace(/\.(heic|heif|png|webp)$/i,".jpg");
+        if(m.kind==="video"){ add(m,b.full,m.name||m.id+"."+(m.ext||"mp4")); same++; continue; }
+        const f=exportFacts(m); const out=await jpegWithExif(b.full,{dt:f.dt,ll:f.ll,ori:1,model:m.model,label:f.label}); if(out){ add(m,out,/\.jpe?g$/i.test(nm)?nm:nm+".jpg"); fixed++; } else { add(m,b.full,nm); same++; } } }
+    else { let items=[]; exState.msg="กำลังเปิดไฟล์"; exportPaint();
+      for(const f of files){ if(!isZip(f)){ items.push(srcOf(f)); continue; } try{ items=items.concat(zipItems(f,await unzipIndex(f))); }catch(e){} }
+      exState.msg="กำลังจับคู่และเขียนข้อมูลลงไฟล์ต้นฉบับ"; exState.n=items.length;
+      for(const it of items){ exState.i++; exTick(); const ff=await fileFacts(it); if(ff.video&&!vid) continue;
+        let dt=ff.dt||null; if(ff.video){ try{ const mm=await readMp4Meta(await it.file()); dt=mm.t||null; }catch(e){} }
+        const m=matchMeta(it,dt); if(!m||used.has(m.id)){ unknown++; continue; } used.add(m.id);
+        const file=await it.file(); const f=exportFacts(m);
+        const needT=!ff.dt&&f.dt, needL=!ff.ll&&f.ll;
+        if(ff.jpeg&&(needT||needL)){ const out=await jpegWithExif(file,{dt:ff.dt||f.dt,ll:ff.ll?[ff.x.lat,ff.x.lng]:f.ll,ori:ff.x.ori||1,make:ff.x.make,model:ff.x.model,label:f.label}); add(m,out||file,it.name); out?fixed++:same++; }
+        else { add(m,file,it.name); same++; } } }
+    exState.outs=await exportZips(list);
+    exState.report=`พร้อมแล้ว ${list.length} ไฟล์ · เขียนข้อมูลเพิ่ม ${fixed} · ไม่ต้องแก้ ${same}${unknown?` · ไม่พบในแอป ${unknown} (เช่นรูปที่ข้ามไปตอนนำเข้า) ไม่ได้ใส่`:""}${skipped?` · อ่านไม่ได้ ${skipped}`:""}${kind!=="app"&&used.size<phMeta.length?` · รูปในแอปที่ยังไม่ได้เลือกต้นฉบับ ${phMeta.length-used.size}`:""}`; }
+  catch(e){ exState.report="สร้างไฟล์ไม่สำเร็จ: "+esc(String(e&&e.message||e)); }
+  exState.busy=false; exportPaint(); }
+async function exportSave(o,b){ let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
+  if(dl){ try{ await dl.save({filename:o.name,data:o.blob}); o.done=true; }catch(e){ b.textContent="บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; return; } exportPaint(); return; }
+  const url=URL.createObjectURL(o.blob); const a=document.createElement("a"); a.href=url; a.download=o.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),120000); o.done=true; exportPaint(); }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='phx-open'],[data-act='phx-orig'],[data-act='phx-app'],[data-act='phx-dl']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
+  if(a==="phx-open"){ exState=null; exportPaint(true); return; }
+  if(a==="phx-app"){ exportRun("app"); return; }
+  if(a==="phx-orig"){ const inp=document.createElement("input"); inp.type="file"; inp.multiple=true; inp.style.display="none"; inp.onchange=()=>{ const fs=[...inp.files]; inp.remove(); if(fs.length) exportRun("orig",fs); }; document.body.appendChild(inp); inp.click(); return; }
+  if(a==="phx-dl"){ const o=exState&&exState.outs[+b.dataset.i]; if(o) exportSave(o,b); return; } },true);
 
 /* ---------- boot ---------- */
 mapDay=curDay;
