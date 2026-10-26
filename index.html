@@ -2630,6 +2630,15 @@ function recsAfter(di,it){
 }
 /* ---------- weather (Open-Meteo, refreshed on the phone) ---------- */
 let wx=store.get("wx",null), wxBusy=false;
+/* every hour of the trip we ever got, kept for good: once a day is over its last values (the model's record of what happened) stay,
+   even offline or months later. {point: {"2026-10-18T09": [temp, rainChance, rainMm, code, wind]}} */
+let wxLog=store.get("wxLog",{});
+const TRIP_DATES=DAYS.map(d=>d.date);
+function wxRemember(data){ let n=0; for(const [k,w] of Object.entries(data)){ const L=wxLog[k]=wxLog[k]||{};
+    w.time.forEach((tm,i)=>{ if(!TRIP_DATES.includes(tm.slice(0,10))) return; const h=+tm.slice(11,13); if(h<5) return; if(w.t[i]==null) return;
+      L[tm.slice(0,13)]=[w.t[i],w.pp[i],w.pr[i],w.wc[i],w.ws[i]]; n++; }); }
+  if(n) store.set("wxLog",wxLog); }
+function wxLogNear(lat,lng){ let best=null,bd=9e9; Object.keys(wxLog).forEach(k=>{ const [a,b]=k.split(",").map(Number); const d=Math.abs(a-lat)+Math.abs(b-lng); if(d<bd){bd=d;best=k;} }); return bd<0.05?wxLog[best]:null; }
 const WX_STALE=30*60e3;
 function wxPoints(){
   const m={};
@@ -2637,31 +2646,38 @@ function wxPoints(){
   DAYS.forEach((d,di)=>planItems(di).forEach(it=>{ const k=it.k==="drive"||it.k==="train"?it.to:it.p; if(k&&P[k]) add(P[k][1],P[k][2]); }));
   return Object.keys(m);
 }
+function wxRange(){ const today=jst().date, a=TRIP_DATES[0], b=TRIP_DATES[TRIP_DATES.length-1];
+  const days=(x,y)=>Math.round((Date.parse(y)-Date.parse(x))/864e5);
+  if(today>b&&days(b,today)<=90) return `start_date=${a}&end_date=${b}`;            /* trip over: the days of the trip */
+  if(today>=a) return `past_days=${Math.min(92,Math.max(1,days(a,today)))}&forecast_days=7`;   /* during the trip: the days so far + ahead */
+  return "past_days=1&forecast_days=7"; }
 async function refreshWx(force){
   if(wxBusy) return; if(!force&&wx&&Date.now()-wx.at<WX_STALE) return;
   const pts=wxPoints(); if(!pts.length) return; wxBusy=true;
   try{
     const lat=pts.map(p=>p.split(",")[0]).join(","), lon=pts.map(p=>p.split(",")[1]).join(",");
-    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m&wind_speed_unit=ms&timezone=Asia%2FTokyo&past_days=1&forecast_days=7`);
+    const base=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m&wind_speed_unit=ms&timezone=Asia%2FTokyo&`; let r=await fetch(base+wxRange());
+    if(!r.ok){ const back=Math.min(92,Math.max(1,Math.round((Date.parse(jst().date)-Date.parse(TRIP_DATES[0]))/864e5))); r=await fetch(base+`past_days=${back}&forecast_days=7`); }   /* in case dates are refused */
     const j=await r.json(); const arr=Array.isArray(j)?j:[j]; const data={};
     arr.forEach((loc,i)=>{ if(loc&&loc.hourly) data[pts[i]]={time:loc.hourly.time,t:loc.hourly.temperature_2m,pp:loc.hourly.precipitation_probability,pr:loc.hourly.precipitation,wc:loc.hourly.weather_code,ws:loc.hourly.wind_speed_10m}; });
-    if(Object.keys(data).length){ wx={at:Date.now(),data}; store.set("wx",wx); if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); }
+    if(Object.keys(data).length){ wxRemember(data); wx={at:Date.now(),data}; store.set("wx",wx); if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); }
   }catch(e){}
   wxBusy=false;
 }
 function wxIcon(c){ if(c==null) return ["",""]; if(c===0) return ["☀️","แจ่มใส"]; if(c<=2) return ["🌤️","มีเมฆบางส่วน"]; if(c===3) return ["☁️","เมฆมาก"]; if(c<=48) return ["🌫️","หมอก"]; if(c<=57) return ["🌦️","ฝนปรอย"]; if(c<=67) return ["🌧️","ฝน"]; if(c<=77) return ["🌨️","หิมะ"]; if(c<=82) return ["🌧️","ฝนซู่"]; if(c<=86) return ["🌨️","หิมะ"]; return ["⛈️","พายุฝนฟ้าคะนอง"]; }
 function wxNear(lat,lng){ if(!wx) return null; let best=null,bd=9e9; Object.keys(wx.data).forEach(k=>{ const [a,b]=k.split(",").map(Number); const d=Math.abs(a-lat)+Math.abs(b-lng); if(d<bd){bd=d;best=k;} }); return bd<0.05?wx.data[best]:null; }
 function wxAt(pk,date,hhmm){
-  const p=P[pk]; if(!p) return null; const w=wxNear(p[1],p[2]); if(!w) return null;
-  const h=Math.floor(toMin(hhmm)/60)%24; const i=w.time.indexOf(`${date}T${pad(h)}:00`); if(i<0) return null;
-  return {t:w.t[i],pp:w.pp[i],pr:w.pr[i],wc:w.wc[i],ws:w.ws[i]};
+  const p=P[pk]; if(!p) return null; const h=Math.floor(toMin(hhmm)/60)%24;
+  const w=wxNear(p[1],p[2]); if(w){ const i=w.time.indexOf(`${date}T${pad(h)}:00`); if(i>=0&&w.t[i]!=null) return {t:w.t[i],pp:w.pp[i],pr:w.pr[i],wc:w.wc[i],ws:w.ws[i]}; }
+  const L=wxLogNear(p[1],p[2]); const v=L&&L[`${date}T${pad(h)}`]; return v?{t:v[0],pp:v[1],pr:v[2],wc:v[3],ws:v[4],kept:true}:null;
 }
 function wxChip(pk,date,hhmm){
   const w=wxAt(pk,date,hhmm); if(!w) return "";
-  const [e,lab]=wxIcon(w.wc); const wet=(w.pp||0)>=50||(w.pr||0)>=0.5;
-  return `<span class="wx${wet?" wet":""}" title="${esc(lab)}">${e} ${Math.round(w.t)}°${w.pp!=null?` · ☔${w.pp}%`:""}${w.ws>=8?` · 💨${Math.round(w.ws)}`:""}</span>`;
+  const [e,lab]=wxIcon(w.wc); const past=date<jst().date; const wet=past?(w.pr||0)>=0.2:(w.pp||0)>=50||(w.pr||0)>=0.5;
+  return `<span class="wx${wet?" wet":""}" title="${esc(lab)}">${e} ${Math.round(w.t)}°${past?((w.pr||0)>=0.2?` · ☔${(+w.pr).toFixed(1)} มม.`:""):w.pp!=null?` · ☔${w.pp}%`:""}${w.ws>=8?` · 💨${Math.round(w.ws)}`:""}</span>`;
 }
 function wxDayLine(di){
+  if(DAYS[di].date<jst().date) return wxPastLine(di);
   if(!wx) return `<div class="wx-day muted">พยากรณ์อากาศ: กำลังโหลด… (ต้องต่อเน็ต)</div>`;
   const d=DAYS[di]; const its=planItems(di).filter(it=>it.k!=="opt"&&it.k!=="drive"&&it.p);
   let tmin=99,tmax=-99,pmax=0,cnt=0; const codes={};
@@ -2671,6 +2687,14 @@ function wxDayLine(di){
   const top=Object.entries(codes).sort((a,b)=>b[1]-a[1])[0][0]; const [e,lab]=wxIcon(+top);
   return `<div class="wx-day"><span class="wx-big">${e}</span><div><b>${esc(lab)} · ${Math.round(tmin)}–${Math.round(tmax)}°C · โอกาสฝนสูงสุด ${pmax}%</b><span class="tiny">ตามเวลาและสถานที่ในแผน · อัปเดต ${ago<1?"เมื่อกี้":ago+" นาทีที่แล้ว"} · Open-Meteo</span></div><button class="mv-b" data-act="wx-refresh" aria-label="อัปเดตพยากรณ์">↻</button></div>`;
 }
+/* a day that is over: what the weather was, from the last values kept for that day */
+function wxPastLine(di){ const d=DAYS[di]; const its=planItems(di).filter(it=>it.k!=="opt"&&it.k!=="drive"&&it.k!=="train"&&it.p);
+  let tmin=99,tmax=-99,rain=0,wet=0,cnt=0,ws=0; const codes={}; const seen=new Set();
+  its.forEach(it=>{ const w=wxAt(it.p,d.date,it.t); if(!w) return; cnt++; tmin=Math.min(tmin,w.t); tmax=Math.max(tmax,w.t); ws=Math.max(ws,w.ws||0); codes[w.wc]=(codes[w.wc]||0)+1; if((w.pr||0)>=0.2) wet++;
+    const key=it.p+"|"+it.t; if(!seen.has(key)){ seen.add(key); rain+=w.pr||0; } });
+  if(!cnt) return `<div class="wx-day muted">อากาศวันนั้น: ยังไม่มีข้อมูล (ต่อเน็ตแล้วแอปจะดึงมาเก็บไว้ให้)</div>`;
+  const top=Object.entries(codes).sort((a,b)=>b[1]-a[1])[0][0]; const [e,lab]=wxIcon(+top);
+  return `<div class="wx-day past"><span class="wx-big">${e}</span><div><b>อากาศวันนั้น: ${esc(lab)} · ${Math.round(tmin)}–${Math.round(tmax)}°C${wet?` · มีฝนช่วง ${wet} จุดในแผน`:" · ไม่มีฝน"}${ws>=8?` · ลมแรง ${Math.round(ws)} ม./วิ`:""}</b><span class="tiny">ตามเวลาและสถานที่ในแผน · ค่าที่เกิดขึ้นจริงตามแบบจำลองอากาศ (Open-Meteo) เก็บไว้ในเครื่องแล้ว</span></div></div>`; }
 document.addEventListener("click",ev=>{ const b=ev.target.closest('[data-act="wx-refresh"]'); if(!b) return; ev.stopPropagation(); b.textContent="…"; refreshWx(true).then(()=>renderPlan()); },true);
 setInterval(()=>refreshWx(false),5*60e3);
 document.addEventListener("click",ev=>{ const n=ev.target.closest(".sc-note"); if(n) n.classList.toggle("open"); });
@@ -3441,7 +3465,7 @@ function bkFileHtml(){ const c=runCtx(); const last=store.get("lastBackup",0); c
     return `<label class="check" style="margin:0 0 4px"><input type="checkbox" id="bk-withph" ${np?"checked":""}> รวมรูปด้วย${np?` (${np} รูป)`:""}</label><label class="check" style="margin:0 0 8px"><input type="checkbox" id="bk-withvid" ${nv.length?"checked":""}> รวมวิดีโอด้วย${nv.length?` (${nv.length} ไฟล์ ~${mb.toFixed(0)} MB)`:""}</label>`; })()}
   <div class="c-actions"><button class="btn small primary" data-act="bk-file-make">${I.doc||""}สร้างไฟล์สำรอง</button><button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button></div><div id="bk-file-out"></div></div>`; }
 var bkFile=null;
-async function makeBackup(opt,out){ const ls={}; ["edits","editsHist","visited","checks","mapFlags2","day"].forEach(k=>{ const v=store.get(k,undefined); if(v!==undefined) ls[k]=v; });
+async function makeBackup(opt,out){ const ls={}; ["edits","editsHist","visited","checks","mapFlags2","day","wxLog"].forEach(k=>{ const v=store.get(k,undefined); if(v!==undefined) ls[k]=v; });
   const list=phMeta.filter(m=>m.kind==="video"?opt.vid:opt.ph); const entries=[], metas=[];
   for(const m of list){ const b=await PDB.getBlob(m.id); if(!b||!b.full) continue; metas.push(m);
     entries.push({name:`media/${m.id}.${m.kind==="video"?(m.ext||"mp4"):"jpg"}`,blob:b.full}); if(b.thumb) entries.push({name:`thumbs/${m.id}.jpg`,blob:b.thumb}); }
@@ -3457,6 +3481,7 @@ function applyLs(ls){ const res={added:[],kept:[],same:0};
       else res.kept.push(+d); }                                                            /* both edited: this phone's version stays */
     if(ch){ reconcileAll(); store.set("edits",edits); snapEdits("กู้คืนไฟล์"); } lsPending=res.kept.length?ls.edits:null; }
   if(Array.isArray(ls.editsHist)){ const h=store.get("editsHist",[]); ls.editsHist.forEach(s=>{ if(!h.some(x=>x.ts===s.ts)) h.push(s); }); h.sort((a,b)=>b.ts-a.ts); store.set("editsHist",h.slice(0,25)); }
+  if(ls.wxLog&&typeof ls.wxLog==="object"){ for(const [k,L] of Object.entries(ls.wxLog)){ wxLog[k]=Object.assign({},L,wxLog[k]||{}); } store.set("wxLog",wxLog); }
   if(ls.visited){ for(const [d,o] of Object.entries(ls.visited)){ visited[d]=Object.assign({},o,visited[d]||{}); } store.set("visited",visited); }
   if(ls.checks){ store.set("checks",Object.assign({},ls.checks,store.get("checks",{}))); } return res; }
 function useFileDays(days){ if(!lsPending) return; snapEdits("ก่อนใช้แผนจากไฟล์"); days.forEach(d=>{ if(lsPending[d]){ edits[d]=lsPending[d]; lsPending[d].list.forEach(regCustom); } }); reconcileAll(); store.set("edits",edits); snapEdits("ใช้แผนจากไฟล์"); lsPending=null; renderPlan(); drawCustoms(); }
