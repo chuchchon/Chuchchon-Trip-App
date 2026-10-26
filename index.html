@@ -704,6 +704,8 @@ body.tb-dragging{overflow:hidden}
 .tb-selbar .btn.danger{background:#B3261E;color:#fff;border-color:#B3261E}
 @media print{ .tb-selbar,.tb-more{display:none!important} }
 .phx-outs{list-style:none;padding:0;margin:10px 0}.phx-outs li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line,#E3E7EB)}.phx-outs li b{flex:1 1 auto}
+.dup-sets{display:flex;flex-direction:column;gap:12px;margin-top:12px}.dup-set .ph-grid{margin-top:4px}
+.ph-cell.keep{outline:3px solid #2F6B45;outline-offset:-3px}.dup-keep{position:absolute;left:4px;top:4px;font-style:normal;font-size:11px;background:#2F6B45;color:#fff;padding:1px 6px;border-radius:6px}
 </style>
 
 <div class="app">
@@ -3234,12 +3236,14 @@ async function importPhotos(files,forKey){
     const L=[]; for(const it of items){ if(!isVideo(it)){ try{ const x=readExif(await it.head(262144)); exc.set(it,x); const t=exifTime(x); if(t) L.push({it,t,mo:x.model||""}); }catch(e){} } phImport.sd++; phTick(); }
     const G=burstGroups(L); phImport.stage="sharp"; phImport.sn=L.length; phImport.sd=0; phTick(true);
     drop=await burstDrop(G,k=>{ phImport.sd+=k; phTick(); }); }
+  if(phMeta.some(m=>!m.dh)){ phImport.stage="scan"; phImport.sd=0; phImport.sn=phMeta.filter(m=>!m.dh).length; phTick(true); await ensureHashes((i,n)=>{ phImport.sd=i; phImport.sn=n; phTick(); }); }
   phImport.stage="import"; phTick(true);
   for(const it of items){
     if(drop.has(it)){ phImport.burst++; phImport.done++; phTick(); continue; }
     try{ const vid=isVideo(it); let x={}, takenAt=null, tsrc=null, f=null;
       if(vid){ f=await it.file(); const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; }
       else { x=exc.get(it)||readExif(await it.head(262144)); takenAt=exifTime(x); phImport.pics++; if(x.lat==null){ if(x.gz) phImport.gz++; else phImport.gn++; } }
+      const unCount=()=>{ if(vid) return; phImport.pics--; if(x.lat==null){ if(x.gz) phImport.gz--; else phImport.gn--; } if(tsrc!=="meta"&&tsrc!=="name") phImport.notime--; };   /* a copy we skip says nothing about this import */
       if(takenAt) tsrc="meta"; else if((takenAt=nameTime(it.name))) tsrc="name"; else if(it.lastModified&&!it.zip&&Math.abs(Date.now()-it.lastModified)>30*60e3){ takenAt=it.lastModified; tsrc="file"; }
       if(tsrc!=="meta"&&tsrc!=="name") phImport.notime++;
       const sig=it.name+"|"+it.size+"|"+(takenAt||0);
@@ -3247,12 +3251,14 @@ async function importPhotos(files,forKey){
       let twin=phMeta.find(m=>m.sig===sig);
       if(!twin&&tsrc==="meta"){ const tw=phMeta.filter(m=>(m.tsrc==="meta"||!m.tsrc)&&m.takenAt&&Math.abs(m.takenAt-takenAt)<1000&&(m.kind==="video")===vid&&(!m.model||!x.model||m.model===x.model));
         twin=tw.find(m=>m.name===it.name)||tw.find(m=>m.lat==null)||tw[0]; }
-      if(twin){ if(twin.lat==null&&x.lat!=null){ twin.lat=x.lat; twin.lng=x.lng; if(!twin.model&&x.model) twin.model=x.model; if(twin.auto){ const r=matchPhoto(twin); twin.day=r.day; twin.key=r.key; twin.place=r.place||null; twin.byTime=!!r.byTime; twin.bySess=false; } await PDB.putMeta(twin); phImport.fix++; phImport.geo++; } else phImport.dup++;
+      if(twin){ if(twin.lat==null&&x.lat!=null){ twin.lat=x.lat; twin.lng=x.lng; if(!twin.model&&x.model) twin.model=x.model; if(twin.auto){ const r=matchPhoto(twin); twin.day=r.day; twin.key=r.key; twin.place=r.place||null; twin.byTime=!!r.byTime; twin.bySess=false; } await PDB.putMeta(twin); phImport.fix++; phImport.geo++; } else { phImport.dup++; unCount(); }
         phImport.done++; phTick(); continue; }
       f=f||await it.file();
       const id=(vid?"v":"p")+Date.now().toString(36)+Math.random().toString(36).slice(2,7); let rec, m;
       if(vid){ const pv=await videoPoster(f); rec={id,full:f,thumb:pv&&pv.blob||null}; m={id,sig,name:it.name,kind:"video",mime:f.type||"video/mp4",ext:((it.name||"").match(/\.(\w+)$/)||[,"mp4"])[1].toLowerCase(),size:it.size,dur:pv&&pv.dur||null,w:pv&&pv.w||null,h:pv&&pv.h||null}; phImport.vid++; }
-      else { const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); rec={id,full:full.blob,thumb:th.blob}; m={id,sig,name:it.name,w:full.w,h:full.h}; }
+      else { const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); rec={id,full:full.blob,thumb:th.blob}; m={id,sig,name:it.name,w:full.w,h:full.h,dh:await dHash(th.blob)};
+        const probe=Object.assign({},m,{takenAt:takenAt||null,tsrc,model:x.model||undefined}); const same=m.dh&&phMeta.find(o=>o.kind!=="video"&&o.dh&&isDupPair(probe,o));
+        if(same){ if(same.lat==null&&x.lat!=null){ same.lat=x.lat; same.lng=x.lng; if(same.auto){ const r=matchPhoto(same); same.day=r.day; same.key=r.key; same.place=r.place||null; same.byTime=!!r.byTime; } await PDB.putMeta(same); phImport.fix++; phImport.geo++; } else { phImport.dup++; unCount(); } phImport.done++; phTick(); continue; } }
       Object.assign(m,{takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,added:Date.now(),src:"device",tsrc}); if(x.model) m.model=x.model; if(m.lat!=null) phImport.geo++;
       if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.auto=true; }
       await PDB.putBlob(rec); await PDB.putMeta(m); phMeta.push(m); mine.push(m); }
@@ -3299,7 +3305,7 @@ function photoSheetHtml(){
   const cell=m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
   return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปและวิดีโอของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${mediaWord(phMeta)}</span>`:""}</h2>
   <p style="margin:0 0 10px">เลือกรูปและวิดีโอจากมือถือได้ทีละหลายไฟล์ (บน Android เปิดจาก Google Photos ได้ในหน้าเลือก) แอปดูตำแหน่งที่ถ่ายก่อน ถ้าไม่มีตำแหน่งจะเทียบเวลากับตารางในแผน ไฟล์เก็บอยู่ในเครื่องนี้เท่านั้น</p>
-  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button><button class="btn small" data-act="ph-pick-files">นำเข้าไฟล์ ZIP</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button><button class="btn small" data-act="phx-open">ดาวน์โหลดรูปทั้งหมด</button>`:""}</div>
+  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button><button class="btn small" data-act="ph-pick-files">นำเข้าไฟล์ ZIP</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button><button class="btn small" data-act="dup-open">หารูปซ้ำ</button><button class="btn small" data-act="phx-open">ดาวน์โหลดรูปทั้งหมด</button>`:""}</div>
   <label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียว คือรูปที่คมชัดที่สุด</label>${prog}
   ${!imp&&phMeta.filter(m=>m.kind!=="video").length>=5&&phMeta.filter(m=>m.lat!=null).length<phMeta.length/2?`<div class="ph-geo-note"><b>${phMeta.filter(m=>m.lat==null).length} ไฟล์ไม่มีตำแหน่งที่ถ่าย</b> จึงจัดตามเวลาในแผนได้อย่างเดียว ${zipHow()}</div>`:""}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
@@ -3783,6 +3789,53 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='ph
   if(a==="phx-app"){ exportRun("app"); return; }
   if(a==="phx-orig"){ const inp=document.createElement("input"); inp.type="file"; inp.multiple=true; inp.style.display="none"; inp.onchange=()=>{ const fs=[...inp.files]; inp.remove(); if(fs.length) exportRun("orig",fs); }; document.body.appendChild(inp); inp.click(); return; }
   if(a==="phx-dl"){ const o=exState&&exState.outs[+b.dataset.i]; if(o) exportSave(o,b); return; } },true);
+
+/* ===================== same picture twice: find and merge duplicates (by look + time, not file name) ===================== */
+/* a 64-bit "difference hash" of a small greyscale copy: the same shot gives the same hash even after resizing or re-encoding */
+async function dHash(blob){ try{ const bm=await createImageBitmap(blob,{resizeWidth:9,resizeHeight:8,resizeQuality:"high"}); const c=document.createElement("canvas"); c.width=9; c.height=8; const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bm,0,0); bm.close&&bm.close();
+    const d=g.getImageData(0,0,9,8).data; let bits=""; for(let y=0;y<8;y++) for(let x=0;x<8;x++){ const i=(y*9+x)*4, j=i+4; bits+=(d[i]*.3+d[i+1]*.59+d[i+2]*.11)>(d[j]*.3+d[j+1]*.59+d[j+2]*.11)?"1":"0"; }
+    return parseInt(bits.slice(0,32),2).toString(16).padStart(8,"0")+parseInt(bits.slice(32),2).toString(16).padStart(8,"0"); }catch(e){ return null; } }
+function hamming(a,b){ if(!a||!b) return 99; let n=0; for(let k=0;k<16;k+=8){ let x=(parseInt(a.slice(k,k+8),16)^parseInt(b.slice(k,k+8),16))>>>0; while(x){ x&=x-1; n++; } } return n; }
+async function ensureHashes(tick){ const need=phMeta.filter(m=>!m.dh); let i=0; for(const m of need){ const b=await PDB.getBlob(m.id); const src=b&&(b.thumb||(m.kind!=="video"?b.full:null)); if(src){ const h=await dHash(src); if(h){ m.dh=h; await PDB.putMeta(m); } } i++; tick&&tick(i,need.length); } }
+const realTime=m=>m.takenAt&&m.tsrc!=="file";
+function isDupPair(a,b){ if((a.kind==="video")!==(b.kind==="video")) return false; const h=hamming(a.dh,b.dh); if(h>5) return false;
+  if(a.kind==="video"&&a.dur&&b.dur&&Math.abs(a.dur-b.dur)>0.6) return false;
+  if(a.model&&b.model&&a.model!==b.model&&a.name!==b.name) return false;   /* two phones at the same moment are two pictures */
+  if(realTime(a)&&realTime(b)) return store.get("burst",true)?Math.abs(a.takenAt-b.takenAt)<=3000&&h<=5:Math.abs(a.takenAt-b.takenAt)<1000&&h<=2;   /* same moment, same picture; burst frames too unless you keep every frame */
+  if(a.name&&a.name===b.name) return h<=5;
+  return h<=2; }                                                                         /* one has no shot time: only near-identical pictures */
+function dupGroups(){ const L=phMeta.filter(m=>m.dh); const par=new Map(L.map(m=>[m.id,m.id])); const f=x=>{ while(par.get(x)!==x){ par.set(x,par.get(par.get(x))); x=par.get(x); } return x; };
+  const timed=L.filter(realTime).sort((a,b)=>a.takenAt-b.takenAt), untimed=L.filter(m=>!realTime(m));
+  for(let i=0;i<timed.length;i++) for(let j=i+1;j<timed.length&&timed[j].takenAt-timed[i].takenAt<=3000;j++) if(isDupPair(timed[i],timed[j])) par.set(f(timed[i].id),f(timed[j].id));
+  for(const u of untimed) for(const o of L) if(o!==u&&isDupPair(u,o)) par.set(f(u.id),f(o.id));
+  const g={}; L.forEach(m=>{ const r=f(m.id); (g[r]=g[r]||[]).push(m); }); return Object.values(g).filter(x=>x.length>1).map(dupOrder); }
+/* the one to keep first: your cover, then one that knows where it was taken, then one you placed by hand, then a real shot time, then the biggest */
+function dupOrder(list){ const sc=m=>(m.cover?16:0)+(m.lat!=null?8:0)+(m.auto===false?4:0)+(realTime(m)?2:0); return list.slice().sort((a,b)=>sc(b)-sc(a)||((b.w||0)*(b.h||0))-((a.w||0)*(a.h||0))||(a.added||0)-(b.added||0)); }
+async function mergeDupGroup(list){ const [keep,...rest]=list; for(const m of rest){
+    if(m.auto===false&&keep.auto!==false) Object.assign(keep,{day:m.day,key:m.key,place:m.place||null,auto:false,byTime:false,bySess:false});
+    if(keep.lat==null&&m.lat!=null){ keep.lat=m.lat; keep.lng=m.lng; } if(!realTime(keep)&&realTime(m)){ keep.takenAt=m.takenAt; keep.tsrc=m.tsrc; }
+    if(m.cover) keep.cover=true; await PDB.del(m.id); phMeta=phMeta.filter(x=>x!==m); }
+  if(rest.every(m=>!m.tbHide)) keep.tbHide=false; await PDB.putMeta(keep); }
+var dupState=null;
+function dupHtml(){ const s=dupState||{}; let body="";
+  if(s.busy) body=`<div class="ph-prog"><div class="ph-bar"><i style="width:${s.n?Math.round(s.i/s.n*100):0}%"></i></div><p><b>${esc(s.msg)}</b>${s.n?` ${s.i} / ${s.n}`:""}</p></div>`;
+  else if(s.done) body=`<div class="ph-prog done"><p><b>รวมรูปซ้ำแล้ว</b></p><ul class="imp-rows"><li>ลบไฟล์ที่ซ้ำ ${s.removed} ไฟล์ เก็บไว้ชุดละ 1</li><li>ตอนนี้มี ${mediaWord(phMeta)}</li></ul></div>`;
+  else if(s.groups){ const G=s.groups, extra=G.reduce((a,g)=>a+g.length-1,0);
+    body=G.length?`<p><b>พบรูปซ้ำ ${G.length} ชุด</b> · จะลบ ${extra} ไฟล์ เก็บไว้ชุดละ 1 รูป</p><p class="tiny">รูปที่เก็บ (มีป้าย "เก็บ"): ตั้งเป็นปกไว้ก่อน แล้วรูปที่มีตำแหน่ง รูปที่คุณย้ายเอง รูปที่มีเวลาถ่ายจริง แล้วรูปที่ใหญ่สุด · ที่คุณจัดไว้ในรูปที่ถูกลบจะย้ายมาอยู่กับรูปที่เก็บ · รูปที่ถ่ายรัวภายใน 3 วินาทีแล้วแทบเหมือนกันก็นับเป็นซ้ำ</p>
+      <div class="c-actions"><button class="btn small ${s.confirm?"danger":"primary"}" data-act="dup-go">${s.confirm?`แตะอีกครั้ง ลบ ${extra} ไฟล์`:`ลบรูปซ้ำ ${extra} ไฟล์`}</button><button class="btn small" data-act="backup">สำรองก่อน</button></div>
+      <div class="dup-sets">${G.slice(0,60).map(g=>`<div class="dup-set"><span class="tiny">${g[0].day!=null?"D"+DAYS[g[0].day].n:""} ${g[0].takenAt&&realTime(g[0])?fmtMin(jstMin(g[0].takenAt)):""} · ${g.length} ไฟล์</span><div class="ph-grid">${g.map((m,i)=>`<button class="ph-cell${i?"":" keep"}" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${i?"":`<em class="dup-keep">เก็บ</em>`}</button>`).join("")}</div></div>`).join("")}${G.length>60?`<p class="tiny">และอีก ${G.length-60} ชุด</p>`:""}</div>`
+      :`<p><b>ไม่พบรูปซ้ำ</b> ✓</p>`; }
+  return `<div id="dup-root"><div class="sk">รูปทริป</div><h2>หารูปซ้ำ</h2><p class="tiny">ดูจากหน้าตาของรูปและเวลาที่ถ่าย ไม่ได้ดูแค่ชื่อไฟล์ จึงเจอรูปเดียวกันที่นำเข้ามาสองทาง (เช่นจากหน้าเลือกรูปและจาก ZIP)</p>${body}</div>`; }
+function dupPaint(first){ if(first||!$("#dup-root")) openSheet(dupHtml()); else renderSheet(dupHtml()); setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
+async function dupScan(){ dupState={busy:true,msg:"กำลังอ่านรูป",i:0,n:0}; dupPaint(true); let t=0;
+  await ensureHashes((i,n)=>{ dupState.i=i; dupState.n=n; if(Date.now()-t>300){ t=Date.now(); dupPaint(); } });
+  dupState={groups:dupGroups()}; dupPaint(); }
+document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act='dup-open'],[data-act='dup-go']"); if(!b) return; ev.stopPropagation();
+  if(b.dataset.act==="dup-open"){ dupScan(); return; }
+  if(!dupState||!dupState.groups) return; if(!dupState.confirm){ dupState.confirm=true; dupPaint(); return; }
+  const G=dupState.groups; let removed=0; dupState={busy:true,msg:"กำลังรวมรูปซ้ำ",i:0,n:G.length}; dupPaint();
+  for(const g of G){ await mergeDupGroup(g); removed+=g.length-1; dupState.i++; if(dupState.i%20===0) dupPaint(); }
+  dupState={done:true,removed}; dupPaint(); renderPlan(); },true);
 
 /* ---------- boot ---------- */
 mapDay=curDay;
