@@ -2632,7 +2632,7 @@ function recsAfter(di,it){
 let wx=store.get("wx",null), wxBusy=false;
 /* every hour of the trip we ever got, kept for good: once a day is over its last values (the model's record of what happened) stay,
    even offline or months later. {point: {"2026-10-18T09": [temp, rainChance, rainMm, code, wind]}} */
-let wxLog=store.get("wxLog",{});
+let wxLog=store.get("wxLog",{}), wxErr="";
 const TRIP_DATES=DAYS.map(d=>d.date);
 function wxRemember(data){ let n=0; for(const [k,w] of Object.entries(data)){ const L=wxLog[k]=wxLog[k]||{};
     w.time.forEach((tm,i)=>{ if(!TRIP_DATES.includes(tm.slice(0,10))) return; const h=+tm.slice(11,13); if(h<5) return; if(w.t[i]==null) return;
@@ -2652,7 +2652,7 @@ function wxRange(){ const today=jst().date, a=TRIP_DATES[0], b=TRIP_DATES[TRIP_D
   if(today>=a) return `past_days=${Math.min(92,Math.max(1,days(a,today)))}&forecast_days=7`;   /* during the trip: the days so far + ahead */
   return "past_days=1&forecast_days=7"; }
 async function refreshWx(force){
-  if(wxBusy) return; if(!force&&wx&&Date.now()-wx.at<WX_STALE) return;
+  if(wxBusy) return; if(!force&&wx&&wx.range===wxRange()&&Date.now()-wx.at<WX_STALE) return;   /* a cache made for other dates is stale whatever its age */
   const pts=wxPoints(); if(!pts.length) return; wxBusy=true;
   try{
     const lat=pts.map(p=>p.split(",")[0]).join(","), lon=pts.map(p=>p.split(",")[1]).join(",");
@@ -2660,8 +2660,9 @@ async function refreshWx(force){
     if(!r.ok){ const back=Math.min(92,Math.max(1,Math.round((Date.parse(jst().date)-Date.parse(TRIP_DATES[0]))/864e5))); r=await fetch(base+`past_days=${back}&forecast_days=7`); }   /* in case dates are refused */
     const j=await r.json(); const arr=Array.isArray(j)?j:[j]; const data={};
     arr.forEach((loc,i)=>{ if(loc&&loc.hourly) data[pts[i]]={time:loc.hourly.time,t:loc.hourly.temperature_2m,pp:loc.hourly.precipitation_probability,pr:loc.hourly.precipitation,wc:loc.hourly.weather_code,ws:loc.hourly.wind_speed_10m}; });
-    if(Object.keys(data).length){ wxRemember(data); wx={at:Date.now(),data}; store.set("wx",wx); if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); }
-  }catch(e){}
+    wxErr=Object.keys(data).length?"":((j&&j.reason)||("HTTP "+r.status));
+    if(Object.keys(data).length){ wxRemember(data); wx={at:Date.now(),data,range:wxRange()}; store.set("wx",wx); if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); }
+  }catch(e){ wxErr=navigator.onLine?"ดึงข้อมูลไม่สำเร็จ":"ออฟไลน์"; }
   wxBusy=false;
 }
 function wxIcon(c){ if(c==null) return ["",""]; if(c===0) return ["☀️","แจ่มใส"]; if(c<=2) return ["🌤️","มีเมฆบางส่วน"]; if(c===3) return ["☁️","เมฆมาก"]; if(c<=48) return ["🌫️","หมอก"]; if(c<=57) return ["🌦️","ฝนปรอย"]; if(c<=67) return ["🌧️","ฝน"]; if(c<=77) return ["🌨️","หิมะ"]; if(c<=82) return ["🌧️","ฝนซู่"]; if(c<=86) return ["🌨️","หิมะ"]; return ["⛈️","พายุฝนฟ้าคะนอง"]; }
@@ -2692,9 +2693,9 @@ function wxPastLine(di){ const d=DAYS[di]; const its=planItems(di).filter(it=>it
   let tmin=99,tmax=-99,rain=0,wet=0,cnt=0,ws=0; const codes={}; const seen=new Set();
   its.forEach(it=>{ const w=wxAt(it.p,d.date,it.t); if(!w) return; cnt++; tmin=Math.min(tmin,w.t); tmax=Math.max(tmax,w.t); ws=Math.max(ws,w.ws||0); codes[w.wc]=(codes[w.wc]||0)+1; if((w.pr||0)>=0.2) wet++;
     const key=it.p+"|"+it.t; if(!seen.has(key)){ seen.add(key); rain+=w.pr||0; } });
-  if(!cnt) return `<div class="wx-day muted">อากาศวันนั้น: ยังไม่มีข้อมูล (ต่อเน็ตแล้วแอปจะดึงมาเก็บไว้ให้)</div>`;
+  if(!cnt) return `<div class="wx-day muted"><div>อากาศวันนั้น: ${wxBusy?"กำลังดึงข้อมูล…":wxErr?"ดึงไม่สำเร็จ ("+esc(wxErr)+") กดลองใหม่":"ยังไม่มีข้อมูล กดเพื่อดึง"}</div><button class="mv-b" data-act="wx-refresh" aria-label="ดึงข้อมูลอากาศ">↻</button></div>`;
   const top=Object.entries(codes).sort((a,b)=>b[1]-a[1])[0][0]; const [e,lab]=wxIcon(+top);
-  return `<div class="wx-day past"><span class="wx-big">${e}</span><div><b>อากาศวันนั้น: ${esc(lab)} · ${Math.round(tmin)}–${Math.round(tmax)}°C${wet?` · มีฝนช่วง ${wet} จุดในแผน`:" · ไม่มีฝน"}${ws>=8?` · ลมแรง ${Math.round(ws)} ม./วิ`:""}</b><span class="tiny">ตามเวลาและสถานที่ในแผน · ค่าที่เกิดขึ้นจริงตามแบบจำลองอากาศ (Open-Meteo) เก็บไว้ในเครื่องแล้ว</span></div></div>`; }
+  return `<div class="wx-day past"><span class="wx-big">${e}</span><div><b>อากาศวันนั้น: ${esc(lab)} · ${Math.round(tmin)}–${Math.round(tmax)}°C${wet?` · มีฝนช่วง ${wet} จุดในแผน`:" · ไม่มีฝน"}${ws>=8?` · ลมแรง ${Math.round(ws)} ม./วิ`:""}</b><span class="tiny">ตามเวลาและสถานที่ในแผน · ค่าที่เกิดขึ้นจริงตามแบบจำลองอากาศ (Open-Meteo) เก็บไว้ในเครื่องแล้ว</span></div><button class="mv-b" data-act="wx-refresh" aria-label="ดึงข้อมูลอากาศใหม่">↻</button></div>`; }
 document.addEventListener("click",ev=>{ const b=ev.target.closest('[data-act="wx-refresh"]'); if(!b) return; ev.stopPropagation(); b.textContent="…"; refreshWx(true).then(()=>renderPlan()); },true);
 setInterval(()=>refreshWx(false),5*60e3);
 document.addEventListener("click",ev=>{ const n=ev.target.closest(".sc-note"); if(n) n.classList.toggle("open"); });
