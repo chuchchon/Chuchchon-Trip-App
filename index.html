@@ -546,7 +546,7 @@ body.reorder .ins-row,body.reorder .recs-row{display:none}
 .tiles::-webkit-scrollbar{display:none}
 .tile{flex:0 0 140px;scroll-snap-align:start;position:relative;display:flex;flex-direction:column}
 .tile-ph{width:140px;height:92px;border-radius:12px;border:0;padding:0;cursor:pointer;background-color:var(--surface-2)}
-.tile-ph.emo{display:grid;place-items:center;font-size:34px;background:color-mix(in srgb,var(--gold) 12%,var(--surface));position:relative}
+.tile-ph.emo{display:grid;place-items:center;font-size:34px;background:color-mix(in srgb,var(--gold) 12%,var(--surface));position:relative;background-size:cover;background-position:center}
 .tile-ph.emo em{position:absolute;left:6px;top:6px;font-style:normal;font-size:11px;font-weight:700;background:var(--maple);color:#fff;border-radius:6px;padding:0 6px;line-height:18px}
 .tile-b{padding:6px 2px 0;display:flex;flex-direction:column;min-width:0}
 .tile-b b{font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -727,12 +727,22 @@ body.tb-dragging{overflow:hidden}
 .srt-stops .pg-c.leg b{font-weight:500;color:var(--muted,#5B6570)}
 .srt-guess .btn.weak{opacity:.75;border-style:dashed}
 .srt-stops .pg-c{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left}
+.tile-ph{position:relative;overflow:hidden}
+.tile-ph.emo.ok .tile-emo,.tile-ph.thumb .tile-emo{position:absolute;right:6px;top:6px;width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:17px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.tile-ph.thumb:not(.ok) .tile-emo{display:none}
+.tile-b{border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer;width:100%}
+.gp-info{margin:6px 0 10px}.gp-strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
+.gp-ph{flex:0 0 auto;width:200px;height:140px;border:0;padding:0;border-radius:12px;overflow:hidden;background:var(--surface-2);cursor:zoom-in}.gp-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.gp-strip .ph-skel{flex:0 0 200px;height:140px;border-radius:12px}
+.gp-by{margin:4px 0 6px}.gp-facts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0}
+.gp-rate{font-weight:700;color:#B9820F}.gp-rate small{font-weight:400;color:var(--muted)}.gp-open{color:#2F6B45;font-weight:600}.gp-shut{color:#B3261E;font-weight:600}
+.gp-hours ul{margin:6px 0;padding-left:18px;font-size:13px}
 </style>
 
 <div class="app">
   <header class="top wrap">
     <div class="top-row">
-      <h1 class="brand">ฮอกไกโด ใบไม้แดง 2026<small>18–24 ต.ค. · ขับรถ 7 วัน · 3 คน</small></h1>
+      <h1 class="brand">ฮอกไกโด ใบไม้แดง 2026<small id="tripSub">18–24 ต.ค. · 7 วัน (ขับรถ 4 วันแรก) · 3 คน</small></h1>
       <div class="clock" aria-live="polite"><span id="clkLabel">เวลาญี่ปุ่น</span><b id="clk">--:--</b><span id="clkTh"></span></div>
     </div>
     <div class="days" id="days" role="toolbar" aria-label="เลือกวัน"></div>
@@ -1465,8 +1475,8 @@ function recTilesHtml(di,list){
   return `<li class="recs-row"><div class="recs"><div class="recs-h">แนะนำแถวนี้ <span>${all.length}</span></div><div class="tiles">${all.map(r=>{
     const k=esc(di+"|"+r.id); const meta=`${distTxt(r.d)} ${ttTxt(di,r.d)}`;
     if(r.kind==="food"){ const c=CAT[r.f[1]]||{e:"🍴",n:"ร้านอาหาร"}; const ip=INPLAN[r.f[0]];
-      return `<div class="tile food"><button class="tile-ph emo" data-act="rec-open" data-k="${k}" aria-label="${esc(r.name)}"><span>${c.e}</span>${ip?`<em>ในแผน</em>`:""}</button><div class="tile-b"><b>${esc(r.name)}</b><span>${esc(c.n)}</span><span>${meta}</span></div><button class="tile-add" data-act="cs-recplus" data-k="${k}" aria-label="ใส่ในแผน">${I.plus}</button></div>`; }
-    return `<div class="tile"><button class="tile-ph thumb" ${thumbAttr(r)} data-act="rec-open" data-k="${k}" aria-label="${esc(r.name)}"></button><div class="tile-b"><b>${esc(r.name)}</b><span>${esc(r.src==="rec"?"ที่เที่ยว":r.kindTh)}</span><span>${meta}</span></div><button class="tile-add" data-act="cs-recplus" data-k="${k}" aria-label="ใส่ในแผน">${I.plus}</button></div>`; }).join("")}</div></div></li>`; }
+      return `<div class="tile food"><button class="tile-ph emo" data-gpic="${esc(JSON.stringify(foodPicObj(r.f)))}" data-act="rec-open" data-k="${k}" aria-label="${esc(r.name)} · ดูรายละเอียด"><span class="tile-emo">${c.e}</span>${ip?`<em>ในแผน</em>`:""}</button><button class="tile-b" data-act="rec-open" data-k="${k}"><b>${esc(r.name)}</b><span>${esc(c.n)}</span><span>${meta}</span></button><button class="tile-add" data-act="cs-recplus" data-k="${k}" aria-label="ใส่ในแผน">${I.plus}</button></div>`; }
+    return `<div class="tile"><button class="tile-ph thumb" ${thumbAttr(r)} data-act="rec-open" data-k="${k}" aria-label="${esc(r.name)} · ดูรายละเอียด"><span class="tile-emo">📍</span></button><button class="tile-b" data-act="rec-open" data-k="${k}"><b>${esc(r.name)}</b><span>${esc(r.src==="rec"?"ที่เที่ยว":r.kindTh)}</span><span>${meta}</span></button><button class="tile-add" data-act="cs-recplus" data-k="${k}" aria-label="ใส่ในแผน">${I.plus}</button></div>`; }).join("")}</div></div></li>`; }
 function renderPlan(){
   const d=DAYS[curDay]; const el=$("#p-plan"); el.style.setProperty("--dc",`var(--d${d.n})`);
   const nowK=nowItemIndex(d); const isToday=curDay===todayIndex();
@@ -1554,10 +1564,14 @@ function bookingHtml(k){
   ${b.notes.length?`<ul class="facts">${b.notes.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
   <p class="tiny">เวอร์ชันเว็บสาธารณะ ไม่มีเลขจองและลิงก์อีเมล · ข้อมูลในหน้านี้สรุปจากอีเมลยืนยันการจอง</p>`;
 }
-function foodHtml(id){
+function foodHtml(id,recK){
   const f=FOOD.find(x=>x[0]===+id); if(!f) return "";
-  const c=CAT[f[1]];
-  return `<div class="sk">${c.e} ${esc(c.n)}${INPLAN[f[0]]?" · ★ อยู่ในแผน":""}</div><h2>${esc(f[2])}</h2><p class="muted">${esc(f[3])}${INPLAN[f[0]]?" · "+esc(INPLAN[f[0]]):""}</p>${f[8]?`<p>${esc(f[8])}</p>`:""}${f[7]?`<p class="tiny">ตำแหน่งบนแผนที่เป็นค่าประมาณ ปุ่มนำทางจะค้นชื่อร้านใน Google Maps</p>`:""}<div class="c-actions">${aBtn(dirUrl(foodTarget(f)),"นำทาง",I.nav)}${aBtn(imgUrl(f[2]+" "+cityOf(f[3])),"ดูรูป",I.img)}<button class="btn small" data-act="foodmap" data-id="${f[0]}">${I.map}บนแผนที่</button></div>`;
+  const c=CAT[f[1]]; const r=recK?recIdx[recK]:null;
+  setTimeout(()=>fillPlaceInfo($("#gp-info"),foodPicObj(f)),30);
+  return `<div class="sk">${c.e} ${esc(c.n)}${INPLAN[f[0]]?" · ★ อยู่ในแผน":""}</div><h2>${esc(f[2])}</h2><p class="muted">${esc(f[3])}${INPLAN[f[0]]?" · "+esc(INPLAN[f[0]]):""}</p>
+  <div id="gp-info" class="gp-info"><div class="gp-strip"><div class="ph-skel"></div><div class="ph-skel"></div><div class="ph-skel"></div></div></div>
+  ${f[8]?`<p>${esc(f[8])}</p>`:""}${r?`<p class="tiny">อยู่ใกล้จุดที่ ${stopNumMap(r.di)[r.stopKey]||"-"} ในแผน D${DAYS[r.di].n} · ${distTxt(r.d)} ${ttTxt(r.di,r.d)}</p>`:""}${f[7]?`<p class="tiny">ตำแหน่งบนแผนที่เป็นค่าประมาณ ปุ่มนำทางจะค้นชื่อร้านใน Google Maps</p>`:""}
+  <div class="c-actions">${r?`<button class="btn small primary" data-act="cs-recplus" data-k="${esc(recK)}">${I.plus}ใส่ในแผน</button>`:""}${aBtn(dirUrl(foodTarget(f)),"นำทาง",I.nav)}${aBtn(gPl[gplKey(foodPicObj(f))]&&gPl[gplKey(foodPicObj(f))].url||("https://www.google.com/maps/search/?api=1&query="+enc(foodTarget(f).q)+(f[6]?"&query_place_id="+f[6]:"")),"ดูรีวิวใน Google Maps",I.map||"")}<button class="btn small" data-act="foodmap" data-id="${f[0]}">${I.map}บนแผนที่</button></div>`;
 }
 
 /* ---------- map ---------- */
@@ -2258,10 +2272,10 @@ function recDetailHtml(r){
   <p class="tiny">อยู่ใกล้จุดที่ ${stopNumMap(r.di)[r.stopKey]||"-"} ในแผน · ${distTxt(r.d)} ${ttTxt(r.di,r.d)} · แนะนำอยู่ราว ${r.dur||30} นาที</p>
   <div id="rd-wiki">${r.wp||r.wd?`<div class="tiny">กำลังโหลดข้อมูลจาก Wikipedia…</div>`:""}</div>
   <div class="c-actions">${aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q}),"นำทาง",I.nav,"go")}${aBtn(r.gmu||("https://www.google.com/maps/search/?api=1&query="+enc(r.q||r.name)),r.rating?`ดูรีวิว ${gRateTxt(r)} ใน Google Maps`:"ดูรีวิวใน Google Maps",I.map||"")}<button class="btn small primary" data-act="cs-recplus" data-k="${esc(r.di+"|"+r.id)}">${I.plus}ใส่ในแผน</button><button class="btn small" data-act="rec-x" data-id="${esc(r.id)}">ไม่สนใจที่นี่</button></div>`; }
-function openRec(k){ const r=recIdx[k]; if(!r) return; if(r.kind==="food"){ openSheet(foodHtml(r.f[0])); return; }
+function openRec(k){ const r=recIdx[k]; if(!r) return; if(r.kind==="food"){ openSheet(foodHtml(r.f[0],k)); return; }
   openSheet(recDetailHtml(r)); if(r.wp||r.wd) wikiSummary(r.wp,r.wd).then(w=>{ const el=$("#rd-wiki"); if(el) el.innerHTML=w?wikiHtml(w):""; }); }
 let thObs=null;
-function hydrateThumbs(root){ const els=$$(".thumb:not([data-done])",root||document);
+function hydrateThumbs(root){ try{ hydrateGPics(root); }catch(e){} const els=$$(".thumb:not([data-done])",root||document);
   const go=async el=>{ el.dataset.done=1; if(el.dataset.img){ const im=new Image(); im.onload=()=>{ el.style.backgroundImage=`url("${el.dataset.img}")`; el.classList.add("ok"); }; im.onerror=()=>{ el.removeAttribute("data-img"); delete el.dataset.done; go(el); }; im.src=el.dataset.img; return; }
     const ll=el.dataset.ll?el.dataset.ll.split(",").map(Number):null; const list=await commonsPhotos(el.dataset.q,5,el.dataset.en,ll); if(list&&list[0]){ el.style.backgroundImage=`url("${list[0].src}")`; el.classList.add("ok"); } };
   if(!("IntersectionObserver" in window)){ els.forEach(go); return; }
@@ -3417,7 +3431,7 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
     const lim=app&&tbMore.has(gk)?list.length:24, show=list.slice(0,lim);
     return `<div class="tb-grid n${Math.min(show.length,5)}"${app?` data-tbg="${esc(gk)}"`:""}>${(await Promise.all(show.map((m,j)=>fig(m,j<bigN)))).join("")}</div>${app&&list.length>lim?`<button class="btn small tb-more" data-tb="more" data-g="${esc(gk)}">ดูอีก ${list.length-lim} รูปของจุดนี้</button>`:""}`; };
   const st=tripStats(); const pics=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide); const vids=phMeta.filter(m=>m.kind==="video"&&!m.tbHide).length; const cover=pics.find(m=>m.cover)||pics.find(m=>m.key&&m.lat!=null)||pics[0];
-  let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>ขับรถ 7 วัน · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${pics.length}</b>รูป</li>${vids?`<li><b>${vids}</b>วิดีโอ</li>`:""}<li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
+  let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>${DAYS.length} วัน (ขับรถ ${CARFREE_DAY} วันแรก) · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${pics.length}</b>รูป</li>${vids?`<li><b>${vids}</b>วิดีโอ</li>`:""}<li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
   for(let i=0;i<DAYS.length;i++){ const d=DAYS[i]; const seq=stopSeq(i).filter(x=>x.num); const dayPh=phMeta.filter(m=>m.day===i&&shown(m));
     if(!dayPh.length&&!seq.some(x=>isVisited(i,x.it._i))) continue;   /* a day we haven't reached yet */
     h+=`<section class="tb-day" style="--dc:${cssVar(`--d${d.n}`)}"><header><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม</p><h2>${esc(d.title)}</h2></div></header>${routeSketch(i,640,220)}`;
@@ -3942,6 +3956,46 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='s
 (()=>{ let t=null; const start=e=>{ const c=e.target.closest&&e.target.closest("#srt-root [data-act='srt-t']"); if(!c) return; clearTimeout(t); t=setTimeout(()=>{ if(srt) srt.swallow=true; openMyPhoto(c.dataset.id); },500); };
   const stop=()=>clearTimeout(t); document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",stop,{passive:true}); document.addEventListener("touchend",stop); document.addEventListener("mousedown",start); document.addEventListener("mouseup",stop);
   document.addEventListener("contextmenu",e=>{ if(e.target.closest&&e.target.closest("#srt-root")) e.preventDefault(); }); })();
+
+/* ===================== real photos and details for a place (Google with your key; otherwise Wikimedia when the name matches) ===================== */
+var gPl=store.get("gpl",{});   /* {key: {t, pics:[{name,by,uri}], rating, nr, addr, hours:[...], open, summary, url, price}} */
+const GPL_TTL=14*864e5;
+function gplKey(o){ return o.pid?"id:"+o.pid:"q:"+(o.name||"")+"@"+(+o.lat).toFixed(3)+","+(+o.lng).toFixed(3); }
+function gPhotoUrl(name,w){ return `https://places.googleapis.com/v1/${name}/media?maxWidthPx=${w||480}&key=${enc(GKEY)}`; }
+const GPL_MASK=["id","photos","rating","userRatingCount","formattedAddress","regularOpeningHours.weekdayDescriptions","currentOpeningHours.openNow","editorialSummary","googleMapsUri","priceLevel"];
+const gplReq={};
+async function gPlace(o){ if(!GKEY) return null; const k=gplKey(o), c=gPl[k]; if(c&&Date.now()-c.t<GPL_TTL) return c; if(gplReq[k]) return gplReq[k];
+  return gplReq[k]=(async()=>{ const noPh=store.get("gnophoto",false); const mask=GPL_MASK.filter(f=>!noPh||f!=="photos");
+    const call=async m=>{ if(o.pid){ const r=await fetch(`https://places.googleapis.com/v1/places/${enc(o.pid)}?languageCode=en`,{headers:{"X-Goog-Api-Key":GKEY,"X-Goog-FieldMask":m.join(",")}}); gCount(); return {r,j:await r.json().catch(()=>({}))}; }
+      const r=await fetch("https://places.googleapis.com/v1/places:searchText",{method:"POST",headers:{"Content-Type":"application/json","X-Goog-Api-Key":GKEY,"X-Goog-FieldMask":m.map(f=>"places."+f).concat(["places.location"]).join(",")},
+        body:JSON.stringify({textQuery:o.name,languageCode:"en",pageSize:3,locationBias:{circle:{center:{latitude:+o.lat,longitude:+o.lng},radius:300}}})}); gCount(); const j=await r.json().catch(()=>({}));
+      const p=(j.places||[]).find(p=>p.location&&km([p.location.latitude,p.location.longitude],[+o.lat,+o.lng])<0.4); return {r,j:p||{}}; };
+    try{ let {r,j}=await call(mask);
+      if(!r.ok&&mask.includes("photos")){ store.set("gnophoto",true); ({r,j}=await call(mask.filter(f=>f!=="photos"))); }   /* a demo key may refuse photos: keep the rest */
+      if(!r.ok) return null;
+      const v={t:Date.now(),pics:(j.photos||[]).slice(0,6).map(p=>({name:p.name,by:(p.authorAttributions&&p.authorAttributions[0]&&p.authorAttributions[0].displayName)||"",uri:(p.authorAttributions&&p.authorAttributions[0]&&p.authorAttributions[0].uri)||""})),
+        rating:j.rating||null,nr:j.userRatingCount||null,addr:j.formattedAddress||"",hours:(j.regularOpeningHours&&j.regularOpeningHours.weekdayDescriptions)||[],open:j.currentOpeningHours?j.currentOpeningHours.openNow:null,
+        summary:(j.editorialSummary&&j.editorialSummary.text)||"",url:j.googleMapsUri||"",price:j.priceLevel||""};
+      gPl[k]=v; try{ const ks=Object.keys(gPl); if(ks.length>300) delete gPl[ks[0]]; store.set("gpl",gPl); }catch(e){} return v; }catch(e){ return null; } finally{ delete gplReq[k]; } })(); }
+/* pictures for a place: Google photos when the key allows, else Wikimedia only when the name itself matches (no "something nearby" guesses for shops) */
+async function placePics(o){ const g=await gPlace(o); if(g&&g.pics.length) return g.pics.map(p=>({src:gPhotoUrl(p.name,480),big:gPhotoUrl(p.name,1400),by:p.by?p.by+" · Google Maps":"Google Maps",page:p.uri||g.url||"",lic:""}));
+  const key="strict|"+cleanQ(o.q||o.name); if(photoCache[key]) return photoCache[key];
+  let out=[]; try{ out=out.concat(await srcCommons(o.q||o.name,4)||[]); }catch(e){} if(!out.length&&o.ja){ try{ out=out.concat(await srcCommons(o.ja,4)||[]); }catch(e){} }
+  photoCache[key]=out; return out; }
+function foodPicObj(f){ return {pid:f[6]||null,name:f[2],q:(latinName(f[2])||f[2])+" "+cityOf(f[3]),lat:f[4],lng:f[5]}; }
+let gpObs=null;
+function hydrateGPics(root){ const els=$$("[data-gpic]:not([data-done])",root||document); const go=async el=>{ el.dataset.done=1; let o; try{ o=JSON.parse(el.dataset.gpic); }catch(e){ return; }
+    const L=await placePics(o); if(L&&L[0]){ const im=new Image(); im.onload=()=>{ el.style.backgroundImage=`url("${L[0].src}")`; el.classList.add("ok"); }; im.src=L[0].src; } };
+  if(!("IntersectionObserver" in window)){ els.forEach(go); return; }
+  if(!gpObs) gpObs=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ gpObs.unobserve(e.target); go(e.target); } }),{rootMargin:"250px"});
+  els.forEach(el=>gpObs.observe(el)); }
+/* the strip of photos + Google facts at the top of a place's details */
+async function fillPlaceInfo(el,o){ if(!el) return; const [L,g]=await Promise.all([placePics(o),gPlace(o)]);
+  const pics=(L||[]).length?`<div class="gp-strip">${L.map((p,i)=>`<button class="gp-ph" data-gpl="${i}"><img src="${esc(p.src)}" alt="" loading="lazy" onerror="this.parentNode.remove()"></button>`).join("")}</div><p class="tiny gp-by">รูปจาก ${esc([...new Set(L.map(p=>p.by))].slice(0,2).join(", "))}</p>`:`<p class="tiny">${GKEY?"ไม่มีรูปของร้านนี้":"ยังไม่มีรูปของร้านนี้ · ใส่ Google key ในแท็บ \"จำเป็น\" เพื่อดูรูปและรีวิวจาก Google Maps"}</p>`;
+  const facts=g?`<div class="gp-facts">${g.rating?`<span class="gp-rate">★ ${g.rating.toFixed(1)}${g.nr?` <small>(${g.nr.toLocaleString()} รีวิว)</small>`:""}</span>`:""}${g.price?`<span>${esc({PRICE_LEVEL_INEXPENSIVE:"¥",PRICE_LEVEL_MODERATE:"¥¥",PRICE_LEVEL_EXPENSIVE:"¥¥¥",PRICE_LEVEL_VERY_EXPENSIVE:"¥¥¥¥"}[g.price]||"")}</span>`:""}${g.open!=null?`<span class="${g.open?"gp-open":"gp-shut"}">${g.open?"เปิดอยู่ตอนนี้":"ปิดอยู่ตอนนี้"}</span>`:""}</div>
+    ${g.summary?`<p>${esc(g.summary)}</p>`:""}${g.addr?`<p class="tiny">${esc(g.addr)}</p>`:""}${g.hours.length?`<details class="gp-hours"><summary>เวลาเปิด</summary><ul>${g.hours.map(h=>`<li>${esc(h)}</li>`).join("")}</ul></details>`:""}`:"";
+  el.innerHTML=pics+facts;
+  el.onclick=ev=>{ const b=ev.target.closest("[data-gpl]"); if(!b) return; const k="gpl|"+gplKey(o); photoCache[cleanQ(k)+"||6"]=L; openLightbox(k,6,+b.dataset.gpl,""); }; }
 
 /* ---------- boot ---------- */
 mapDay=curDay;
