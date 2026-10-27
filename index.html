@@ -3431,9 +3431,11 @@ function fixRun(run,ch){ const isStop=m=>!!m.key&&!m.key.startsWith("leg:");
     if(near.key===m.key&&JSON.stringify(near.place||null)===JSON.stringify(m.place||null)) return;
     m.key=near.key||null; m.place=near.place?Object.assign({},near.place):null; m.byTime=true; m.bySess=true; ch.push(m); }); }
 function isHotelKey(di,key){ if(di==null||!key||key.startsWith("leg:")) return false; const it=planItems(di).find(x=>x._i===key); return !!(it&&it.k==="hotel"); }
-async function resortPhotos(){ store.set("phUndo",{ts:Date.now(),prev:phMeta.filter(m=>m.auto).map(m=>({id:m.id,day:m.day,key:m.key,place:m.place||null,byTime:!!m.byTime,bySess:!!m.bySess}))});
+async function resortPhotos(quiet){ const before=new Map(phMeta.map(m=>[m.id,m.day+"|"+m.key+"|"+(m.place?m.place.name:"")]));
+  await fixOrphans();   /* photos you placed by hand at a stop or drive that is no longer in the plan are placed again too */ store.set("phUndo",{ts:Date.now(),prev:phMeta.filter(m=>m.auto).map(m=>({id:m.id,day:m.day,key:m.key,place:m.place||null,byTime:!!m.byTime,bySess:!!m.bySess}))});
   for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); if(m.place&&m.place.picked&&r.place&&!r.key) continue;
-    if((m.key||m.place)&&!r.key&&!r.place&&!isHotelKey(m.day,m.key)) continue;   /* never knock a placed photo back to "not sorted" (except off a hotel: that was the evening-out mistake) */ m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; await PDB.putMeta(m); } await roadStops(); await sessionFix(); fillSuggestions(); renderPlan(); photoSheetPaint(); }
+    if((m.key||m.place)&&!r.key&&!r.place&&!isHotelKey(m.day,m.key)) continue;   /* never knock a placed photo back to "not sorted" (except off a hotel: that was the evening-out mistake) */ m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; await PDB.putMeta(m); } await roadStops(); await sessionFix(); fillSuggestions(); renderPlan(); if(!quiet) photoSheetPaint();
+  return phMeta.filter(m=>before.get(m.id)!==m.day+"|"+m.key+"|"+(m.place?m.place.name:"")).length; }
 /* visited: tapped by you, or any of your photos are at that stop */
 var visited=store.get("visited",{});
 /* a stop counts as visited when ticked, when our photos are there, or when its day is over; untick to say we skipped it */
@@ -4041,21 +4043,25 @@ function actualTimes(di){ const out=[]; planItems(di).forEach(it=>{ if(it.k==="d
     const main=runs.sort((a,b)=>b.length-a.length)[0]; const a=r5d(main[0]-5), b=r5u(main[main.length-1]+10);
     out.push({it,n:T.length,a,dur:Math.max(15,b-a),pa:toMin(it.t),pe:it.e?toMin(it.e):null}); });
   return out; }
-function actualHtml(){ const rows=DAYS.map((d,di)=>({d,di,L:actualTimes(di)})); const any=rows.some(r=>r.L.length);
-  return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2>
+var actMoved=null;
+function actualHtml(busy){ if(busy) return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2><div class="ph-prog"><div class="ph-bar"><i style="width:60%"></i></div><p><b>กำลังจัดรูปใหม่ตามสถานที่ในแผนล่าสุด…</b></p></div>`;
+  const rows=DAYS.map((d,di)=>({d,di,L:actualTimes(di)})); const any=rows.some(r=>r.L.length);
+  return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2>${actMoved!=null?`<p class="tiny">จัดรูปใหม่ตามสถานที่ในแผนล่าสุดแล้ว${actMoved?` · ย้าย ${actMoved} รูปไปจุดที่ตรงกว่า (ย้อนได้จาก "ย้อนการจัดใหม่")`:" · ไม่มีรูปต้องย้าย"} · รูปที่คุณย้ายเองไม่ถูกแตะ</p>`:""}
   <p class="tiny">ใช้เวลาที่ถ่ายรูปของแต่ละจุด: เริ่ม = รูปแรก (ก่อนหน้า 5 นาที) · อยู่นาน = ถึงรูปสุดท้าย (เผื่ออีก 10 นาที) · จุดที่ไม่มีรูปมีเวลาจะต่อเวลาตามเดิม · ไม่แตะโรงแรม · ใช้เฉพาะรูปที่มีเวลาถ่ายจริงในไฟล์ · ย้อนกลับได้จากประวัติการแก้แผน</p>
   ${any?rows.filter(r=>r.L.length).map(r=>`<section class="act-day"><header><b style="color:var(--d${r.d.n})">D${r.d.n}</b> <span class="tiny">${esc(r.d.dow)} ${Number(r.d.date.slice(8))} ต.ค. · ${r.L.length} จุด</span><button class="btn small" data-act="act-apply" data-d="${r.di}">ใช้กับวันนี้</button></header>
     <ul class="act-list">${r.L.map(x=>{ const late=x.a-x.pa, longer=x.pe!=null?x.dur-(x.pe-x.pa):null;
       return `<li><b>${esc(x.it.n)}</b><span class="tiny">แผน ${hhmm(x.pa)}${x.pe!=null?"–"+hhmm(x.pe):""} → จริง <b>${hhmm(x.a)}–${hhmm(x.a+x.dur)}</b> · จากรูป ${x.n} รูป${Math.abs(late)>=10?` · ${late>0?"ช้ากว่าแผน":"เร็วกว่าแผน"} ${Math.abs(late)} นาที`:""}${longer!=null&&Math.abs(longer)>=10?` · อยู่${longer>0?"นานกว่า":"สั้นกว่า"} ${Math.abs(longer)} นาที`:""}</span></li>`; }).join("")}</ul></section>`).join("")+`<div class="c-actions"><button class="btn small primary" data-act="act-all">ใช้เวลาจริงทุกวัน</button></div>`
   :`<p><b>ยังไม่มีรูปที่มีเวลาถ่ายอยู่ในจุดไหนเลย</b></p>`}</div>`; }
-function applyActual(di){ const L=actualTimes(di); if(!L.length) return 0; const ed=materialize(di);
-  L.forEach(x=>{ const n=ed.list.find(y=>y.key===x.it._i); if(!n) return; n.at=hhmm(x.a); n.dur=x.dur; n.pre=0; }); return L.length; }
+function applyActual(di){ const L=actualTimes(di); const ed=edits[di]; if(!L.length&&!(ed&&ed.list.some(n=>n.act))) return 0; const e2=materialize(di); const its=planItems(di);
+  e2.list.forEach(n=>{ if(n.act&&!L.some(x=>x.it._i===n.key)){ const it=its.find(x=>x._i===n.key); delete n.at; n.at=""; if(it&&n.kind==="base") n.dur=origDur(Object.assign({},it,{t:it._t0||it.t,e:it._e0||it.e})); delete n.act; } });   /* a stop whose photos moved away goes back to flowing with the plan */
+  L.forEach(x=>{ const n=e2.list.find(y=>y.key===x.it._i); if(!n) return; n.at=hhmm(x.a); n.dur=x.dur; n.pre=0; n.act=true; }); return L.length; }
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-open'],[data-act='act-apply'],[data-act='act-all']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
-  if(a==="act-open"){ openSheet(actualHtml()); return; }
-  snapEdits("ก่อนปรับเวลาตามรูป"); let n=0, days=[];
-  if(a==="act-apply"){ n=applyActual(+b.dataset.d); days=[+b.dataset.d]; } else DAYS.forEach((d,di)=>{ const k=applyActual(di); if(k){ n+=k; days.push(di); } });
-  saveEdits(); snapEdits("ปรับเวลาตามรูป"); closeSheet(); if(days.length&&!days.includes(curDay)) selectDay(days[0]); renderPlan(); drawCustoms();
-  const el=$("#p-plan .dh-edited"); if(el) el.insertAdjacentHTML("beforeend",` <span class="tiny">· ปรับเวลาตามรูปแล้ว ${n} จุด${days.length>1?` ใน ${days.length} วัน`:""}</span>`); },true);
+  if(a==="act-open"){ openSheet(actualHtml(true)); (async()=>{ actMoved=await resortPhotos(true); if($("#sheetRoot .sheet")) renderSheet(actualHtml()); })(); return; }
+  (async()=>{ snapEdits("ก่อนปรับเวลาตามรูป"); let n=0, days=[]; b.disabled=true; b.textContent="กำลังปรับ…";
+  const run=()=>{ n=0; days=[]; if(a==="act-apply"){ n=applyActual(+b.dataset.d); days=[+b.dataset.d]; } else DAYS.forEach((d,di)=>{ const k=applyActual(di); if(k){ n+=k; days.push(di); } }); saveEdits(); };
+  run(); for(let pass=0;pass<2;pass++){ const moved=await resortPhotos(true); if(!moved) break; run(); }   /* photos placed by the clock follow the new times; settle */
+  snapEdits("ปรับเวลาตามรูป"); closeSheet(); if(days.length&&!days.includes(curDay)) selectDay(days[0]); renderPlan(); drawCustoms();
+  const el=$("#p-plan .dh-edited"); if(el) el.insertAdjacentHTML("beforeend",` <span class="tiny">· ปรับเวลาตามรูปแล้ว ${n} จุด${days.length>1?` ใน ${days.length} วัน`:""}</span>`); })(); },true);
 
 /* ---------- boot ---------- */
 mapDay=curDay;
