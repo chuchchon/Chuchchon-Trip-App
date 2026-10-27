@@ -1854,6 +1854,7 @@ function snapEdits(why){ try{ const h=store.get("editsHist",[]); const js=JSON.s
 let lastSnap=0;
 var orphT=null;
 function saveEdits(){ store.set("edits",edits); clearTimeout(orphT); orphT=setTimeout(()=>{ if(typeof phReady!=="undefined"&&phReady) fixOrphans().then(n=>{ if(n){ renderPlan(); if($("#ph-root")) photoSheetPaint(); } }); },600); if(Date.now()-lastSnap>3*60*1000){ lastSnap=Date.now(); snapEdits("auto"); } else { try{ const h=store.get("editsHist",[]); if(h[0]&&h[0].why==="auto"){ h[0].js=JSON.stringify(edits); h[0].ts=Date.now(); store.set("editsHist",h); } }catch(e){} } }
+function markGone(di,ed,node){ if(!node||node.kind!=="base") return; const it=DAYS[di].items[node.src]; if(!it) return; (ed.gone=ed.gone||[]).push({k:it.k,p:it.p||"",n:it.n||""}); }
 function reconcileDay(di){
   const ed=edits[di]; if(!ed||!ed.list) return false; const cur=daySig(di);
   if(ed.sig===cur) return false;
@@ -1873,6 +1874,7 @@ function reconcileDay(di){
   fresh.list.forEach(x=>Object.assign(x,carry[x.key]||{}));
   inserts.forEach(({anchor,n})=>{ const i=anchor?fresh.list.findIndex(x=>x.key===anchor):-1; let j=i+1; while(j<fresh.list.length&&fresh.list[j].kind==="custom"&&fresh.list[j]._ins) j++; n._ins=1; fresh.list.splice(j,0,n); });
   fresh.list.forEach(x=>delete x._ins);
+  (ed.gone||[]).forEach(g=>{ const k=matchNew(g); if(k>=0) fresh.list=fresh.list.filter(x=>x.key!=="b"+k); }); if(ed.gone) fresh.gone=ed.gone;
   if(ed.start) fresh.start=ed.start;
   edits[di]=fresh; return true;
 }
@@ -2476,7 +2478,7 @@ async function moveStopToDay(dr,to){ const from=dr.day; const edF=materialize(fr
   let n2; if(node.kind==="custom") n2=Object.assign({},node,{pre:0});
   else { const p0=P[it.p]; n2={key:"cs_"+Date.now().toString(36),kind:"custom",name:dr.name||it.n||"จุดแวะ",lat:p0?p0[1]:null,lng:p0?p0[2]:null,q:p0?(p0[4]||p0[0]):null,note:it.x||"",dur:node.dur!=null?node.dur:origDur(it),at:"",pre:0}; }
   n2.at=it.t||n2.at||""; if(dr.dur!=null) n2.dur=dr.dur; regCustom(n2);
-  edF.list=edF.list.filter(x=>x.key!==dr.key);
+  markGone(from,edF,edF.list.find(x=>x.key===dr.key)); edF.list=edF.list.filter(x=>x.key!==dr.key);
   const edT=materialize(to); const t=toMin(n2.at||"12:00"); const before=planItems(to).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&toMin(x.t)<=t).pop();
   const at=before?edT.list.findIndex(x=>x.key===before._i):-1; edT.list.splice(at<0?(before?edT.list.length:0):at+1,0,n2);
   saveEdits(); for(const m of phMeta){ if(m.day===from&&m.key===dr.key){ m.day=to; m.key=n2.key; await PDB.putMeta(m); } }
@@ -2632,7 +2634,7 @@ document.addEventListener("click",ev=>{
   if(a==="cs-promote"){ readDraft(); draft.promote=!draft.promote; renderAddStop(); return; }
   if(a==="cs-save"){ readDraft(); const ed=materialize(draft.day); applyDraft(ed,draft); saveEdits(); draft=null; closeSheet(); renderPlan(); drawCustoms(); return; }
   if(a==="cs-del"){ const nPh=photosFor(draft.day,draft.key).length; if(nPh&&!draft.delOk){ draft.delOk=true; b.classList.add("danger"); b.textContent=`แตะอีกครั้งเพื่อ${b.textContent.trim()} (รูป ${nPh} รูปไม่หาย)`; return; }
-    const di0=draft.day, k0=draft.key; const ed=materialize(di0); ed.list=ed.list.filter(x=>x.key!==k0); saveEdits(); draft=null; closeSheet(); fixOrphans().then(()=>{ renderPlan(); drawCustoms(); }); renderPlan(); drawCustoms(); return; }
+    const di0=draft.day, k0=draft.key; const ed=materialize(di0); markGone(di0,ed,ed.list.find(x=>x.key===k0)); ed.list=ed.list.filter(x=>x.key!==k0); saveEdits(); draft=null; closeSheet(); fixOrphans().then(()=>{ renderPlan(); drawCustoms(); }); renderPlan(); drawCustoms(); return; }
   if(a==="cs-moveday"){ readDraft(); const to=+($("#cs-day")||{}).value; if(isNaN(to)||to===draft.day) return; moveStopToDay(draft,to); return; }
 },true);
 
@@ -3126,7 +3128,7 @@ const isJust=g=>!!pgJust&&g.list.some(m=>m.id===pgJust.pid);
 function fmtDist(d){ return d<1?`${Math.max(10,Math.round(d*100)*10)} ม.`:`${d.toFixed(1)} กม.`; }
 function stopLoc(x){ if(x.p&&P[x.p]) return [P[x.p][1],P[x.p][2]]; const c=x._c||x._n; return c&&c.lat!=null?[+c.lat,+c.lng]:null; }
 function pgMoveHtml(g){ const ll=[+g.place.lat,+g.place.lng]; const nums=stopNumMap(g.day);
-  const st=planItems(g.day).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt").map(x=>{ const l=stopLoc(x); return {x,d:l?km(l,ll):null}; }).sort((a,b)=>(a.d??1e9)-(b.d??1e9));
+  const st=planItems(g.day).filter(x=>isPhTarget(g.day,x)).map(x=>{ const l=stopLoc(x); return {x,d:l?km(l,ll):null}; }).sort((a,b)=>(a.d??1e9)-(b.d??1e9));
   return `<div class="pg-pick"><p class="tiny">ย้ายรูปกลุ่มนี้ (${mediaWord(g.list)}) เข้าจุดในแผน D${DAYS[g.day].n} · เรียงจากจุดที่ใกล้ตำแหน่งที่ถ่ายที่สุด</p>${st.map(o=>`<button class="pg-c" data-act="ph-gto" data-g="${esc(g.id)}" data-k="${esc(o.x._i)}"><b>${nums[o.x._i]?nums[o.x._i]+". ":""}${esc(o.x.n)}</b><span>${o.d!=null?fmtDist(o.d)+" จากที่ถ่าย · ":""}${esc(o.x.t||"")}</span></button>`).join("")}</div>`; }
 function pgJustHtml(g){ return isJust(g)?`<div class="pg-just" role="status"><p>ตั้งชื่อเป็น <b>${esc(g.place.name)}</b> แล้ว เพิ่มเข้าแผนเลยไหม</p><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่ม ${esc(g.place.name)} เข้าแผน</button><button class="btn small" data-act="ph-justno">ไว้ก่อน</button></div></div>`:""; }
 /* after a redraw, bring the card you were working on back into view */
@@ -3196,12 +3198,22 @@ const PDB={db:null,
     r.onsuccess=()=>{ this.db=r.result; res(this.db); }; r.onerror=()=>rej(r.error); }); },
   async tx(store,mode,fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction(store,mode); const s=t.objectStore(store); const q=fn(s); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); },
   all(){ return this.tx("meta","readonly",s=>s.getAll()); },
-  putMeta(m){ return this.tx("meta","readwrite",s=>s.put(m)); },
+  putMeta(m){ phChanged(); return this.tx("meta","readwrite",s=>s.put(m)); },
   putBlob(b){ return this.tx("blob","readwrite",s=>s.put(b)); },
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
-  del(id){ return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id))]); } };
+  del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
 PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
+/* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
+   so this copy never writes an old plan back (that is how a removed stop could come back) */
+var TAB_ID=Math.random().toString(36).slice(2), phRevSeen=(store.get("phRev",null)||{}).t||0, phSyncT=null;
+function phChanged(){ clearTimeout(phSyncT); phSyncT=setTimeout(()=>{ const r={t:Date.now(),by:TAB_ID}; phRevSeen=r.t; store.set("phRev",r); },600); }
+async function reloadPhotos(){ const r=store.get("phRev",null); if(!r||r.by===TAB_ID||r.t<=phRevSeen||!phReady||(phImport&&!phImport.end)) return; phRevSeen=r.t;
+  try{ const l=await PDB.all(); phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); refreshPhotoViews(); if(map&&curTab==="map") drawMap(false); }catch(e){} }
+function reloadStored(){ let ch=false; const e=store.get("edits",{}); if(JSON.stringify(e)!==JSON.stringify(edits)){ edits=e; ch=true; } const v=store.get("visited",{}); if(JSON.stringify(v)!==JSON.stringify(visited)){ visited=v; ch=true; }
+  if(ch){ renderPlan(); drawCustoms(); } }
+addEventListener("storage",ev=>{ if(ev.key==="hkd26:edits"||ev.key==="hkd26:visited") reloadStored(); if(ev.key==="hkd26:phRev") reloadPhotos(); });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ reloadStored(); reloadPhotos(); } });
 function photosFor(di,key){ return tbSort(phMeta.filter(m=>m.day===di&&m.key===key)); }
 async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); const bl=b&&(full?b.full:b.thumb); if(!bl) return ""; cache[id]=URL.createObjectURL(bl); return cache[id]; }
 function hydrateMyPhotos(root){ $$("img[data-phid]:not([data-done])",root||document).forEach(im=>{ im.dataset.done=1; phThumbURL(im.dataset.phid,im.dataset.full==="1").then(u=>{ if(u) im.src=u; }); }); }
@@ -3436,15 +3448,21 @@ var phView=null;
 function openMyPhoto(id,list){ const m=phMeta.find(x=>x.id===id); if(!m) return;
   const L=list||(m.day!=null?dayOrder(m.day):looseList()); phView={list:L.map(x=>x.id||x),i:Math.max(0,L.findIndex(x=>(x.id||x)===id)),confirm:false,move:false};
   if(!lbOpen){ lbOpen=true; try{ history.pushState({lb:1},""); }catch(e){} } drawMyPhoto(); }
-function moveOptsHtml(m){ const opts=[]; DAYS.forEach((d,i)=>{ const nums=stopNumMap(i); planItems(i).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt").forEach(x=>opts.push([i+"|"+x._i,`D${d.n} · ${nums[x._i]?nums[x._i]+". ":""}${x.n}`])); });
+/* places a photo can be moved to: stops in the plan as it is now. Not: drives, alternatives, empty wait blocks, stops you marked as not visited */
+function isPhTarget(di,x){ if(x.k==="drive"||x.k==="train"||x.k==="opt") return false; if(x.k==="custom"&&x._c&&!x._c.name&&x._c.lat==null) return false; return !(visited[di]&&visited[di][x._i]===false); }
+function moveOptsHtml(m){ const cur=m.day+"|"+m.key; const others=DAYS.map((d,i)=>i).filter(i=>i!==m.day);
+  const dayGroup=i=>{ const d=DAYS[i], nums=stopNumMap(i); const L=planItems(i).filter(x=>isPhTarget(i,x)||(i+"|"+x._i)===cur); if(!L.length) return "";
+    return `<optgroup label="${i===m.day?"วันเดียวกัน · ":""}D${d.n} · ${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค.">${L.map(x=>{ const v2=i+"|"+x._i; return `<option value="${esc(v2)}"${v2===cur?" selected":""}>${esc(`D${d.n} · ${nums[x._i]?nums[x._i]+". ":""}${x.n}`)}</option>`; }).join("")}</optgroup>`; };
   const recs=[]; if(m.day!=null){ const seen=new Set(); const RC=dayRecs(m.day,true)||{}; const t=m.takenAt?jstMin(m.takenAt):null;
     const order=planItems(m.day).filter(x=>RC[x._i]).sort((a,b)=>t==null?0:Math.abs(toMin(a.t)-t)-Math.abs(toMin(b.t)-t)).map(x=>x._i); const have=dayStops(m.day).map(x=>P[x.p]).filter(Boolean);
-    order.concat(Object.keys(RC)).forEach(k=>(RC[k]||[]).forEach(r=>{ if(r.lat==null||seen.has(r.id)||have.some(p=>km([p[1],p[2]],[r.lat,r.lng])<0.08)) return; seen.add(r.id); recs.push(r); })); }
-  const cur=m.day+"|"+m.key;
-  return `<option value="">เลือกที่จะย้ายไป…</option><optgroup label="จุดในแผน">${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===cur?" selected":""}>${esc(t)}</option>`).join("")}</optgroup>
+    order.concat(Object.keys(RC)).forEach(k=>(RC[k]||[]).forEach(r=>{ if(r.lat==null||seen.has(r.id)||have.some(p=>km([p[1],p[2]],[r.lat,r.lng])<0.08)) return; seen.add(r.id); recs.push(r); }));
+    /* only a few: the ones near where the photo was taken, else the ones near that time */
+    if(m.lat!=null){ const near=recs.map(r=>[r,km([m.lat,m.lng],[r.lat,r.lng])]).filter(([,d])=>d<=1.5).sort((a,b)=>a[1]-b[1]).map(([r])=>r); recs.length=0; recs.push(...near); }
+    recs.splice(8); }
+  return `<option value="">เลือกที่จะย้ายไป…</option>${m.day!=null?dayGroup(m.day):""}
     ${m.day!=null?`<optgroup label="ระหว่างทาง D${DAYS[m.day].n}">${planItems(m.day).filter(x=>(x.k==="drive"||x.k==="train")&&x.to&&P[x.to]).map(x=>`<option value="${esc(m.day+"|leg:"+x._i)}"${m.key==="leg:"+x._i?" selected":""}>${esc(fmtLegOpt(x))}</option>`).join("")}</optgroup>`:""}
     ${recs.length?`<optgroup label="เพิ่มเป็นจุดใหม่ใน D${DAYS[m.day].n} (ร้าน/ที่แนะนำ)">${recs.map(r=>`<option value="${esc("r|"+m.day+"|"+r.id)}">${r.kind==="food"?"🍴 ":"📍 "}${esc(r.name)}</option>`).join("")}</optgroup>`:""}
-    ${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}<option value="-|">ยังไม่ได้จัด</option>`; }
+    ${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}${others.map(dayGroup).join("")}<option value="-|">ยังไม่ได้จัด</option>`; }
 function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; const m=phMeta.find(x=>x.id===id); if(!m){ v.list.splice(v.i,1); if(!v.list.length){ phView=null; closeLightbox(false); return; } v.i=Math.min(v.i,v.list.length-1); return drawMyPhoto(); }
   const when=m.takenAt?new Date(m.takenAt+9*3600e3).toISOString().replace("T"," ").slice(0,16):"ไม่ทราบเวลาที่ถ่าย";
   const grp=phMeta.filter(x=>x.day===m.day&&x.key===m.key&&(x.place&&m.place?x.place.name===m.place.name:true)&&x.takenAt&&m.takenAt&&Math.abs(x.takenAt-m.takenAt)<=45*60e3);
@@ -4010,7 +4028,7 @@ function runGuess(run,refs){ const votes={}; let n=0, dsum=0, dn=0;
 var srt=null;
 function srtTargetsHtml(){ const di=srt.pickDay??srt.lastDay??0; const its=planItems(di); const nums=stopNumMap(di);
   return `<div class="srt-pick"><div class="srt-days">${DAYS.map((d,i)=>`<button class="chip${i===di?" on":""}" data-act="srt-day" data-d="${i}" style="--dc:var(--d${d.n})">D${d.n}</button>`).join("")}</div>
-    <div class="srt-stops">${its.filter(x=>x.k!=="opt").map(x=>{ const leg=x.k==="drive"||x.k==="train"; if(leg&&!(x.to&&P[x.to])) return ""; return `<button class="pg-c${leg?" leg":""}" data-act="srt-to" data-d="${di}" data-k="${esc(leg?"leg:"+x._i:x._i)}"><b>${leg?"ระหว่างทางไป "+esc(P[x.to][0]):`${nums[x._i]?nums[x._i]+". ":""}${esc(x.n)}`}</b><span>${esc(x.t||"")}</span></button>`; }).join("")}
+    <div class="srt-stops">${its.filter(x=>x.k!=="opt").map(x=>{ const leg=x.k==="drive"||x.k==="train"; if(leg&&!(x.to&&P[x.to])) return ""; if(!leg&&!isPhTarget(di,x)) return ""; return `<button class="pg-c${leg?" leg":""}" data-act="srt-to" data-d="${di}" data-k="${esc(leg?"leg:"+x._i:x._i)}"><b>${leg?"ระหว่างทางไป "+esc(P[x.to][0]):`${nums[x._i]?nums[x._i]+". ":""}${esc(x.n)}`}</b><span>${esc(x.t||"")}</span></button>`; }).join("")}
     ${placeGroups().filter(g=>g.day===di).map(g=>`<button class="pg-c" data-act="srt-to" data-d="${di}" data-pg="${esc(g.id)}"><b>${esc(placeLabel(g.place))}</b><span>แนะนำจากรูป</span></button>`).join("")}</div></div>`; }
 function sorterHtml(){ const s=srt||{};
   if(s.busy) return `<div id="srt-root">${PH_BACK}<div class="sk">รูปทริป</div><h2>จัดรูปที่ยังไม่ได้จัด</h2><div class="ph-prog"><div class="ph-bar"><i style="width:${s.n?Math.round(s.i/s.n*100):0}%"></i></div><p><b>${esc(s.msg)}</b>${s.n?` ${s.i} / ${s.n}`:""}</p></div></div>`;
