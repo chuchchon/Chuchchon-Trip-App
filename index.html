@@ -738,6 +738,8 @@ body.tb-dragging{overflow:hidden}
 .gp-rate{font-weight:700;color:#B9820F}.gp-rate small{font-weight:400;color:var(--muted)}.gp-open{color:#2F6B45;font-weight:600}.gp-shut{color:#B3261E;font-weight:600}
 .gp-hours ul{margin:6px 0;padding-left:18px;font-size:13px}
 .sheet-backbtn{margin:0 0 6px}
+.act-day{border:1px solid var(--line,#E3E7EB);border-radius:12px;padding:10px;margin:10px 0}.act-day header{display:flex;align-items:center;gap:8px}.act-day header .btn{margin-left:auto}
+.act-list{list-style:none;padding:0;margin:6px 0 0}.act-list li{display:flex;flex-direction:column;padding:6px 0;border-top:1px solid var(--line,#E3E7EB)}
 </style>
 
 <div class="app">
@@ -1484,7 +1486,7 @@ function renderPlan(){
   let h=`<header class="dh"><div class="dh-date">${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม${isToday?`<span class="dh-today">วันนี้</span>`:""}</div><h2 class="dh-title">${esc(d.title)}</h2>${wxDayLine(curDay)}`;
   navMode=curDay>=CARFREE_DAY?"transit":"driving";
   if(d.hotel&&P[d.hotel]) h+=`<div class="dh-hotel">${I.bed}<span>คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="lnk" data-act="booking" data-id="${d.hotel}">ใบจอง</button><a class="lnk" href="${esc(dirUrl(pointTarget(d.hotel)))}" target="_blank" rel="noopener">นำทาง</a></div>`;
-  h+=`<div class="dh-actions"><button class="btn small primary" data-act="gmroute">${I.route}เส้นทางทั้งวันใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}แผนที่</button><button class="btn small" data-act="addstop">${I.plus}เพิ่มจุด</button><button class="btn small" data-act="reorder" aria-pressed="${document.body.classList.contains("reorder")}">${I.sort}จัดลำดับ</button></div>`;
+  h+=`<div class="dh-actions"><button class="btn small primary" data-act="gmroute">${I.route}เส้นทางทั้งวันใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}แผนที่</button><button class="btn small" data-act="addstop">${I.plus}เพิ่มจุด</button><button class="btn small" data-act="reorder" aria-pressed="${document.body.classList.contains("reorder")}">${I.sort}จัดลำดับ</button>${phMeta.some(m=>m.day===curDay&&m.key&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name"))?`<button class="btn small" data-act="act-open">🕘 ปรับเวลาตามรูป</button>`:""}</div>`;
   h+=freshBanner();
   { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}<em class="dh-ph-prog">${phImport&&!phImport.end?impShort(phImport):""}</em></span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
@@ -4028,6 +4030,32 @@ async function fillPlaceInfo(el,o){ if(!el) return; const [L,g]=await Promise.al
     ${g.summary?`<p>${esc(g.summary)}</p>`:""}${g.addr?`<p class="tiny">${esc(g.addr)}</p>`:""}${g.hours.length?`<details class="gp-hours"><summary>เวลาเปิด</summary><ul>${g.hours.map(h=>`<li>${esc(h)}</li>`).join("")}</ul></details>`:""}`:"";
   el.innerHTML=pics+facts;
   el.onclick=ev=>{ const b=ev.target.closest("[data-gpl]"); if(!b) return; const k="gpl|"+gplKey(o); photoCache[cleanQ(k)+"||6"]=L; openLightbox(k,6,+b.dataset.gpl,""); }; }
+
+/* ===================== set the plan's times to what really happened, from the shot times of our photos ===================== */
+const r5d=m=>Math.floor(m/5)*5, r5u=m=>Math.ceil(m/5)*5;
+const hhmm=m=>pad(Math.floor(((m%1440)+1440)%1440/60))+":"+pad(((m%60)+60)%60);
+/* per stop: the main run of photo times (a stray shot hours away does not stretch the stay) */
+function actualTimes(di){ const out=[]; planItems(di).forEach(it=>{ if(it.k==="drive"||it.k==="train"||it.k==="opt"||it.k==="hotel") return;
+    const T=phMeta.filter(m=>m.day===di&&m.key===it._i&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&jstDate(m.takenAt)===DAYS[di].date).map(m=>jstMin(m.takenAt)).sort((a,b)=>a-b);
+    if(!T.length) return; const runs=[[T[0]]]; for(let i=1;i<T.length;i++){ if(T[i]-T[i-1]>60) runs.push([]); runs[runs.length-1].push(T[i]); }
+    const main=runs.sort((a,b)=>b.length-a.length)[0]; const a=r5d(main[0]-5), b=r5u(main[main.length-1]+10);
+    out.push({it,n:T.length,a,dur:Math.max(15,b-a),pa:toMin(it.t),pe:it.e?toMin(it.e):null}); });
+  return out; }
+function actualHtml(){ const rows=DAYS.map((d,di)=>({d,di,L:actualTimes(di)})); const any=rows.some(r=>r.L.length);
+  return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2>
+  <p class="tiny">ใช้เวลาที่ถ่ายรูปของแต่ละจุด: เริ่ม = รูปแรก (ก่อนหน้า 5 นาที) · อยู่นาน = ถึงรูปสุดท้าย (เผื่ออีก 10 นาที) · จุดที่ไม่มีรูปมีเวลาจะต่อเวลาตามเดิม · ไม่แตะโรงแรม · ใช้เฉพาะรูปที่มีเวลาถ่ายจริงในไฟล์ · ย้อนกลับได้จากประวัติการแก้แผน</p>
+  ${any?rows.filter(r=>r.L.length).map(r=>`<section class="act-day"><header><b style="color:var(--d${r.d.n})">D${r.d.n}</b> <span class="tiny">${esc(r.d.dow)} ${Number(r.d.date.slice(8))} ต.ค. · ${r.L.length} จุด</span><button class="btn small" data-act="act-apply" data-d="${r.di}">ใช้กับวันนี้</button></header>
+    <ul class="act-list">${r.L.map(x=>{ const late=x.a-x.pa, longer=x.pe!=null?x.dur-(x.pe-x.pa):null;
+      return `<li><b>${esc(x.it.n)}</b><span class="tiny">แผน ${hhmm(x.pa)}${x.pe!=null?"–"+hhmm(x.pe):""} → จริง <b>${hhmm(x.a)}–${hhmm(x.a+x.dur)}</b> · จากรูป ${x.n} รูป${Math.abs(late)>=10?` · ${late>0?"ช้ากว่าแผน":"เร็วกว่าแผน"} ${Math.abs(late)} นาที`:""}${longer!=null&&Math.abs(longer)>=10?` · อยู่${longer>0?"นานกว่า":"สั้นกว่า"} ${Math.abs(longer)} นาที`:""}</span></li>`; }).join("")}</ul></section>`).join("")+`<div class="c-actions"><button class="btn small primary" data-act="act-all">ใช้เวลาจริงทุกวัน</button></div>`
+  :`<p><b>ยังไม่มีรูปที่มีเวลาถ่ายอยู่ในจุดไหนเลย</b></p>`}</div>`; }
+function applyActual(di){ const L=actualTimes(di); if(!L.length) return 0; const ed=materialize(di);
+  L.forEach(x=>{ const n=ed.list.find(y=>y.key===x.it._i); if(!n) return; n.at=hhmm(x.a); n.dur=x.dur; n.pre=0; }); return L.length; }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-open'],[data-act='act-apply'],[data-act='act-all']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
+  if(a==="act-open"){ openSheet(actualHtml()); return; }
+  snapEdits("ก่อนปรับเวลาตามรูป"); let n=0, days=[];
+  if(a==="act-apply"){ n=applyActual(+b.dataset.d); days=[+b.dataset.d]; } else DAYS.forEach((d,di)=>{ const k=applyActual(di); if(k){ n+=k; days.push(di); } });
+  saveEdits(); snapEdits("ปรับเวลาตามรูป"); closeSheet(); if(days.length&&!days.includes(curDay)) selectDay(days[0]); renderPlan(); drawCustoms();
+  const el=$("#p-plan .dh-edited"); if(el) el.insertAdjacentHTML("beforeend",` <span class="tiny">· ปรับเวลาตามรูปแล้ว ${n} จุด${days.length>1?` ใน ${days.length} วัน`:""}</span>`); },true);
 
 /* ---------- boot ---------- */
 mapDay=curDay;
