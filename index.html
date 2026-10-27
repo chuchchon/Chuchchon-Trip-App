@@ -3972,6 +3972,7 @@ async function gPlace(o){ if(!GKEY) return null; const k=gplKey(o), c=gPl[k]; if
       const p=(j.places||[]).find(p=>p.location&&km([p.location.latitude,p.location.longitude],[+o.lat,+o.lng])<0.4); return {r,j:p||{}}; };
     try{ let {r,j}=await call(mask);
       if(!r.ok&&mask.includes("photos")){ store.set("gnophoto",true); ({r,j}=await call(mask.filter(f=>f!=="photos"))); }   /* a demo key may refuse photos: keep the rest */
+      if(!r.ok){ ({r,j}=await call(mask.filter(f=>!/photos|rating|userRatingCount|editorialSummary/.test(f)))); }   /* stricter keys: hours and address still help */
       if(!r.ok) return null;
       const v={t:Date.now(),pics:(j.photos||[]).slice(0,6).map(p=>({name:p.name,by:(p.authorAttributions&&p.authorAttributions[0]&&p.authorAttributions[0].displayName)||"",uri:(p.authorAttributions&&p.authorAttributions[0]&&p.authorAttributions[0].uri)||""})),
         rating:j.rating||null,nr:j.userRatingCount||null,addr:j.formattedAddress||"",hours:(j.regularOpeningHours&&j.regularOpeningHours.weekdayDescriptions)||[],open:j.currentOpeningHours?j.currentOpeningHours.openNow:null,
