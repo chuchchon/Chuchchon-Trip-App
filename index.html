@@ -1830,7 +1830,8 @@ function daySig(di){ return DAYS[di].items.map(i=>i.k+"|"+(i.p||i.to||"")+"|"+i.
 function snapEdits(why){ try{ const h=store.get("editsHist",[]); const js=JSON.stringify(edits); if(h.length&&h[0].js===js) return; if(js==="{}"&&why!=="manual") return;
   h.unshift({ts:Date.now(),why:why||"auto",js}); while(h.length>25) h.pop(); store.set("editsHist",h); }catch(e){} }
 let lastSnap=0;
-function saveEdits(){ store.set("edits",edits); if(Date.now()-lastSnap>3*60*1000){ lastSnap=Date.now(); snapEdits("auto"); } else { try{ const h=store.get("editsHist",[]); if(h[0]&&h[0].why==="auto"){ h[0].js=JSON.stringify(edits); h[0].ts=Date.now(); store.set("editsHist",h); } }catch(e){} } }
+var orphT=null;
+function saveEdits(){ store.set("edits",edits); clearTimeout(orphT); orphT=setTimeout(()=>{ if(typeof phReady!=="undefined"&&phReady) fixOrphans().then(n=>{ if(n){ renderPlan(); if($("#ph-root")) photoSheetPaint(); } }); },600); if(Date.now()-lastSnap>3*60*1000){ lastSnap=Date.now(); snapEdits("auto"); } else { try{ const h=store.get("editsHist",[]); if(h[0]&&h[0].why==="auto"){ h[0].js=JSON.stringify(edits); h[0].ts=Date.now(); store.set("editsHist",h); } }catch(e){} } }
 function reconcileDay(di){
   const ed=edits[di]; if(!ed||!ed.list) return false; const cur=daySig(di);
   if(ed.sig===cur) return false;
@@ -1927,7 +1928,7 @@ function planItems(di){
   let legStart=null;
   ed.list.forEach((n,idx)=>{
     let node;
-    if(n.kind==="base"){ const it=d.items[n.src]; if(!it) return; node=Object.assign({},it,{_i:n.key,_n:n,_t0:it.t,_e0:it.e}); if(n.promote&&node.k==="opt") node.k="stop"; }
+    if(n.kind==="base"){ const it=d.items[n.src]; if(!it) return; node=Object.assign({},it,{_i:n.key,_n:n,_t0:it.t,_e0:it.e}); if(n.promote&&node.k==="opt") node.k="stop"; if(n.label) node.n=n.label; }
     else node={k:"custom",_i:n.key,_n:n,_c:n,n:n.name||"รอ / เลื่อนเวลา",x:n.note||"",p:n.lat!=null?n.key:null,_t0:null};
     if(node.k==="opt"){ out.push(node); return; }
     const startLoc=node.k==="train"?node.from:node.p;
@@ -2419,7 +2420,8 @@ function openAddStop(afterKey){
 function applyDraft(ed,dr){
   if(dr.mode==="add"){ const n={key:dr.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note,dur:dr.dur,at:dr.at||"",pre:0}; if(dr.q) n.q=dr.q; regCustom(n);
     const i=dr.atStart?-1:ed.list.findIndex(x=>x.key===dr.afterKey); ed.list.splice(i<0&&!dr.atStart?ed.list.length:i+1,0,n); }
-  else { const n=ed.list.find(x=>x.key===dr.key); if(!n) return; n.dur=dr.dur; n.at=dr.at||""; if(n.kind==="custom"){ n.name=dr.name||n.name; n.lat=dr.lat; n.lng=dr.lng; n.note=dr.note; regCustom(n); } if(dr.promote!=null) n.promote=dr.promote; }
+  else { const n=ed.list.find(x=>x.key===dr.key); if(!n) return; n.dur=dr.dur; n.at=dr.at||""; if(n.kind==="custom"){ n.name=dr.name||n.name; n.lat=dr.lat; n.lng=dr.lng; n.note=dr.note; regCustom(n); }
+    else if(dr.name!=null){ const base=(DAYS[dr.day].items[n.src]||{}).n||""; if(dr.name&&dr.name!==base) n.label=dr.name; else delete n.label; } if(dr.promote!=null) n.promote=dr.promote; }
 }
 function renderAddStop(){
   const c=draft, di=c.day, isCustom=c.mode==="add"||c.kind==="custom";
@@ -2433,18 +2435,35 @@ function renderAddStop(){
   <div class="c-actions" style="margin:8px 0 4px"><button class="btn small" data-act="cs-here">📍 ตำแหน่งปัจจุบัน</button><button class="btn small" data-act="cs-pick">🗺 แตะเลือกบนแผนที่</button>${c.lat!=null?`<button class="btn small" data-act="cs-noplace">ไม่ระบุสถานที่ (แค่รอ)</button>`:""}</div>
   ${c.mode==="add"?xpBlockHtml():""}
   <div class="cs-picked">${c.lat!=null?`<b>📌 ${esc(c.name||"จุดที่เลือก")}</b><span class="tiny mono">${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}</span>`:`<span class="tiny">ยังไม่ได้เลือกสถานที่ · ถ้าแค่ฝนตก/รถติด ไม่ต้องเลือก ใส่เวลารอได้เลย</span>`}</div>
-  <label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.name)}" placeholder="${c.lat!=null?"ชื่อสถานที่":"เช่น ฝนตก รอที่โรงแรม"}">`:`<div class="c-name" style="font-size:18px;margin:4px 0">${esc(c.title||"")}</div>`}
+  <label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.name)}" placeholder="${c.lat!=null?"ชื่อสถานที่":"เช่น ฝนตก รอที่โรงแรม"}">`:`<label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.title||"")}" placeholder="${esc(c.baseName||"")}">${c.baseName&&c.title!==c.baseName?`<div class="tiny" style="margin-top:3px">ชื่อเดิม: ${esc(c.baseName)} · ลบให้ว่างเพื่อใช้ชื่อเดิม</div>`:""}`}
   <div class="grid2"><div><label class="fl" for="cs-dur">อยู่นาน</label><select id="cs-dur" class="inp">${durOpts(c.dur)}</select>${c.durNote?`<div class="tiny" style="margin-top:3px">${esc(c.durNote)}</div>`:""}</div>
   <div><label class="fl" for="cs-at">เริ่มเวลา <span class="tiny">(ว่าง = ต่อจากรายการก่อน)</span></label><div style="display:flex;gap:6px"><input type="time" id="cs-at" class="inp" step="300" value="${esc(c.at||"")}" style="flex:1;min-width:0">${c.at?`<button class="btn small" data-act="cs-atclear" aria-label="ล้างเวลา">✕</button>`:""}</div></div></div>
   ${isCustom?`<label class="fl" for="cs-note">โน้ต</label><input id="cs-note" class="inp" value="${esc(c.note||"")}" placeholder="ไม่ใส่ก็ได้">`:""}
   <div class="cs-prev"><b>เวลาใหม่ของแผน</b>${previewList(sim,c.mode==="add"?c.key:c.key)}<p class="tiny" style="margin:6px 0 0">เวลาขับระหว่างจุดใหม่คำนวณจากระยะทางโดยประมาณ</p></div>
+  ${c.mode==="edit"?(()=>{ const nPh=photosFor(di,c.key).length; return `<label class="fl" for="cs-day">ใส่ผิดวัน? ย้ายไปวันอื่น</label><div style="display:flex;gap:6px"><select id="cs-day" class="inp" style="flex:1">${DAYS.map((d,i)=>`<option value="${i}"${i===di?" selected":""}>D${d.n} · ${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค.</option>`).join("")}</select><button class="btn small" data-act="cs-moveday">ย้าย</button></div><p class="tiny" style="margin:3px 0 0">ไปอยู่ในวันนั้นตามเวลาเดิม${nPh?` · รูป ${nPh} รูปของจุดนี้ย้ายตามไปด้วย`:""}</p>${nPh?`<p class="tiny">ถ้า${isCustom?"ลบ":"ข้าม"}จุดนี้ รูป ${nPh} รูปไม่หาย รูปที่มีตำแหน่งจะถูกจัดใหม่ตามตำแหน่ง ที่เหลือไปอยู่ "ยังไม่ได้จัด" ของวันนี้ ย้ายต่อได้จาก "จัดทีละหลายรูป"</p>`:""}`; })():""}
   <div class="c-actions" style="margin-top:12px">${c.mode==="edit"?`<button class="btn small" data-act="cs-del">${isCustom?"ลบจุดนี้":"ข้ามจุดนี้"}</button>`:""}${c.isOpt?`<button class="btn small" data-act="cs-promote">${c.promote?"เอาออกจากแผน":"ใส่ในแผน"}</button>`:""}<button class="btn small primary" data-act="cs-save">บันทึก</button></div>
   <p class="tiny">บันทึกไว้ในเครื่องนี้ · ผลค้นหาจาก OpenStreetMap</p>`);
 }
+/* photos whose stop or drive no longer exists (deleted, skipped, plan reset): never lost, placed again by location/time, else "not sorted" of that day */
+async function fixOrphans(){ const live={}; const has=(di,key)=>{ if(!live[di]) live[di]=new Set(planItems(di).map(x=>x._i)); return live[di].has(key.startsWith("leg:")?key.slice(4):key); };
+  let n=0; for(const m of phMeta){ if(m.day==null||!m.key||has(m.day,m.key)) continue; const r=m.lat!=null?matchPhoto(m):{day:null}; const keep=m.day;   /* only a known location can say where it belongs; by the clock alone it would just land on the next stop */
+    m.day=r.day!=null?r.day:keep; m.key=r.day!=null?r.key:null; m.place=r.day!=null?(r.place||null):null; m.byTime=!!r.byTime; m.bySess=false; m.auto=true; await PDB.putMeta(m); n++; }
+  if(n){ await sessionFix(); fillSuggestions(); } return n; }
+/* a stop put on the wrong day: move it (as your own stop) to the same clock time on another day; its photos follow */
+async function moveStopToDay(dr,to){ const from=dr.day; const edF=materialize(from); const node=edF.list.find(x=>x.key===dr.key); if(!node) return; const it=planItems(from).find(x=>x._i===dr.key)||{};
+  let n2; if(node.kind==="custom") n2=Object.assign({},node,{pre:0});
+  else { const p0=P[it.p]; n2={key:"cs_"+Date.now().toString(36),kind:"custom",name:dr.name||it.n||"จุดแวะ",lat:p0?p0[1]:null,lng:p0?p0[2]:null,q:p0?(p0[4]||p0[0]):null,note:it.x||"",dur:node.dur!=null?node.dur:origDur(it),at:"",pre:0}; }
+  n2.at=it.t||n2.at||""; if(dr.dur!=null) n2.dur=dr.dur; regCustom(n2);
+  edF.list=edF.list.filter(x=>x.key!==dr.key);
+  const edT=materialize(to); const t=toMin(n2.at||"12:00"); const before=planItems(to).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&toMin(x.t)<=t).pop();
+  const at=before?edT.list.findIndex(x=>x.key===before._i):-1; edT.list.splice(at<0?(before?edT.list.length:0):at+1,0,n2);
+  saveEdits(); for(const m of phMeta){ if(m.day===from&&m.key===dr.key){ m.day=to; m.key=n2.key; await PDB.putMeta(m); } }
+  draft=null; closeSheet(); await fixOrphans(); selectDay(to); renderPlan(); drawCustoms();
+  setTimeout(()=>{ const el=$(`#p-plan [data-key-row="${CSS.escape(n2.key)}"]`); if(el){ el.scrollIntoView({block:"center"}); el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); } },150); }
 function openEditItem(key){
   const di=curDay; const ed=materialize(di); const n=ed.list.find(x=>x.key===key); if(!n) return;
   const it=planItems(di).find(x=>x._i===key)||{};
-  draft={mode:"edit",day:di,key,kind:n.kind,name:n.name||"",lat:n.lat??null,lng:n.lng??null,note:n.note||"",dur:n.dur!=null?n.dur:origDur(it),at:n.at||"",title:it.n,isOpt:n.kind==="base"&&DAYS[di].items[n.src].k==="opt",promote:n.promote};
+  draft={mode:"edit",day:di,key,kind:n.kind,name:n.name||"",lat:n.lat??null,lng:n.lng??null,note:n.note||"",dur:n.dur!=null?n.dur:origDur(it),at:n.at||"",title:it.n,baseName:n.kind==="base"?(DAYS[di].items[n.src]||{}).n:"",isOpt:n.kind==="base"&&DAYS[di].items[n.src].k==="opt",promote:n.promote};
   renderAddStop();
 }
 function readDraft(){ const g=id=>$("#"+id); if(!g("cs-dur")) return; draft.dur=+g("cs-dur").value; draft.at=g("cs-at").value; if(g("cs-name")) draft.name=g("cs-name").value.trim(); if(g("cs-note")) draft.note=g("cs-note").value.trim(); }
@@ -2590,7 +2609,8 @@ document.addEventListener("click",ev=>{
   if(a==="cs-qtauto"){ const ed=materialize(qt.di); const n=ed.list.find(x=>x.key===qt.key); if(n){ n.at=""; delete n.fixAt; } saveEdits(); qt=null; closeSheet(); renderPlan(); return; }
   if(a==="cs-promote"){ readDraft(); draft.promote=!draft.promote; renderAddStop(); return; }
   if(a==="cs-save"){ readDraft(); const ed=materialize(draft.day); applyDraft(ed,draft); saveEdits(); draft=null; closeSheet(); renderPlan(); drawCustoms(); return; }
-  if(a==="cs-del"){ const ed=materialize(draft.day); ed.list=ed.list.filter(x=>x.key!==draft.key); saveEdits(); draft=null; closeSheet(); renderPlan(); drawCustoms(); return; }
+  if(a==="cs-del"){ const di0=draft.day, k0=draft.key; const ed=materialize(di0); ed.list=ed.list.filter(x=>x.key!==k0); saveEdits(); draft=null; closeSheet(); fixOrphans().then(()=>{ renderPlan(); drawCustoms(); }); renderPlan(); drawCustoms(); return; }
+  if(a==="cs-moveday"){ readDraft(); const to=+($("#cs-day")||{}).value; if(isNaN(to)||to===draft.day) return; moveStopToDay(draft,to); return; }
 },true);
 
 /* ---------- photos (Wikimedia Commons, loaded on the phone) ---------- */
@@ -3156,7 +3176,7 @@ const PDB={db:null,
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
   del(id){ return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
-PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(fillSuggestions,1500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
+PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 function photosFor(di,key){ return tbSort(phMeta.filter(m=>m.day===di&&m.key===key)); }
 async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); const bl=b&&(full?b.full:b.thumb); if(!bl) return ""; cache[id]=URL.createObjectURL(bl); return cache[id]; }
 function hydrateMyPhotos(root){ $$("img[data-phid]:not([data-done])",root||document).forEach(im=>{ im.dataset.done=1; phThumbURL(im.dataset.phid,im.dataset.full==="1").then(u=>{ if(u) im.src=u; }); }); }
