@@ -712,6 +712,21 @@ body.tb-dragging{overflow:hidden}
 .dup-c.keep .ph-cell{outline:3px solid #2F6B45;outline-offset:-3px}.dup-c.drop .ph-cell img{opacity:.45}.dup-c.drop .dup-keep{background:#B3261E}
 .dup-zoom{position:absolute;right:6px;bottom:6px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:15px;cursor:pointer}
 .dup-set.all .dup-h .tiny{color:#2F6B45;font-weight:600}
+.srt-runs{display:flex;flex-direction:column;gap:14px;margin-top:10px}
+.srt-run{border:1px solid var(--line,#E3E7EB);border-radius:12px;padding:10px}.srt-run header{display:flex;align-items:center;gap:8px}.srt-run header .lnk{margin-left:auto}
+.srt-guess{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.srt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:6px}
+.srt-grid .ph-cell{-webkit-touch-callout:none;user-select:none}
+.srt-grid .ph-cell.sel{outline:3px solid #1D4E9E;outline-offset:-3px}
+.srt-grid .ph-cell.sel::after{content:"✓";position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:#1D4E9E;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+.srt-bar{position:sticky;bottom:0;z-index:3;margin:12px -16px -18px;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface,#fff);border-top:1px solid var(--line,#E3E7EB);box-shadow:0 -6px 16px rgba(0,0,0,.08)}
+.srt-bar-h{display:flex;align-items:center;gap:8px}.srt-bar-h b{margin-right:auto}
+.srt-pick{margin-top:8px;max-height:46vh;overflow:auto}.srt-days{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.srt-days .chip{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line,#D3D8DE);background:var(--surface,#fff);font:600 13px inherit;color:inherit}
+.srt-days .chip.on{background:var(--dc);color:#fff;border-color:var(--dc)}
+.srt-stops .pg-c.leg b{font-weight:500;color:var(--muted,#5B6570)}
+.srt-guess .btn.weak{opacity:.75;border-style:dashed}
+.srt-stops .pg-c{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left}
 </style>
 
 <div class="app">
@@ -3316,7 +3331,7 @@ function photoSheetHtml(){
   ${!imp&&phMeta.filter(m=>m.kind!=="video").length>=5&&phMeta.filter(m=>m.lat!=null).length<phMeta.length/2?`<div class="ph-geo-note"><b>${phMeta.filter(m=>m.lat==null).length} ไฟล์ไม่มีตำแหน่งที่ถ่าย</b> จึงจัดตามเวลาในแผนได้อย่างเดียว ${zipHow()}</div>`:""}
   ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
   ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน แอปหาชื่อสถานที่ที่ใกล้ที่สุดมาให้ กด "เพิ่มเข้าแผน" ได้เลย หรือเลือกชื่อที่ถูกก่อน · รายการนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map((g,gi)=>`<div class="pg${isJust(g)?" just":""}" data-sug="${esc(g.id)}" data-pgm="${esc(grpOf(g).join(","))}"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(g.place.name||"ตำแหน่ง "+(+g.place.lat).toFixed(4)+", "+(+g.place.lng).toFixed(4))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span></div><div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="btn small" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="btn small" data-act="ph-gmv" data-g="${esc(g.id)}">${pgMove===g.id?"ปิด":"ย้ายเข้าจุดในแผน"}</button><button class="btn small" data-act="ph-gleg" data-g="${esc(g.id)}">ถ่ายระหว่างทาง</button></div>${pgJustHtml(g)}${pgOpen===g.id?pgPickHtml(g):""}${pgMove===g.id?pgMoveHtml(g):""}</div>`).join("")}`:""}
-  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">ไฟล์ที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป แตะเพื่อเลือกว่าเป็นจุดไหน</p><div class="ph-grid">${loose.map(cell).join("")}</div>`:""}
+  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">ไฟล์ที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป</p><div class="c-actions"><button class="btn small primary" data-act="srt-open">จัดทีละหลายรูป (${loose.length})</button></div><div class="ph-grid">${loose.slice(0,16).map(cell).join("")}</div>${loose.length>16?`<p class="tiny">แสดง 16 จาก ${loose.length} รูป · กด "จัดทีละหลายรูป" เพื่อดูทั้งหมด</p>`:""}`:""}
   <p class="tiny" style="margin-top:12px">"จัดใหม่" ขยับเฉพาะไฟล์ที่แอปจัดให้เอง ไฟล์ที่คุณย้ายเองจะอยู่ที่เดิม และย้อนกลับได้ · ถ้าวางผิดจุด แตะรูปแล้วกด "ย้ายไปจุดอื่น" เลือกให้ย้ายรูปที่ถ่ายช่วงเดียวกันไปพร้อมกันได้ หรือเลือกร้านในลิสต์เพื่อสร้างจุดใหม่ในแผน</p></div>`; }
 function photoSheetPaint(first){ const fresh=first||!$("#ph-root"); const old=$("#sheetRoot .sheet"), top=old&&!fresh?old.scrollTop:0;
   if(fresh) openSheet(photoSheetHtml()); else renderSheet(photoSheetHtml());
@@ -3801,6 +3816,8 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='ph
 async function dHash(blob){ try{ const bm=await createImageBitmap(blob,{resizeWidth:9,resizeHeight:8,resizeQuality:"high"}); const c=document.createElement("canvas"); c.width=9; c.height=8; const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bm,0,0); bm.close&&bm.close();
     const d=g.getImageData(0,0,9,8).data; let bits=""; for(let y=0;y<8;y++) for(let x=0;x<8;x++){ const i=(y*9+x)*4, j=i+4; bits+=(d[i]*.3+d[i+1]*.59+d[i+2]*.11)>(d[j]*.3+d[j+1]*.59+d[j+2]*.11)?"1":"0"; }
     return parseInt(bits.slice(0,32),2).toString(16).padStart(8,"0")+parseInt(bits.slice(32),2).toString(16).padStart(8,"0"); }catch(e){ return null; } }
+/* a near-flat picture (night sky, black frame, plain wall) has an almost empty hash: it says nothing about which picture it is */
+function flatHash(h){ if(!h) return true; let n=0; for(let k=0;k<16;k+=8){ let x=parseInt(h.slice(k,k+8),16)>>>0; while(x){ x&=x-1; n++; } } return n<8||n>56; }
 function hamming(a,b){ if(!a||!b) return 99; let n=0; for(let k=0;k<16;k+=8){ let x=(parseInt(a.slice(k,k+8),16)^parseInt(b.slice(k,k+8),16))>>>0; while(x){ x&=x-1; n++; } } return n; }
 async function ensureHashes(tick){ const need=phMeta.filter(m=>!m.dh); let i=0; for(const m of need){ const b=await PDB.getBlob(m.id); const src=b&&(b.thumb||(m.kind!=="video"?b.full:null)); if(src){ const h=await dHash(src); if(h){ m.dh=h; await PDB.putMeta(m); } } i++; tick&&tick(i,need.length); } }
 const realTime=m=>m.takenAt&&m.tsrc!=="file";
@@ -3809,6 +3826,7 @@ const pairKey=(a,b)=>a<b?a+"|"+b:b+"|"+a;
 function isDupPair(a,b){ if((a.kind==="video")!==(b.kind==="video")) return false; if(a.id&&b.id&&dupIgnore.has(pairKey(a.id,b.id))) return false; const h=hamming(a.dh,b.dh); if(h>5) return false;
   if(a.kind==="video"&&a.dur&&b.dur&&Math.abs(a.dur-b.dur)>0.6) return false;
   if(a.model&&b.model&&a.model!==b.model&&a.name!==b.name) return false;   /* two phones at the same moment are two pictures */
+  if(flatHash(a.dh)||flatHash(b.dh)) return a.name===b.name&&realTime(a)&&realTime(b)&&Math.abs(a.takenAt-b.takenAt)<1000;
   if(realTime(a)&&realTime(b)) return store.get("burst",true)?Math.abs(a.takenAt-b.takenAt)<=3000&&h<=5:Math.abs(a.takenAt-b.takenAt)<1000&&h<=2;   /* same moment, same picture; burst frames too unless you keep every frame */
   if(a.name&&a.name===b.name) return h<=5;
   return h<=2; }                                                                         /* one has no shot time: only near-identical pictures */
@@ -3852,6 +3870,78 @@ document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-a
   const G=dupState.groups; let removed=0; dupState={busy:true,msg:"กำลังรวมรูปซ้ำ",i:0,n:G.length}; dupPaint();
   for(const g of G){ removed+=await mergeDupGroup(g,K); dupState.i++; if(dupState.i%20===0) dupPaint(); }
   dupState={done:true,removed}; dupPaint(); renderPlan(); },true);
+
+/* ===================== sort the unsorted: runs of similar-looking photos, a guess of where each run belongs, select many and move ===================== */
+/* look features from the small copy: colour histogram (4x4x4) + mean colour of 4 quarters */
+async function lookFeat(blob){ try{ const bm=await createImageBitmap(blob,{resizeWidth:32,resizeHeight:32,resizeQuality:"medium"}); const c=document.createElement("canvas"); c.width=32; c.height=32; const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(bm,0,0); bm.close&&bm.close();
+    const d=g.getImageData(0,0,32,32).data, h=new Array(64).fill(0), q=new Array(12).fill(0);
+    for(let y=0;y<32;y++) for(let x=0;x<32;x++){ const i=(y*32+x)*4, r=d[i],gg=d[i+1],b=d[i+2]; h[(r>>6)*16+(gg>>6)*4+(b>>6)]++; const k=((y>>4)*2+(x>>4))*3; q[k]+=r; q[k+1]+=gg; q[k+2]+=b; }
+    return h.map(v=>+(v/1024).toFixed(3)).concat(q.map(v=>+(v/256/255).toFixed(3))); }catch(e){ return null; } }
+function lookDist(a,b){ if(!a||!b) return 9; let s=0; for(let i=0;i<64;i++) s+=Math.abs(a[i]-b[i]); let t=0; for(let i=64;i<76;i++) t+=Math.abs(a[i]-b[i]); return s/2+t/12; }
+async function ensureLook(tick){ const need=phMeta.filter(m=>!m.cf); let i=0; for(const m of need){ const b=await PDB.getBlob(m.id); const src=b&&(b.thumb||(m.kind!=="video"?b.full:null)); if(src){ const f=await lookFeat(src); if(f){ m.cf=f; await PDB.putMeta(m); } } i++; tick&&tick(i,need.length); } }
+const isLoose=m=>m.key==null&&!m.place;
+function looseList(){ return phMeta.filter(isLoose).sort((a,b)=>(a.added||0)-(b.added||0)||String(a.id).localeCompare(String(b.id))); }
+/* split the unsorted (in the order they came in, which follows the album) where the look changes */
+function looseRuns(L,refs){ const top=m=>{ if(!refs||!refs.length||!m.cf) return null; let best=null,bd=9; for(const r of refs){ const d=lookDist(m.cf,r.cf); if(d<bd){ bd=d; best=r; } } return best?tgtKey(best):null; };
+  L.forEach(m=>{ m._top=top(m); });
+  const runs=[]; let cur=null; L.forEach((m,i)=>{ const prev=L[i-1]; const d=prev?lookDist(prev.cf,m.cf):9;
+    const brk=!cur||d>0.65||(d>0.35&&m._top&&prev._top&&m._top!==prev._top)||cur.list.length>=40; if(brk){ cur={list:[]}; runs.push(cur); } cur.list.push(m); });
+  for(let i=runs.length-1;i>0;i--){ const a=runs[i-1], b=runs[i]; if(b.list.length===1&&lookDist(a.list[a.list.length-1].cf,b.list[0].cf)<0.5&&(!b.list[0]._top||b.list[0]._top===a.list[a.list.length-1]._top)){ a.list.push(...b.list); runs.splice(i,1); } }   /* a lone photo joins the run before it */
+  return runs; }
+const tgtKey=m=>m.place?`${m.day}|p|${m.place.name||""}`:`${m.day}|${m.key}`;
+function tgtLabel(day,key,place){ const d=DAYS[day]; if(place) return `D${d.n} · ${place.name||"แวะระหว่างวัน"}`; return keyLabel(day,key); }
+/* where does a run belong? each photo asks its 3 nearest sorted photos; their stops vote */
+function runGuess(run,refs){ const votes={}; let n=0, dsum=0, dn=0;
+  run.list.forEach(m=>{ if(!m.cf) return; const near=refs.map(r=>[r,lookDist(m.cf,r.cf)]).sort((a,b)=>a[1]-b[1]).slice(0,3); if(near[0]){ dsum+=near[0][1]; dn++; } near.forEach(([r,d],j)=>{ const w=(3-j)/(1+d*4); const k=tgtKey(r); (votes[k]=votes[k]||{w:0,ref:r}).w+=w; n+=w; }); });
+  const weak=dn&&dsum/dn>0.42;   /* nothing sorted looks much like this run: say so */
+  return Object.values(votes).sort((a,b)=>b.w-a.w).slice(0,2).map(v=>({ref:v.ref,pct:n?Math.round(v.w/n*100):0,weak})).filter(v=>v.pct>=20); }
+var srt=null;
+function srtTargetsHtml(){ const di=srt.pickDay??srt.lastDay??0; const its=planItems(di); const nums=stopNumMap(di);
+  return `<div class="srt-pick"><div class="srt-days">${DAYS.map((d,i)=>`<button class="chip${i===di?" on":""}" data-act="srt-day" data-d="${i}" style="--dc:var(--d${d.n})">D${d.n}</button>`).join("")}</div>
+    <div class="srt-stops">${its.filter(x=>x.k!=="opt").map(x=>{ const leg=x.k==="drive"||x.k==="train"; if(leg&&!(x.to&&P[x.to])) return ""; return `<button class="pg-c${leg?" leg":""}" data-act="srt-to" data-d="${di}" data-k="${esc(leg?"leg:"+x._i:x._i)}"><b>${leg?"ระหว่างทางไป "+esc(P[x.to][0]):`${nums[x._i]?nums[x._i]+". ":""}${esc(x.n)}`}</b><span>${esc(x.t||"")}</span></button>`; }).join("")}
+    ${placeGroups().filter(g=>g.day===di).map(g=>`<button class="pg-c" data-act="srt-to" data-d="${di}" data-pg="${esc(g.id)}"><b>${esc(g.place.name||"แวะระหว่างวัน")}</b><span>แนะนำจากรูป</span></button>`).join("")}</div></div>`; }
+function sorterHtml(){ const s=srt||{};
+  if(s.busy) return `<div id="srt-root"><div class="sk">รูปทริป</div><h2>จัดรูปที่ยังไม่ได้จัด</h2><div class="ph-prog"><div class="ph-bar"><i style="width:${s.n?Math.round(s.i/s.n*100):0}%"></i></div><p><b>${esc(s.msg)}</b>${s.n?` ${s.i} / ${s.n}`:""}</p></div></div>`;
+  const L=looseList(); const runs=s.runs||[]; const sel=s.sel; const shownRuns=runs.slice(0,s.more?runs.length:25);
+  return `<div id="srt-root"><div class="sk">รูปทริป</div><h2>จัดรูปที่ยังไม่ได้จัด <span class="muted" style="font-weight:500">${L.length}</span></h2>
+  <p class="tiny">แอปแบ่งรูปเป็นชุดตามลำดับที่นำเข้าและหน้าตาของรูป (รูปที่ถ่ายที่เดียวกันมักมาติดกัน) แล้วเดาจุดจากรูปที่จัดไว้แล้ว · <b>แตะ "ย้ายทั้งชุด"</b> หรือ<b>แตะรูปเพื่อเลือกเอง</b> · เปิด "เลือกเป็นช่วง" แล้วแตะรูปแรกกับรูปสุดท้ายเพื่อเลือกทั้งช่วง · กดค้างเพื่อดูรูปใหญ่</p>
+  <label class="burst-tg"><input type="checkbox" id="srt-range"${s.range?" checked":""}> เลือกเป็นช่วง (แตะรูปแรก แล้วแตะรูปสุดท้าย)</label>
+  ${!L.length?`<p><b>จัดครบแล้ว</b> ✓</p>`:""}
+  <div class="srt-runs">${shownRuns.map((r,ri)=>{ const g=r.guess||[]; return `<section class="srt-run"><header><b>ชุดที่ ${ri+1}</b><span class="tiny">${mediaWord(r.list)}</span><button class="lnk" data-act="srt-selrun" data-r="${ri}">${r.list.every(m=>sel.has(m.id))?"เลิกเลือกชุดนี้":"เลือกทั้งชุด"}</button></header>
+    ${g.length?`<div class="srt-guess">${g.map(x=>`<button class="btn small${g[0]&&!g[0].weak?"":" weak"}" data-act="srt-guess" data-r="${ri}" data-d="${x.ref.day}" data-k="${esc(x.ref.key||"")}" data-pg="${x.ref.place?esc(placeGroups().find(pg=>pg.list.includes(x.ref))?.id||""):""}">ย้ายทั้งชุดเข้า ${esc(tgtLabel(x.ref.day,x.ref.key,x.ref.place))} <span class="tiny">${x.weak?"ไม่ค่อยแน่ใจ":x.pct>=70?"น่าจะใช่":"อาจจะ"}</span></button>`).join("")}</div>`:""}
+    <div class="srt-grid">${r.list.map(m=>`<button class="ph-cell${sel.has(m.id)?" sel":""}" data-act="srt-t" data-id="${m.id}"><img data-lazy="${m.id}" alt="">${phBadge(m)}</button>`).join("")}</div></section>`; }).join("")}
+  ${runs.length>shownRuns.length?`<button class="btn small" data-act="srt-more">ดูอีก ${runs.length-shownRuns.length} ชุด</button>`:""}</div>
+  ${sel.size?`<div class="srt-bar"><div class="srt-bar-h"><b>เลือก ${sel.size}</b><button class="btn small" data-act="srt-clear">ล้าง</button><button class="btn small primary" data-act="srt-pickopen">${s.picking?"ปิด":"ย้ายเข้าจุด…"}</button></div>${s.picking?srtTargetsHtml():""}</div>`:""}</div>`; }
+var srtObs=null;
+function srtHydrate(){ const root=$("#srt-root"); if(!root) return; if(srtObs) srtObs.disconnect();
+  srtObs=new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; const im=e.target; srtObs.unobserve(im); phThumbURL(im.dataset.lazy,false).then(u=>{ if(u) im.src=u; }); }),{root:$("#sheetRoot .sheet"),rootMargin:"600px"});
+  $$("img[data-lazy]",root).forEach(im=>srtObs.observe(im)); }
+function sorterPaint(first){ const sc=$("#sheetRoot .sheet"), top=sc&&!first?sc.scrollTop:0; if(first||!$("#srt-root")) openSheet(sorterHtml()); else renderSheet(sorterHtml()); const s2=$("#sheetRoot .sheet"); if(s2&&top) s2.scrollTop=top; setTimeout(srtHydrate,20); }
+function srtRecompute(){ const L=looseList(); const refs=phMeta.filter(m=>!isLoose(m)&&m.day!=null&&m.cf); srt.runs=looseRuns(L,refs); srt.runs.forEach(r=>{ r.guess=refs.length?runGuess(r,refs):[]; }); }
+async function sorterOpen(){ srt={busy:true,msg:"กำลังอ่านหน้าตาของรูป (ครั้งแรกครั้งเดียว)",i:0,n:0,sel:new Set()}; sorterPaint(true); let t=0;
+  await ensureLook((i,n)=>{ srt.i=i; srt.n=n; if(Date.now()-t>300){ t=Date.now(); sorterPaint(); } });
+  srt.busy=false; srtRecompute(); sorterPaint(); }
+async function srtMove(ids,day,key,pgId){ const pg=pgId?placeGroups().find(g=>g.id===pgId):null; const tgtPlace=pg?Object.assign({},pg.place):null;
+  for(const id of ids){ const m=phMeta.find(x=>x.id===id); if(!m) continue; m.day=+day; m.key=pg?null:(key||null); m.place=tgtPlace; m.auto=false; m.byTime=false; m.bySess=false; await PDB.putMeta(m); }
+  srt.lastDay=+day; srt.sel.clear(); srt.picking=false; srt.pickDay=null; srt.anchor=null; srtRecompute(); sorterPaint(); renderPlan(); }
+document.addEventListener("change",ev=>{ if(ev.target.id==="srt-range"&&srt){ srt.range=ev.target.checked; srt.anchor=null; } });
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='srt-']"); if(!b) return; ev.stopPropagation(); if(!srt&&b.dataset.act!=="srt-open") return; const a=b.dataset.act;
+  if(a==="srt-open"){ sorterOpen(); return; }
+  if(a==="srt-t"){ if(srt.swallow){ srt.swallow=false; return; } const id=b.dataset.id; const order=srt.runs.flatMap(r=>r.list.map(m=>m.id));
+    if(srt.range&&srt.anchor&&srt.anchor!==id){ const i=order.indexOf(srt.anchor), j=order.indexOf(id); const [lo,hi]=i<j?[i,j]:[j,i]; order.slice(lo,hi+1).forEach(x=>srt.sel.add(x)); srt.anchor=null; }
+    else { srt.sel.has(id)?srt.sel.delete(id):srt.sel.add(id); srt.anchor=srt.sel.has(id)?id:null; }
+    sorterPaint(); return; }
+  if(a==="srt-selrun"){ const r=srt.runs[+b.dataset.r]; const all=r.list.every(m=>srt.sel.has(m.id)); r.list.forEach(m=>all?srt.sel.delete(m.id):srt.sel.add(m.id)); sorterPaint(); return; }
+  if(a==="srt-guess"){ const r=srt.runs[+b.dataset.r]; srtMove(r.list.map(m=>m.id),b.dataset.d,b.dataset.k,b.dataset.pg||null); return; }
+  if(a==="srt-clear"){ srt.sel.clear(); srt.picking=false; srt.anchor=null; sorterPaint(); return; }
+  if(a==="srt-pickopen"){ srt.picking=!srt.picking; sorterPaint(); return; }
+  if(a==="srt-day"){ srt.pickDay=+b.dataset.d; sorterPaint(); return; }
+  if(a==="srt-to"){ srtMove([...srt.sel],b.dataset.d,b.dataset.k||null,b.dataset.pg||null); return; }
+  if(a==="srt-more"){ srt.more=true; sorterPaint(); return; } },true);
+/* long-press a photo in the sorter to see it big */
+(()=>{ let t=null; const start=e=>{ const c=e.target.closest&&e.target.closest("#srt-root [data-act='srt-t']"); if(!c) return; clearTimeout(t); t=setTimeout(()=>{ if(srt) srt.swallow=true; openMyPhoto(c.dataset.id); },500); };
+  const stop=()=>clearTimeout(t); document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",stop,{passive:true}); document.addEventListener("touchend",stop); document.addEventListener("mousedown",start); document.addEventListener("mouseup",stop);
+  document.addEventListener("contextmenu",e=>{ if(e.target.closest&&e.target.closest("#srt-root")) e.preventDefault(); }); })();
 
 /* ---------- boot ---------- */
 mapDay=curDay;
