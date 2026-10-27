@@ -740,6 +740,26 @@ body.tb-dragging{overflow:hidden}
 .sheet-backbtn{margin:0 0 6px}
 .act-day{border:1px solid var(--line,#E3E7EB);border-radius:12px;padding:10px;margin:10px 0}.act-day header{display:flex;align-items:center;gap:8px}.act-day header .btn{margin-left:auto}
 .act-list{list-style:none;padding:0;margin:6px 0 0}.act-list li{display:flex;flex-direction:column;padding:6px 0;border-top:1px solid var(--line,#E3E7EB)}
+.act-tg{display:flex;gap:8px;align-items:flex-start}.act-tg input{width:18px;height:18px;margin-top:3px;flex:0 0 auto}
+.act-list li.warn{background:color-mix(in srgb,#B9820F 8%,transparent);margin:0 -10px;padding:6px 10px}.act-warn{font-size:12px;color:#8A4B00;font-weight:600}
+.lb-move{margin-top:8px}.lb-move .c-actions{margin-top:6px}.lb-hid{display:block;margin-top:4px;font-size:12px;color:#F5C26B}
+body.tb-open .lb{z-index:1450}
+.dup-kbtn{display:block;width:100%;margin-top:4px;min-height:34px;border-radius:8px;border:1px solid var(--line,#D3D8DE);background:var(--surface,#fff);font:600 13px inherit;color:#B3261E;cursor:pointer}
+.dup-c.keep .dup-kbtn{background:#2F6B45;border-color:#2F6B45;color:#fff}.dup-c .dup-keep{display:none}
+.ph-intro{font-size:14px;color:var(--muted);margin:2px 0 10px}
+.ph-addmenu{display:grid;gap:8px;margin:4px 0 10px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)}
+.ph-addopt{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;min-height:48px}
+.ph-addopt b{display:block;font-size:15px}.ph-addopt span{display:block;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
+.ph-addopt:active{background:var(--surface-2)}
+.ph-days-h{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+.ph-day{border:1px solid color-mix(in srgb,var(--dc) 35%,var(--line));font:inherit;font-size:13px;padding:5px 11px;min-height:34px;border-radius:999px;background:color-mix(in srgb,var(--dc) 10%,var(--surface));color:var(--ink);cursor:pointer}
+.ph-day b{color:var(--dc)}
+.ph-tools{margin:12px 0 6px;border:1px solid var(--line);border-radius:12px;padding:6px 12px;background:var(--surface)}
+.ph-tools summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 0;color:var(--ink)}
+.ph-tools[open] summary{border-bottom:1px solid var(--line);margin-bottom:8px}
+.lb-flash{display:block;margin-top:4px;font-weight:600;color:#9FE0B4}
+.ph-day.z{opacity:.5}
+.lb-move .btn:not(.primary){background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.35)}
 </style>
 
 <div class="app">
@@ -1488,7 +1508,7 @@ function renderPlan(){
   if(d.hotel&&P[d.hotel]) h+=`<div class="dh-hotel">${I.bed}<span>คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="lnk" data-act="booking" data-id="${d.hotel}">ใบจอง</button><a class="lnk" href="${esc(dirUrl(pointTarget(d.hotel)))}" target="_blank" rel="noopener">นำทาง</a></div>`;
   h+=`<div class="dh-actions"><button class="btn small primary" data-act="gmroute">${I.route}เส้นทางทั้งวันใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}แผนที่</button><button class="btn small" data-act="addstop">${I.plus}เพิ่มจุด</button><button class="btn small" data-act="reorder" aria-pressed="${document.body.classList.contains("reorder")}">${I.sort}จัดลำดับ</button>${phMeta.some(m=>m.day===curDay&&m.key&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name"))?`<button class="btn small" data-act="act-open">🕘 ปรับเวลาตามรูป</button>`:""}</div>`;
   h+=freshBanner();
-  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}<em class="dh-ph-prog">${phImport&&!phImport.end?impShort(phImport):""}</em></span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
+  { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}<em class="dh-ph-prog">${phImport?impShort(phImport):""}</em></span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
   h+=`</header><ol class="tl">`+(typeof sugByStop==="function"?(sugByStop(curDay)._top||[]).map(sugRowHtml).join(""):"");
@@ -1518,7 +1538,7 @@ function renderPlan(){
       !isC&&SPOTP[it.p]?`<button class="lnk" data-act="spots" data-id="${it.p}">จุดที่ต้องชม ${SPOTP[it.p].length}</button>`:"",
       !isC&&p[5]?`<button class="lnk" data-act="story" data-id="${p[5]}">เรื่องน่ารู้</button>`:"",
       it.food?`<button class="lnk" data-act="food" data-id="${it.food}">ร้านในลิสต์</button>`:"",
-      `<span class="sc-ics"><button class="lnk ic" data-act="ph-add" data-key="${esc(k)}" aria-label="เพิ่มรูปของเราที่จุดนี้">${I.camera}</button><button class="lnk ic" data-act="cs-edit" data-key="${esc(k)}" aria-label="แก้ไข">${I.edit}</button></span>`].filter(Boolean).join("");
+      `<span class="sc-ics"><button class="lnk ic" data-act="ph-add" data-key="${esc(k)}" aria-label="เพิ่มรูปเข้าจุดนี้" title="เพิ่มรูปเข้าจุดนี้ (ทุกรูปที่เลือกจะอยู่ที่จุดนี้ ไม่จัดตามเวลา)">${I.camera}</button><button class="lnk ic" data-act="cs-edit" data-key="${esc(k)}" aria-label="แก้ไข">${I.edit}</button></span>`].filter(Boolean).join("");
     h+=`<li class="ti k-${it.k}${k===nowK?" is-now":""}${vis?" is-done":""}" data-key-row="${esc(k)}">${tmHtml(it,k,tAct)}${pinHtml(it,k)}<article class="sc">${moveBtns(it)}<div class="sc-row"><div class="sc-main"><div class="sc-kind">${k===nowK?`<span class="now">ตอนนี้</span>`:""}<span>${esc(kind)}</span>${it.p&&it.k!=="opt"?wxChip(it.p,d.date,it.t):""}</div><h3 class="sc-name">${esc(it.n)}</h3>${it.x?`<p class="sc-note">${esc(it.x)}</p>`:""}${warns.map(w=>`<p class="sc-warn">${esc(w)}</p>`).join("")}</div><button class="sc-ph thumb" data-ph="${esc(cleanQ(q))}|5|${esc(cleanQ(en))}" data-pi="0" data-q="${esc(q)}" data-en="${esc(en)}" data-ll="${lat},${lng}" aria-label="ดูรูป ${esc(it.n)}"></button></div>${myPhotoStrip(curDay,k)}<div class="sc-act">${acts}</div></article></li>`;
     if(it.k!=="opt"){ h+=recTilesHtml(curDay,RECS[k]); h+=insRow(k); (SUG[k]||[]).forEach(g=>{ h+=sugRowHtml(g); }); }
     if(curDay===3&&it.p==="station"&&it.k==="stop") carGoneR=true;
@@ -1552,7 +1572,7 @@ function renderSheet(html){
   const s=$(".sheet",r); s.focus&&s.setAttribute("tabindex","-1"); try{ s.focus({preventScroll:true}); }catch(e){ s.focus(); }
 }
 let sheetHist=false;
-function closeSheet(fromPop){ const extra=sheetBack.length; sheetBack.length=0; $("#sheetRoot").innerHTML=""; if(sheetHist){ sheetHist=false; if(fromPop!==true&&history.state&&history.state.sheet) selfBack(1+extra); } }
+function closeSheet(fromPop){ if(typeof phImport!=="undefined"&&phImport&&phImport.end){ phImport=null; $$(".dh-ph-prog").forEach(e=>{ e.textContent=""; }); } const extra=sheetBack.length; sheetBack.length=0; $("#sheetRoot").innerHTML=""; if(sheetHist){ sheetHist=false; if(fromPop!==true&&history.state&&history.state.sheet) selfBack(1+extra); } }
 addEventListener("popstate",()=>{ if(lbOpen||popSelf) return;
   if(typeof pickMode!=="undefined"&&pickMode&&!$("#sheetRoot").innerHTML){ cancelPick(true); return; }
   if(sheetBack.length&&$("#sheetRoot").innerHTML){ const f=sheetBack.pop(); f&&f(); return; }
@@ -2611,7 +2631,8 @@ document.addEventListener("click",ev=>{
   if(a==="cs-qtauto"){ const ed=materialize(qt.di); const n=ed.list.find(x=>x.key===qt.key); if(n){ n.at=""; delete n.fixAt; } saveEdits(); qt=null; closeSheet(); renderPlan(); return; }
   if(a==="cs-promote"){ readDraft(); draft.promote=!draft.promote; renderAddStop(); return; }
   if(a==="cs-save"){ readDraft(); const ed=materialize(draft.day); applyDraft(ed,draft); saveEdits(); draft=null; closeSheet(); renderPlan(); drawCustoms(); return; }
-  if(a==="cs-del"){ const di0=draft.day, k0=draft.key; const ed=materialize(di0); ed.list=ed.list.filter(x=>x.key!==k0); saveEdits(); draft=null; closeSheet(); fixOrphans().then(()=>{ renderPlan(); drawCustoms(); }); renderPlan(); drawCustoms(); return; }
+  if(a==="cs-del"){ const nPh=photosFor(draft.day,draft.key).length; if(nPh&&!draft.delOk){ draft.delOk=true; b.classList.add("danger"); b.textContent=`แตะอีกครั้งเพื่อ${b.textContent.trim()} (รูป ${nPh} รูปไม่หาย)`; return; }
+    const di0=draft.day, k0=draft.key; const ed=materialize(di0); ed.list=ed.list.filter(x=>x.key!==k0); saveEdits(); draft=null; closeSheet(); fixOrphans().then(()=>{ renderPlan(); drawCustoms(); }); renderPlan(); drawCustoms(); return; }
   if(a==="cs-moveday"){ readDraft(); const to=+($("#cs-day")||{}).value; if(isNaN(to)||to===draft.day) return; moveStopToDay(draft,to); return; }
 },true);
 
@@ -3119,16 +3140,18 @@ async function placeCands(lat,lng){ const k=(+lat).toFixed(3)+","+(+lng).toFixed
       const seen=new Set(); out=out.filter(c=>!seen.has(c.name)&&seen.add(c.name)); }catch(e){} }
   out=out.slice(0,5); if(out.length){ plSug[k]=out; store.set("plSug",plSug); } return out; }
 async function fillSuggestions(){ if(plBusy) return; plBusy=true; let ch=false;
-  try{ for(const g of placeGroups()){ if(g.place.name||g.place.cands) continue; const c=await placeCands(g.place.lat,g.place.lng);
-      for(const m of g.list){ m.place=Object.assign({},m.place,{cands:c,name:c[0]?c[0].name:"",guess:true}); if(c[0]){ m.place.lat=m.place.lat; } await PDB.putMeta(m); } ch=true; } }
+  try{ for(const g of placeGroups()){ if(g.place.name||(g.place.cands&&g.place.cands.length)||(g.place.noName&&Date.now()-g.place.noName<6*3600e3)) continue; if(!navigator.onLine) continue;
+      const c=await placeCands(g.place.lat,g.place.lng);
+      for(const m of g.list){ m.place=c.length?Object.assign({},m.place,{cands:c,name:c[0].name,guess:true,noName:null}):Object.assign({},m.place,{noName:Date.now()}); await PDB.putMeta(m); } ch=true; } }
   finally{ plBusy=false; } if(ch){ renderPlan(); if($("#ph-root")) photoSheetPaint(); } }
 async function renameGroup(g,c){ for(const m of g.list){ m.place=Object.assign({},m.place,{name:c.name,lat:c.lat!=null?c.lat:m.place.lat,lng:c.lng!=null?c.lng:m.place.lng,guess:false,picked:true}); await PDB.putMeta(m); } pgOpen=null; pgMove=null; pgJust={pid:g.list[0].id}; renderPlan(); if($("#ph-root")) photoSheetPaint(); pgReveal(); }
 function sugByStop(di){ const its=planItems(di).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"); const out={}; placeGroups().filter(g=>g.day===di).forEach(g=>{ const t=g.list[0].takenAt?jstMin(g.list[0].takenAt):null; let after="_top"; if(t!=null) its.forEach(x=>{ if(toMin(x.t)<=t) after=x._i; }); (out[after]=out[after]||[]).push(g); }); return out; }
-function sugRowHtml(g){ const t=g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""; const nm=g.place.name||"กำลังหาชื่อสถานที่จากตำแหน่ง…";
+function placeNameState(p){ if(p.name) return ""; if(p.noName) return "ไม่พบชื่อจากตำแหน่งที่ถ่าย · กด \"ไม่ใช่ที่นี่? เลือกชื่อ\" เพื่อตั้งชื่อเอง"; return navigator.onLine?"กำลังหาชื่อจากตำแหน่งที่ถ่าย…":"ต่อเน็ตเพื่อหาชื่อ หรือกด \"ไม่ใช่ที่นี่? เลือกชื่อ\" เพื่อตั้งเอง"; }
+function sugRowHtml(g){ const t=g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""; const nm=placeLabel(g.place);
   const why=g.place.fid!=null?"ร้านในลิสต์ของฉัน":g.place.pk?"จุดในทริปนี้ (วันอื่น)":g.place.picked?"ชื่อที่คุณเลือก":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย":"";
-  return `<li class="ti k-sug${isJust(g)?" just":""}" data-sug="${esc(g.id)}" data-pgm="${esc(grpOf(g).join(","))}"><div class="tm"><span class="t1">${esc(t)}</span></div><div class="pin sug">?</div><article class="sc"><div class="sc-kind"><span class="sug-tag">แนะนำจากรูปของเรา</span><span>${esc(why)}</span></div><h3 class="sc-name">${esc(nm)}</h3><p class="sc-note">ถ่ายที่นี่ ${esc(mediaWord(g.list))} · ไม่ตรงกับจุดไหนในแผน</p>
+  return `<li class="ti k-sug${isJust(g)?" just":""}" data-sug="${esc(g.id)}" data-pgm="${esc(grpOf(g).join(","))}"><div class="tm"><span class="t1">${esc(t)}</span></div><div class="pin sug">?</div><article class="sc"><div class="sc-kind"><span class="sug-tag">แนะนำจากรูปของเรา</span><span>${esc(why)}</span></div><h3 class="sc-name">${esc(nm)}</h3><p class="sc-note">${placeNameState(g.place)?esc(placeNameState(g.place))+" · ":""}ถ่ายที่นี่ ${esc(mediaWord(g.list))} · ไม่ตรงกับจุดไหนในแผน</p>
     <div class="my-ph">${g.list.slice(0,6).map(m=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`).join("")}</div>
-    <div class="sc-act"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="lnk" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="lnk" data-act="ph-gmv" data-g="${esc(g.id)}">${pgMove===g.id?"ปิด":"ย้ายเข้าจุดในแผน"}</button><button class="lnk" data-act="ph-gleg" data-g="${esc(g.id)}">ถ่ายระหว่างทาง</button></div>
+    <div class="sc-act"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="lnk" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="lnk" data-act="ph-gmv" data-g="${esc(g.id)}">${pgMove===g.id?"ปิด":"ย้ายไปจุดในแผน"}</button><button class="lnk" data-act="ph-gleg" data-g="${esc(g.id)}">ย้ายไประหว่างทาง</button></div>
     ${pgJustHtml(g)}${pgOpen===g.id?pgPickHtml(g):""}${pgMove===g.id?pgMoveHtml(g):""}</article></li>`; }
 function pgPickHtml(g){ const c=g.place.cands||[]; return `<div class="pg-pick">${c.length?`<p class="tiny">สถานที่ใกล้ตำแหน่งที่ถ่าย</p>${c.map((x,i)=>`<button class="pg-c${x.name===g.place.name?" on":""}" data-act="ph-gpick" data-g="${esc(g.id)}" data-i="${i}"><b>${esc(x.name)}</b><span>${esc([x.kind,x.src].filter(Boolean).join(" · "))}</span></button>`).join("")}`:`<p class="tiny">ยังหาชื่อที่ใกล้ ๆ ไม่ได้${navigator.onLine?"":" (ออฟไลน์)"}</p>`}
   <div class="pg-own"><input class="inp" id="pg-in" placeholder="หรือพิมพ์ชื่อเอง" value=""><button class="btn small" data-act="ph-gname" data-g="${esc(g.id)}">ใช้ชื่อนี้</button></div></div>`; }
@@ -3281,11 +3304,11 @@ async function mergeTwins(){ let n=0; const by={}; phMeta.forEach(m=>{ if(!m.tak
       await PDB.del(m.id); phMeta=phMeta.filter(x=>x!==m); n++; } await PDB.putMeta(keep); }
   return n; }
 var phPaintT=0;
-function impShort(imp){ return imp.stage==="import"?`กำลังนำเข้า ${imp.done} / ${imp.n}`:imp.stage==="scan"||imp.stage==="sharp"?`กำลังตรวจรูป ${imp.sd} / ${imp.sn}`:"กำลังนำเข้า…"; }
+function impShort(imp){ if(imp.end) return "นำเข้าเสร็จแล้ว แตะดูสรุป"; return imp.stage==="import"?`กำลังนำเข้า ${imp.done} / ${imp.n}`:imp.stage==="scan"||imp.stage==="sharp"?`กำลังตรวจรูป ${imp.sd} / ${imp.sn}`:"กำลังนำเข้า…"; }
 /* during an import only the progress block is redrawn; if you closed the sheet, the plan header shows the count instead */
 function phTick(force){ const now=Date.now(); if(!force&&now-phPaintT<300) return; phPaintT=now;
-  const pr=$("#ph-root .ph-prog"); if(pr){ pr.outerHTML=importHtml(phImport); return; } if($("#ph-root")){ photoSheetPaint(); return; }
-  $$(".dh-ph-prog").forEach(e=>{ e.textContent=impShort(phImport); }); }
+  $$(".dh-ph-prog").forEach(e=>{ e.textContent=impShort(phImport); });
+  const pr=$("#ph-root .ph-prog"); if(pr){ pr.outerHTML=importHtml(phImport); return; } if($("#ph-root")) photoSheetPaint(); }
 /* many cameras and apps put the shot time in the file name: 20261020_101500.jpg, IMG_20261020_101500.jpg, Screenshot_20261020-101500.png, PXL_20261020_011500123.jpg (Pixel: UTC) */
 function nameTime(n){ const m=String(n||"").match(/(?:^|[^0-9])(20\d{2})(\d{2})(\d{2})[_\-\s]?(\d{2})(\d{2})(\d{2})/); if(!m) return null;
   const [y,mo,d,h,mi,se]=m.slice(1).map(Number); if(mo<1||mo>12||d<1||d>31||h>23||mi>59||se>59) return null;
@@ -3297,7 +3320,7 @@ async function importPhotos(files,forKey){
     try{ items=items.concat(zipItems(f,await unzipIndex(f))); }catch(err){ zipErr=/zip64/.test(err&&err.message)?"big":"bad"; } }
   phImport.n=items.length;
   const di0=curDay, mine=[], exc=new Map(); let drop=new Set();
-  if(!forKey&&store.get("burst",true)&&items.length>1){ /* shots fired within 3 s on the same camera: keep one, the sharpest */
+  if(store.get("burst",true)&&items.length>1){ /* shots fired within 3 s on the same camera: keep one, the sharpest */
     phImport.stage="scan"; phImport.sn=items.length; phImport.sd=0; phTick(true);
     const L=[]; for(const it of items){ if(!isVideo(it)){ try{ const x=readExif(await it.head(262144)); exc.set(it,x); const t=exifTime(x); if(t) L.push({it,t,mo:x.model||""}); }catch(e){} } phImport.sd++; phTick(); }
     const G=burstGroups(L); phImport.stage="sharp"; phImport.sn=L.length; phImport.sd=0; phTick(true);
@@ -3309,9 +3332,10 @@ async function importPhotos(files,forKey){
     try{ const vid=isVideo(it); let x={}, takenAt=null, tsrc=null, f=null;
       if(vid){ f=await it.file(); const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; }
       else { x=exc.get(it)||readExif(await it.head(262144)); takenAt=exifTime(x); phImport.pics++; if(x.lat==null){ if(x.gz) phImport.gz++; else phImport.gn++; } }
-      const unCount=()=>{ if(vid) return; phImport.pics--; if(x.lat==null){ if(x.gz) phImport.gz--; else phImport.gn--; } if(tsrc!=="meta"&&tsrc!=="name") phImport.notime--; };   /* a copy we skip says nothing about this import */
+      let cls=null; const unCount=()=>{ if(cls) phImport.cls[cls]--; if(vid) return; phImport.pics--; if(x.lat==null){ if(x.gz) phImport.gz--; else phImport.gn--; } if(tsrc!=="meta"&&tsrc!=="name") phImport.notime--; };   /* a copy we skip says nothing about this import */
       if(takenAt) tsrc="meta"; else if((takenAt=nameTime(it.name))) tsrc="name"; else if(it.lastModified&&!it.zip&&Math.abs(Date.now()-it.lastModified)>30*60e3){ takenAt=it.lastModified; tsrc="file"; }
       if(tsrc!=="meta"&&tsrc!=="name") phImport.notime++;
+      cls=(tsrc==="meta"||tsrc==="name"?"T":"N")+(x.lat!=null?"L":x.gz?"Z":"X"); phImport.cls=phImport.cls||{}; phImport.cls[cls]=(phImport.cls[cls]||0)+1;
       const sig=it.name+"|"+it.size+"|"+(takenAt||0);
       /* already have this shot? (same file, or the copy the gallery handed over without location): fill in where it was taken, never add a second copy */
       let twin=phMeta.find(m=>m.sig===sig);
@@ -3328,13 +3352,13 @@ async function importPhotos(files,forKey){
       Object.assign(m,{takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,added:Date.now(),src:"device",tsrc}); if(x.model) m.model=x.model; if(m.lat!=null) phImport.geo++;
       if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.auto=true; }
       await PDB.putBlob(rec); await PDB.putMeta(m); phMeta.push(m); mine.push(m); }
-    catch(e){ phImport.skip++; }
+    catch(e){ const nm=(it&&it.name)||""; if(e&&(e.name==="QuotaExceededError"||/quota|space|storage/i.test(e.message||""))) phImport.full=(phImport.full||0)+1; else if(/\.(heic|heif)$/i.test(nm)) phImport.heic=(phImport.heic||0)+1; else phImport.skip++; }
     phImport.done++; phTick(); }
   phImport.stage="finish"; phTick(true);
   phImport.merged=await mergeTwins();
   phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); if(!forKey){ await roadStops(); await sessionFix(); }
   const live=mine.filter(m=>phMeta.includes(m)); phImport.added=live.length; phImport.auto=live.filter(m=>m.key&&m.auto).length; phImport.off=live.filter(m=>!m.key&&m.place).length; phImport.none=live.filter(m=>!m.key&&!m.place).length;
-  phImport.end=true; ensurePersist(); fillSuggestions(); photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
+  phImport.end=true; ensurePersist(); fillSuggestions(); if($("#ph-root")) photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
 /* progress and result, in plain words */
 function importHtml(imp){
   if(!imp.end){ const st=imp.stage; const [a,b,lbl]=st==="scan"?[imp.sd,imp.sn,"อ่านวันเวลาและตำแหน่งในไฟล์"]:st==="sharp"?[imp.sd,imp.sn,"หารูปที่กดรัว แล้วเลือกรูปที่ชัดสุด"]:st==="import"?[imp.done,imp.n,"นำเข้า"]:st==="finish"?[1,1,"เกือบเสร็จ กำลังจัดรูปเข้าแผน"]:[0,1,imp.zip?"กำลังเปิดไฟล์ ZIP":"กำลังเริ่ม"];
@@ -3343,75 +3367,110 @@ function importHtml(imp){
       ${st==="import"?`<br><span class="tiny">เพิ่มใหม่ ${imp.done-imp.dup-imp.fix-imp.burst-imp.skip} · เติมตำแหน่งให้รูปเดิม ${imp.fix} · มีอยู่แล้ว ${imp.dup}${imp.burst?` · ข้ามรูปกดรัว ${imp.burst}`:""}</span>`:""}
       <br><span class="tiny">ปิดหน้านี้ได้ แต่อย่าปิดแอปจนกว่าจะเสร็จ</span></p></div>`; }
   const rows=[];
-  if(imp.added) rows.push(`เพิ่มรูปใหม่ <b>${imp.added}</b>${imp.vid?` (วิดีโอ ${imp.vid})`:""}: จัดเข้าจุดในแผน ${imp.auto}${imp.off?` · ถ่ายที่ที่ไม่อยู่ในแผน ${imp.off}`:""}${imp.manual?` · ใส่จุดที่เลือก ${imp.manual}`:""}${imp.none?` · ยังไม่ได้จัด ${imp.none}`:""}`);
+  if(imp.added) rows.push(`เพิ่มรูปใหม่ <b>${imp.added}</b>${imp.vid?` (วิดีโอ ${imp.vid})`:""}: ${[imp.auto||!imp.manual?`จัดเข้าจุดในแผน ${imp.auto}`:"",imp.off?`ถ่ายที่ที่ไม่อยู่ในแผน ${imp.off}`:"",imp.manual?`ใส่เข้าจุดที่กดปุ่มกล้อง ${imp.manual}`:"",imp.none?`ยังไม่ได้จัด ${imp.none}`:""].filter(Boolean).join(" · ")}`);
   if(imp.fix) rows.push(`เติมตำแหน่งให้รูปที่มีอยู่แล้ว <b>${imp.fix}</b> แล้วจัดที่ใหม่ตามตำแหน่ง`);
   if(imp.dup) rows.push(`มีอยู่ในแอปแล้ว ข้าม ${imp.dup}`);
   if(imp.burst) rows.push(`รูปกดรัว ข้าม ${imp.burst} (เก็บรูปที่ชัดสุดไว้)`);
   if(imp.merged) rows.push(`รวมรูปที่ซ้ำกันในแอป ${imp.merged} (เก็บไฟล์ที่มีตำแหน่งไว้)`);
-  if(imp.skip) rows.push(`เปิดไม่ได้ ${imp.skip} (เช่นไฟล์ HEIC)`);
-  if(imp.notime) rows.push(`<b>${imp.notime} ไฟล์ไม่มีวันเวลาที่ถ่ายอยู่ในไฟล์</b> (มักเป็นรูปที่ส่งต่อทาง LINE หรือแชทแบบย่อขนาด) แอปจึงไม่เดาจุดให้ ไปอยู่ใน "ยังไม่ได้จัด" ให้เลือกเอง · ถ้าขอไฟล์ต้นฉบับจากเพื่อนได้ แอปจะจัดให้เองได้`);
+  if(imp.full) rows.push(`<b>ที่เก็บในเครื่องเต็ม เพิ่มไม่ได้ ${imp.full} ไฟล์</b> · กด "สำรองทั้งหมด" ไว้ก่อน แล้วลบวิดีโอยาว ๆ หรือรูปที่ไม่ใช้ออกจากแอป แล้วนำเข้าใหม่ (ไฟล์ที่เข้าแล้วไม่หาย)`);
+  if(imp.heic) rows.push(`<b>ไฟล์ HEIC ${imp.heic} ไฟล์ เปิดในเบราว์เซอร์นี้ไม่ได้</b> · ขอให้ส่งเป็น JPG (iPhone: ตั้งค่า › กล้อง › รูปแบบ › "ใช้ได้มากที่สุด") หรือแชร์ผ่าน Google Photos แล้วดาวน์โหลด`);
+  if(imp.skip) rows.push(`เปิดไม่ได้ ${imp.skip} ไฟล์ (ไฟล์เสียหรือไม่ใช่รูป/วิดีโอ)`);
+  if(false) rows.push(`<b>${imp.notime} ไฟล์ไม่มีวันเวลาที่ถ่ายอยู่ในไฟล์</b> (มักเป็นรูปที่ส่งต่อทาง LINE หรือแชทแบบย่อขนาด) แอปจึงไม่เดาจุดให้ ไปอยู่ใน "ยังไม่ได้จัด" ให้เลือกเอง · ถ้าขอไฟล์ต้นฉบับจากเพื่อนได้ แอปจะจัดให้เองได้`);
   if(zipErr) rows.push(`<b>${zipErr==="big"?"อ่านไฟล์ ZIP นี้ไม่ได้ ลองแบ่งเป็นหลายไฟล์ เช่น ZIP ละวัน":"เปิดไฟล์ ZIP นี้ไม่ได้ ลองบีบอัดใหม่"}</b>`);
   if(!rows.length) rows.push("ไม่มีไฟล์รูปหรือวิดีโอที่นำเข้าได้");
-  let geo="";
-  if(imp.pics){ const noLoc=imp.gz+imp.gn;
-    if(!noLoc) geo=`ทุกรูปมีตำแหน่งที่ถ่าย`;
-    else { geo=`รูปที่มีตำแหน่งที่ถ่าย ${imp.pics-noLoc} จาก ${imp.pics}`;
-      if(imp.gz) geo+=`<br>${imp.gz} รูป ตำแหน่งถูกลบออกจากไฟล์ (ค่าเป็น 0) ${imp.zip?"แปลว่าไฟล์ใน ZIP นี้ถูกตัดตำแหน่งมาตั้งแต่ตอนบีบอัด":"หน้าเลือกรูปของมือถือตัดออกก่อนส่งให้แอป"}`;
-      if(imp.gn) geo+=`<br>${imp.gn} รูป ไม่มีข้อมูลตำแหน่งในไฟล์เลย (กล้องไม่ได้บันทึก หรือเป็นรูปที่ได้มาทาง LINE/แชท)`;
-      geo+=`<br>รูปที่ไม่มีตำแหน่งจะจัดตามเวลาในแผนและรูปที่ถ่ายต่อเนื่องกัน`; if(imp.gz&&!imp.zip) geo+=` ${zipHow()}`; } }
-  return `<div class="ph-prog done"><p><b>นำเข้าเสร็จแล้ว</b> <span class="tiny">${imp.n} ไฟล์</span></p><ul class="imp-rows">${rows.map(r=>`<li>${r}</li>`).join("")}</ul>${geo?`<p class="tiny">${geo}</p>`:""}</div>`; }
-async function undoResort(){ const u=store.get("phUndo",null); if(!u) return; for(const p of u.prev){ const m=phMeta.find(x=>x.id===p.id); if(!m) continue; Object.assign(m,{day:p.day,key:p.key,place:p.place,byTime:p.byTime,bySess:!!p.bySess}); await PDB.putMeta(m); } store.set("phUndo",null); renderPlan(); photoSheetPaint(); }
+  let geo=""; const C=imp.cls||{}; const nn=(C.NX||0)+(C.NZ||0), nl=C.NL||0, tz=C.TZ||0, tx=C.TX||0, tl=C.TL||0;
+  if(nn||nl||tz||tx){ const L=[];
+    if(nn) L.push(`<b>${nn} ไฟล์ไม่มีทั้งเวลาและตำแหน่งที่ถ่าย</b> (มักเป็นรูปที่ส่งต่อทางแชท) อยู่ใน "ยังไม่ได้จัด" · ย้ายทีละหลายรูปได้ที่ "จัดรูปที่ยังไม่ได้จัด" · ถ้าขอไฟล์ต้นฉบับได้ แอปจะจัดให้เอง`);
+    if(tz) L.push(`${tz} ไฟล์ตำแหน่งถูกตัดออก${imp.zip?"ตั้งแต่ตอนทำ ZIP":"โดยหน้าเลือกรูปของมือถือ"} จึงจัดตามเวลาที่ถ่ายแทน${imp.zip?"":" · ถ้าอยากได้ตำแหน่ง นำเข้าเป็น ZIP อีกครั้ง (ไม่เพิ่มซ้ำ)"}`);
+    if(tx) L.push(`${tx} ไฟล์ไม่มีตำแหน่งในไฟล์ (เช่นปิดตำแหน่งในกล้อง) จึงจัดตามเวลาที่ถ่ายแทน`);
+    if(nl) L.push(`${nl} ไฟล์มีตำแหน่งแต่ไม่มีเวลาที่ถ่าย อยู่ใน "ยังไม่ได้จัด"`);
+    geo=L.map(x=>`<li>${x}</li>`).join(""); }
+  else if(tl) geo=`<li>ทุกไฟล์มีเวลาและตำแหน่งที่ถ่าย</li>`;
+  return `<div class="ph-prog done"><p><b>นำเข้าเสร็จแล้ว</b> <span class="tiny">${imp.n} ไฟล์</span></p><ul class="imp-rows">${rows.map(r=>`<li>${r}</li>`).join("")}${geo}</ul></div>`; }
+async function undoResort(){ const u=store.get("phUndo",null); if(!u) return; for(const p of u.prev){ const m=phMeta.find(x=>x.id===p.id); if(!m) continue; Object.assign(m,{day:p.day,key:p.key,place:p.place,byTime:p.byTime,bySess:!!p.bySess}); if(p.auto!=null) m.auto=p.auto; await PDB.putMeta(m); } store.set("phUndo",null); renderPlan(); photoSheetPaint(); }
 function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จัด"; if(!key) return `D${DAYS[di].n} · ยังไม่ได้จัด`; const its=planItems(di);
   if(key.startsWith("leg:")){ const l=its.find(x=>x._i===key.slice(4)); return `D${DAYS[di].n} · ระหว่างทางไป ${l?P[l.to][0]:""}`; }
   const it=its.find(x=>x._i===key); const n=stopNumMap(di)[key]; return `D${DAYS[di].n} · ${n?n+". ":""}${it?it.n:"จุดที่ถูกลบ"}`; }
 function zipHow(){ return `<details class="zip-how"><summary>เอาตำแหน่งกลับมา (ส่งเป็นไฟล์ ZIP)</summary><ol><li>เปิดแอป My Files (ไฟล์ของฉัน) ไปที่ DCIM › Camera</li><li>กดค้างเลือกรูปของทริป › เมนู ⋮ › บีบอัด (Compress) เป็น .zip</li><li>กลับมาที่นี่ กด <button class="lnk" data-act="ph-pick-files">เลือกผ่านแอปไฟล์</button> แล้วเลือกไฟล์ .zip</li></ol><p>ไฟล์ใน ZIP ไม่ถูกตัดตำแหน่ง รูปที่มีอยู่แล้วจะถูกเติมตำแหน่งและจัดที่ใหม่ ไม่เพิ่มรูปซ้ำ รูปที่คุณย้ายเองอยู่ที่เดิม</p></details>`; }
+var phAddOpen=false;
+function groupCardHtml(g){ const cell=m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`; const st=placeNameState(g.place);
+  return `<div class="pg${isJust(g)?" just":""}" data-sug="${esc(g.id)}" data-pgm="${esc(grpOf(g).join(","))}"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(placeLabel(g.place))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":g.place.picked?"ชื่อที่คุณเลือก · ":g.place.guess&&g.place.name?"ชื่อจากตำแหน่งที่ถ่าย · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span>${st?`<span class="tiny">${esc(st)}</span>`:""}</div>
+  <div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div>
+  <div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="btn small" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="btn small" data-act="ph-gmv" data-g="${esc(g.id)}">${pgMove===g.id?"ปิด":"ย้ายไปจุดในแผน"}</button><button class="btn small" data-act="ph-gleg" data-g="${esc(g.id)}">ย้ายไประหว่างทาง</button></div>${pgJustHtml(g)}${pgOpen===g.id?pgPickHtml(g):""}${pgMove===g.id?pgMoveHtml(g):""}</div>`; }
 function photoSheetHtml(){
-  const byDay=DAYS.map((d,i)=>phMeta.filter(m=>m.day===i).length); const loose=phMeta.filter(m=>m.key==null&&!m.place); const groups=placeGroups();
-  const imp=phImport; const prog=imp?importHtml(imp):"";
+  const byDay=DAYS.map((d,i)=>phMeta.filter(m=>m.day===i).length); const loose=looseList(); const groups=placeGroups();
+  const imp=phImport; const prog=imp?importHtml(imp):""; const u=store.get("phUndo",null);
   const cell=m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
+  const noLoc=phMeta.filter(m=>m.kind!=="video"&&m.lat==null).length;
   return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปและวิดีโอของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${mediaWord(phMeta)}</span>`:""}</h2>
-  <p style="margin:0 0 10px">เลือกรูปและวิดีโอจากมือถือได้ทีละหลายไฟล์ (บน Android เปิดจาก Google Photos ได้ในหน้าเลือก) แอปดูตำแหน่งที่ถ่ายก่อน ถ้าไม่มีตำแหน่งจะเทียบเวลากับตารางในแผน ไฟล์เก็บอยู่ในเครื่องนี้เท่านั้น</p>
-  <div class="c-actions"><button class="btn small primary" data-act="ph-pick">${I.plus}เลือกรูป/วิดีโอ</button><button class="btn small" data-act="ph-pick-files">นำเข้าไฟล์ ZIP</button>${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}เปิด Tripbook</button><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${store.get("phUndo",null)?`<button class="btn small" data-act="ph-undo">ย้อนการจัดใหม่</button>`:""}<button class="btn small" data-act="backup">สำรองทั้งหมด</button><button class="btn small" data-act="dup-open">หารูปซ้ำ</button><button class="btn small" data-act="phx-open">ดาวน์โหลดรูปทั้งหมด</button>`:""}</div>
-  <label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียว คือรูปที่คมชัดที่สุด</label>${prog}
-  ${!imp&&phMeta.filter(m=>m.kind!=="video").length>=5&&phMeta.filter(m=>m.lat!=null).length<phMeta.length/2?`<div class="ph-geo-note"><b>${phMeta.filter(m=>m.lat==null).length} ไฟล์ไม่มีตำแหน่งที่ถ่าย</b> จึงจัดตามเวลาในแผนได้อย่างเดียว ${zipHow()}</div>`:""}
-  ${phMeta.length?`<div class="ph-days">${DAYS.map((d,i)=>`<span style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</span>`).join("")}</div>`:""}
-  ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน แอปหาชื่อสถานที่ที่ใกล้ที่สุดมาให้ กด "เพิ่มเข้าแผน" ได้เลย หรือเลือกชื่อที่ถูกก่อน · รายการนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map((g,gi)=>`<div class="pg${isJust(g)?" just":""}" data-sug="${esc(g.id)}" data-pgm="${esc(grpOf(g).join(","))}"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(g.place.name||"ตำแหน่ง "+(+g.place.lat).toFixed(4)+", "+(+g.place.lng).toFixed(4))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span></div><div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="btn small" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="btn small" data-act="ph-gmv" data-g="${esc(g.id)}">${pgMove===g.id?"ปิด":"ย้ายเข้าจุดในแผน"}</button><button class="btn small" data-act="ph-gleg" data-g="${esc(g.id)}">ถ่ายระหว่างทาง</button></div>${pgJustHtml(g)}${pgOpen===g.id?pgPickHtml(g):""}${pgMove===g.id?pgMoveHtml(g):""}</div>`).join("")}`:""}
-  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">ไฟล์ที่ไม่มีวันเวลาหรืออยู่นอกช่วงทริป</p><div class="c-actions"><button class="btn small primary" data-act="srt-open">จัดทีละหลายรูป (${loose.length})</button></div><div class="ph-grid">${loose.slice(0,16).map(cell).join("")}</div>${loose.length>16?`<p class="tiny">แสดง 16 จาก ${loose.length} รูป · กด "จัดทีละหลายรูป" เพื่อดูทั้งหมด</p>`:""}`:""}
-  <p class="tiny" style="margin-top:12px">"จัดใหม่" ขยับเฉพาะไฟล์ที่แอปจัดให้เอง ไฟล์ที่คุณย้ายเองจะอยู่ที่เดิม และย้อนกลับได้ · ถ้าวางผิดจุด แตะรูปแล้วกด "ย้ายไปจุดอื่น" เลือกให้ย้ายรูปที่ถ่ายช่วงเดียวกันไปพร้อมกันได้ หรือเลือกร้านในลิสต์เพื่อสร้างจุดใหม่ในแผน</p></div>`; }
+  <p class="ph-intro">แอปวางรูปเข้าจุดในแผนจากตำแหน่งที่ถ่าย ถ้ารูปไม่มีตำแหน่งจะดูจากเวลาที่ถ่าย · แตะรูปเพื่อดูใหญ่และย้าย · ไฟล์อยู่ในเครื่องนี้เท่านั้น</p>
+  <div class="c-actions ph-main"><button class="btn small primary" data-act="ph-addmenu" aria-expanded="${phAddOpen}">${I.plus}เพิ่มรูป/วิดีโอ</button>${loose.length?`<button class="btn small" data-act="srt-open">จัดรูปที่ยังไม่ได้จัด (${loose.length})</button>`:""}${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}Tripbook</button>`:""}</div>
+  ${phAddOpen?`<div class="ph-addmenu"><button class="ph-addopt" data-act="ph-pick"><b>เลือกจากรูปในมือถือ</b><span>เร็วที่สุด แต่มือถือบางรุ่นตัดตำแหน่งที่ถ่ายออก แอปจะจัดตามเวลาแทน</span></button><button class="ph-addopt" data-act="ph-pick-files"><b>ไฟล์ ZIP</b><span>ได้ตำแหน่งที่ถ่ายครบ · รูปที่มีอยู่แล้วจะถูกเติมตำแหน่ง ไม่เพิ่มซ้ำ</span></button>${zipHow()}<label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียวที่คมชัดที่สุด</label></div>`:""}
+  ${prog}
+  ${!imp&&noLoc>=5&&noLoc>phMeta.length/2?`<div class="ph-geo-note"><b>${noLoc} รูปไม่มีตำแหน่งที่ถ่าย</b> จึงจัดได้แค่ตามเวลา · ถ้ามีไฟล์ต้นฉบับ นำเข้าเป็น ZIP อีกครั้งเพื่อเติมตำแหน่ง (ไม่เพิ่มซ้ำ)</div>`:""}
+  ${phMeta.length?`<p class="ph-days-h">แตะวันเพื่อดูรูปในแผนของวันนั้น</p><div class="ph-days" role="group" aria-label="ดูรูปในแผนของวัน" style="margin-top:6px">${DAYS.map((d,i)=>`<button class="ph-day${byDay[i]?"":" z"}" data-act="ph-goday" data-d="${i}" style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</button>`).join("")}</div>`:""}
+  ${phMeta.length?`<details class="ph-tools"><summary>เครื่องมือ: จัดใหม่ · ย้อน · หารูปซ้ำ · ดาวน์โหลด · สำรอง</summary>
+    <div class="c-actions"><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${u?`<button class="btn small" data-act="ph-undo">ย้อน: ${esc(u.label||"จัดใหม่")}</button>`:""}<button class="btn small" data-act="dup-open">หารูปซ้ำ</button><button class="btn small" data-act="phx-open">ดาวน์โหลดรูปทั้งหมด</button><button class="btn small" data-act="backup">สำรองทั้งหมด</button></div>
+    <p class="tiny">"จัดใหม่" วางรูปใหม่ตามแผนล่าสุด รูปที่คุณจัดเองไม่ถูกแตะ เว้นแต่จุดนั้นถูกลบไปแล้ว · "ย้อน" กลับไปก่อนการจัดครั้งล่าสุด</p></details>`:""}
+  ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน · การ์ดเดียวกันนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map(groupCardHtml).join("")}`:""}
+  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">รูปที่ยังไม่อยู่ในจุดไหน: ไม่มีวันเวลาที่ถ่าย ถ่ายนอกช่วงทริป หรือจุดเดิมถูกลบ</p><div class="ph-grid">${loose.slice(0,16).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="srt-open">ดูทั้งหมดและย้ายทีละหลายรูป (${loose.length})</button></div>`:""}</div>`; }
 function photoSheetPaint(first){ const fresh=first||!$("#ph-root"); const old=$("#sheetRoot .sheet"), top=old&&!fresh?old.scrollTop:0;
   if(fresh) openSheet(photoSheetHtml()); else renderSheet(photoSheetHtml());
   if(top){ const s=$("#sheetRoot .sheet"); if(s) s.scrollTop=top; } setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
 function myPhotoStrip(di,key){ const l=photosFor(di,key); if(!l.length) return ""; const show=l.slice(0,8);
   return `<div class="my-ph">${show.map((m,i)=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}${i===7&&l.length>8?`<span>+${l.length-8}</span>`:""}</button>`).join("")}</div>`; }
 /* own-photo viewer: swipe, move to another stop, remove */
-var phView=null;
+/* the photos of a day in plan order (stops, drives, places of the day by time, then not sorted), so you can swipe through the whole day */
+function dayOrder(di){ const its=planItems(di); const pos={}; its.forEach((x,i)=>{ pos[x._i]=i; });
+  const at=m=>{ if(m.key&&m.key.startsWith("leg:")) return pos[m.key.slice(4)]??999; if(m.key) return pos[m.key]??999;
+    if(m.place){ const t=m.takenAt?jstMin(m.takenAt):null; let k=-1; if(t!=null) its.forEach((x,i)=>{ if(x.k!=="opt"&&toMin(x.t)<=t) k=i; }); return k+0.5; } return 9999; };
+  return phMeta.filter(m=>m.day===di).map(m=>[m,at(m)]).sort((a,b)=>a[1]-b[1]||tbOrd(a[0])-tbOrd(b[0])).map(x=>x[0]); }
 function fmtLegOpt(x){ return `${x.t||""} ระหว่างทาง ${P[x.from]?P[x.from][0]+" → ":""}${P[x.to][0]}`; }
-function openMyPhoto(id){ const m=phMeta.find(x=>x.id===id); if(!m) return; const list=phMeta.filter(x=>x.day===m.day&&x.key===m.key); phView={list:list.map(x=>x.id),i:list.findIndex(x=>x.id===id),confirm:false,move:false};
+function placeLabel(p){ return p&&p.name?p.name:"จุดแวะที่ยังไม่มีชื่อ"; }
+function photoWhere(m){ if(m.day==null) return "ยังไม่ได้จัด"; if(!m.key&&m.place) return `D${DAYS[m.day].n} · ${placeLabel(m.place)} (นอกแผน)`; return keyLabel(m.day,m.key); }
+/* after a change from the viewer, refresh whatever is open underneath */
+function refreshPhotoViews(){ renderPlan(); if($("#ph-root")) photoSheetPaint(); if($("#srt-root")&&srt){ srtRecompute(); sorterPaint(); }
+  if($("#dup-root")&&dupState&&dupState.groups){ const ids=new Set(phMeta.map(m=>m.id)); dupState.groups=dupState.groups.map(g=>g.filter(m=>ids.has(m.id))).filter(g=>g.length>1); dupPaint(); }
+  if(document.body.classList.contains("tb-open")) tbRender(); }
+var phView=null;
+function openMyPhoto(id,list){ const m=phMeta.find(x=>x.id===id); if(!m) return;
+  const L=list||(m.day!=null?dayOrder(m.day):looseList()); phView={list:L.map(x=>x.id||x),i:Math.max(0,L.findIndex(x=>(x.id||x)===id)),confirm:false,move:false};
   if(!lbOpen){ lbOpen=true; try{ history.pushState({lb:1},""); }catch(e){} } drawMyPhoto(); }
-function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; const m=phMeta.find(x=>x.id===id); if(!m){ closeLightbox(false); return; }
-  const when=m.takenAt?new Date(m.takenAt+9*3600e3).toISOString().replace("T"," ").slice(0,16):"ไม่ทราบเวลา";
+function moveOptsHtml(m){ const opts=[]; DAYS.forEach((d,i)=>{ const nums=stopNumMap(i); planItems(i).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt").forEach(x=>opts.push([i+"|"+x._i,`D${d.n} · ${nums[x._i]?nums[x._i]+". ":""}${x.n}`])); });
+  const recs=[]; if(m.day!=null){ const seen=new Set(); const RC=dayRecs(m.day,true)||{}; const t=m.takenAt?jstMin(m.takenAt):null;
+    const order=planItems(m.day).filter(x=>RC[x._i]).sort((a,b)=>t==null?0:Math.abs(toMin(a.t)-t)-Math.abs(toMin(b.t)-t)).map(x=>x._i); const have=dayStops(m.day).map(x=>P[x.p]).filter(Boolean);
+    order.concat(Object.keys(RC)).forEach(k=>(RC[k]||[]).forEach(r=>{ if(r.lat==null||seen.has(r.id)||have.some(p=>km([p[1],p[2]],[r.lat,r.lng])<0.08)) return; seen.add(r.id); recs.push(r); })); }
+  const cur=m.day+"|"+m.key;
+  return `<option value="">เลือกที่จะย้ายไป…</option><optgroup label="จุดในแผน">${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===cur?" selected":""}>${esc(t)}</option>`).join("")}</optgroup>
+    ${m.day!=null?`<optgroup label="ระหว่างทาง D${DAYS[m.day].n}">${planItems(m.day).filter(x=>(x.k==="drive"||x.k==="train")&&x.to&&P[x.to]).map(x=>`<option value="${esc(m.day+"|leg:"+x._i)}"${m.key==="leg:"+x._i?" selected":""}>${esc(fmtLegOpt(x))}</option>`).join("")}</optgroup>`:""}
+    ${recs.length?`<optgroup label="เพิ่มเป็นจุดใหม่ใน D${DAYS[m.day].n} (ร้าน/ที่แนะนำ)">${recs.map(r=>`<option value="${esc("r|"+m.day+"|"+r.id)}">${r.kind==="food"?"🍴 ":"📍 "}${esc(r.name)}</option>`).join("")}</optgroup>`:""}
+    ${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}<option value="-|">ยังไม่ได้จัด</option>`; }
+function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; const m=phMeta.find(x=>x.id===id); if(!m){ v.list.splice(v.i,1); if(!v.list.length){ phView=null; closeLightbox(false); return; } v.i=Math.min(v.i,v.list.length-1); return drawMyPhoto(); }
+  const when=m.takenAt?new Date(m.takenAt+9*3600e3).toISOString().replace("T"," ").slice(0,16):"ไม่ทราบเวลาที่ถ่าย";
   const grp=phMeta.filter(x=>x.day===m.day&&x.key===m.key&&(x.place&&m.place?x.place.name===m.place.name:true)&&x.takenAt&&m.takenAt&&Math.abs(x.takenAt-m.takenAt)<=45*60e3);
-  let mv=""; if(v.move){ const opts=[]; DAYS.forEach((d,i)=>{ const its=planItems(i); const nums=stopNumMap(i); its.filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x.p).forEach(x=>opts.push([i+"|"+x._i,`D${d.n} · ${nums[x._i]||""}. ${x.n}`])); });
-    const recs=[]; if(m.day!=null){ const seen=new Set(); const RC=dayRecs(m.day,true)||{}; const t=m.takenAt?jstMin(m.takenAt):null;
-      const order=planItems(m.day).filter(x=>RC[x._i]).sort((a,b)=>t==null?0:Math.abs(toMin(a.t)-t)-Math.abs(toMin(b.t)-t)).map(x=>x._i);
-      const have=dayStops(m.day).map(x=>P[x.p]).filter(Boolean);
-      order.concat(Object.keys(RC)).forEach(k=>(RC[k]||[]).forEach(r=>{ if(r.lat==null||seen.has(r.id)||have.some(p=>km([p[1],p[2]],[r.lat,r.lng])<0.08)) return; seen.add(r.id); recs.push(r); })); }
-    mv=`<select class="inp" id="ph-move" style="margin-top:8px"><option value="">เลือกจุด…</option><optgroup label="จุดในแผน">${opts.map(([v2,t])=>`<option value="${esc(v2)}"${v2===m.day+"|"+m.key?" selected":""}>${esc(t)}</option>`).join("")}</optgroup>${m.day!=null?`<optgroup label="ระหว่างทาง D${DAYS[m.day].n}">${planItems(m.day).filter(x=>(x.k==="drive"||x.k==="train")&&x.to&&P[x.to]).map(x=>`<option value="${esc(m.day+"|leg:"+x._i)}"${m.key==="leg:"+x._i?" selected":""}>${esc(fmtLegOpt(x))}</option>`).join("")}</optgroup>`:""}${recs.length?`<optgroup label="เพิ่มเป็นจุดใหม่ใน D${DAYS[m.day].n} (ร้าน/ที่แนะนำ)">${recs.map(r=>`<option value="${esc("r|"+m.day+"|"+r.id)}">${r.kind==="food"?"🍴 ":"📍 "}${esc(r.name)}</option>`).join("")}</optgroup>`:""}${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}<option value="-|">ยังไม่ได้จัด</option></select>
-    ${grp.length>1?`<label class="lb-grp"><input type="checkbox" id="ph-grp" checked> ย้ายรูปที่ถ่ายช่วงเดียวกัน (±45 นาที) ไปด้วย ${grp.length} ไฟล์</label>`:""}`; }
-  $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button>${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}<div class="lb-cap"><b>${esc(keyLabel(m.day,m.key))}</b><span>${esc(when)}${m.tsrc==="file"?" (เวลาจากวันที่ไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${m.place?" · ถ่ายที่ที่ไม่อยู่ในแผน":m.auto&&m.key?(m.bySess?" · จัดตามรูปที่ถ่ายต่อเนื่องกัน":m.byTime||m.lat==null?" · จัดตามเวลาในแผน":" · จัดตามตำแหน่ง"):""}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>${mv}</div>
-  <div class="lb-bar"><button class="btn small" data-mp="prev" ${v.i===0?"disabled":""}>‹</button><span class="tiny">${v.i+1}/${v.list.length}</span><button class="btn small" data-mp="next" ${v.i>=v.list.length-1?"disabled":""}>›</button><button class="btn small" data-mp="move">ย้ายไปจุดอื่น</button><button class="btn small" data-mp="cover">${m.cover?"★ รูปปก":"ตั้งเป็นปก"}</button><button class="btn small ${v.confirm?"danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้งเพื่อเอาออก":"เอารูปออก"}</button></div></div>`;
+  const how=m.place?" · ถ่ายที่ที่ไม่อยู่ในแผน":m.auto===false?" · คุณจัดเอง":m.key?(m.bySess?" · จัดตามรูปที่ถ่ายต่อเนื่องกัน":m.byTime||m.lat==null?" · จัดตามเวลาในแผน":" · จัดตามตำแหน่ง"):"";
+  const mv=v.move?`<div class="lb-move"><select class="inp" id="ph-move">${moveOptsHtml(m)}</select>
+    ${grp.length>1?`<label class="lb-grp"><input type="checkbox" id="ph-grp"> ย้ายรูปอื่นที่ถ่ายช่วงเดียวกัน (±45 นาที) ไปด้วย อีก ${grp.length-1} ไฟล์</label>`:""}
+    <div class="c-actions"><button class="btn small primary" data-mp="domove">ย้าย</button><button class="btn small" data-mp="move">ยกเลิก</button></div></div>`:"";
+  $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button>${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}
+  <div class="lb-cap"><b>${esc(photoWhere(m))}</b><span>${esc(when)}${m.tsrc==="file"?" (วันที่ของไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${how}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>
+  ${v.flash?`<span class="lb-flash" role="status">${esc(v.flash)}</span>`:""}${m.tbHide?`<span class="lb-hid">เอาออกจาก Tripbook อยู่ · <button class="lnk" data-mp="tbshow">เอากลับเข้า Tripbook</button></span>`:""}${mv}</div>
+  <div class="lb-bar"><button class="btn small" data-mp="prev" ${v.i===0?"disabled":""} aria-label="ก่อนหน้า">‹</button><span class="tiny">${v.i+1}/${v.list.length}${m.day!=null?` ใน D${DAYS[m.day].n}`:""}</span><button class="btn small" data-mp="next" ${v.i>=v.list.length-1?"disabled":""} aria-label="ถัดไป">›</button>
+  <button class="btn small${v.move?" on":""}" data-mp="move">ย้ายไปจุดอื่น</button>${m.kind!=="video"?`<button class="btn small" data-mp="cover">${m.cover?"★ ปก Tripbook":"ตั้งเป็นปก Tripbook"}</button>`:""}<button class="btn small ${v.confirm?"danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้ง: ลบออกจากแอปถาวร":"ลบรูปนี้"}</button></div></div>`;
   hydrateMyPhotos($("#lbRoot")); { const ve=$("#lbRoot video[data-vid]"); if(ve){ phThumbURL(id,false).then(u=>{ if(u) ve.poster=u; }); phThumbURL(id,true).then(u=>{ if(u) ve.src=u; }); } }
   const root=$("#lbRoot"); root.onclick=async ev=>{ const b=ev.target.closest("[data-mp]"); if(!b) return; ev.stopPropagation(); const a=b.dataset.mp;
-    if(a==="close"){ phView=null; closeLightbox(false); return; } if(a==="prev"&&v.i>0){ v.i--; v.confirm=false; drawMyPhoto(); } if(a==="next"&&v.i<v.list.length-1){ v.i++; v.confirm=false; drawMyPhoto(); }
-    if(a==="move"){ v.move=!v.move; drawMyPhoto(); }
-    if(a==="cover"){ for(const o of phMeta){ if(o.cover&&o.id!==id){ o.cover=false; await PDB.putMeta(o); } } m.cover=!m.cover; await PDB.putMeta(m); drawMyPhoto(); }
-    if(a==="del"){ if(!v.confirm){ v.confirm=true; drawMyPhoto(); return; } await PDB.del(id); phMeta=phMeta.filter(x=>x.id!==id); v.list.splice(v.i,1); v.confirm=false; if(!v.list.length){ phView=null; closeLightbox(false); } else { v.i=Math.min(v.i,v.list.length-1); drawMyPhoto(); } renderPlan(); if($("#ph-root")) photoSheetPaint(); } };
-  root.onchange=async ev=>{ if(ev.target.id!=="ph-move"||!ev.target.value) return; const val=ev.target.value; const all=($("#ph-grp")||{}).checked?grp:[m];
-    if(val.startsWith("r|")){ const [,dd,rid]=val.split("|"); const r=recIdx[dd+"|"+rid]||Object.values(dayRecs(+dd,true)||{}).flat().find(x=>x.id===rid); if(r){ ev.target.disabled=true; await addStopFromPhotos(+dd,all.map(x=>x.id),{name:r.name,lat:r.lat,lng:r.lng}); } }
-    else if(val==="here|"){ ev.target.disabled=true; await addStopFromPhotos(m.day,all.map(x=>x.id),m.place); }
-    else { const [dd,kk]=val.split("|"); for(const x of all){ x.day=dd==="-"?null:+dd; x.key=kk||null; x.place=null; x.auto=false; await PDB.putMeta(x); } }
-    v.move=false; renderPlan(); if($("#ph-root")) photoSheetPaint(); if($("#srt-root")&&srt){ srtRecompute(); sorterPaint(); } drawMyPhoto(); };
-  let sx=null; root.ontouchstart=e=>{ sx=e.touches[0].clientX; }; root.ontouchend=e=>{ if(sx==null) return; const dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>60){ if(dx<0&&v.i<v.list.length-1){ v.i++; drawMyPhoto(); } else if(dx>0&&v.i>0){ v.i--; drawMyPhoto(); } } }; }
+    if(a==="close"){ phView=null; closeLightbox(false); return; } if(a==="prev"&&v.i>0){ v.i--; v.confirm=false; v.move=false; drawMyPhoto(); } if(a==="next"&&v.i<v.list.length-1){ v.i++; v.confirm=false; v.move=false; drawMyPhoto(); }
+    if(a==="move"){ v.move=!v.move; v.confirm=false; drawMyPhoto(); }
+    if(a==="tbshow"){ m.tbHide=false; await PDB.putMeta(m); drawMyPhoto(); refreshPhotoViews(); }
+    if(a==="cover"){ for(const o of phMeta){ if(o.cover&&o.id!==id){ o.cover=false; await PDB.putMeta(o); } } m.cover=!m.cover; await PDB.putMeta(m); drawMyPhoto(); refreshPhotoViews(); }
+    if(a==="del"){ if(!v.confirm){ v.confirm=true; drawMyPhoto(); return; } await PDB.del(id); phMeta=phMeta.filter(x=>x.id!==id); v.list.splice(v.i,1); v.confirm=false; if(!v.list.length){ phView=null; closeLightbox(false); } else { v.i=Math.min(v.i,v.list.length-1); drawMyPhoto(); } refreshPhotoViews(); }
+    if(a==="domove"){ const val=($("#ph-move")||{}).value; if(!val) return; const all=($("#ph-grp")||{}).checked?grp:[m]; b.disabled=true;
+      if(val.startsWith("r|")){ const [,dd,rid]=val.split("|"); const r=recIdx[dd+"|"+rid]||Object.values(dayRecs(+dd,true)||{}).flat().find(x=>x.id===rid); if(r) await addStopFromPhotos(+dd,all.map(x=>x.id),{name:r.name,lat:r.lat,lng:r.lng}); }
+      else if(val==="here|"){ await addStopFromPhotos(m.day,all.map(x=>x.id),m.place); }
+      else { const [dd,kk]=val.split("|"); for(const x of all){ x.day=dd==="-"?null:+dd; x.key=kk||null; x.place=null; x.auto=false; x.byTime=false; x.bySess=false; await PDB.putMeta(x); } }
+      v.move=false; v.flash=`ย้ายแล้ว ✓${all.length>1?` ${all.length} ไฟล์`:""}`; refreshPhotoViews(); drawMyPhoto(); v.flash=""; } };
+  root.onchange=null;
+  let sx=null; root.ontouchstart=e=>{ sx=e.touches[0].clientX; }; root.ontouchend=e=>{ if(sx==null||e.target.closest(".lb-move")) return; const dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>60){ if(dx<0&&v.i<v.list.length-1){ v.i++; v.move=false; drawMyPhoto(); } else if(dx>0&&v.i>0){ v.i--; v.move=false; drawMyPhoto(); } } }; }
 /* photos shot in one continuous run (no gap over 12 min) were taken at one place. Files without location follow the run:
    the nearest photo in the run that has a location, or else the planned stop the run touches. This fixes "arrived early / left late"
    being filed as "on the way". */
@@ -3431,8 +3490,9 @@ function fixRun(run,ch){ const isStop=m=>!!m.key&&!m.key.startsWith("leg:");
     if(near.key===m.key&&JSON.stringify(near.place||null)===JSON.stringify(m.place||null)) return;
     m.key=near.key||null; m.place=near.place?Object.assign({},near.place):null; m.byTime=true; m.bySess=true; ch.push(m); }); }
 function isHotelKey(di,key){ if(di==null||!key||key.startsWith("leg:")) return false; const it=planItems(di).find(x=>x._i===key); return !!(it&&it.k==="hotel"); }
-async function resortPhotos(quiet){ const before=new Map(phMeta.map(m=>[m.id,m.day+"|"+m.key+"|"+(m.place?m.place.name:"")]));
-  await fixOrphans();   /* photos you placed by hand at a stop or drive that is no longer in the plan are placed again too */ store.set("phUndo",{ts:Date.now(),prev:phMeta.filter(m=>m.auto).map(m=>({id:m.id,day:m.day,key:m.key,place:m.place||null,byTime:!!m.byTime,bySess:!!m.bySess}))});
+function phSnap(label){ store.set("phUndo",{ts:Date.now(),label,prev:phMeta.map(m=>({id:m.id,day:m.day,key:m.key,place:m.place||null,byTime:!!m.byTime,bySess:!!m.bySess,auto:m.auto!==false}))}); }
+async function resortPhotos(quiet,noSnap){ const before=new Map(phMeta.map(m=>[m.id,m.day+"|"+m.key+"|"+(m.place?m.place.name:"")])); if(!noSnap) phSnap("จัดใหม่ตามแผนล่าสุด");
+  await fixOrphans();   /* photos you placed by hand at a stop or drive that is no longer in the plan are placed again too */ 
   for(const m of phMeta){ if(!m.auto) continue; const r=matchPhoto(m); if(m.place&&m.place.picked&&r.place&&!r.key) continue;
     if((m.key||m.place)&&!r.key&&!r.place&&!isHotelKey(m.day,m.key)) continue;   /* never knock a placed photo back to "not sorted" (except off a hotel: that was the evening-out mistake) */ m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; await PDB.putMeta(m); } await roadStops(); await sessionFix(); fillSuggestions(); renderPlan(); if(!quiet) photoSheetPaint();
   return phMeta.filter(m=>before.get(m.id)!==m.day+"|"+m.key+"|"+(m.place?m.place.name:"")).length; }
@@ -3474,7 +3534,7 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
       h+=`<article class="tb-stop"><h3><span>${x.num}</span>${esc(x.it.n)}</h3><p class="tb-t">${esc(x.it.t)}${x.it.e&&x.it.e!==x.it.t?"–"+esc(x.it.e):""}</p>${ps.length?await grid(ps,3,i+"|"+k):""}</article>`; }
     const between=dayPh.filter(m=>m.key&&m.key.startsWith("leg:"));
     if(between.length) h+=`<article class="tb-stop"><h3>ระหว่างทาง</h3>${await grid(between,0,i+"|leg")}</article>`;
-    for(const g of placeGroups().filter(g=>g.day===i&&g.list.some(shown))) h+=`<article class="tb-stop"><h3>${esc(g.place.name||"แวะระหว่างวัน")}</h3>${g.list[0].takenAt?`<p class="tb-t" style="margin-left:0">${fmtMin(jstMin(g.list[0].takenAt))}</p>`:""}${await grid(g.list,1,"g|"+g.id)}</article>`;
+    for(const g of placeGroups().filter(g=>g.day===i&&g.list.some(shown))) h+=`<article class="tb-stop"><h3>${esc(placeLabel(g.place))}</h3>${g.list[0].takenAt?`<p class="tb-t" style="margin-left:0">${fmtMin(jstMin(g.list[0].takenAt))}</p>`:""}${await grid(g.list,1,"g|"+g.id)}</article>`;
     const loose=dayPh.filter(m=>!m.key&&!m.place); if(loose.length) h+=`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3>${await grid(loose,0,i+"|loose")}</article>`;
     h+=`</section>`; }
   h+=`<footer class="tb-end"><p>ฮอกไกโด ตุลาคม 2026</p></footer>`;
@@ -3532,9 +3592,11 @@ function tbReopen(){ if(tbReturn){ tbReturn=false; photoSheetPaint(true); } }   
 addEventListener("popstate",()=>{ if(!popSelf&&document.body.classList.contains("tb-open")){ closeTripbook(); setTimeout(tbReopen,0); } });
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="visit"){ toggleVisited(curDay,b.dataset.key); return; }
-  if(a==="ph-sheet"){ photoSheetPaint(true); return; }
-  if(a==="ph-pick"){ pickPhotos(null); return; }
-  if(a==="ph-pick-files"){ pickPhotos(null,true); return; }
+  if(a==="ph-sheet"){ phAddOpen=false; photoSheetPaint(true); return; }
+  if(a==="ph-addmenu"){ phAddOpen=!phAddOpen; photoSheetPaint(); return; }
+  if(a==="ph-goday"){ const d=+b.dataset.d; closeSheet(); if(curTab!=="plan") showTab("plan"); selectDay(d); window.scrollTo&&window.scrollTo(0,0); return; }
+  if(a==="ph-pick"){ phAddOpen=false; pickPhotos(null); return; }
+  if(a==="ph-pick-files"){ phAddOpen=false; pickPhotos(null,true); return; }
   if(a==="ph-addstop"){ const g=placeGroups().find(x=>x.id===b.dataset.g); pgJust=null; if(g){ b.disabled=true; b.textContent="กำลังเพิ่ม…"; addStopFromPhotos(g.day,g.list.map(m=>m.id),g.place).then(()=>{ if($("#ph-root")) photoSheetPaint(); }); } return; }
   if(a==="ph-add"){ pickPhotos(b.dataset.key); return; }
   if(a==="ph-justno"){ pgJust=null; renderPlan(); if($("#ph-root")) photoSheetPaint(); return; }
@@ -3546,7 +3608,7 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='p
   if(a==="ph-gleg"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ (async()=>{ for(const m of g.list){ const l=legNear(m.day,m.lat??g.place.lat,m.lng??g.place.lng,m.takenAt?jstMin(m.takenAt):null,true); if(!l) continue; m.key="leg:"+l._i; m.place=null; m.auto=false; await PDB.putMeta(m); }
       renderPlan(); if($("#ph-root")) photoSheetPaint(); })(); } return; }
   if(a==="ph-gmove"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ openMyPhoto(g.list[0].id); phView.move=true; drawMyPhoto(); } return; }
-  if(a==="ph-open"){ openMyPhoto(b.dataset.id); return; }
+  if(a==="ph-open"){ openMyPhoto(b.dataset.id,b.dataset.list?b.dataset.list.split(","):null); return; }
   if(a==="ph-resort"){ resortPhotos(); return; }
   if(a==="ph-undo"){ undoResort(); return; }
   if(a==="tb-open"){ const had=!!(history.state&&history.state.sheet)&&!!$("#sheetRoot").innerHTML; tbReturn=!!$("#ph-root"); closeSheet(); if(!had){ openTripbook(); return; }
@@ -3569,7 +3631,7 @@ function freshBanner(){ if(!looksFresh()) return ""; const c=runCtx();
   <div class="c-actions"><button class="btn small primary" data-act="bk-file-open">เปิดไฟล์สำรอง</button><button class="btn small" data-act="ph-pick">นำรูปทริปเข้าใหม่</button><button class="btn small" data-act="fresh-ok">ปิด</button></div></div>`; }
 function bkFileHtml(){ const c=runCtx(); const last=store.get("lastBackup",0); const nd=Object.keys(edits).filter(k=>edits[k]&&edits[k].list).length; const nv=Object.values(visited).reduce((a,o)=>a+Object.values(o||{}).filter(Boolean).length,0);
   return `<div class="box" id="bk-file"><h3>ข้อมูลในเครื่องนี้</h3>
-  <dl class="kv"><dt>เปิดจาก</dt><dd>${esc(c.where)}</dd><dt>กันระบบลบ</dt><dd id="bk-pers">${persisted===true?"เปิดแล้ว ✓":persisted===false?"เบราว์เซอร์ยังไม่อนุญาต (ติดตั้งแอปหรือใช้บ่อยขึ้นแล้วจะได้เอง)":"กำลังตรวจ…"}</dd><dt>แผนที่แก้</dt><dd>${nd} วัน</dd><dt>รูปของเรา</dt><dd>${phMeta.length} รูป</dd><dt>ติ๊กไปแล้ว</dt><dd>${nv} จุด</dd><dt>สำรองล่าสุด</dt><dd>${last?esc(new Date(last).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})):"ยังไม่เคย"}</dd></dl>
+  <dl class="kv"><dt>เปิดจาก</dt><dd>${esc(c.where)}</dd><dt>กันระบบลบ</dt><dd id="bk-pers">${persisted===true?"เปิดแล้ว ✓":persisted===false?"เบราว์เซอร์ยังไม่อนุญาต (ติดตั้งแอปหรือใช้บ่อยขึ้นแล้วจะได้เอง)":"กำลังตรวจ…"}</dd><dt>แผนที่แก้</dt><dd>${nd} วัน</dd><dt>รูปและวิดีโอ</dt><dd>${mediaWord(phMeta)}</dd><dt>ติ๊กไปแล้ว</dt><dd>${nv} จุด</dd><dt>สำรองล่าสุด</dt><dd>${last?esc(new Date(last).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})):"ยังไม่เคย"}</dd></dl>
   ${c.inapp?`<p class="sc-warn">หน้านี้เปิดอยู่ในแอปแชต ข้อมูลจะไม่ไปอยู่ในแอป Hokkaido ที่ติดตั้ง และอาจหายเมื่อปิด ควรเปิดลิงก์ใน Chrome</p>`:""}
   <p style="margin:6px 0 8px;font-size:14.5px">ไฟล์สำรอง (.zip) เก็บทุกอย่างไว้ในไฟล์เดียว: แผนที่แก้ จุดที่ติ๊ก รูปและวิดีโอของเรา ส่งเข้า Google Drive หรือ LINE Keep ไว้ แล้วเปิดในเครื่องไหนก็ได้</p>
   ${(()=>{ const nv=phMeta.filter(m=>m.kind==="video"), np=phMeta.length-nv.length; const mb=nv.reduce((a,m)=>a+(m.size||0),0)/1048576;
@@ -3690,11 +3752,11 @@ async function tbRender(){ const r=$("#tbRoot"), body=$("#tbBody"); if(!r||!body
 function tbHidN(){ return phMeta.filter(m=>m.tbHide).length; }
 function tbBarPaint(){ const r=$("#tbRoot"); if(!r) return; let bar=$("#tbSelBar"); if(!bar){ bar=document.createElement("div"); bar.id="tbSelBar"; r.appendChild(bar); }
   const hb=$("#tbHidBtn"); const hn=tbHidN(); if(hb){ hb.style.display=!hn&&!tbShowHid?"none":""; hb.textContent=tbShowHid?"ซ่อนรูปที่เอาออก":`รูปที่เอาออก ${hn}`; }
-  if(!tbSel||!tbSel.size){ bar.className="tb-selbar hint"; bar.innerHTML=`<span>แตะค้างที่รูปเพื่อเลือก · ค้างแล้วลากเพื่อย้ายลำดับ</span>`; return; }
+  if(!tbSel||!tbSel.size){ bar.className="tb-selbar hint"; bar.innerHTML=`<span>แตะรูปเพื่อดูใหญ่ · กดค้างเพื่อเลือก · ค้างแล้วลากเพื่อย้ายลำดับ</span>`; return; }
   const ids=[...tbSel], ms=phMeta.filter(m=>tbSel.has(m.id)); const allHid=ms.every(m=>m.tbHide); const one=ms.length===1&&ms[0].kind!=="video"?ms[0]:null;
   bar.className="tb-selbar";
   bar.innerHTML=`<b>เลือก ${ids.length}</b>
-    ${one?`<button class="btn small" data-tb="s-cover">${one.cover?"★ เป็นปกอยู่":"ตั้งเป็นปก"}</button>`:""}
+    ${one?`<button class="btn small" data-tb="s-cover">${one.cover?"★ ปก Tripbook":"ตั้งเป็นปก Tripbook"}</button>`:""}
     <button class="btn small" data-tb="s-first">ย้ายไปแรกสุด</button>
     ${allHid?`<button class="btn small" data-tb="s-unhide">เอากลับเข้า Tripbook</button>`:`<button class="btn small" data-tb="s-hide">เอาออกจาก Tripbook</button>`}
     <button class="btn small ${tbDel?"danger":""}" data-tb="s-del">${tbDel?`แตะอีกครั้ง ลบ ${ids.length} ไฟล์ถาวร`:"ลบจากแอป"}</button>
@@ -3740,7 +3802,7 @@ function tbWire(r){ const body=$("#tbBody"); const first=!r._tbw; r._tbw=true; c
   if(first) r.addEventListener("mouseup",()=>{ const p=tbPress; if(!p) return; if(p.on) tbEnd(true); else tbDisarm(); });
   body.addEventListener("click",e=>{ if(tbSwallow){ e.preventDefault(); e.stopPropagation(); tbSwallow=false; return; } const f=figOf(e.target); if(!f) return;
     if(tbSel&&tbSel.size){ e.preventDefault(); tbToggle(f.dataset.tbid); return; }
-    const v=f.querySelector("video"); if(v){ v.controls=true; v.paused?v.play().catch(()=>{}):v.pause(); } },true); }
+    const gk=f.closest("[data-tbg]")?.dataset.tbg; openMyPhoto(f.dataset.tbid,gk&&tbGrids[gk]?tbGrids[gk]:null); },true); }
 
 /* ===================== download every photo, with date and place written into the files ===================== */
 /* what the app knows about a photo: when (its own time, or the planned time of the stop it sits at) and where (its own GPS, or the stop's place) */
@@ -3798,7 +3860,7 @@ async function fileFacts(it){ if(isVideo(it)) return {video:true}; try{ const x=
 function safeName(s){ return String(s||"").replace(/[\\/:*?"<>|\u0000-\u001f]/g," ").replace(/\s+/g," ").trim().slice(0,60)||"ไม่มีชื่อ"; }
 function exportFolder(m){ if(m.day==null) return "ยังไม่ได้จัด"; const d=DAYS[m.day]; const day=`D${d.n} ${Number(d.date.slice(8))} ต.ค.`;
   if(m.key&&m.key.startsWith("leg:")) return `${day}/ระหว่างทาง`; if(m.key){ const it=planItems(m.day).find(x=>x._i===m.key); const n=stopNumMap(m.day)[m.key]; return `${day}/${n?String(n).padStart(2,"0")+" ":""}${safeName(it?it.n:"จุดที่ถูกลบ")}`; }
-  if(m.place) return `${day}/${safeName(m.place.name||"แวะระหว่างวัน")}`; return `${day}/ยังไม่ได้จัด`; }
+  if(m.place) return `${day}/${safeName(placeLabel(m.place))}`; return `${day}/ยังไม่ได้จัด`; }
 /* match an original file to the photo the app keeps for it */
 function matchMeta(it,dt){ const sig=it.name+"|"+it.size+"|"+(dt||nameTime(it.name)||0);
   return phMeta.find(m=>m.sig===sig)||phMeta.find(m=>m.name===it.name&&dt&&m.takenAt&&Math.abs(m.takenAt-dt)<1000)||phMeta.find(m=>m.name===it.name&&(m.size===it.size||m.sig&&m.sig.split("|")[1]==it.size))||(()=>{ const L=phMeta.filter(m=>m.name===it.name); return L.length===1?L[0]:null; })(); }
@@ -3811,6 +3873,7 @@ function exportHtml(){ const s=exState||{}; const ms=phMeta; const facts=ms.map(
   <p>ได้เป็นไฟล์ ZIP แยกโฟลเดอร์ตามวันและจุดที่จัดไว้ รูปที่ไม่มีวันเวลาหรือตำแหน่งจะถูกเขียนข้อมูลลงไฟล์ตามที่จัดในแอป เอาไปลง Google Photos หรือคอมแล้วเรียงตามวันและขึ้นแผนที่ได้ถูกต้อง</p>
   <ul class="imp-rows"><li>เติมวันเวลาให้ <b>${fixT}</b> รูป (ใช้เวลาของจุดในแผน เรียงตามลำดับที่คุณจัด)</li><li>เติมตำแหน่งให้ <b>${fixL}</b> รูป (ใช้ตำแหน่งของจุดที่รูปอยู่)</li>${none?`<li>${none} ไฟล์ยังไม่ได้จัดเข้าวันไหน จะอยู่ในโฟลเดอร์ "ยังไม่ได้จัด" โดยไม่เติมข้อมูล</li>`:""}<li class="tiny">รูปที่มีวันเวลาและตำแหน่งอยู่แล้วไม่ถูกแตะ · วิดีโอส่งออกตามเดิม (ไม่เขียนข้อมูลลงวิดีโอ)</li></ul>
   <label class="burst-tg"><input type="checkbox" id="phx-vid"${s.vid===false?"":" checked"}> รวมวิดีโอด้วย</label>
+  ${(()=>{ const nh=ms.filter(m=>m.tbHide).length; return nh?`<label class="burst-tg"><input type="checkbox" id="phx-hid"${s.hid===false?"":" checked"}> รวมรูปที่ซ่อนจาก Tripbook ด้วย (${nh} รูป)</label>`:""; })()}
   <h3 class="sp-h">1. คมชัดเต็ม จากไฟล์ต้นฉบับ (แนะนำ)</h3>
   <p class="tiny">แอปเก็บรูปไว้แบบย่อเพื่อประหยัดที่ จึงต้องเลือกไฟล์ต้นฉบับอีกครั้ง (ไฟล์ ZIP ชุดเดิมหรือเลือกรูปจากเครื่อง) แอปจะจับคู่กับรูปที่จัดไว้ให้เอง</p>
   <div class="c-actions"><button class="btn small primary" data-act="phx-orig" ${s.busy?"disabled":""}>เลือกไฟล์ต้นฉบับ / ZIP</button></div>
@@ -3828,11 +3891,11 @@ async function exportZips(list){ const byDay={}; list.forEach(e=>{ const k=e.m.d
     for(const e of L){ if(size+e.blob.size>3.5*2**30&&part.length) await flush(false); part.push(e); size+=e.blob.size; }
     await flush(true); }
   return outs; }
-async function exportRun(kind,files){ const vid=!!($("#phx-vid")||{checked:true}).checked; exState={busy:true,msg:"กำลังเตรียม",i:0,n:0,vid,outs:[]}; exportPaint();
+async function exportRun(kind,files){ const vid=!!($("#phx-vid")||{checked:true}).checked, hid=!!($("#phx-hid")||{checked:true}).checked; exState={busy:true,msg:"กำลังเตรียม",i:0,n:0,vid,hid,outs:[]}; exportPaint(); let hidSkip=0;
   const list=[]; let fixed=0, same=0, unknown=0, skipped=0; const used=new Set(); const seenPath={};
   const add=(m,blob,name)=>{ let path=exportFolder(m)+"/"+name; if(seenPath[path]){ const i=name.lastIndexOf("."); path=exportFolder(m)+"/"+(i>0?name.slice(0,i)+"-"+seenPath[path]+name.slice(i):name+"-"+seenPath[path]); } seenPath[exportFolder(m)+"/"+name]=(seenPath[exportFolder(m)+"/"+name]||1)+1; list.push({m,blob,path,mt:exportFacts(m).dt}); };
   try{
-    if(kind==="app"){ const ms=phMeta.filter(m=>vid||m.kind!=="video"); exState.msg="กำลังเขียนข้อมูลลงรูป"; exState.n=ms.length;
+    if(kind==="app"){ const ms=phMeta.filter(m=>(vid||m.kind!=="video")&&(hid||!m.tbHide)); hidSkip=hid?0:phMeta.filter(m=>m.tbHide&&(vid||m.kind!=="video")).length; exState.msg="กำลังเขียนข้อมูลลงรูป"; exState.n=ms.length;
       for(const m of ms){ const b=await PDB.getBlob(m.id); exState.i++; exTick(); if(!b||!b.full){ skipped++; continue; }
         const nm=(m.name||m.id).replace(/\.(heic|heif|png|webp)$/i,".jpg");
         if(m.kind==="video"){ add(m,b.full,m.name||m.id+"."+(m.ext||"mp4")); same++; continue; }
@@ -3842,13 +3905,13 @@ async function exportRun(kind,files){ const vid=!!($("#phx-vid")||{checked:true}
       exState.msg="กำลังจับคู่และเขียนข้อมูลลงไฟล์ต้นฉบับ"; exState.n=items.length;
       for(const it of items){ exState.i++; exTick(); const ff=await fileFacts(it); if(ff.video&&!vid) continue;
         let dt=ff.dt||null; if(ff.video){ try{ const mm=await readMp4Meta(await it.file()); dt=mm.t||null; }catch(e){} }
-        const m=matchMeta(it,dt); if(!m||used.has(m.id)){ unknown++; continue; } used.add(m.id);
+        const m=matchMeta(it,dt); if(!m||used.has(m.id)){ unknown++; continue; } used.add(m.id); if(m.tbHide&&!hid){ hidSkip++; continue; }
         const file=await it.file(); const f=exportFacts(m);
         const needT=!ff.dt&&f.dt, needL=!ff.ll&&f.ll;
         if(ff.jpeg&&(needT||needL)){ const out=await jpegWithExif(file,{dt:ff.dt||f.dt,ll:ff.ll?[ff.x.lat,ff.x.lng]:f.ll,ori:ff.x.ori||1,make:ff.x.make,model:ff.x.model,label:f.label}); add(m,out||file,it.name); out?fixed++:same++; }
         else { add(m,file,it.name); same++; } } }
     exState.outs=await exportZips(list);
-    exState.report=`พร้อมแล้ว ${list.length} ไฟล์ · เขียนข้อมูลเพิ่ม ${fixed} · ไม่ต้องแก้ ${same}${unknown?` · ไม่พบในแอป ${unknown} (เช่นรูปที่ข้ามไปตอนนำเข้า) ไม่ได้ใส่`:""}${skipped?` · อ่านไม่ได้ ${skipped}`:""}${kind!=="app"&&used.size<phMeta.length?` · รูปในแอปที่ยังไม่ได้เลือกต้นฉบับ ${phMeta.length-used.size}`:""}`; }
+    exState.report=`พร้อมแล้ว ${list.length} ไฟล์ · เขียนข้อมูลเพิ่ม ${fixed} · ไม่ต้องแก้ ${same}${unknown?` · ไม่พบในแอป ${unknown} (เช่นรูปที่ข้ามไปตอนนำเข้า) ไม่ได้ใส่`:""}${skipped?` · อ่านไม่ได้ ${skipped}`:""}${hidSkip?` · ไม่ใส่รูปที่ซ่อนจาก Tripbook ${hidSkip}`:""}${(()=>{ if(kind==="app") return ""; const miss=phMeta.filter(m=>(vid||m.kind!=="video")&&(hid||!m.tbHide)&&!used.has(m.id)).length; return miss?` · รูปในแอปที่ยังไม่ได้เลือกต้นฉบับ ${miss}`:""; })()}`; }
   catch(e){ exState.report="สร้างไฟล์ไม่สำเร็จ: "+esc(String(e&&e.message||e)); }
   exState.busy=false; exportPaint(); }
 async function exportSave(o,b){ let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
@@ -3899,9 +3962,9 @@ function dupHtml(){ const s=dupState||{}; let body="";
   else if(s.done) body=`<div class="ph-prog done"><p><b>รวมรูปซ้ำแล้ว</b></p><ul class="imp-rows"><li>ลบไฟล์ที่ไม่ได้เก็บ ${s.removed} ไฟล์</li><li>ตอนนี้มี ${mediaWord(phMeta)}</li></ul></div>`;
   else if(s.groups){ const G=s.groups, K=s.keep, extra=G.reduce((a,g)=>a+g.filter(m=>!K.has(m.id)).length,0), whole=G.filter(g=>g.every(m=>K.has(m.id))).length;
     const shown=G.slice(0,s.all?G.length:60);
-    body=G.length?`<p><b>พบรูปที่อาจซ้ำ ${G.length} ชุด</b> · จะลบ ${extra} ไฟล์${whole?` · เก็บไว้ทั้งชุด ${whole} ชุด`:""}</p><p class="tiny"><b>แตะรูปเพื่อเลือกเก็บหรือไม่เก็บ</b> เก็บได้มากกว่า 1 รูปต่อชุด หรือกด "ไม่ซ้ำ เก็บทั้งชุด" · แตะ 🔍 เพื่อดูรูปใหญ่ · แอปเลือกให้ก่อน: รูปปก รูปที่มีตำแหน่ง รูปที่คุณย้ายเอง แล้วรูปที่ใหญ่สุด · ที่จัดไว้ในรูปที่ถูกลบจะย้ายมาอยู่กับรูปที่เก็บ · ชุดที่คุณเก็บไว้หลายรูป ครั้งหน้าจะไม่ถามซ้ำ</p>
+    body=G.length?`<p><b>พบรูปที่อาจซ้ำ ${G.length} ชุด</b> · จะลบ ${extra} ไฟล์${whole?` · เก็บไว้ทั้งชุด ${whole} ชุด`:""}</p><p class="tiny"><b>กดปุ่ม "✓ เก็บ / ✕ ลบ" ใต้รูป</b> เก็บได้มากกว่า 1 รูปต่อชุด หรือกด "ไม่ซ้ำ เก็บทั้งชุด" · แตะรูปเพื่อดูใหญ่ · แอปเลือกให้ก่อน: รูปปก รูปที่มีตำแหน่ง รูปที่คุณย้ายเอง แล้วรูปที่ใหญ่สุด · ที่จัดไว้ในรูปที่ถูกลบจะย้ายมาอยู่กับรูปที่เก็บ · ชุดที่คุณเก็บไว้หลายรูป ครั้งหน้าจะไม่ถามซ้ำ</p>
       <div class="c-actions"><button class="btn small ${s.confirm?"danger":"primary"}" data-act="dup-go"${extra?"":" disabled"}>${s.confirm?`แตะอีกครั้ง ลบ ${extra} ไฟล์`:`ลบ ${extra} ไฟล์ที่ไม่ได้เก็บ`}</button><button class="btn small" data-act="backup">สำรองก่อน</button></div>
-      <div class="dup-sets">${shown.map((g,gi)=>{ const all=g.every(m=>K.has(m.id)); return `<div class="dup-set${all?" all":""}"><div class="dup-h"><span class="tiny">${g[0].day!=null?"D"+DAYS[g[0].day].n:""} ${g[0].takenAt&&realTime(g[0])?fmtMin(jstMin(g[0].takenAt)):""} · ${g.length} ไฟล์ · เก็บ ${g.filter(m=>K.has(m.id)).length}</span><button class="lnk" data-act="dup-all" data-g="${gi}">${all?"เลือกให้ใหม่":"ไม่ซ้ำ เก็บทั้งชุด"}</button></div><div class="dup-grid">${g.map(m=>{ const k=K.has(m.id); return `<div class="dup-c${k?" keep":" drop"}"><button class="ph-cell" data-act="dup-t" data-id="${m.id}" aria-pressed="${k}"><img data-phid="${m.id}" alt="">${phBadge(m)}<em class="dup-keep">${k?"เก็บ":"ลบ"}</em></button><button class="dup-zoom" data-act="ph-open" data-id="${m.id}" aria-label="ดูรูปใหญ่">🔍</button></div>`; }).join("")}</div></div>`; }).join("")}${G.length>shown.length?`<button class="btn small" data-act="dup-more">ดูอีก ${G.length-shown.length} ชุด</button>`:""}</div>`
+      <div class="dup-sets">${shown.map((g,gi)=>{ const all=g.every(m=>K.has(m.id)); return `<div class="dup-set${all?" all":""}"><div class="dup-h"><span class="tiny">${g[0].day!=null?"D"+DAYS[g[0].day].n:""} ${g[0].takenAt&&realTime(g[0])?fmtMin(jstMin(g[0].takenAt)):""} · ${g.length} ไฟล์ · เก็บ ${g.filter(m=>K.has(m.id)).length}</span><button class="lnk" data-act="dup-all" data-g="${gi}">${all?"เลือกให้ใหม่":"ไม่ซ้ำ เก็บทั้งชุด"}</button></div><div class="dup-grid">${g.map(m=>{ const k=K.has(m.id); return `<div class="dup-c${k?" keep":" drop"}"><button class="ph-cell" data-act="ph-open" data-id="${m.id}" data-list="${esc(g.map(x=>x.id).join(","))}" aria-label="ดูรูปใหญ่"><img data-phid="${m.id}" alt="">${phBadge(m)}</button><button class="dup-kbtn" data-act="dup-t" data-id="${m.id}" aria-pressed="${k}">${k?"✓ เก็บ":"✕ ลบ"}</button></div>`; }).join("")}</div></div>`; }).join("")}${G.length>shown.length?`<button class="btn small" data-act="dup-more">ดูอีก ${G.length-shown.length} ชุด</button>`:""}</div>`
       :`<p><b>ไม่พบรูปซ้ำ</b> ✓</p>`; }
   return `<div id="dup-root">${PH_BACK}<div class="sk">รูปทริป</div><h2>หารูปซ้ำ</h2><p class="tiny">ดูจากหน้าตาของรูปและเวลาที่ถ่าย ไม่ได้ดูแค่ชื่อไฟล์ จึงเจอรูปเดียวกันที่นำเข้ามาสองทาง (เช่นจากหน้าเลือกรูปและจาก ZIP)</p>${body}</div>`; }
 function dupPaint(first){ if(first||!$("#dup-root")) openFromPhotos(dupHtml()); else renderSheet(dupHtml()); setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
@@ -3938,7 +4001,7 @@ function looseRuns(L,refs){ const top=m=>{ if(!refs||!refs.length||!m.cf) return
   for(let i=runs.length-1;i>0;i--){ const a=runs[i-1], b=runs[i]; if(b.list.length===1&&lookDist(a.list[a.list.length-1].cf,b.list[0].cf)<0.5&&(!b.list[0]._top||b.list[0]._top===a.list[a.list.length-1]._top)){ a.list.push(...b.list); runs.splice(i,1); } }   /* a lone photo joins the run before it */
   return runs; }
 const tgtKey=m=>m.place?`${m.day}|p|${m.place.name||""}`:`${m.day}|${m.key}`;
-function tgtLabel(day,key,place){ const d=DAYS[day]; if(place) return `D${d.n} · ${place.name||"แวะระหว่างวัน"}`; return keyLabel(day,key); }
+function tgtLabel(day,key,place){ const d=DAYS[day]; if(place) return `D${d.n} · ${placeLabel(place)}`; return keyLabel(day,key); }
 /* where does a run belong? each photo asks its 3 nearest sorted photos; their stops vote */
 function runGuess(run,refs){ const votes={}; let n=0, dsum=0, dn=0;
   run.list.forEach(m=>{ if(!m.cf) return; const near=refs.map(r=>[r,lookDist(m.cf,r.cf)]).sort((a,b)=>a[1]-b[1]).slice(0,3); if(near[0]){ dsum+=near[0][1]; dn++; } near.forEach(([r,d],j)=>{ const w=(3-j)/(1+d*4); const k=tgtKey(r); (votes[k]=votes[k]||{w:0,ref:r}).w+=w; n+=w; }); });
@@ -3948,19 +4011,19 @@ var srt=null;
 function srtTargetsHtml(){ const di=srt.pickDay??srt.lastDay??0; const its=planItems(di); const nums=stopNumMap(di);
   return `<div class="srt-pick"><div class="srt-days">${DAYS.map((d,i)=>`<button class="chip${i===di?" on":""}" data-act="srt-day" data-d="${i}" style="--dc:var(--d${d.n})">D${d.n}</button>`).join("")}</div>
     <div class="srt-stops">${its.filter(x=>x.k!=="opt").map(x=>{ const leg=x.k==="drive"||x.k==="train"; if(leg&&!(x.to&&P[x.to])) return ""; return `<button class="pg-c${leg?" leg":""}" data-act="srt-to" data-d="${di}" data-k="${esc(leg?"leg:"+x._i:x._i)}"><b>${leg?"ระหว่างทางไป "+esc(P[x.to][0]):`${nums[x._i]?nums[x._i]+". ":""}${esc(x.n)}`}</b><span>${esc(x.t||"")}</span></button>`; }).join("")}
-    ${placeGroups().filter(g=>g.day===di).map(g=>`<button class="pg-c" data-act="srt-to" data-d="${di}" data-pg="${esc(g.id)}"><b>${esc(g.place.name||"แวะระหว่างวัน")}</b><span>แนะนำจากรูป</span></button>`).join("")}</div></div>`; }
+    ${placeGroups().filter(g=>g.day===di).map(g=>`<button class="pg-c" data-act="srt-to" data-d="${di}" data-pg="${esc(g.id)}"><b>${esc(placeLabel(g.place))}</b><span>แนะนำจากรูป</span></button>`).join("")}</div></div>`; }
 function sorterHtml(){ const s=srt||{};
   if(s.busy) return `<div id="srt-root">${PH_BACK}<div class="sk">รูปทริป</div><h2>จัดรูปที่ยังไม่ได้จัด</h2><div class="ph-prog"><div class="ph-bar"><i style="width:${s.n?Math.round(s.i/s.n*100):0}%"></i></div><p><b>${esc(s.msg)}</b>${s.n?` ${s.i} / ${s.n}`:""}</p></div></div>`;
   const L=looseList(); const runs=s.runs||[]; const sel=s.sel; const shownRuns=runs.slice(0,s.more?runs.length:25);
   return `<div id="srt-root">${PH_BACK}<div class="sk">รูปทริป</div><h2>จัดรูปที่ยังไม่ได้จัด <span class="muted" style="font-weight:500">${L.length}</span></h2>
-  <p class="tiny">แอปแบ่งรูปเป็นชุดตามลำดับที่นำเข้าและหน้าตาของรูป (รูปที่ถ่ายที่เดียวกันมักมาติดกัน) แล้วเดาจุดจากรูปที่จัดไว้แล้ว · <b>แตะ "ย้ายทั้งชุด"</b> หรือ<b>แตะรูปเพื่อเลือกเอง</b> · เปิด "เลือกเป็นช่วง" แล้วแตะรูปแรกกับรูปสุดท้ายเพื่อเลือกทั้งช่วง · กดค้างเพื่อดูรูปใหญ่</p>
-  <label class="burst-tg"><input type="checkbox" id="srt-range"${s.range?" checked":""}> เลือกเป็นช่วง (แตะรูปแรก แล้วแตะรูปสุดท้าย)</label>
+  <p class="tiny">แอปแบ่งรูปเป็นชุดตามลำดับที่นำเข้าและหน้าตาของรูป (รูปที่ถ่ายที่เดียวกันมักมาติดกัน) แล้วเดาจุดจากรูปที่จัดไว้แล้ว · <b>แตะ "ย้ายทั้งชุดไป…"</b> ได้เลย หรือ<b>กดค้างที่รูปเพื่อเลือก</b> แล้วแตะรูปอื่นเพื่อเลือกเพิ่ม · แตะรูปเพื่อดูใหญ่</p>
+  <label class="burst-tg"><input type="checkbox" id="srt-range"${s.range?" checked":""}> เลือกเป็นช่วง: แตะรูปแรก แล้วแตะรูปสุดท้าย ได้ทุกรูประหว่างนั้น</label>
   ${!L.length?`<p><b>จัดครบแล้ว</b> ✓</p>`:""}
   <div class="srt-runs">${shownRuns.map((r,ri)=>{ const g=r.guess||[]; return `<section class="srt-run"><header><b>ชุดที่ ${ri+1}</b><span class="tiny">${mediaWord(r.list)}</span><button class="lnk" data-act="srt-selrun" data-r="${ri}">${r.list.every(m=>sel.has(m.id))?"เลิกเลือกชุดนี้":"เลือกทั้งชุด"}</button></header>
-    ${g.length?`<div class="srt-guess">${g.map(x=>`<button class="btn small${g[0]&&!g[0].weak?"":" weak"}" data-act="srt-guess" data-r="${ri}" data-d="${x.ref.day}" data-k="${esc(x.ref.key||"")}" data-pg="${x.ref.place?esc(placeGroups().find(pg=>pg.list.includes(x.ref))?.id||""):""}">ย้ายทั้งชุดเข้า ${esc(tgtLabel(x.ref.day,x.ref.key,x.ref.place))} <span class="tiny">${x.weak?"ไม่ค่อยแน่ใจ":x.pct>=70?"น่าจะใช่":"อาจจะ"}</span></button>`).join("")}</div>`:""}
+    ${g.length?`<div class="srt-guess">${g.map(x=>`<button class="btn small${g[0]&&!g[0].weak?"":" weak"}" data-act="srt-guess" data-r="${ri}" data-d="${x.ref.day}" data-k="${esc(x.ref.key||"")}" data-pg="${x.ref.place?esc(placeGroups().find(pg=>pg.list.includes(x.ref))?.id||""):""}">ย้ายทั้งชุดไป ${esc(tgtLabel(x.ref.day,x.ref.key,x.ref.place))} <span class="tiny">${x.weak?"ไม่ค่อยแน่ใจ":x.pct>=70?"น่าจะใช่":"อาจจะ"}</span></button>`).join("")}</div>`:""}
     <div class="srt-grid">${r.list.map(m=>`<button class="ph-cell${sel.has(m.id)?" sel":""}" data-act="srt-t" data-id="${m.id}"><img data-lazy="${m.id}" alt="">${phBadge(m)}</button>`).join("")}</div></section>`; }).join("")}
   ${runs.length>shownRuns.length?`<button class="btn small" data-act="srt-more">ดูอีก ${runs.length-shownRuns.length} ชุด</button>`:""}</div>
-  ${sel.size?`<div class="srt-bar"><div class="srt-bar-h"><b>เลือก ${sel.size}</b><button class="btn small" data-act="srt-clear">ล้าง</button><button class="btn small primary" data-act="srt-pickopen">${s.picking?"ปิด":"ย้ายเข้าจุด…"}</button></div>${s.picking?srtTargetsHtml():""}</div>`:""}</div>`; }
+  ${sel.size?`<div class="srt-bar"><div class="srt-bar-h"><b>เลือก ${sel.size}</b><button class="btn small" data-act="srt-clear">ล้าง</button><button class="btn small primary" data-act="srt-pickopen">${s.picking?"ปิด":"ย้ายไปจุด…"}</button></div>${s.picking?srtTargetsHtml():""}</div>`:""}</div>`; }
 var srtObs=null;
 function srtHydrate(){ const root=$("#srt-root"); if(!root) return; if(srtObs) srtObs.disconnect();
   srtObs=new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; const im=e.target; srtObs.unobserve(im); phThumbURL(im.dataset.lazy,false).then(u=>{ if(u) im.src=u; }); }),{root:$("#sheetRoot .sheet"),rootMargin:"600px"});
@@ -3977,6 +4040,7 @@ document.addEventListener("change",ev=>{ if(ev.target.id==="srt-range"&&srt){ sr
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='srt-']"); if(!b) return; ev.stopPropagation(); if(!srt&&b.dataset.act!=="srt-open") return; const a=b.dataset.act;
   if(a==="srt-open"){ sorterOpen(); return; }
   if(a==="srt-t"){ if(srt.swallow){ srt.swallow=false; return; } const id=b.dataset.id; const order=srt.runs.flatMap(r=>r.list.map(m=>m.id));
+    if(!srt.sel.size&&!srt.range){ openMyPhoto(id,order); return; }   /* not selecting: tap shows it big */
     if(srt.range&&srt.anchor&&srt.anchor!==id){ const i=order.indexOf(srt.anchor), j=order.indexOf(id); const [lo,hi]=i<j?[i,j]:[j,i]; order.slice(lo,hi+1).forEach(x=>srt.sel.add(x)); srt.anchor=null; }
     else { srt.sel.has(id)?srt.sel.delete(id):srt.sel.add(id); srt.anchor=srt.sel.has(id)?id:null; }
     sorterPaint(); return; }
@@ -3987,8 +4051,8 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='s
   if(a==="srt-day"){ srt.pickDay=+b.dataset.d; sorterPaint(); return; }
   if(a==="srt-to"){ srtMove([...srt.sel],b.dataset.d,b.dataset.k||null,b.dataset.pg||null); return; }
   if(a==="srt-more"){ srt.more=true; sorterPaint(); return; } },true);
-/* long-press a photo in the sorter to see it big */
-(()=>{ let t=null; const start=e=>{ const c=e.target.closest&&e.target.closest("#srt-root [data-act='srt-t']"); if(!c) return; clearTimeout(t); t=setTimeout(()=>{ if(srt) srt.swallow=true; openMyPhoto(c.dataset.id); },500); };
+/* long-press a photo in the sorter to select it (then tap others to add) */
+(()=>{ let t=null; const start=e=>{ const c=e.target.closest&&e.target.closest("#srt-root [data-act='srt-t']"); if(!c) return; clearTimeout(t); t=setTimeout(()=>{ if(!srt) return; srt.swallow=true; try{ navigator.vibrate&&navigator.vibrate(15); }catch(err){} srt.sel.add(c.dataset.id); srt.anchor=c.dataset.id; sorterPaint(); },450); };
   const stop=()=>clearTimeout(t); document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",stop,{passive:true}); document.addEventListener("touchend",stop); document.addEventListener("mousedown",start); document.addEventListener("mouseup",stop);
   document.addEventListener("contextmenu",e=>{ if(e.target.closest&&e.target.closest("#srt-root")) e.preventDefault(); }); })();
 
@@ -4041,28 +4105,31 @@ function actualTimes(di){ const out=[]; planItems(di).forEach(it=>{ if(it.k==="d
     const T=phMeta.filter(m=>m.day===di&&m.key===it._i&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&jstDate(m.takenAt)===DAYS[di].date).map(m=>jstMin(m.takenAt)).sort((a,b)=>a-b);
     if(!T.length) return; const runs=[[T[0]]]; for(let i=1;i<T.length;i++){ if(T[i]-T[i-1]>60) runs.push([]); runs[runs.length-1].push(T[i]); }
     const main=runs.sort((a,b)=>b.length-a.length)[0]; const a=r5d(main[0]-5), b=r5u(main[main.length-1]+10);
-    out.push({it,n:T.length,a,dur:Math.max(15,b-a),pa:toMin(it.t),pe:it.e?toMin(it.e):null}); });
+    const x={it,n:T.length,a,dur:Math.max(15,b-a),pa:toMin(it._t0||it.t),pe:(it._e0||it.e)?toMin(it._e0||it.e):null,k:di+"|"+it._i};
+    const late=x.a-x.pa; x.warn=Math.abs(late)>120?`ต่างจากแผน ${Math.round(Math.abs(late)/60*10)/10} ชม. รูปอาจอยู่ผิดจุด`:x.n<3?`มีรูปแค่ ${x.n} รูป เวลาอาจสั้นเกินจริง`:""; out.push(x); });
   return out; }
+var actSel=null, actSnapped=false;
 var actMoved=null;
 function actualHtml(busy){ if(busy) return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2><div class="ph-prog"><div class="ph-bar"><i style="width:60%"></i></div><p><b>กำลังจัดรูปใหม่ตามสถานที่ในแผนล่าสุด…</b></p></div>`;
   const rows=DAYS.map((d,di)=>({d,di,L:actualTimes(di)})); const any=rows.some(r=>r.L.length);
   return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2>${actMoved!=null?`<p class="tiny">จัดรูปใหม่ตามสถานที่ในแผนล่าสุดแล้ว${actMoved?` · ย้าย ${actMoved} รูปไปจุดที่ตรงกว่า (ย้อนได้จาก "ย้อนการจัดใหม่")`:" · ไม่มีรูปต้องย้าย"} · รูปที่คุณย้ายเองไม่ถูกแตะ</p>`:""}
   <p class="tiny">ใช้เวลาที่ถ่ายรูปของแต่ละจุด: เริ่ม = รูปแรก (ก่อนหน้า 5 นาที) · อยู่นาน = ถึงรูปสุดท้าย (เผื่ออีก 10 นาที) · จุดที่ไม่มีรูปมีเวลาจะต่อเวลาตามเดิม · ไม่แตะโรงแรม · ใช้เฉพาะรูปที่มีเวลาถ่ายจริงในไฟล์ · ย้อนกลับได้จากประวัติการแก้แผน</p>
-  ${any?rows.filter(r=>r.L.length).map(r=>`<section class="act-day"><header><b style="color:var(--d${r.d.n})">D${r.d.n}</b> <span class="tiny">${esc(r.d.dow)} ${Number(r.d.date.slice(8))} ต.ค. · ${r.L.length} จุด</span><button class="btn small" data-act="act-apply" data-d="${r.di}">ใช้กับวันนี้</button></header>
-    <ul class="act-list">${r.L.map(x=>{ const late=x.a-x.pa, longer=x.pe!=null?x.dur-(x.pe-x.pa):null;
-      return `<li><b>${esc(x.it.n)}</b><span class="tiny">แผน ${hhmm(x.pa)}${x.pe!=null?"–"+hhmm(x.pe):""} → จริง <b>${hhmm(x.a)}–${hhmm(x.a+x.dur)}</b> · จากรูป ${x.n} รูป${Math.abs(late)>=10?` · ${late>0?"ช้ากว่าแผน":"เร็วกว่าแผน"} ${Math.abs(late)} นาที`:""}${longer!=null&&Math.abs(longer)>=10?` · อยู่${longer>0?"นานกว่า":"สั้นกว่า"} ${Math.abs(longer)} นาที`:""}</span></li>`; }).join("")}</ul></section>`).join("")+`<div class="c-actions"><button class="btn small primary" data-act="act-all">ใช้เวลาจริงทุกวัน</button></div>`
+  ${any?rows.filter(r=>r.L.length).map(r=>`<section class="act-day"><header><b style="color:var(--d${r.d.n})">D${r.d.n}</b> <span class="tiny">${esc(r.d.dow)} ${Number(r.d.date.slice(8))} ต.ค. · ${r.L.length} จุด</span><button class="btn small" data-act="act-apply" data-d="${r.di}">ใช้ที่ติ๊กไว้ของวันนี้</button></header>
+    <ul class="act-list">${r.L.map(x=>{ const late=x.a-x.pa, longer=x.pe!=null?x.dur-(x.pe-x.pa):null; if(!actSel.has(x.k)&&!actSel.has("!"+x.k)) actSel.add(x.warn?"!"+x.k:x.k);
+      return `<li class="${x.warn?"warn":""}"><label class="act-tg"><input type="checkbox" data-actk="${esc(x.k)}"${actSel.has(x.k)?" checked":""}> <b>${esc(x.it.n)}</b></label>${x.warn?`<span class="act-warn">ตรวจก่อน: ${esc(x.warn)}</span>`:""}<span class="tiny">แผน ${hhmm(x.pa)}${x.pe!=null?"–"+hhmm(x.pe):""} → จริง <b>${hhmm(x.a)}–${hhmm(x.a+x.dur)}</b> · จากรูป ${x.n} รูป${Math.abs(late)>=10?` · ${late>0?"ช้ากว่าแผน":"เร็วกว่าแผน"} ${Math.abs(late)} นาที`:""}${longer!=null&&Math.abs(longer)>=10?` · อยู่${longer>0?"นานกว่า":"สั้นกว่า"} ${Math.abs(longer)} นาที`:""}</span></li>`; }).join("")}</ul></section>`).join("")+`<div class="c-actions"><button class="btn small primary" data-act="act-all">ใช้ที่ติ๊กไว้ทุกวัน</button></div>`
   :`<p><b>ยังไม่มีรูปที่มีเวลาถ่ายอยู่ในจุดไหนเลย</b></p>`}</div>`; }
-function applyActual(di){ const L=actualTimes(di); const ed=edits[di]; if(!L.length&&!(ed&&ed.list.some(n=>n.act))) return 0; const e2=materialize(di); const its=planItems(di);
+function applyActual(di){ const L=actualTimes(di).filter(x=>!actSel||actSel.has(x.k)); const ed=edits[di]; if(!L.length&&!(ed&&ed.list.some(n=>n.act))) return 0; const e2=materialize(di); const its=planItems(di);
   e2.list.forEach(n=>{ if(n.act&&!L.some(x=>x.it._i===n.key)){ const it=its.find(x=>x._i===n.key); delete n.at; n.at=""; if(it&&n.kind==="base") n.dur=origDur(Object.assign({},it,{t:it._t0||it.t,e:it._e0||it.e})); delete n.act; } });   /* a stop whose photos moved away goes back to flowing with the plan */
   L.forEach(x=>{ const n=e2.list.find(y=>y.key===x.it._i); if(!n) return; n.at=hhmm(x.a); n.dur=x.dur; n.pre=0; n.act=true; }); return L.length; }
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-open'],[data-act='act-apply'],[data-act='act-all']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
-  if(a==="act-open"){ openSheet(actualHtml(true)); (async()=>{ actMoved=await resortPhotos(true); if($("#sheetRoot .sheet")) renderSheet(actualHtml()); })(); return; }
+  if(a==="act-open"){ actSel=new Set(); openSheet(actualHtml(true)); (async()=>{ phSnap("ปรับเวลาตามรูป"); actMoved=await resortPhotos(true,true); if($("#sheetRoot .sheet")) renderSheet(actualHtml()); })(); return; }
   (async()=>{ snapEdits("ก่อนปรับเวลาตามรูป"); let n=0, days=[]; b.disabled=true; b.textContent="กำลังปรับ…";
   const run=()=>{ n=0; days=[]; if(a==="act-apply"){ n=applyActual(+b.dataset.d); days=[+b.dataset.d]; } else DAYS.forEach((d,di)=>{ const k=applyActual(di); if(k){ n+=k; days.push(di); } }); saveEdits(); };
-  run(); for(let pass=0;pass<2;pass++){ const moved=await resortPhotos(true); if(!moved) break; run(); }   /* photos placed by the clock follow the new times; settle */
+  run(); for(let pass=0;pass<2;pass++){ const moved=await resortPhotos(true,true); if(!moved) break; run(); }   /* photos placed by the clock follow the new times; settle */
   snapEdits("ปรับเวลาตามรูป"); closeSheet(); if(days.length&&!days.includes(curDay)) selectDay(days[0]); renderPlan(); drawCustoms();
   const el=$("#p-plan .dh-edited"); if(el) el.insertAdjacentHTML("beforeend",` <span class="tiny">· ปรับเวลาตามรูปแล้ว ${n} จุด${days.length>1?` ใน ${days.length} วัน`:""}</span>`); })(); },true);
 
+document.addEventListener("change",ev=>{ const k=ev.target.dataset&&ev.target.dataset.actk; if(!k||!actSel) return; if(ev.target.checked){ actSel.add(k); actSel.delete("!"+k); } else { actSel.delete(k); actSel.add("!"+k); } });
 /* ---------- boot ---------- */
 mapDay=curDay;
 renderDays(); renderPlan(); renderStories(); renderFood(); renderDrinks(); renderInfo(); tickClock(); setTimeout(()=>refreshWx(false),400); setTimeout(()=>refreshRate(false),1500);
