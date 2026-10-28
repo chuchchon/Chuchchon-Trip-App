@@ -785,6 +785,7 @@ body.tb-open .lb{z-index:1450}
 .gal-hint{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 4px}
 .gal-h{display:flex;align-items:baseline;gap:6px}.gal-h .lnk{margin-left:auto;font-size:13px}
 .gal-flash{margin:8px 0;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,#2F6B45 12%,var(--surface));font-size:14px;font-weight:600}
+.x-gnote{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
 </style>
 
 <div class="app">
@@ -2148,7 +2149,7 @@ async function exRun(st){
   let list=[], ok=false;
   const wikiP=cat.wiki?(A.type==="bbox"?(km([A.bb[0],A.bb[1]],[A.bb[2],A.bb[3]])<14?exWiki(null,0,A.bb):Promise.resolve(null)):A.type==="line"?exWikiLine(A):exWiki(A.ll,A.r,null)):Promise.resolve(null);
   if(cat.wiki) wikiP.then(w=>{ if(st.key!==key||!st.loading||!w||!w.length) return; const pl=w.map(x=>Object.assign({},x)); pl.forEach(r=>{ r.d=km(st.ll,[r.lat,r.lng]); r.q=r.q||r.name; r.oh=null; }); pl.sort((x,y)=>x.d-y.d); st.res=pl; exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); wdEnrich(pl).then(()=>{ pl.forEach(niceName); if(st.res===pl){ exPaint(st); if(st===ex&&(exPanelOn||exLayer)) exDrawMap(false); } }); });
-  const gP=(GKEY&&GQ[cat.id])?gSearch(GQ[cat.id],gAreaWhere(A)):Promise.resolve(null);
+  const gP=(GKEY&&GQ[cat.id])?Promise.all(gAreaWheres(A).map(w=>gSearch(GQ[cat.id],w))).then(arr=>{ if(!arr.some(Boolean)) return null; const seen=new Set(); return arr.flat().filter(x=>x&&!seen.has(x.gid||x.name)&&seen.add(x.gid||x.name)); }):Promise.resolve(null);
   if(cat.f.length){ const j=await ovFetch(head+"("+cat.f.map(sel).join("")+");out center tags 200;"); if(j){ ok=true; list=(j.elements||[]).map(e=>ovItem(e,cat)).filter(Boolean); } else st.osmFail=true; }
   if(cat.mine){ ok=true; FOOD.forEach(f=>{ if(f[4]==null||!inArea([f[4],f[5]])) return; const c=CAT[f[1]]||{e:"🍴",n:"ร้านอาหาร"};
       list.push({id:"f"+f[0],fid:f[0],name:f[2],en:"",kind:c.e+" "+c.n,sub:[f[3],INPLAN[f[0]]?"★ ในแผน: "+INPLAN[f[0]]:"",f[8]].filter(Boolean).join(" · "),lat:f[4],lng:f[5],star:false,wp:"",wd:"",hours:"",tags:{},osmk:"amenity",osmv:f[1]===0?"cafe":"restaurant",q:(latinName(f[2])||f[2])+" "+cityOf(f[3])}); }); }
@@ -2162,7 +2163,7 @@ async function exRun(st){
         const gx=Object.assign({},x,{id:"g"+x.gid}); if(twin){ twin._dupG=true; gx.ja=twin.name; gx.sub=[gx.sub,twin.name].filter(Boolean).join(" · "); } list.push(gx); });
       list=list.filter(y=>!y._dupG); } else if(GKEY&&GQ[cat.id]) st.gUsed=false; }
   if(st.key!==key) return;
-  if(!ok){ st.loading=false; st.err="เซิร์ฟเวอร์ OpenStreetMap ไม่ตอบตอนนี้ (คนใช้เยอะ) กด \"ลองใหม่\" อีกครั้งในอีกสักครู่"; st.res=null; exPaint(st); return; }
+  if(!ok){ st.loading=false; st.err=GKEY&&GQ[cat.id]?`ค้นไม่ได้ทั้ง OpenStreetMap (คนใช้เยอะ) และ Google${gErr?" ("+gErr.replace(/^net:/,"")+")":""} กด "ลองใหม่" อีกครั้งในอีกสักครู่`:"เซิร์ฟเวอร์ OpenStreetMap ไม่ตอบตอนนี้ (คนใช้เยอะ) กด \"ลองใหม่\" อีกครั้งในอีกสักครู่"; st.res=null; exPaint(st); return; }
   const seen=new Set(); list=list.filter(r=>{ const k=r.name+"|"+r.lat.toFixed(4)+r.lng.toFixed(4); if(seen.has(k)) return false; seen.add(k); r.q=r.q||r.name; return true; });
   if(A.type==="line"){ list.forEach(r=>{ const a=along(A.pts,[r.lat,r.lng]); r.off=a.off; r.at=a.at; r.det=Math.max(2,Math.round(a.off*2*1.3/30*60)); r.d=km(st.ll,[r.lat,r.lng]); }); list.sort((x,y)=>x.at-y.at); }
   else { list.forEach(r=>{ r.d=km(st.ll,[r.lat,r.lng]); }); list.sort((x,y)=>(x.d-(x.star?0.15:0))-(y.d-(y.star?0.15:0))); }
@@ -2177,7 +2178,7 @@ function exRowHtml(st,r,i,mode){ const cat=EXC.find(c=>c.id===st.cat)||{}; const
   return `<div class="x-hit">${photo?`<i class="thumb xr-th" ${thumbAttr(r)}></i>`:`<i class="thumb xr-th ph0">${cat.e||"📍"}</i>`}<div class="x-main"><b>${r.star?"★ ":""}${esc(r.name)}</b>${r.sub?`<span class="tiny">${esc(r.sub.length>90?r.sub.slice(0,90)+"…":r.sub)}</span>`:""}<span class="tiny">${esc(r.kind||"")}${r.kind?" · ":""}${exMeta(st,r)} ${r.open!=null&&!r.hours?`<span class="oh ${r.open?"open":"shut"}">${r.open?"🟢 เปิดอยู่":"🔴 ปิดอยู่"}</span>`:ohBadge(r.hours)}</span></div><div class="x-btns">${mode==="pick"?"":aBtn(dirUrl({name:r.name,lat:r.lat,lng:r.lng,q:r.q},(r.d||0)<1.5?"walking":navMode),"นำทาง",I.nav)}<button class="btn small" data-act="ex-detail" data-st="${st.id}" data-i="${i}">รายละเอียด</button>${mode==="pick"?`<button class="btn small primary" data-act="ex-pick" data-st="xp" data-i="${i}">＋ เลือก</button>`:`<button class="btn small primary" data-act="ex-add" data-st="ex" data-i="${i}">＋ แผน</button>`}</div></div>`; }
 function exResHtml(st,mode){ st=st||ex; mode=mode||"browse";
   if(st.locating) return `<div class="tiny">กำลังหาตำแหน่ง GPS…</div>`; if(!st.cat) return `<div class="tiny">เลือกประเภทด้านบนเพื่อค้นหา</div>`; if(st.loading&&!st.res) return `<div class="tiny">กำลังค้นหา ${esc(st.where||"")}…</div>`;
-  if(!st.res) return st.err?`<div class="tiny">${esc(st.err)} <button class="btn small" data-act="ex-refresh" data-st="${st.id}">ลองใหม่</button></div>`:"";
+  if(!st.res) return st.err?`<div class="tiny">${esc(st.err)} <button class="btn small" data-act="ex-refresh" data-st="${st.id}">ลองใหม่</button></div>${GKEY?"":`<div class="x-gnote"><span class="tiny">ตอนนี้ค้นจาก OpenStreetMap อย่างเดียว ใส่ key ของ Google แล้วจะค้นจาก Google Maps ด้วย ร้านครบกว่าและมีคะแนนรีวิว</span><button class="btn small primary" data-act="gk-open">ใช้ Google Maps ด้วย</button></div>`}`:"";
   const L2=exShown(st); if(!L2.length) return `<div class="tiny">ไม่พบในบริเวณนี้${st.openOnly?" ที่เปิดอยู่ตอนนี้":""} ลองประเภทอื่นหรือเปลี่ยนขอบเขต</div>`;
   return `<div class="tiny" style="margin:2px 0 6px">${st.loading?"กำลังค้นเพิ่มจาก OpenStreetMap… · ":""}${esc(st.where||"")} · ${L2.length} แห่ง · ${st.area&&st.area.type==="line"?"เรียงตามลำดับที่จะผ่าน":"เรียงจากใกล้ไปไกล"} · ★ = ${st.gUsed?"คนรีวิวเยอะใน Google หรือ":""}มีข้อมูล Wikipedia</div>`+L2.map(r=>exRowHtml(st,r,st.res.indexOf(r),mode)).join("")
     +(st.gUsed?`<p class="tiny g-attr">ข้อมูลร้านและคะแนนบางส่วนจาก Google Maps</p>`:GKEY?(gErr?`<p class="tiny">Google ใช้ไม่ได้ตอนนี้: ${esc(gErr.replace(/^net:/,""))}</p>`:""):`<p class="tiny">อยากเห็นร้านดังพร้อมคะแนนรีวิว <button class="lnk" data-act="gk-open">ต่อ Google Places</button></p>`); }
@@ -3103,6 +3104,9 @@ async function gJs(textQuery,where){ try{ const lib=await gLoadJs(); const req={
     if(where.bb) req.locationRestriction={south:where.bb[0],west:where.bb[1],north:where.bb[2],east:where.bb[3]}; else if(where.ll) req.locationBias={center:{lat:where.ll[0],lng:where.ll[1]},radius:Math.min(50000,where.r||20000)};
     gCount(); const {places}=await lib.Place.searchByText(req); gErr=""; return (places||[]).filter(p=>p.location).map(p=>gItem(p,"js")).map(r=>(r.sub=gSub(r),r)); }
   catch(e){ gErr=String(e&&e.message||e); return null; } }
+function gAreaWheres(A){ if(A.type!=="line"||A.pts.length<3) return [gAreaWhere(A)];
+  let len=0; for(let i=1;i<A.pts.length;i++) len+=km(A.pts[i-1],A.pts[i]); const k=Math.max(1,Math.min(5,Math.ceil(len/12))); if(k===1) return [gAreaWhere(A)];
+  const out=[], per=Math.ceil((A.pts.length-1)/k); for(let i=0;i<A.pts.length-1;i+=per){ const seg=A.pts.slice(i,Math.min(A.pts.length,i+per+1)); if(seg.length>1) out.push(gAreaWhere({type:"line",pts:seg,r:A.r})); } return out; }
 function gAreaWhere(A){ if(A.type==="bbox") return {bb:A.bb,n:20}; const pad=(lat,dm)=>[dm/111320, dm/(111320*Math.cos(lat*Math.PI/180))];
   if(A.type==="line"){ const la=A.pts.map(p=>+p[0]), lo=A.pts.map(p=>+p[1]); const [dy,dx]=pad(la[0],A.r); return {bb:[Math.min(...la)-dy,Math.min(...lo)-dx,Math.max(...la)+dy,Math.max(...lo)+dx],n:20}; }
   const r=Math.max(A.r||800,400); const [dy,dx]=pad(A.ll[0],r); return {bb:[A.ll[0]-dy,A.ll[1]-dx,A.ll[0]+dy,A.ll[1]+dx],n:20}; }
@@ -3134,7 +3138,9 @@ function gSetupHtml(msg){ const has=!!GKEY; const use=gMonthUse();
    <li>คัดลอก key มาวางในช่องด้านบน</li></ol>
   <p class="tiny">ค่าใช้จ่าย: Google ให้ค้นแบบมีคะแนนรีวิวฟรีเดือนละ 1,000 ครั้ง ทริปนี้ใช้ไม่ถึง ถ้าอยากให้ไม่มีทางเสียเงินเลย ตั้งเพดานจำนวนครั้งได้ที่หน้า <a href="https://console.cloud.google.com/apis/api/places.googleapis.com/quotas" target="_blank" rel="noopener">Quotas</a> · key เก็บอยู่ในมือถือเครื่องนี้เท่านั้น ไม่ได้อยู่ในหน้าเว็บสาธารณะ</p>`; }
 document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='gk-']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
-  if(a==="gk-open"){ openSheet(gSetupHtml()); return; }
+  if(a==="gk-open"){ if($("#sheetRoot").innerHTML&&typeof draft!=="undefined"&&draft){ openSubSheet(`<button class="btn small sheet-backbtn" data-act="gk-back">‹ กลับไปเพิ่มจุดแวะ</button>`+gSetupHtml(),()=>{ renderAddStop(); if(typeof xp!=="undefined"&&xp&&xp.cat) exLocate(xp); }); return; }
+    openSheet(gSetupHtml()); return; }
+  if(a==="gk-back"){ sheetGoBack(); return; }
   if(a==="gk-save"){ const v=($("#gk-in")||{}).value||""; GKEY=v.trim(); store.set("gkey",GKEY); gLite=false; store.set("glite",false); gCache={}; gVia="rest"; store.set("gvia","rest"); exCache={};
     if(!GKEY){ renderSheet(gSetupHtml()); return; } $("#gk-msg").textContent="กำลังทดสอบ…";
     const t=await gSearch("Nijo Market Sapporo",{ll:[43.0567,141.3577],r:3000,n:1}); $("#gk-msg").innerHTML=t&&t.length?`ใช้ได้แล้ว ✓ เจอ "${esc(t[0].name)}" ${esc(gRateTxt(t[0]))}`:`ยังใช้ไม่ได้: ${esc(gErr.replace(/^net:/,"เชื่อมต่อไม่ได้ "))}`; return; }
