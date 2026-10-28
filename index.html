@@ -760,6 +760,7 @@ body.tb-open .lb{z-index:1450}
 .lb-flash{display:block;margin-top:4px;font-weight:600;color:#9FE0B4}
 .ph-day.z{opacity:.5}
 .lb-move .btn:not(.primary){background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.35)}
+.pick-g{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 2px}.pick-panel .c-actions a.btn{text-decoration:none}
 </style>
 
 <div class="app">
@@ -2554,15 +2555,18 @@ function pickUi(){ if(!pickMode) return; let b=$("#pickBar"); if(!b){ b=document
   let p=$("#pickPanel"); if(!pickTap){ p&&p.remove(); return; }
   if(!p){ p=document.createElement("div"); p.id="pickPanel"; p.className="pick-panel"; $("#p-map").appendChild(p); }
   p.innerHTML=`<div class="pp-k">เลือกชื่อสถานที่ตรงนี้</div>${pickTap.loading?`<div class="tiny">กำลังหาชื่อสถานที่แถวนี้…</div>`:""}
-  <div class="pick-list">${pickCands.map((c,i)=>`<button class="cs-hit${c.sel?" sel":""}" data-act="cs-pickname" data-i="${i}"><b>${c.sel?"✓ ":""}${esc(c.name)}</b><span class="tiny">${esc([c.kind,c.d!=null?distTxt(c.d)+" จากจุดที่แตะ":""].filter(Boolean).join(" · "))}</span></button>`).join("")}
-  ${!pickTap.loading&&!pickCands.length?`<div class="tiny">ไม่พบชื่อสถานที่ใกล้ๆ ใช้ตำแหน่งที่ปักแล้วตั้งชื่อเองได้</div>`:""}</div>
-  <div class="c-actions"><button class="btn small" data-act="cs-pickraw">📌 ใช้ตำแหน่งที่ปัก (ตั้งชื่อเอง)</button><button class="btn small" data-act="cs-pickcancel">‹ กลับไปฟอร์ม</button></div><div class="tiny">แตะที่อื่นบนแผนที่เพื่อปักใหม่</div>`; }
+  <div class="pick-list">${pickCands.map((c,i)=>`<button class="cs-hit${c.sel?" sel":""}" data-act="cs-pickname" data-i="${i}"><b>${c.sel?"✓ ":""}${esc(c.name)}${c.src==="google"?` <em class="src s-google">Google</em>`:""}</b><span class="tiny">${esc([c.kind,c.d!=null?distTxt(c.d)+" จากจุดที่แตะ":""].filter(Boolean).join(" · "))}</span></button>`).join("")}
+  ${!pickTap.loading&&!pickCands.length?`<div class="tiny">ไม่พบชื่อสถานที่ใกล้ๆ ดูชื่อใน Google Maps แล้วกด "ใช้ตำแหน่งที่ปัก" ตั้งชื่อเองได้</div>`:""}
+  ${pickTap.gFail?`<div class="tiny">ดึงชื่อจาก Google ไม่ได้ตอนนี้${gErr?" ("+esc(gErr.replace(/^net:/,""))+")":""}</div>`:""}</div>
+  <div class="c-actions"><button class="btn small" data-act="cs-pickraw">📌 ใช้ตำแหน่งที่ปัก (ตั้งชื่อเอง)</button><a class="btn small" href="https://www.google.com/maps/search/?api=1&query=${pickTap.ll[0].toFixed(6)},${pickTap.ll[1].toFixed(6)}" target="_blank" rel="noopener">${I.map}ดูจุดนี้ใน Google Maps</a><button class="btn small" data-act="cs-pickcancel">‹ กลับไปฟอร์ม</button></div>
+  ${GKEY?"":`<div class="pick-g"><span class="tiny">ตอนนี้ชื่อมาจาก OpenStreetMap ซึ่งร้านเล็กในญี่ปุ่นไม่ครบ</span><button class="btn small" data-act="gk-open">ให้ขึ้นชื่อจาก Google Maps ด้วย</button></div>`}<div class="tiny">แตะที่อื่นบนแผนที่เพื่อปักใหม่</div>`; }
 function pickPoisLoad(){ if(!pickMode||!map) return; pickUi(); clearTimeout(pickPoiT);
   if(map.getZoom()<15){ pickDrawPois(); return; }
   pickPoiT=setTimeout(async()=>{ if(!pickMode) return; const b=map.getBounds(), z=map.getZoom();
     const bb=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(v=>v.toFixed(5)).join(",");
     const f=['nwr["name"]["tourism"]','nwr["name"]["historic"]','nwr["name"]["amenity"~"^(restaurant|cafe|bar|pub|fast_food|ice_cream|place_of_worship|public_bath|marketplace|townhall|theatre|cinema|food_court)$"]','nwr["name"]["leisure"~"^(park|garden)$"]','nwr["name"]["natural"~"^(peak|waterfall|spring|hot_spring)$"]','nwr["name"]["railway"~"^(station|halt)$"]','nwr["name"]["shop"~"^(mall|department_store|gift|souvenir|confectionery)$"]'];
     if(z>=17) f.push('nwr["name"]["shop"]','nwr["name"]["amenity"]');
+    if(GKEY&&z>=16){ const c=map.getCenter(), rad=Math.min(800,map.distance(c,b.getNorthEast())); gNearby([c.lat,c.lng],rad,20).then(L=>{ if(!L||!pickMode) return; L.forEach(it=>pickPois.set(it.id,it)); pickDrawPois(); }); }
     const j=await ovFetch(`[out:json][timeout:20][bbox:${bb}];(${f.map(x=>x+";").join("")});out center tags 300;`); if(!j||!pickMode) return;
     (j.elements||[]).forEach(e=>{ const it=ovItem(e,null); if(it) pickPois.set(it.id,it); }); if(pickPois.size>1500){ const ks=[...pickPois.keys()].slice(0,500); ks.forEach(k=>pickPois.delete(k)); }
     pickDrawPois(); },500); }
@@ -2571,19 +2575,38 @@ function pickDrawPois(){ if(!pickLayer||!map) return; pickLayer.clearLayers(); i
     const m=L.circleMarker([p.lat,p.lng],{radius:z>=17?7:6,color:"#fff",weight:2,fillColor:"#7B3FBF",fillOpacity:.95,bubblingMouseEvents:false}).addTo(pickLayer);
     m.bindTooltip(esc(p.name),{direction:"top",offset:[0,-6],permanent:z>=18,className:"pick-tt"}); m.on("click",()=>pickAt([p.lat,p.lng],p)); });
   if(pickTap) L.marker(pickTap.ll,{icon:divIcon(`<div class="mk stop" style="width:30px;height:30px;background:#7B3FBF;font-size:15px">📌</div>`,30),zIndexOffset:4000,interactive:false}).addTo(pickLayer); }
+/* Google Maps names near a point (needs the Google key set on this phone). Each result: name, place type, Google link */
+function gTypeKV(t){ t=t||""; if(/^(spa|public_bath|sauna)$/.test(t)) return ["amenity","spa"]; if(/(^|_)restaurant$|^food_court$/.test(t)&&!/fast_food/.test(t)) return ["amenity","restaurant"];
+  if(/^(cafe|coffee_shop|tea_house|ice_cream_shop|dessert_shop|cafeteria)$/.test(t)) return ["amenity","cafe"]; if(/^(bakery|fast_food_restaurant|sandwich_shop)$/.test(t)) return ["amenity","fast_food"];
+  if(/^(bar|pub|wine_bar)$/.test(t)) return ["amenity","bar"]; if(/^(convenience_store|supermarket|grocery_store)$/.test(t)) return ["shop","convenience"]; if(/^(shopping_mall|department_store)$/.test(t)) return ["shop","mall"];
+  if(/_store$|^store$|^market$/.test(t)) return ["shop",""]; if(/^(museum|art_gallery)$/.test(t)) return ["tourism","museum"]; if(/^observation_deck$/.test(t)) return ["tourism","viewpoint"];
+  if(/park$|^garden$|botanical_garden/.test(t)) return ["leisure","park"]; if(/shrine|temple|church|place_of_worship|mosque/.test(t)) return ["amenity","shrine"];
+  if(/station$/.test(t)) return ["railway","station"]; if(/^gas_station$/.test(t)) return ["amenity","fuel"]; if(/attraction|landmark|monument|historical/.test(t)) return ["tourism","attraction"]; return ["",""]; }
+var gNearC={};
+async function gNearby(ll,radius,n){ if(!GKEY) return null; const ck=ll[0].toFixed(4)+","+ll[1].toFixed(4)+","+Math.round(radius)+","+n; if(gNearC[ck]) return gNearC[ck];
+  const ac=new AbortController(); const to=setTimeout(()=>ac.abort(),8000);
+  try{ gCount(); const r=await fetch("https://places.googleapis.com/v1/places:searchNearby",{method:"POST",signal:ac.signal,headers:{"Content-Type":"application/json","X-Goog-Api-Key":GKEY,"X-Goog-FieldMask":"places.id,places.displayName,places.location,places.primaryType,places.primaryTypeDisplayName,places.googleMapsUri"},
+      body:JSON.stringify({locationRestriction:{circle:{center:{latitude:+ll[0],longitude:+ll[1]},radius:Math.max(30,Math.min(1000,radius))}},maxResultCount:n,rankPreference:"DISTANCE",languageCode:"en"})});
+    let j={}; try{ j=await r.json(); }catch(e){} if(!r.ok){ gErr=(j.error&&j.error.message)||("HTTP "+r.status); return null; }
+    const out=(j.places||[]).filter(p=>p.location&&p.displayName).map(p=>{ const kv=gTypeKV(p.primaryType); return {id:"g:"+p.id,name:p.displayName.text,lat:p.location.latitude,lng:p.location.longitude,
+      kind:(p.primaryTypeDisplayName&&p.primaryTypeDisplayName.text)||"",osmk:kv[0],osmv:kv[1],src:"google",gurl:p.googleMapsUri||""}; });
+    gNearC[ck]=out; return out; }
+  catch(e){ gErr=e.name==="AbortError"?"Google ไม่ตอบภายใน 8 วินาที":(e.message||String(e)); return null; } finally{ clearTimeout(to); } }
 async function pickAt(ll,poi){ if(!pickMode) return; pickTap={ll:poi?[poi.lat,poi.lng]:ll,loading:true}; pickCands=[];
-  const add=c=>{ if(!c||!c.name) return; if(pickCands.some(x=>x.name===c.name&&km([x.lat,x.lng],[c.lat,c.lng])<0.08)) return; c.d=km(pickTap.ll,[c.lat,c.lng]); pickCands.push(c); };
+  const nk=x=>String(x).toLowerCase().replace(/[\s・·'’.\-]/g,"");
+  const add=c=>{ if(!c||!c.name) return; if(pickCands.some(x=>nk(x.name)===nk(c.name)&&km([x.lat,x.lng],[c.lat,c.lng])<0.08)) return; c.d=km(pickTap.ll,[c.lat,c.lng]); pickCands.push(c); };
   if(poi) add(Object.assign({sel:true},poi));
   pickPois.forEach(p=>{ if(km(pickTap.ll,[p.lat,p.lng])<0.15) add(Object.assign({},p)); });
   pickCands.sort((a,b)=>(b.sel?1:0)-(a.sel?1:0)||a.d-b.d); pickDrawPois(); pickUi();
-  const tap=pickTap;
-  const [ov,ph]=await Promise.all([
-    ovFetch(`[out:json][timeout:15];(nwr["name"](around:120,${tap.ll[0].toFixed(5)},${tap.ll[1].toFixed(5)}););out center tags 40;`),
-    fetch(`https://photon.komoot.io/reverse?lat=${tap.ll[0]}&lon=${tap.ll[1]}&limit=6&radius=0.15`).then(r=>r.json()).catch(()=>null)]);
-  if(pickTap!==tap) return;
-  ((ov&&ov.elements)||[]).forEach(e=>{ const t=e.tags||{}; if(t.highway&&!t.amenity&&!t.tourism) return; if(t.boundary||t.place||t.landuse) return; add(ovItem(e,null)); });
-  ((ph&&ph.features)||[]).forEach(f=>{ const p=f.properties||{}; if(!p.name) return; const g=f.geometry&&f.geometry.coordinates; if(!g) return; add({name:p.name,kind:OV_TH[p.osm_value]||"",lat:g[1],lng:g[0],osmk:p.osm_key,osmv:p.osm_value}); });
-  pickCands.sort((a,b)=>(b.sel?1:0)-(a.sel?1:0)||a.d-b.d); pickCands=pickCands.slice(0,12); tap.loading=false; pickUi(); }
+  const tap=pickTap; tap.gFail=false;
+  const show=()=>{ if(pickTap!==tap) return; pickCands.sort((a,b)=>(b.sel?1:0)-(a.sel?1:0)||a.d-b.d); pickCands=pickCands.slice(0,14); pickUi(); };
+  const jobs=[
+    GKEY?gNearby(tap.ll,150,10).then(L=>{ if(pickTap!==tap) return; if(L==null) tap.gFail=true; (L||[]).forEach(add); show(); }):Promise.resolve(),
+    ovFetch(`[out:json][timeout:15];(nwr["name"](around:120,${tap.ll[0].toFixed(5)},${tap.ll[1].toFixed(5)}););out center tags 40;`).then(ov=>{ if(pickTap!==tap) return;
+      ((ov&&ov.elements)||[]).forEach(e=>{ const t=e.tags||{}; if(t.highway&&!t.amenity&&!t.tourism) return; if(t.boundary||t.place||t.landuse) return; add(ovItem(e,null)); }); show(); }).catch(()=>{}),
+    fetch(`https://photon.komoot.io/reverse?lat=${tap.ll[0]}&lon=${tap.ll[1]}&limit=6&radius=0.15`).then(r=>r.json()).then(ph=>{ if(pickTap!==tap) return;
+      ((ph&&ph.features)||[]).forEach(f=>{ const p=f.properties||{}; if(!p.name) return; const g=f.geometry&&f.geometry.coordinates; if(!g) return; add({name:p.name,kind:OV_TH[p.osm_value]||"",lat:g[1],lng:g[0],osmk:p.osm_key,osmv:p.osm_value}); }); show(); }).catch(()=>{})];
+  await Promise.all(jobs); if(pickTap!==tap) return; tap.loading=false; show(); }
 function finishPick(o){ const d=pickMode; endPick(); showTab("plan"); draft=Object.assign(d,{lat:o.lat,lng:o.lng,name:o.name||d.name||"จุดที่ปักเอง"});
   if(o.osmk||o.osmv){ const g=guessDur(o.osmk,o.osmv,o.name); if(g.lab){ draft.dur=g.m; draft.durNote=g.lab+" · ตั้งเวลาอยู่ให้อัตโนมัติ "+g.m+" นาที ปรับได้"; } }
   if(o.hours&&!draft.note) draft.note="เวลาเปิด "+o.hours;
