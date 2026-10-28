@@ -779,6 +779,12 @@ body.tb-open .lb{z-index:1450}
 .gal-grid{grid-template-columns:repeat(3,1fr);gap:4px}
 .gal-h{font-size:14px;margin:14px 0 2px}.gal-h .muted{font-weight:500}
 .gal-tabs .chip{font-size:14px;min-height:36px}.gal-tabs .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gal-grid .ph-cell.sel{outline:3px solid #1D4E9E;outline-offset:-3px}
+.gal-grid .ph-cell.sel::after{content:"✓";position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:#1D4E9E;color:#fff;display:grid;place-items:center;font-size:14px;font-weight:700}
+.gal-grid .ph-cell{-webkit-touch-callout:none;user-select:none}
+.gal-hint{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 4px}
+.gal-h{display:flex;align-items:baseline;gap:6px}.gal-h .lnk{margin-left:auto;font-size:13px}
+.gal-flash{margin:8px 0;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,#2F6B45 12%,var(--surface));font-size:14px;font-weight:600}
 </style>
 
 <div class="app">
@@ -3440,7 +3446,7 @@ function importHtml(imp){
     geo=L.map(x=>`<li>${x}</li>`).join(""); }
   else if(tl) geo=`<li>ทุกไฟล์มีเวลาและตำแหน่งที่ถ่าย</li>`;
   return `<div class="ph-prog done"><p><b>นำเข้าเสร็จแล้ว</b> <span class="tiny">${imp.n} ไฟล์</span></p><ul class="imp-rows">${rows.map(r=>`<li>${r}</li>`).join("")}${geo}</ul></div>`; }
-async function undoResort(){ const u=store.get("phUndo",null); if(!u) return; for(const p of u.prev){ const m=phMeta.find(x=>x.id===p.id); if(!m) continue; Object.assign(m,{day:p.day,key:p.key,place:p.place,byTime:p.byTime,bySess:!!p.bySess}); if(p.auto!=null) m.auto=p.auto; await PDB.putMeta(m); } store.set("phUndo",null); renderPlan(); photoSheetPaint(); }
+async function undoResort(){ const u=store.get("phUndo",null); if(!u) return; for(const p of u.prev){ const m=phMeta.find(x=>x.id===p.id); if(!m) continue; Object.assign(m,{day:p.day,key:p.key,place:p.place,byTime:p.byTime,bySess:!!p.bySess}); if(p.auto!=null) m.auto=p.auto; await PDB.putMeta(m); } store.set("phUndo",null); refreshPhotoViews(); }
 function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จัด"; if(!key) return `D${DAYS[di].n} · ยังไม่ได้จัด`; const its=planItems(di);
   if(key.startsWith("leg:")){ const l=its.find(x=>x._i===key.slice(4)); return `D${DAYS[di].n} · ระหว่างทางไป ${l?P[l.to][0]:""}`; }
   const it=its.find(x=>x._i===key); const n=stopNumMap(di)[key]; return `D${DAYS[di].n} · ${n?n+". ":""}${it?it.n:"จุดที่ถูกลบ"}`; }
@@ -3474,17 +3480,28 @@ function myPhotoStrip(di,key){ const l=photosFor(di,key); if(!l.length) return "
   return `<div class="my-ph">${show.map((m,i)=>`<button class="my-ph-c" data-act="ph-strip" data-d="${di}" data-k="${esc(key)}" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}${i===7&&l.length>8?`<span>+${l.length-8}</span>`:""}</button>`).join("")}</div>`; }
 /* gallery: all photos of a stop (or the whole day) as a grid; tap one to view, ✕ or Back returns here */
 var galState=null, GAL_MIN=5;
+function galSelOn(){ return !!(galState&&(galState.selMode||(galState.sel&&galState.sel.size))); }
+function galTargetsHtml(){ const g=galState, di=g.pickDay??g.day; const its=planItems(di); const nums=stopNumMap(di); const here=di===g.day&&!g.all?g.key:null;
+  return `<div class="srt-pick"><div class="srt-days">${DAYS.map((d,i)=>`<button class="chip${i===di?" on":""}" data-act="ph-galday" data-d="${i}" style="--dc:var(--d${d.n})">D${d.n}</button>`).join("")}</div>
+    <div class="srt-stops">${its.filter(x=>x.k!=="opt").map(x=>{ const leg=x.k==="drive"||x.k==="train"; if(leg&&!(x.to&&P[x.to])) return ""; if(!leg&&!isPhTarget(di,x)) return ""; const k=leg?"leg:"+x._i:x._i; if(k===here) return "";
+      return `<button class="pg-c${leg?" leg":""}" data-act="ph-galto" data-d="${di}" data-k="${esc(k)}"><b>${leg?`${x.k==="drive"?"🚗":x.walk?"🚶":"🚇"} ระหว่างทาง${x.k==="drive"?"ขับ":x.walk?"เดิน":"นั่งรถ"}ไป `+esc(P[x.to][0]):`${nums[x._i]?nums[x._i]+". ":""}${esc(x.n)}`}</b><span>${esc(x.t||"")}</span></button>`; }).join("")}
+    ${placeGroups().filter(q=>q.day===di).map(q=>`<button class="pg-c" data-act="ph-galto" data-d="${di}" data-pg="${esc(q.id)}"><b>${esc(placeLabel(q.place))}</b><span>ถ่ายที่ที่ไม่อยู่ในแผน</span></button>`).join("")}
+    <button class="pg-c leg" data-act="ph-galto" data-d="${di}" data-k=""><b>ยังไม่ได้จัด (D${DAYS[di].n})</b><span>ไว้จัดทีหลัง</span></button></div></div>`; }
 function galLists(){ const g=galState; const stop=photosFor(g.day,g.key), day=dayOrder(g.day); return {stop,day,list:g.all?day:stop}; }
 function galleryHtml(){ const g=galState, d=DAYS[g.day]; const {stop,day,list}=galLists();
-  const cell=m=>`<button class="ph-cell" data-act="ph-galopen" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
+  const sel=g.sel||(g.sel=new Set()), on=galSelOn();
+  const cell=m=>`<button class="ph-cell${sel.has(m.id)?" sel":""}" data-act="ph-galopen" data-id="${m.id}" aria-pressed="${sel.has(m.id)}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
   let body="";
   if(g.all){ const gk=m=>m.key||("pl:"+(m.place?m.place.name||"":"")); const lab=m=>m.key||!m.place?keyLabel(g.day,m.key).replace(/^D\d+ · /,""):placeLabel(m.place);
-    let ck=null, buf=[]; const flush=()=>{ if(buf.length) body+=`<h3 class="gal-h">${esc(lab(buf[0]))} <span class="muted">${buf.length}</span></h3><div class="ph-grid gal-grid">${buf.map(cell).join("")}</div>`; buf=[]; };
+    let ck=null, buf=[]; const flush=()=>{ if(buf.length) body+=`<h3 class="gal-h">${esc(lab(buf[0]))} <span class="muted">${buf.length}</span>${on?`<button class="lnk" data-act="ph-galgrp" data-ids="${buf.map(m=>m.id).join(",")}">${buf.every(m=>sel.has(m.id))?"ไม่เลือกกลุ่มนี้":"เลือกทั้งกลุ่ม"}</button>`:""}</h3><div class="ph-grid gal-grid">${buf.map(cell).join("")}</div>`; buf=[]; };
     list.forEach(m=>{ if(gk(m)!==ck){ flush(); ck=gk(m); } buf.push(m); }); flush(); }
   else body=`<div class="ph-grid gal-grid">${list.map(cell).join("")}</div>`;
   return `<div id="gal-root"><div class="sk">D${d.n} · ${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค.</div><h2>${esc(keyLabel(g.day,g.key).replace(/^D\d+ · /,""))}</h2>
   <div class="gal-tabs" role="group" aria-label="แสดงรูปของ"><button class="chip${g.all?"":" on"}" data-act="ph-galscope" data-all="0" aria-pressed="${!g.all}">จุดนี้ · ${mediaWord(stop)}</button><button class="chip${g.all?" on":""}" data-act="ph-galscope" data-all="1" aria-pressed="${!!g.all}">ทั้งวัน D${d.n} · ${mediaWord(day)}</button></div>
-  <p class="tiny">แตะรูปเพื่อดูใหญ่ ปิดรูปแล้วจะกลับมาหน้านี้</p>${body||`<p class="tiny">ไม่มีรูปแล้ว</p>`}</div>`; }
+  ${g.flash?`<div class="gal-flash" role="status">${esc(g.flash)} <button class="lnk" data-act="ph-galundo">ย้อน</button></div>`:""}
+  <div class="gal-hint">${on?`<span class="tiny">แตะรูปเพื่อเลือก/ไม่เลือก</span>`:`<span class="tiny">แตะรูปเพื่อดูใหญ่ · กดค้างเพื่อเลือก</span>`}<button class="btn small" data-act="ph-galsel">${on?"เสร็จ":"เลือกหลายรูป"}</button></div>
+  ${body||`<p class="tiny">ไม่มีรูปแล้ว</p>`}
+  ${on?`<div class="srt-bar"><div class="srt-bar-h"><b>เลือก ${sel.size}</b><button class="btn small" data-act="ph-galall">${list.length&&list.every(m=>sel.has(m.id))?"ล้าง":"เลือกทั้งหมด"}</button><button class="btn small primary" data-act="ph-galpick" ${sel.size?"":"disabled"}>${g.picking?"ปิด":"ย้ายไปจุด…"}</button></div>${g.picking&&sel.size?galTargetsHtml():""}</div>`:""}</div>`; }
 function galPaint(first){ if(!galState) return; const sc=$("#sheetRoot .sheet"), top=sc&&!first?sc.scrollTop:0;
   if(first||!$("#gal-root")) openSheet(galleryHtml()); else renderSheet(galleryHtml());
   const s2=$("#sheetRoot .sheet"); if(s2&&top) s2.scrollTop=top; setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
@@ -3665,7 +3682,7 @@ function closeTripbook(){ const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTM
 var tbReturn=false;
 function tbReopen(){ if(tbReturn){ tbReturn=false; photoSheetPaint(true); } }   /* opened from "รูปของเรา": go back there */
 addEventListener("popstate",()=>{ if(!popSelf&&document.body.classList.contains("tb-open")){ closeTripbook(); setTimeout(tbReopen,0); } });
-document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
+document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="visit"){ toggleVisited(curDay,b.dataset.key); return; }
   if(a==="ph-sheet"){ phAddOpen=false; photoSheetPaint(true); return; }
   if(a==="ph-addmenu"){ phAddOpen=!phAddOpen; photoSheetPaint(); return; }
@@ -3684,9 +3701,20 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='p
       renderPlan(); if($("#ph-root")) photoSheetPaint(); })(); } return; }
   if(a==="ph-gmove"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ openMyPhoto(g.list[0].id); phView.move=true; drawMyPhoto(); } return; }
   if(a==="ph-open"){ openMyPhoto(b.dataset.id,b.dataset.list?b.dataset.list.split(","):null); return; }
-  if(a==="ph-strip"){ const d=+b.dataset.d, k=b.dataset.k; if(photosFor(d,k).length>=GAL_MIN){ galState={day:d,key:k,all:false}; galPaint(true); } else openMyPhoto(b.dataset.id); return; }
-  if(a==="ph-galscope"){ if(galState){ galState.all=b.dataset.all==="1"; galPaint(); } return; }
-  if(a==="ph-galopen"){ if(galState) openMyPhoto(b.dataset.id,galLists().list.map(m=>m.id)); return; }
+  if(a==="ph-strip"){ const d=+b.dataset.d, k=b.dataset.k; if(photosFor(d,k).length>=GAL_MIN){ galState={day:d,key:k,all:false,sel:new Set()}; galPaint(true); } else openMyPhoto(b.dataset.id); return; }
+  if(a==="ph-galscope"){ if(galState){ galState.all=b.dataset.all==="1"; galState.flash=""; galPaint(); } return; }
+  if(a==="ph-galopen"){ if(!galState) return; if(galState.swallow){ galState.swallow=false; return; }
+    if(galSelOn()){ const s2=galState.sel, id=b.dataset.id; s2.has(id)?s2.delete(id):s2.add(id); if(!s2.size) galState.picking=false; galPaint(); return; }
+    openMyPhoto(b.dataset.id,galLists().list.map(m=>m.id)); return; }
+  if(a==="ph-galsel"){ if(!galState) return; const on=galSelOn(); galState.selMode=!on; if(on){ galState.sel.clear(); galState.picking=false; } galPaint(); return; }
+  if(a==="ph-galall"){ if(!galState) return; const L=galLists().list; const all=L.length&&L.every(m=>galState.sel.has(m.id)); if(all){ galState.sel.clear(); galState.picking=false; } else L.forEach(m=>galState.sel.add(m.id)); galPaint(); return; }
+  if(a==="ph-galgrp"){ if(!galState) return; const ids=b.dataset.ids.split(","); const all=ids.every(id=>galState.sel.has(id)); ids.forEach(id=>all?galState.sel.delete(id):galState.sel.add(id)); galPaint(); return; }
+  if(a==="ph-galpick"){ if(!galState||!galState.sel.size) return; galState.picking=!galState.picking; galState.pickDay=null; galPaint(); return; }
+  if(a==="ph-galday"){ if(!galState) return; galState.pickDay=+b.dataset.d; galPaint(); return; }
+  if(a==="ph-galto"){ if(!galState) return; const ids=[...galState.sel]; if(!ids.length) return; b.disabled=true; phSnap(`ย้าย ${ids.length} รูป`);
+    const lab=await movePhotosTo(ids,b.dataset.d,b.dataset.k||null,b.dataset.pg||null);
+    Object.assign(galState,{sel:new Set(),selMode:false,picking:false,pickDay:null,flash:`ย้าย ${ids.length} รูปไป ${lab} แล้ว`}); refreshPhotoViews(); return; }
+  if(a==="ph-galundo"){ if(galState) galState.flash=""; await undoResort(); return; }
   if(a==="ph-resort"){ resortPhotos(); return; }
   if(a==="ph-undo"){ undoResort(); return; }
   if(a==="tb-open"){ const had=!!(history.state&&history.state.sheet)&&!!$("#sheetRoot").innerHTML; tbReturn=!!$("#ph-root"); closeSheet(); if(!had){ openTripbook(); return; }
@@ -4111,8 +4139,10 @@ function srtRecompute(){ const L=looseList(); const refs=phMeta.filter(m=>!isLoo
 async function sorterOpen(){ srt={busy:true,msg:"กำลังอ่านหน้าตาของรูป (ครั้งแรกครั้งเดียว)",i:0,n:0,sel:new Set()}; sorterPaint(true); let t=0;
   await ensureLook((i,n)=>{ srt.i=i; srt.n=n; if(Date.now()-t>300){ t=Date.now(); sorterPaint(); } });
   srt.busy=false; srtRecompute(); sorterPaint(); }
-async function srtMove(ids,day,key,pgId){ const pg=pgId?placeGroups().find(g=>g.id===pgId):null; const tgtPlace=pg?Object.assign({},pg.place):null;
-  for(const id of ids){ const m=phMeta.find(x=>x.id===id); if(!m) continue; m.day=+day; m.key=pg?null:(key||null); m.place=tgtPlace; m.auto=false; m.byTime=false; m.bySess=false; await PDB.putMeta(m); }
+async function movePhotosTo(ids,day,key,pgId){ const pg=pgId?placeGroups().find(g=>g.id===pgId):null; const tgtPlace=pg?Object.assign({},pg.place):null;
+  for(const id of ids){ const m=phMeta.find(x=>x.id===id); if(!m) continue; m.day=day==null||day===""?null:+day; m.key=pg?null:(key||null); m.place=tgtPlace; m.auto=false; m.byTime=false; m.bySess=false; await PDB.putMeta(m); }
+  return pg?`D${DAYS[+day].n} · ${placeLabel(pg.place)}`:keyLabel(day==null||day===""?null:+day,key||null); }
+async function srtMove(ids,day,key,pgId){ await movePhotosTo(ids,day,key,pgId);
   srt.lastDay=+day; srt.sel.clear(); srt.picking=false; srt.pickDay=null; srt.anchor=null; srtRecompute(); sorterPaint(); renderPlan(); }
 document.addEventListener("change",ev=>{ if(ev.target.id==="srt-range"&&srt){ srt.range=ev.target.checked; srt.anchor=null; } });
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='srt-']"); if(!b) return; ev.stopPropagation(); if(!srt&&b.dataset.act!=="srt-open") return; const a=b.dataset.act;
@@ -4129,6 +4159,10 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='s
   if(a==="srt-day"){ srt.pickDay=+b.dataset.d; sorterPaint(); return; }
   if(a==="srt-to"){ srtMove([...srt.sel],b.dataset.d,b.dataset.k||null,b.dataset.pg||null); return; }
   if(a==="srt-more"){ srt.more=true; sorterPaint(); return; } },true);
+/* long-press a photo in the gallery to select it */
+(()=>{ let t=null; const start=e=>{ const c=e.target.closest&&e.target.closest("#gal-root [data-act='ph-galopen']"); if(!c||!galState) return; clearTimeout(t); t=setTimeout(()=>{ if(!galState) return; galState.swallow=true; try{ navigator.vibrate&&navigator.vibrate(15); }catch(err){} galState.sel.add(c.dataset.id); galPaint(); },450); };
+  const stop=()=>clearTimeout(t); document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",stop,{passive:true}); document.addEventListener("touchend",stop); document.addEventListener("mousedown",start); document.addEventListener("mouseup",stop);
+  document.addEventListener("contextmenu",e=>{ if(e.target.closest&&e.target.closest("#gal-root")) e.preventDefault(); }); })();
 /* long-press a photo in the sorter to select it (then tap others to add) */
 (()=>{ let t=null; const start=e=>{ const c=e.target.closest&&e.target.closest("#srt-root [data-act='srt-t']"); if(!c) return; clearTimeout(t); t=setTimeout(()=>{ if(!srt) return; srt.swallow=true; try{ navigator.vibrate&&navigator.vibrate(15); }catch(err){} srt.sel.add(c.dataset.id); srt.anchor=c.dataset.id; sorterPaint(); },450); };
   const stop=()=>clearTimeout(t); document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",stop,{passive:true}); document.addEventListener("touchend",stop); document.addEventListener("mousedown",start); document.addEventListener("mouseup",stop);
