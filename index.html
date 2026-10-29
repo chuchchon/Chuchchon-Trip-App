@@ -3706,6 +3706,7 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
     for(const g of placeGroups().filter(g=>g.day===i&&g.list.some(shown))) h+=`<article class="tb-stop"><h3>${esc(placeLabel(g.place))}</h3>${g.list[0].takenAt?`<p class="tb-t" style="margin-left:0">${fmtMin(jstMin(g.list[0].takenAt))}</p>`:""}${await grid(g.list,1,"g|"+g.id)}</article>`;
     const loose=dayPh.filter(m=>!m.key&&!m.place); if(loose.length) h+=`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3>${await grid(loose,0,i+"|loose")}</article>`;
     h+=`</section>`; }
+  h+=await tbOvHtml(mode);
   h+=`<footer class="tb-end"><p>ฮอกไกโด ตุลาคม 2026</p></footer>`;
   return h; }
 const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,sans-serif}
@@ -3737,27 +3738,102 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-grid.n2 figure:first-child{grid-column:auto;aspect-ratio:4/3}
 .tb-end{padding:40px 18px 60px;text-align:center;color:#69737D}
 @media (min-width:760px){ .tb-grid{grid-template-columns:repeat(3,1fr)} }
-@media print{ .tb-cover{min-height:auto;height:100vh} .tb-day{page-break-before:always} }`;
+.tb-ov{padding:34px 18px 10px;max-width:980px;margin:0 auto}
+.tb-ov-h h2{font-size:30px;line-height:1.15;margin:0}.tb-ov-h p{margin:4px 0 18px;color:#69737D;font-size:14px}
+.tb-ov-wait{color:#69737D;font-size:15px}.tb-ov-note{margin:6px 0 0;color:#69737D;font-size:13px}
+.tb-ov-day,.tb-ov-tab{margin:0 0 30px}
+.tb-ov-day h3,.tb-ov-tab h3{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:18px;line-height:1.35}
+.tb-ov-day h3 span{background:var(--dc);color:#fff;border-radius:8px;padding:1px 8px;font-size:14px;flex:0 0 auto}
+.tb-ov-row{display:grid;gap:14px;grid-template-columns:1fr;align-items:start}
+.tb-shots{margin:0 auto;width:100%;max-width:412px;border:1px solid #D6DED9;border-radius:14px;overflow:hidden;background:#F5F7F9;box-shadow:0 4px 16px rgba(20,30,25,.08)}
+.tb-shots img{display:block;width:100%;height:auto}
+.tb-shots figcaption{font-size:12px;color:#69737D;text-align:center;padding:5px 0}
+@media (min-width:760px){ .tb-ov-row{grid-template-columns:1fr 1fr} .tb-ov-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start} }
+@media print{ .tb-cover{min-height:auto;height:100vh} .tb-day{page-break-before:always} .tb-ov{page-break-before:always} .tb-ov-day,.tb-ov-tab{page-break-before:always} .tb-shots{box-shadow:none} .tb-shots img{break-inside:avoid} }`;
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
   r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">พิมพ์ / PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); try{ history.pushState({tb:1},""); }catch(e){}
-  tbSel=null; tbDel=false; $("#tbBody").innerHTML=await tripbookHtml("app"); tbWire(r); tbBarPaint();
+  tbSel=null; tbDel=false; $("#tbBody").innerHTML=await tripbookHtml("app"); tbWire(r); tbBarPaint(); setTimeout(()=>tbShotsKick(),300);
   r.onclick=async ev=>{ const b=ev.target.closest("[data-tb]"); if(!b) return; const a=b.dataset.tb;
     if(a.startsWith("s-")){ tbSelAction(a); return; }
     if(a==="more"){ tbMore.add(b.dataset.g); await tbRender(); tbMark(); return; }
     if(a==="hid"){ tbShowHid=!tbShowHid; await tbRender(); tbMark(); return; }
+    if(a==="ov-retry"){ tbShotsKick(true); return; }
     if(a==="close"){ closeTripbook(); if(history.state&&history.state.tb){ const h=()=>{ removeEventListener("popstate",h); setTimeout(tbReopen,0); }; addEventListener("popstate",h); selfBack(1); } else tbReopen(); }
     if(a==="print") window.print();
-    if(a==="save"){ b.textContent="กำลังเตรียมไฟล์…"; const body=await tripbookHtml("export");
+    if(a==="save"){ if(tbShotBusy){ b.textContent="รอภาพหน้าจอให้เสร็จก่อน…"; try{ await tbShotBusy; }catch(e){} } b.textContent="กำลังเตรียมไฟล์…"; const body=await tripbookHtml("export");
       const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ฮอกไกโด 2026</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
       const blob=new Blob([doc],{type:"text/html"}), fn="Hokkaido-Tripbook-2026.html";
       /* inside the claude.ai viewer a page may only offer files through its downloads capability */
       let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
       if(dl){ try{ await dl.save({filename:fn,data:blob}); b.textContent="บันทึกเป็นไฟล์"; } catch(e){ b.textContent=e&&e.code==="declined"?"บันทึกเป็นไฟล์":"บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; } return; }
       const url=URL.createObjectURL(blob); const al=document.createElement("a"); al.href=url; al.download=fn; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); b.textContent="บันทึกเป็นไฟล์"; } }; }
-function closeTripbook(){ const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open","tb-selecting","tb-dragging"); tbSel=null; tbPress=null; }
+function closeTripbook(){ tbShotAbort=true; const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open","tb-selecting","tb-dragging"); tbSel=null; tbPress=null; }
 var tbReturn=false;
 function tbReopen(){ if(tbReturn){ tbReturn=false; photoSheetPaint(true); } }   /* opened from "รูปของเรา": go back there */
+/* ===================== Tripbook "trip overall": pictures of the app itself — each day's plan and map, the whole-trip map and the other tabs ===================== */
+var tbShots=null, tbShotBusy=null, tbShotProg="", tbShotErr="", tbShotAbort=false; const tbShotURL=new Map();
+const H2I_URL="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js", SHOT_W=412, SHOT_PX="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+const TB_TABS={map:"แผนที่ทั้งทริป",stories:"เรื่องน่ารู้",food:"ร้านอาหาร",drinks:"เครื่องดื่ม"};
+function loadH2I(){ if(window.htmlToImage) return Promise.resolve(window.htmlToImage);
+  return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=H2I_URL; s.onload=()=>window.htmlToImage?res(window.htmlToImage):rej(new Error("lib")); s.onerror=()=>{ s.remove(); rej(new Error("โหลดตัวทำภาพหน้าจอไม่ได้ ต้องต่อเน็ตก่อน")); }; document.head.appendChild(s); setTimeout(()=>rej(new Error("โหลดตัวทำภาพหน้าจอไม่ทัน ลองอีกครั้ง")),25000); }); }
+function tbShotSig(){ const s=JSON.stringify([edits,visited,DAYS.length,phMeta.map(m=>m.id+"|"+m.day+"|"+m.key+"|"+(m.tbHide?1:0))]); let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return s.length+":"+h; }
+const tbSleep=ms=>new Promise(r=>setTimeout(r,ms));
+/* a page lent to an off-screen stage under the Tripbook, at phone width, then put back exactly where it was */
+function shotStage(){ let s=$("#shotStage"); if(!s){ s=document.createElement("div"); s.id="shotStage"; s.setAttribute("aria-hidden","true"); s.style.cssText=`position:fixed;left:0;top:0;width:${SHOT_W}px;height:100%;overflow-y:auto;z-index:0;background:var(--bg);pointer-events:none`; document.body.appendChild(s); } return s; }
+function shotBorrow(el,css){ const o={el,parent:el.parentNode,next:el.nextSibling,style:el.getAttribute("style"),hidden:el.hidden}; shotStage().appendChild(el); el.hidden=false; el.style.cssText=(o.style?o.style+";":"")+css; return o; }
+function shotReturn(o){ if(!o) return; o.parent.insertBefore(o.el,o.next&&o.next.parentNode===o.parent?o.next:null); if(o.style==null) o.el.removeAttribute("style"); else o.el.setAttribute("style",o.style); o.el.hidden=o.hidden; const s=$("#shotStage"); if(s&&!s.children.length) s.remove(); }
+/* scroll through it once so pictures that load when seen get loaded, then wait for them a little */
+async function shotWarm(el,ms){ const st=$("#shotStage"); try{ hydrateThumbs(el); }catch(e){} try{ hydratePhotos(el); }catch(e){}
+  if(st){ for(let y=0;y<el.scrollHeight;y+=500){ st.scrollTop=y; await tbSleep(60); } st.scrollTop=0; }
+  const until=Date.now()+(ms||2500); while(Date.now()<until){ const imgs=[...el.querySelectorAll("img")].filter(i=>i.getAttribute("src")&&!i.complete); const busy=[...el.querySelectorAll(".thumb:not(.ok)[data-done]")].length; if(!imgs.length&&!busy) break; await tbSleep(150); } }
+async function shotOf(el,font,maxH){ const H=window.htmlToImage; const w=el.offsetWidth||SHOT_W, h=Math.max(1,el.scrollHeight); const r=Math.max(1,Math.min(2,15000/h));
+  const skip=["tp-ban","fresh","leaflet-control-zoom","loc-ctl","fab-ex","dh-tip"];
+  const cv=await H.toCanvas(el,{pixelRatio:r,width:w,height:h,backgroundColor:getComputedStyle(document.body).backgroundColor||"#fff",cacheBust:false,imagePlaceholder:SHOT_PX,fontEmbedCSS:font||undefined,skipFonts:!font,filter:n=>!(n.classList&&skip.some(c=>n.classList.contains(c)))});
+  const ph=Math.round((maxH||2000)*cv.height/h), out=[];
+  for(let y=0;y<cv.height;y+=ph){ let hh=Math.min(ph,cv.height-y); if(cv.height-(y+hh)<ph*.2){ hh=cv.height-y; } const c=document.createElement("canvas"); c.width=cv.width; c.height=hh; c.getContext("2d").drawImage(cv,0,y,cv.width,hh,0,0,cv.width,hh);
+    out.push(await new Promise(res=>c.toBlob(res,"image/jpeg",.85))); if(y+hh>=cv.height) break; }
+  return out.filter(Boolean); }
+async function mapSettled(){ await new Promise(r=>{ let done=false; const f=()=>{ if(!done){ done=true; r(); } }; map.once("moveend",f); setTimeout(f,900); }); await tbSleep(150);
+  const until=Date.now()+4000; while(Date.now()<until){ const t=[...document.querySelectorAll("#map img.leaflet-tile")]; if(t.length&&t.every(i=>i.complete)) break; await tbSleep(150); }
+  try{ hydrateThumbs($("#map")); }catch(e){} await tbSleep(500); }
+async function makeTbShots(prog){ const H=await loadH2I(); let font=""; try{ font=await H.getFontEmbedCSS($("#p-plan")); }catch(e){ font=""; }
+  const keep={day:curDay,mapDay,flags:Object.assign({},mapFlags),view:map?[map.getCenter(),map.getZoom()]:null};
+  const tabs=["stories","food","drinks"].filter(t=>{ const b=$(`.tab[data-tab="${t}"]`), p=$("#p-"+t); return b&&p&&p.querySelector(".story,.food-row,.drink,.sp-card,article"); });
+  const out={sig:tbShotSig(),at:Date.now(),days:DAYS.map(()=>({plan:[],map:null})),tabs:[]}; const total=DAYS.length*2+1+tabs.length; let k=0; const step=m=>{ if(tbShotAbort) throw new Error("abort"); prog&&prog(++k,total,m); };
+  let lent=null;
+  try{
+    lent=shotBorrow($("#p-plan"),"position:relative;inset:auto;height:auto;overflow:visible");
+    for(let i=0;i<DAYS.length;i++){ step(`แผนรายวัน D${DAYS[i].n}`); curDay=i; renderPlan(); await shotWarm($("#p-plan"),2500); out.days[i].plan=await shotOf($("#p-plan"),font); }
+    shotReturn(lent); lent=null; curDay=keep.day; renderPlan();
+    if(typeof L!=="undefined"){ lent=shotBorrow($("#p-map"),`position:relative;inset:auto;height:${Math.round(SHOT_W*1.5)}px;overflow:hidden`);
+      if(!map) initMap(); map.invalidateSize({pan:false}); mapFlags.trip=false;
+      for(let i=0;i<DAYS.length;i++){ step(`แผนที่ D${DAYS[i].n}`); mapDay=i; renderMapChips(); drawMap(true); await mapSettled(); out.days[i].map=(await shotOf($("#p-map"),font,99999))[0]||null; }
+      step(TB_TABS.map); mapFlags.trip=true; renderMapChips(); drawMap(true); await mapSettled(); out.tabs.push({t:"map",imgs:await shotOf($("#p-map"),font,99999)});
+      shotReturn(lent); lent=null; }
+    for(const t of tabs){ step(TB_TABS[t]); lent=shotBorrow($("#p-"+t),"position:relative;inset:auto;height:auto;overflow:visible"); await shotWarm($("#p-"+t),3000); out.tabs.push({t,imgs:await shotOf($("#p-"+t),font)}); shotReturn(lent); lent=null; }
+  } finally {
+    shotReturn(lent); curDay=keep.day; mapDay=keep.mapDay; Object.assign(mapFlags,keep.flags); renderPlan(); try{ renderMapChips(); }catch(e){}
+    if(map){ try{ map.invalidateSize({pan:false}); if(keep.view) map.setView(keep.view[0],keep.view[1],{animate:false}); drawMap(false); }catch(e){} } }
+  return out; }
+function tbShotsKick(force){ if(tbShotBusy) return tbShotBusy; if(!force&&tbShots&&tbShots.sig===tbShotSig()) return Promise.resolve(tbShots);
+  tbShotAbort=false; tbShotErr=""; tbShotProg="กำลังเตรียมภาพหน้าจอ…"; tbOvPaint();
+  tbShotBusy=(async()=>{ try{ const s=await makeTbShots((i,n,m)=>{ tbShotProg=`กำลังทำภาพหน้าจอ ${i}/${n}: ${m}`; const w=$("#tbOv .tb-ov-wait"); if(w) w.textContent=tbShotProg; });
+      tbShotURL.forEach(u=>URL.revokeObjectURL(u)); tbShotURL.clear(); tbShots=s; }
+    catch(e){ if(!tbShotAbort) tbShotErr="ทำภาพหน้าจอไม่สำเร็จ: "+(e&&e.message||e); }
+    finally{ tbShotBusy=null; tbShotProg=""; if(document.body.classList.contains("tb-open")) tbOvPaint(); } return tbShots; })();
+  return tbShotBusy; }
+async function tbOvPaint(){ const el=$("#tbOv"); if(!el) return; const h=await tbOvHtml("app"); const el2=$("#tbOv"); if(el2) el2.outerHTML=h; }
+async function tbOvHtml(mode){ const S=tbShots, app=mode!=="export";
+  const src=async b=>{ if(app){ let u=tbShotURL.get(b); if(!u){ u=URL.createObjectURL(b); tbShotURL.set(b,u); } return u; } return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); };
+  const shots=async(L,cap)=>L&&L.length?`<figure class="tb-shots">${(await Promise.all(L.map(async b=>`<img src="${await src(b)}" alt="">`))).join("")}${cap?`<figcaption>${esc(cap)}</figcaption>`:""}</figure>`:"";
+  let h=`<section class="tb-ov" id="tbOv"><header class="tb-ov-h"><h2>ภาพรวมทริป</h2><p>Trip overall · แผนรายวัน แผนที่ และแท็บต่าง ๆ จากในแอป${S?` · ${esc(new Date(S.at).toLocaleString("th-TH",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))}`:""}</p></header>`;
+  if(!S){ if(!app) return ""; return h+`<p class="tb-ov-wait">${esc(tbShotErr||tbShotProg||"กำลังเตรียมภาพหน้าจอ…")}</p>${tbShotErr?`<button class="btn small" data-tb="ov-retry">ลองอีกครั้ง</button>`:""}</section>`; }
+  for(let i=0;i<DAYS.length;i++){ const d=DAYS[i], x=S.days[i]||{}; if(!x.map&&!(x.plan||[]).length) continue;
+    h+=`<div class="tb-ov-day" style="--dc:${cssVar(`--d${d.n}`)}"><h3><span>D${d.n}</span>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม · ${esc(d.title)}</h3><div class="tb-ov-row">${await shots(x.plan,"แผนรายวัน")}${x.map?await shots([x.map],"แผนที่"):""}</div></div>`; }
+  const T=S.tabs.filter(t=>t.imgs&&t.imgs.length); if(T.length){ h+=`<div class="tb-ov-tabs">`; for(const t of T) h+=`<div class="tb-ov-tab"><h3>${esc(TB_TABS[t.t]||t.t)}</h3>${await shots(t.imgs,"")}</div>`; h+=`</div>`; }
+  if(app) h+=`<p class="tb-ov-note">${tbShots.sig!==tbShotSig()?"แผนหรือรูปเปลี่ยนไปแล้ว ":""}<button class="btn small" data-tb="ov-retry">ทำภาพหน้าจอใหม่</button></p>`;
+  return h+`</section>`; }
 addEventListener("popstate",()=>{ if(!popSelf&&document.body.classList.contains("tb-open")){ closeTripbook(); setTimeout(tbReopen,0); } });
 document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="visit"){ toggleVisited(curDay,b.dataset.key); return; }
