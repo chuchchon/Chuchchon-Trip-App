@@ -1434,6 +1434,7 @@ const $ = (s,el=document)=>el.querySelector(s);
 const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const enc = encodeURIComponent;
+const APP_SNAP=(()=>{ try{ return "<!DOCTYPE html>\n"+document.documentElement.outerHTML; }catch(e){ return ""; } })();
 const store = {
   get(k,d){ try{ const v=localStorage.getItem("hkd26:"+k); return v==null?d:JSON.parse(v);}catch(e){ return d; } },
   set(k,v){ try{ localStorage.setItem("hkd26:"+k,JSON.stringify(v)); }catch(e){} }
@@ -3807,7 +3808,7 @@ var persisted=null;
 async function ensurePersist(){ try{ if(!navigator.storage||!navigator.storage.persist) return null; persisted=await navigator.storage.persisted(); if(!persisted) persisted=await navigator.storage.persist(); return persisted; }catch(e){ return null; } }
 /* a brand-new storage during the trip means this browser/app has never seen our data: say so instead of looking empty */
 var firstSeen=store.get("firstSeen",0); if(!firstSeen){ firstSeen=HAD_DATA?1:Date.now(); store.set("firstSeen",firstSeen); }
-function looksFresh(){ return Date.now()-firstSeen<36*3600e3&&jst().date>DAYS[0].date&&!Object.keys(edits).length&&!phMeta.length&&phReady&&!store.get("lastBackup",0)&&!store.get("freshOk",0); }
+function looksFresh(){ return (location.protocol==="file:"||Date.now()-firstSeen<36*3600e3)&&jst().date>DAYS[0].date&&!Object.keys(edits).length&&!phMeta.length&&phReady&&!store.get("lastBackup",0)&&!store.get("freshOk",0); }
 function freshBanner(){ if(!looksFresh()) return ""; const c=runCtx();
   return `<div class="fresh"><b>ไม่เจอข้อมูลที่เคยบันทึกในที่นี้</b><p>ตอนนี้เปิดจาก${esc(c.where)} ข้อมูลที่แก้ในแอปและรูปของเราเก็บแยกตามเบราว์เซอร์ ถ้าเมื่อก่อนเปิดจากที่อื่น (Chrome, Samsung Internet, ลิงก์ใน LINE) ข้อมูลน่าจะยังอยู่ที่นั่น</p>
   <div class="c-actions"><button class="btn small primary" data-act="bk-file-open">เปิดไฟล์สำรอง</button><button class="btn small" data-act="ph-pick">นำรูปทริปเข้าใหม่</button><button class="btn small" data-act="fresh-ok">ปิด</button></div></div>`; }
@@ -3815,18 +3816,45 @@ function bkFileHtml(){ const c=runCtx(); const last=store.get("lastBackup",0); c
   return `<div class="box" id="bk-file"><h3>ข้อมูลในเครื่องนี้</h3>
   <dl class="kv"><dt>เปิดจาก</dt><dd>${esc(c.where)}</dd><dt>กันระบบลบ</dt><dd id="bk-pers">${persisted===true?"เปิดแล้ว ✓":persisted===false?"เบราว์เซอร์ยังไม่อนุญาต (ติดตั้งแอปหรือใช้บ่อยขึ้นแล้วจะได้เอง)":"กำลังตรวจ…"}</dd><dt>แผนที่แก้</dt><dd>${nd} วัน</dd><dt>รูปและวิดีโอ</dt><dd>${mediaWord(phMeta)}</dd><dt>ติ๊กไปแล้ว</dt><dd>${nv} จุด</dd><dt>สำรองล่าสุด</dt><dd>${last?esc(new Date(last).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})):"ยังไม่เคย"}</dd></dl>
   ${c.inapp?`<p class="sc-warn">หน้านี้เปิดอยู่ในแอปแชต ข้อมูลจะไม่ไปอยู่ในแอป Hokkaido ที่ติดตั้ง และอาจหายเมื่อปิด ควรเปิดลิงก์ใน Chrome</p>`:""}
-  <p style="margin:6px 0 8px;font-size:14.5px">ไฟล์สำรอง (.zip) เก็บทุกอย่างไว้ในไฟล์เดียว: แผนที่แก้ จุดที่ติ๊ก รูปและวิดีโอของเรา ส่งเข้า Google Drive หรือ LINE Keep ไว้ แล้วเปิดในเครื่องไหนก็ได้</p>
+  <p style="margin:6px 0 8px;font-size:14.5px">ไฟล์สำรอง (.zip) เก็บทุกอย่าง: แผนที่แก้ จุดที่ติ๊ก รูปและวิดีโอของเรา และตัวแอปเอง ใหญ่เกิน 2 GB จะแบ่งเป็นหลายไฟล์ ส่งเข้า Google Drive หรือ LINE Keep ไว้ แล้วเปิดในเครื่องไหนก็ได้</p>
   ${(()=>{ const nv=phMeta.filter(m=>m.kind==="video"), np=phMeta.length-nv.length; const mb=nv.reduce((a,m)=>a+(m.size||0),0)/1048576;
     return `<label class="check" style="margin:0 0 4px"><input type="checkbox" id="bk-withph" ${np?"checked":""}> รวมรูปด้วย${np?` (${np} รูป)`:""}</label><label class="check" style="margin:0 0 8px"><input type="checkbox" id="bk-withvid" ${nv.length?"checked":""}> รวมวิดีโอด้วย${nv.length?` (${nv.length} ไฟล์ ~${mb.toFixed(0)} MB)`:""}</label>`; })()}
-  <div class="c-actions"><button class="btn small primary" data-act="bk-file-make">${I.doc||""}สร้างไฟล์สำรอง</button><button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button></div><div id="bk-file-out"></div></div>`; }
-var bkFile=null;
+  <div class="c-actions"><button class="btn small primary" data-act="bk-file-make">${I.doc||""}สร้างไฟล์สำรอง</button><button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button></div><div id="bk-file-out"></div>
+  <p class="tiny" style="margin-top:10px">ไฟล์สำรองมีตัวแอปอยู่ในไฟล์แรกด้วย แตกไฟล์แล้วเปิด Hokkaido-app.html จากนั้นกด "เปิดไฟล์สำรอง" ข้อมูลจะกลับมาครบ ไม่ต้องพึ่งลิงก์แอป</p>
+  <div class="c-actions"><button class="btn small" data-act="bk-app-dl">ดาวน์โหลดตัวแอป (.html)</button></div></div>`; }
+var bkFiles=[];
+function bkMarkDone(){ if(bkFiles.length&&bkFiles.every(f=>f.done)) store.set("lastBackup",Date.now()); }
+async function saveFileOut(f){ let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
+  if(dl){ try{ await dl.save({filename:f.name,data:f}); return true; }catch(e){ return false; } }
+  const url=URL.createObjectURL(f); const al=document.createElement("a"); al.href=url; al.download=f.name; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),120000); return true; }
+function bkPaint(){ const out=$("#bk-file-out"); if(!out) return; const canShare=f=>!!(navigator.canShare&&navigator.canShare({files:[f]})); const N=bkFiles.length;
+  out.innerHTML=`<p class="tiny">พร้อมแล้ว ${N>1?`${N} ไฟล์ (แบ่งเพราะใหญ่เกิน 2 GB) <b>เก็บให้ครบทุกส่วน</b>`:"1 ไฟล์"} · ส่วนแรกมีตัวแอปอยู่ด้วย แตกไฟล์แล้วเปิด Hokkaido-app.html ได้แม้วันหนึ่งลิงก์แอปใช้ไม่ได้</p>
+  <ul class="phx-outs">${bkFiles.map((f,i)=>`<li><b>${esc(f.name)}</b> <span class="tiny">${(f.size/1048576).toFixed(0)} MB</span> ${canShare(f)?`<button class="btn small primary" data-act="bk-file-share" data-i="${i}">ส่งไปเก็บ</button>`:""}<button class="btn small" data-act="bk-file-dl" data-i="${i}">${f.done?"ดาวน์โหลดแล้ว ✓":"ดาวน์โหลด"}</button></li>`).join("")}</ul>`; }
+const BK_PART=(+store.get("bkPartMB",0)||1946)*2**20;   /* about 1.9 GB per file */
+/* the app as one file that works offline: this page's own HTML with the map library put inside */
+async function appFileHtml(){ let h="";
+  try{ const r=await fetch(location.href.split("#")[0],{cache:"no-cache"}); if(r.ok){ const t=await r.text(); if(/hkd26/.test(t)&&/<\/html>/i.test(t)) h=t; } }catch(e){}
+  if(!h) h=APP_SNAP; if(!h) return "";
+  const LF="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js";
+  if(h.includes(`<script src="${LF}"><\/script>`)){ try{ const r=await fetch(LF); if(r.ok){ const js=(await r.text()).replace(/<\/script/gi,"<\\/script"); h=h.replace(`<script src="${LF}"><\/script>`,()=>"<script>"+js+"<\/script>"); } }catch(e){} }
+  return h; }
+const APP_README=`แอปทริปฮอกไกโด (สำเนาเก็บไว้)\r\n\r\n1. แตกไฟล์ ZIP แล้วเปิด Hokkaido-app.html ด้วย Chrome (คอมหรือมือถือ)\r\n2. ถ้ายังไม่เห็นข้อมูล กด "เปิดไฟล์สำรอง" แล้วเลือกไฟล์ hokkaido-backup-....zip ทุกส่วน (เลือกพร้อมกันได้)\r\n3. แผน จุดที่ติ๊ก รูปและวิดีโอ จะกลับมาครบ ใช้ได้แม้ไม่มีเน็ต (แผนที่พื้นหลังต้องใช้เน็ต)\r\n\r\nไฟล์สำรองแบ่งเป็นหลายส่วนเมื่อใหญ่เกิน 2 GB เก็บไว้ให้ครบทุกส่วน`;
 async function makeBackup(opt,out){ const ls={}; ["edits","editsHist","visited","checks","mapFlags2","day","wxLog"].forEach(k=>{ const v=store.get(k,undefined); if(v!==undefined) ls[k]=v; });
-  const list=phMeta.filter(m=>m.kind==="video"?opt.vid:opt.ph); const entries=[], metas=[];
-  for(const m of list){ const b=await PDB.getBlob(m.id); if(!b||!b.full) continue; metas.push(m);
-    entries.push({name:`media/${m.id}.${m.kind==="video"?(m.ext||"mp4"):"jpg"}`,blob:b.full}); if(b.thumb) entries.push({name:`thumbs/${m.id}.jpg`,blob:b.thumb}); }
-  entries.unshift({name:"data.json",blob:new Blob([JSON.stringify({app:"hkd26",v:2,ts:Date.now(),ls,media:metas})],{type:"application/json"})});
-  const z=await zipBlob(entries,(k,n)=>{ if(out) out.textContent=`กำลังรวมไฟล์ ${k}/${n}…`; });
-  return new File([z],`hokkaido-backup-${jst().date.replace(/-/g,"")}.zip`,{type:"application/zip"}); }
+  const list=phMeta.filter(m=>m.kind==="video"?opt.vid:opt.ph).slice().sort((a,b)=>(a.kind==="video")-(b.kind==="video")||(a.takenAt||0)-(b.takenAt||0));
+  const ts=Date.now(), date=jst().date.replace(/-/g,""); const groups=[]; let cur={entries:[],metas:[],size:0};
+  if(out) out.textContent="กำลังเตรียมไฟล์…";
+  for(const m of list){ const b=await PDB.getBlob(m.id); if(!b||!b.full) continue; const sz=b.full.size+(b.thumb?b.thumb.size:0)+300;
+    if(cur.metas.length&&cur.size+sz>BK_PART){ groups.push(cur); cur={entries:[],metas:[],size:0}; }
+    cur.metas.push(m); cur.size+=sz; cur.entries.push({name:`media/${m.id}.${m.kind==="video"?(m.ext||"mp4"):"jpg"}`,blob:b.full}); if(b.thumb) cur.entries.push({name:`thumbs/${m.id}.jpg`,blob:b.thumb}); }
+  groups.push(cur);
+  let app=""; if(opt.app!==false){ try{ app=await appFileHtml(); }catch(e){} }
+  const files=[], N=groups.length;
+  for(let gi=0;gi<N;gi++){ const g=groups[gi]; const ents=g.entries.slice();
+    ents.unshift({name:"data.json",blob:new Blob([JSON.stringify({app:"hkd26",v:2,ts,part:gi+1,parts:N,ls:gi===0?ls:{},media:g.metas})],{type:"application/json"})});
+    if(gi===0&&app){ ents.unshift({name:"อ่านก่อน.txt",blob:new Blob([APP_README],{type:"text/plain"})}); ents.unshift({name:"Hokkaido-app.html",blob:new Blob([app],{type:"text/html"})}); }
+    const z=await zipBlob(ents,(k,n)=>{ if(out) out.textContent=`กำลังรวมไฟล์${N>1?` ส่วนที่ ${gi+1}/${N}`:""} ${k}/${n}…`; });
+    files.push(new File([z],`hokkaido-backup-${date}${N>1?`-${gi+1}of${N}`:""}.zip`,{type:"application/zip"})); }
+  return files; }
 var lsPending=null;
 function applyLs(ls){ const res={added:[],kept:[],same:0};
   if(ls.edits&&typeof ls.edits==="object"){ snapEdits("ก่อนกู้คืนไฟล์"); let ch=false;
@@ -3861,19 +3889,20 @@ async function restoreBackup(file,out){ let addPh=0, skip=0, ls={}, ts=0, er={ad
   const dn=a=>a.map(d=>"D"+DAYS[d].n).join(", ");
   out.innerHTML=`กู้คืนแล้ว ไม่มีข้อมูลเดิมในเครื่องนี้ถูกลบหรือเขียนทับ<br>แผนที่แก้: ${er.added.length?`เพิ่ม ${dn(er.added)}`:"ไม่มีวันใหม่"}${er.same?` · ตรงกันอยู่แล้ว ${er.same} วัน`:""} · รูปและวิดีโอ ${addPh} ไฟล์${skip?` (ข้าม ${skip} ไฟล์ที่มีอยู่แล้ว)`:""}
     ${er.kept.length?`<br><b>${dn(er.kept)}</b> ในเครื่องนี้แก้ไว้ต่างจากในไฟล์ จึงเก็บของเครื่องนี้ไว้ <button class="btn small" data-act="bk-use-file" data-days="${er.kept.join(",")}">ใช้แผนจากไฟล์แทน</button> <span class="tiny">(แผนเดิมยังกู้คืนได้จากประวัติด้านล่าง)</span>`:""}`; renderPlan(); renderInfo(); if(map&&curTab==="map") drawMap(false); }
-document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act='bk-file-make'],[data-act='bk-file-open'],[data-act='bk-file-share'],[data-act='bk-file-dl'],[data-act='fresh-ok'],[data-act='bk-use-file']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
+document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act='bk-file-make'],[data-act='bk-file-open'],[data-act='bk-file-share'],[data-act='bk-file-dl'],[data-act='bk-app-dl'],[data-act='fresh-ok'],[data-act='bk-use-file']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="fresh-ok"){ store.set("freshOk",1); renderPlan(); return; }
   if(a==="bk-use-file"){ useFileDays(b.dataset.days.split(",").map(Number)); b.replaceWith(document.createTextNode("ใช้แผนจากไฟล์แล้ว ✓")); return; }
-  if(a==="bk-file-open"){ const inp=document.createElement("input"); inp.type="file"; inp.accept=".zip,.json,application/zip,application/json"; inp.style.display="none";
-    inp.onchange=async()=>{ const f=inp.files[0]; inp.remove(); if(!f) return; if(!$("#bk-file")) openSheet(`<div class="sk">สำรองข้อมูล</div><h2>เปิดไฟล์สำรอง</h2>`+bkFileHtml()); const out=$("#bk-file-out"); out.innerHTML=`<p class="tiny">กำลังอ่านไฟล์…</p>`; await restoreBackup(f,out.firstChild||out); };
+  if(a==="bk-file-open"){ const inp=document.createElement("input"); inp.type="file"; inp.multiple=true; inp.accept=".zip,.json,application/zip,application/json"; inp.style.display="none";
+    inp.onchange=async()=>{ const fs=[...inp.files].sort((x,y)=>natCmp(x.name,y.name)); inp.remove(); if(!fs.length) return; if(!$("#bk-file")) openSheet(`<div class="sk">สำรองข้อมูล</div><h2>เปิดไฟล์สำรอง</h2>`+bkFileHtml()); const out=$("#bk-file-out");
+      out.innerHTML=fs.map((f,i)=>`<div class="bk-res" id="bk-res-${i}"><p class="tiny"><b>${esc(f.name)}</b> รอคิว…</p><div></div></div>`).join("");
+      for(let i=0;i<fs.length;i++){ const box=$(`#bk-res-${i} div`), st=$(`#bk-res-${i} p`); st.innerHTML=`<b>${esc(fs[i].name)}</b>`; box.textContent="กำลังอ่านไฟล์…"; await restoreBackup(fs[i],box); } };
     document.body.appendChild(inp); inp.click(); return; }
   if(a==="bk-file-make"){ const out=$("#bk-file-out"); out.innerHTML=`<p class="tiny">กำลังเตรียมไฟล์…</p>`; const withPh=!!($("#bk-withph")||{}).checked;
-    bkFile=await makeBackup({ph:withPh,vid:!!($("#bk-withvid")||{}).checked},out.firstChild); const mb=(bkFile.size/1048576).toFixed(1); const canShare=!!(navigator.canShare&&navigator.canShare({files:[bkFile]}));
-    out.innerHTML=`<p class="tiny">ไฟล์พร้อมแล้ว ${esc(bkFile.name)} · ${mb} MB</p><div class="c-actions">${canShare?`<button class="btn small primary" data-act="bk-file-share">ส่งไปเก็บ (Google Drive / LINE)</button>`:""}<button class="btn small" data-act="bk-file-dl">ดาวน์โหลด</button></div>`; return; }
-  if(a==="bk-file-share"&&bkFile){ try{ await navigator.share({files:[bkFile],title:"สำรองแอปทริปฮอกไกโด"}); store.set("lastBackup",Date.now()); b.textContent="ส่งแล้ว ✓"; }catch(e){ if(e&&e.name!=="AbortError") b.textContent="ส่งไม่ได้ ใช้ปุ่มดาวน์โหลดแทน"; } return; }
-  if(a==="bk-file-dl"&&bkFile){ let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
-    if(dl){ try{ await dl.save({filename:bkFile.name,data:bkFile}); store.set("lastBackup",Date.now()); b.textContent="บันทึกแล้ว ✓"; }catch(e){} return; }
-    const url=URL.createObjectURL(bkFile); const al=document.createElement("a"); al.href=url; al.download=bkFile.name; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); store.set("lastBackup",Date.now()); b.textContent="ดาวน์โหลดแล้ว ✓"; return; }
+    bkFiles=await makeBackup({ph:withPh,vid:!!($("#bk-withvid")||{}).checked},out.firstChild); bkPaint(); return; }
+  if(a==="bk-file-share"){ const f=bkFiles[+b.dataset.i]; if(!f) return; try{ await navigator.share({files:[f],title:"สำรองแอปทริปฮอกไกโด"}); f.done=true; bkMarkDone(); b.textContent="ส่งแล้ว ✓"; }catch(e){ if(e&&e.name!=="AbortError") b.textContent="ส่งไม่ได้ ใช้ปุ่มดาวน์โหลดแทน"; } return; }
+  if(a==="bk-file-dl"){ const f=bkFiles[+b.dataset.i]; if(!f) return; if(await saveFileOut(f)){ f.done=true; bkMarkDone(); b.textContent="ดาวน์โหลดแล้ว ✓"; } return; }
+  if(a==="bk-app-dl"){ b.disabled=true; b.textContent="กำลังเตรียม…"; const h=await appFileHtml(); if(!h){ b.textContent="เตรียมไม่ได้ในหน้านี้ ลองจากแอปที่ติดตั้ง"; return; }
+    const f=new File([h],"Hokkaido-app.html",{type:"text/html"}); b.disabled=false; b.textContent=(await saveFileOut(f))?"ดาวน์โหลดตัวแอปแล้ว ✓":"ดาวน์โหลดตัวแอป (.html)"; return; }
 },true);
 setTimeout(()=>{ ensurePersist().then(v=>{ const el=$("#bk-pers"); if(el) el.textContent=v===true?"เปิดแล้ว ✓":v===false?"เบราว์เซอร์ยังไม่อนุญาต (ติดตั้งแอปหรือใช้บ่อยขึ้นแล้วจะได้เอง)":"เบราว์เซอร์นี้ไม่รองรับ"; }); },1200);
 
