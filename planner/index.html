@@ -3395,8 +3395,8 @@ async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElem
     if(a==="hid"){ tbShowHid=!tbShowHid; await tbRender(); tbMark(); return; }
     if(a==="ov-retry"){ tbShotsKick(true); return; }
     if(a==="close"){ closeTripbook(); if(history.state&&history.state.tb){ const h=()=>{ removeEventListener("popstate",h); setTimeout(tbReopen,0); }; addEventListener("popstate",h); selfBack(1); } else tbReopen(); }
-    if(a==="print"){ const t0=b.textContent; if(tbShotBusy){ b.textContent="รอแผนที่…"; try{ await tbShotBusy; }catch(e){} await tbRender(); } b.textContent="กำลังเตรียม…"; await tbImgsReady(); b.textContent=t0; window.print(); }
-    if(a==="save"){ if(tbShotBusy){ b.textContent="รอแผนที่ให้เสร็จก่อน…"; try{ await tbShotBusy; }catch(e){} } b.textContent="กำลังเตรียมไฟล์…"; tbExp={busy:true,i:0,n:phMeta.filter(m=>!m.tbHide&&m.kind!=="video").length,t:0}; tbProgPaint(); let body=""; try{ body=await tripbookHtml("export"); } finally{ tbExp.busy=false; tbProgPaint(); }
+    if(a==="print"){ const t0=b.textContent; if(tbShotBusy||tbStoryBusy){ b.textContent=tbShotBusy?"รอแผนที่…":"รอเรื่องเล่าท้ายเล่ม…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} await tbRender(); } b.textContent="กำลังเตรียม…"; await tbImgsReady(); b.textContent=t0; window.print(); }
+    if(a==="save"){ if(tbShotBusy||tbStoryBusy){ b.textContent=tbShotBusy?"รอแผนที่ให้เสร็จก่อน…":"รอเรื่องเล่าท้ายเล่ม…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} } b.textContent="กำลังเตรียมไฟล์…"; tbExp={busy:true,i:0,n:phMeta.filter(m=>!m.tbHide&&m.kind!=="video").length,t:0}; tbProgPaint(); let body=""; try{ body=await tripbookHtml("export"); } finally{ tbExp.busy=false; tbProgPaint(); }
       const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ${esc(TRIP.trip.trip_name||"")}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
       const blob=new Blob([doc],{type:"text/html"}), fn=tpFileBase()+"-Tripbook.html";
       /* inside the claude.ai viewer a page may only offer files through its downloads capability */
@@ -3440,11 +3440,19 @@ const tbLY=(lat,z)=>{ const r=Math.max(-85,Math.min(85,lat))*Math.PI/180; return
 function tbLoadImg(src,ms){ return new Promise(res=>{ const im=new Image(); im.crossOrigin="anonymous"; let done=false; const fin=v=>{ if(!done){ done=true; res(v); } }; im.onload=()=>fin(im); im.onerror=()=>fin(null); setTimeout(()=>fin(null),ms||9000); im.src=src; }); }
 /* the photo for a stop's circle: the one marked as cover, else the first of ours there, else a picture of the place */
 async function tbPhotoBitmap(m){ try{ const b=await PDB.getBlob(m.id); const bl=b&&(b.thumb||b.full); if(bl) return await createImageBitmap(bl); }catch(e){} return null; }
-async function tbStopPic(di,keys,p){ const ok=m=>m.kind!=="video"&&!m.tbHide; const L=phMeta.filter(m=>m.day===di&&keys.includes(m.key)&&ok(m)); const m=L.find(x=>x.cover)||L[0];
-  if(m){ const bm=await tbPhotoBitmap(m); if(bm) return bm; }
-  if(p&&typeof commonsPhotos==="function"){ try{ const list=await Promise.race([commonsPhotos(p[4]||p[0],1,p[6]||latinName(p[0]),[p[1],p[2]]),tbSleep(9000).then(()=>null)]); if(list&&list[0]&&list[0].src){ const im=await tbLoadImg(list[0].src,8000); if(im) return im; } }catch(e){} }
-  if(p){ let best=null, bd=0.3; phMeta.forEach(x=>{ if(!ok(x)||x.lat==null) return; const d=km([x.lat,x.lng],[p[1],p[2]]); if(d<bd){ bd=d; best=x; } }); if(best){ const bm=await tbPhotoBitmap(best); if(bm) return bm; } }
+var tbPicMemo=null;
+async function tbBlobOf(m){ try{ const b=await PDB.getBlob(m.id); return (b&&(b.thumb||b.full))||null; }catch(e){ return null; } }
+/* a stop's picture: our photo there, else ours taken close by (right away); the place's picture from the web is looked up after, like the app's map */
+async function tbLocalSrc(di,keys,p){ const ok=m=>m.kind!=="video"&&!m.tbHide; const L=phMeta.filter(m=>m.day===di&&keys.includes(m.key)&&ok(m)); const m=L.find(x=>x.cover)||L[0];
+  if(m){ const b=await tbBlobOf(m); if(b) return {blob:b}; }
+  let near=null; if(p){ let bd=0.3; phMeta.forEach(x=>{ if(!ok(x)||x.lat==null) return; const d=km([x.lat,x.lng],[p[1],p[2]]); if(d<bd){ bd=d; near=x; } }); }
+  if(near){ const b=await tbBlobOf(near); if(b) return {blob:b}; }
   return null; }
+async function tbWebSrc(pk){ const p=P[pk]; if(!p||typeof commonsPhotos!=="function"||tbNet.st==="off") return null;
+  try{ const list=await Promise.race([commonsPhotos(p[4]||p[0],5,p[6]||latinName(p[0]),[p[1],p[2]]),tbSleep(7000).then(()=>null)]); const src=list&&list[0]&&list[0].src; if(src){ const im=await tbLoadImg(src,7000); if(im) return {img:im}; } }catch(e){} return null; }
+function tbMemo(k,f){ if(!tbPicMemo) return f(); let pr=tbPicMemo.get(k); if(!pr){ pr=f(); tbPicMemo.set(k,pr); } return pr; }
+async function tbStopPic(di,keys,pk,web){ let src=await tbMemo("L|"+di+"|"+keys.join(",")+"|"+pk,()=>tbLocalSrc(di,keys,P[pk]));
+  if(!src&&web) src=await tbMemo("W|"+pk,()=>tbWebSrc(pk)); if(!src) return null; if(src.img) return src.img; try{ return await createImageBitmap(src.blob); }catch(e){ return null; } }
 async function tbPool(items,n,fn){ const out=new Array(items.length); let i=0; await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{ while(i<items.length){ const k=i++; out[k]=await fn(items[k],k); } })); return out; }
 function tbCircle(ctx,x,y,r,img,col,label,sc){ ctx.save(); ctx.shadowColor="rgba(0,0,0,.35)"; ctx.shadowBlur=6*sc; ctx.shadowOffsetY=2*sc;
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=img?"#fff":col; ctx.fill(); ctx.restore();
@@ -3454,7 +3462,7 @@ function tbCircle(ctx,x,y,r,img,col,label,sc){ ctx.save(); ctx.shadowColor="rgba
     const bx=img?x+r*.72-w/2+4*sc:x-w/2, by=img?y-r*.72-h/2-2*sc:y-h/2; if(!img&&r<14*sc){ ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(label,x,y+.5*sc); return; }
     if(img){ ctx.beginPath(); const rr=h/2; ctx.moveTo(bx+rr,by); ctx.arcTo(bx+w,by,bx+w,by+h,rr); ctx.arcTo(bx+w,by+h,bx,by+h,rr); ctx.arcTo(bx,by+h,bx,by,rr); ctx.arcTo(bx,by,bx+w,by,rr); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.lineWidth=2*sc; ctx.strokeStyle="#fff"; ctx.stroke(); }
     ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(label,bx+w/2,by+h/2+.5*sc); } }
-async function tbMapPic(spec,W,H){ const DPR=2, CW=W*DPR, CH=H*DPR, sc=DPR; const lines=[], marks=[];
+async function tbMapPic(spec,W,H,web){ const DPR=2, CW=W*DPR, CH=H*DPR, sc=DPR; const lines=[], marks=[];
   const days=spec.trip?DAYS.map((_,i)=>i):[spec.di];
   for(const di of days){ const col=cssVar(`--d${DAYS[di].n}`)||"#2F6FB3"; const L=dayLine(di)||[]; if(L.length>1) lines.push({pts:L,col});
     const seq=stopSeq(di).filter(x=>x.num&&x.it.p&&P[x.it.p]);
@@ -3478,7 +3486,7 @@ async function tbMapPic(spec,W,H){ const DPR=2, CW=W*DPR, CH=H*DPR, sc=DPR; cons
   ctx.lineJoin="round"; ctx.lineCap="round";
   lines.forEach(l=>{ ctx.beginPath(); l.pts.forEach(([la,lo],i)=>i?ctx.lineTo(X(lo),Y(la)):ctx.moveTo(X(lo),Y(la))); ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=(spec.trip?7:10)*sc; ctx.stroke(); ctx.strokeStyle=l.col; ctx.lineWidth=(spec.trip?3.5:5)*sc; ctx.stroke(); });
   /* stops: round photos, numbered */
-  const pics=await tbPool(marks,6,m=>tbStopPic(m.di,m.keys,P[m.p]));
+  const pics=await tbPool(marks,8,m=>tbStopPic(m.di,m.keys,m.p,web)); const need=marks.filter((m,i)=>!pics[i]).map(m=>m.p);
   /* stops close together are spread apart so every photo shows; a thin line points back to the real spot */
   const C=marks.map((m,i)=>{ const ax=X(P[m.p][2]), ay=Y(P[m.p][1]); return {m,i,ax,ay,x:ax,y:ay,R:(pics[i]?m.r:Math.min(m.r,spec.trip?9:13))*sc}; });
   const gap=3*sc, fit=c=>{ c.x=Math.max(c.R+2*sc,Math.min(CW-c.R-2*sc,c.x)); c.y=Math.max(c.R+2*sc,Math.min(CH-c.R-24*sc,c.y)); };
@@ -3493,14 +3501,34 @@ async function tbMapPic(spec,W,H){ const DPR=2, CW=W*DPR, CH=H*DPR, sc=DPR; cons
   const cr=missing?"เส้นทางโดยประมาณ (โหลดพื้นแผนที่ไม่ครบ)":"© OpenStreetMap contributors"; ctx.font=`500 ${11*sc}px "Anuphan", system-ui, sans-serif`; const tw=ctx.measureText(cr).width;
   ctx.fillStyle="rgba(255,255,255,.85)"; ctx.fillRect(CW-tw-14*sc,CH-20*sc,tw+14*sc,20*sc); ctx.fillStyle="#3D4650"; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(cr,CW-tw-7*sc,CH-10*sc);
   const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",.88)); pics.forEach(p=>{ try{ p&&p.close&&p.close(); }catch(e){} });
-  return {blob,missing}; }
+  return {blob,missing,need}; }
 async function makeTbShots(prog){
-  const out={sig:tbShotSig(),at:Date.now(),days:DAYS.map(()=>({})),trip:null,stories:null,missing:0}; const total=DAYS.length+2; let k=0;
+  const out={sig:tbShotSig(),at:Date.now(),days:DAYS.map(()=>({})),trip:null,stories:null,missing:0}; const total=DAYS.length+1; let k=0;
   const step=m=>{ if(tbShotAbort) throw new Error("abort"); prog&&prog(++k,total,m); };
-  for(let di=0;di<DAYS.length;di++){ step(`แผนที่ D${DAYS[di].n}`); const r=await tbMapPic({di},760,500); out.days[di].map=r.blob; if(r.blob&&r.missing) out.missing++; }
-  step("แผนที่ทั้งทริป"); const r=await tbMapPic({trip:true},760,900); out.trip=r.blob; if(r.blob&&r.missing) out.missing++;
-  step("เรื่องเล่าท้ายเล่ม"); out.stories=await tbStoriesFetch();
+  tbPicMemo=new Map();
+  /* first every map with our own photos, so the book fills in fast */
+  const specs=[{key:"trip",spec:{trip:true},W:760,H:900,label:"แผนที่ทั้งทริป"}].concat(DAYS.map((d,di)=>({key:di,spec:{di},W:760,H:500,label:`แผนที่ D${d.n}`})));
+  const put=(x,r)=>{ if(x.key==="trip") out.trip=r.blob; else out.days[x.key].map=r.blob; tbMapSwap(x.key,r.blob); };
+  try{ const miss={}; let n=0; const total=specs.length;
+    for(const x of specs){ if(tbShotAbort) throw new Error("abort"); prog&&prog(++n,total,x.label); const r=await tbMapPic(x.spec,x.W,x.H,false); put(x,r); x.missing=r.missing; x.need=r.need; r.need.forEach(p=>miss[p]=1); }
+    /* then the places with no photo of ours get their picture from the web, and only those maps are drawn again */
+    const places=Object.keys(miss); if(places.length&&tbNet.st!=="off"){ let k=0; const until=Date.now()+30000;
+      prog&&prog(0,places.length,"หารูปสถานที่จากเว็บ"); await tbPool(places,8,async pk=>{ if(Date.now()<until&&!tbShotAbort) await tbMemo("W|"+pk,()=>tbWebSrc(pk)); prog&&prog(++k,places.length,"หารูปสถานที่จากเว็บ"); });
+      const again=specs.filter(x=>x.need.length); let j=0;
+      for(const x of again){ if(tbShotAbort) throw new Error("abort"); prog&&prog(++j,again.length,"ใส่รูปลง"+x.label); const has=await Promise.all(x.need.map(pk=>tbPicMemo.get("W|"+pk)||null)); if(!has.some(Boolean)) continue; const r=await tbMapPic(x.spec,x.W,x.H,true); if(r.blob){ put(x,r); x.missing=r.missing; } } }
+    specs.forEach(x=>{ if(x.missing) out.missing++; }); }
+  finally{ tbPicMemo=null; }
   return out; }
+/* put a finished map into the open book, in place of its "drawing…" box or its earlier version */
+function tbMapSwap(key,blob){ if(!blob) return; let u=tbShotURL.get(blob); if(!u){ u=URL.createObjectURL(blob); tbShotURL.set(blob,u); }
+  const trip=key==="trip", cls=trip?"tb-tripmap":"tb-daymap", alt=trip?"แผนที่ทั้งทริป":`แผนที่วันที่ ${DAYS[key].n}`;
+  const img=document.querySelector(`#tbBody img[data-map="${key}"]`); if(img){ const old=img.getAttribute("src"); img.src=u; if(old&&old!==u){ for(const [b,v] of tbShotURL) if(v===old){ tbShotURL.delete(b); setTimeout(()=>URL.revokeObjectURL(v),4000); } } return; }
+  const el=document.querySelector(trip?"#tbOv .tb-mapwait.tall":`#tbBody .tb-mapwait[data-di="${key}"]`); if(el) el.outerHTML=`<img class="${cls}" data-map="${key}" src="${u}" alt="${esc(alt)}">`; }
+var tbStoryBusy=null, tbStoryV={i:0,n:0};
+function tbStoriesKick(s){ if(!s||s.stories!=null) return Promise.resolve(); if(tbStoryBusy) return tbStoryBusy; tbStoryV={i:0,n:0};
+  tbStoryBusy=(async()=>{ try{ const st=await Promise.race([tbStoriesFetch((i,n)=>{ tbStoryV={i,n}; tbProgPaint(); }),tbSleep(40000).then(()=>null)]); s.stories=st||[]; }catch(e){ s.stories=[]; }
+    tbStoryBusy=null; if(tbShots===s&&document.body.classList.contains("tb-open")){ const x=$("#tbBody .tb-x"); if(x){ const h=await tbExtras("app"); const x2=$("#tbBody .tb-x"); if(x2) x2.outerHTML=h; } } tbProgPaint(); })();
+  tbProgPaint(); return tbStoryBusy; }
 var tbNet={st:"",ms:0,at:0}, tbProgV={i:0,n:0,msg:""}, tbExp={busy:false,i:0,n:0,t:0}, tbDoneAt=0;
 /* is there internet, and how fast: a real request to the map server, not only what the phone claims */
 async function netCheck(){ if(navigator.onLine===false){ tbNet={st:"off",ms:0,at:Date.now()}; tbProgPaint(); return tbNet; }
@@ -3513,7 +3541,8 @@ function tbProgPaint(){ const el=$("#tbProg"); if(!el) return; const st=tbNet.st
   const NET={good:["good",`📶 เน็ตดี${tbNet.ms?` · ${tbNet.ms} ms`:""}`],slow:["slow","📶 เน็ตช้า · อาจใช้เวลานานขึ้น"],bad:["bad","⚠️ ต่อเซิร์ฟเวอร์แผนที่ไม่ได้"],off:["bad","📵 ไม่มีอินเทอร์เน็ต"]}[st]||["", "📶 กำลังเช็คเน็ต…"];
   let msg="", pct=-1, extra="";
   if(tbExp.busy){ msg=tbExp.n?`กำลังรวมรูปลงไฟล์ ${Math.min(tbExp.i,tbExp.n).toLocaleString()} / ${tbExp.n.toLocaleString()}`:"กำลังเตรียมไฟล์…"; pct=tbExp.n?Math.min(100,Math.round(tbExp.i/tbExp.n*100)):-1; }
-  else if(tbShotBusy){ msg=tbProgV.n?`กำลังวาด${/^แผนที่/.test(tbProgV.msg)?"":" "}${tbProgV.msg} · ${tbProgV.i}/${tbProgV.n}`:(tbProgV.msg||"กำลังเตรียม…"); pct=tbProgV.n?Math.round((tbProgV.i-1)/tbProgV.n*100):0; }
+  else if(tbShotBusy){ const m=tbProgV.msg||"", web=/^(หา|ใส่)/.test(m); msg=tbProgV.n?`กำลัง${web?"":"วาด"}${m} · ${tbProgV.i}/${tbProgV.n}`:(m?"กำลัง"+m+"…":"กำลังเตรียม…"); pct=tbProgV.n?Math.round((web?tbProgV.i:tbProgV.i-1)/tbProgV.n*100):0; }
+  else if(tbStoryBusy){ msg=tbStoryV.n?`แผนที่พร้อมแล้ว ✓ · กำลังหาเรื่องเล่าท้ายเล่ม ${tbStoryV.i}/${tbStoryV.n}`:"แผนที่พร้อมแล้ว ✓ · กำลังหาเรื่องเล่าท้ายเล่ม…"; pct=tbStoryV.n?Math.round(tbStoryV.i/tbStoryV.n*100):-1; }
   else if(tbShotErr){ msg=tbShotErr; extra=`<p>${st==="off"||st==="bad"?"แผนที่ในเล่มจะเป็นเส้นแบบเรียบไปก่อน พอเน็ตกลับมาแอปจะวาดให้เอง":"ลองอีกครั้ง หรือเปลี่ยนไปใช้ Wi-Fi"}</p><button class="btn small" data-tb="ov-retry">ลองอีกครั้ง</button>`; }
   else if(tbShots&&tbShots.missing){ msg=`แผนที่ ${tbShots.missing} ภาพโหลดพื้นแผนที่ไม่ครบ (เน็ตช้าหรือหลุดระหว่างวาด)`; extra=`<button class="btn small" data-tb="ov-retry">วาดใหม่</button>`; }
   else if(tbDoneAt&&Date.now()-tbDoneAt<2500){ msg="แผนที่พร้อมแล้ว ✓"; pct=100; }
@@ -3525,15 +3554,15 @@ function tbShotsKick(force){ if(tbShotBusy) return tbShotBusy; if(!force&&tbShot
   tbShotBusy=(async()=>{ try{ tbProgPaint(); const n=await netCheck();
       if(n.st==="off"||n.st==="bad"){ tbShotErr=n.st==="off"?"ไม่มีอินเทอร์เน็ต ยังวาดแผนที่ไม่ได้":"ต่อเซิร์ฟเวอร์แผนที่ไม่ได้ ยังวาดแผนที่ไม่ได้"; return tbShots; }
       const s=await makeTbShots((i,n,m)=>tbProgSet(i,n,m));
-      tbShotURL.forEach(u=>URL.revokeObjectURL(u)); tbShotURL.clear(); tbShots=s; tbDoneAt=Date.now(); setTimeout(tbProgPaint,2600); }
+      const keep=new Set([s.trip,...s.days.map(d=>d.map)]); [...tbShotURL].forEach(([b,u])=>{ if(!keep.has(b)){ URL.revokeObjectURL(u); tbShotURL.delete(b); } }); tbShots=s; tbDoneAt=Date.now(); setTimeout(tbProgPaint,2600); }
     catch(e){ if(!tbShotAbort) tbShotErr="วาดแผนที่ไม่สำเร็จ: "+(e&&e.message||e); }
-    finally{ tbShotBusy=null; tbProgV={i:0,n:0,msg:""}; if(document.body.classList.contains("tb-open")){ if(tbShots) tbRender(); else tbOvPaint(); } tbProgPaint(); } return tbShots; })();
+    finally{ tbShotBusy=null; tbProgV={i:0,n:0,msg:""}; if(document.body.classList.contains("tb-open")){ if(tbShots) await tbRender(); else tbOvPaint(); } tbProgPaint(); } tbStoriesKick(tbShots); return tbShots; })();
   tbProgPaint(); return tbShotBusy; }
 addEventListener("online",()=>{ if(!document.body.classList.contains("tb-open")) return; netCheck().then(n=>{ if((n.st==="good"||n.st==="slow")&&!tbShotBusy&&(tbShotErr||!tbShots||tbShots.missing)) tbShotsKick(true); }); });
 addEventListener("offline",()=>{ tbNet={st:"off",ms:0,at:Date.now()}; tbProgPaint(); });
 async function tbImgSrc(b,mode){ if(mode!=="export"){ let u=tbShotURL.get(b); if(!u){ u=URL.createObjectURL(b); tbShotURL.set(b,u); } return u; } return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); }
-async function tbDayMap(di,mode){ const b=tbShots&&tbShots.days[di]&&tbShots.days[di].map; if(!b) return mode!=="export"&&(tbShotBusy||!tbShots)?`<div class="tb-mapwait">กำลังวาดแผนที่ของวันนี้…</div>`:"";
-  return `<img class="tb-daymap" src="${await tbImgSrc(b,mode)}" alt="แผนที่วันที่ ${DAYS[di].n}">`; }
+async function tbDayMap(di,mode){ const b=tbShots&&tbShots.days[di]&&tbShots.days[di].map; if(!b) return mode!=="export"&&(tbShotBusy||!tbShots)?`<div class="tb-mapwait" data-di="${di}">กำลังวาดแผนที่ของวันนี้…</div>`:"";
+  return `<img class="tb-daymap" data-map="${di}" src="${await tbImgSrc(b,mode)}" alt="แผนที่วันที่ ${DAYS[di].n}">`; }
 async function tbImgsReady(){ const until=Date.now()+8000; while(Date.now()<until){ const L=[...document.querySelectorAll("#tbBody img")]; if(L.every(i=>i.complete)) break; await tbSleep(200); } }
 async function tbOvPaint(){ const el=$("#tbOv"); if(!el) return; const h=await tbOverview("app"); const el2=$("#tbOv"); if(el2) el2.outerHTML=h; }
 /* the weather of a day, from the forecast before and the kept values after */
@@ -3552,7 +3581,7 @@ function tripSketch(w,h){ const all=[]; DAYS.forEach((d,di)=>{ const L=dayLine(d
 async function tbOverview(mode){ const app=mode!=="export"; const st=tripStats(); const kmAll=DAYS.reduce((a,_,di)=>a+tbDayKm(di),0);
   const nph=phMeta.filter(m=>!m.tbHide).length;
   let h=`<section class="tb-ov" id="tbOv"><header class="tb-ov-h"><p class="tb-kick">ภาพรวมทริป</p><h2>${DAYS.length} วัน · ~${kmAll.toLocaleString()} กม. · ${st.vis} จุดที่ไป · ${nph.toLocaleString()} รูป</h2></header>`;
-  h+=tbShots&&tbShots.trip?`<img class="tb-tripmap" src="${await tbImgSrc(tbShots.trip,mode)}" alt="แผนที่ทั้งทริป">`:(app?`<div class="tb-mapwait tall">${esc(tbShotErr?"ยังวาดแผนที่ไม่ได้ · ต่อเน็ตแล้วแอปจะวาดให้เอง":"กำลังวาดแผนที่ทั้งทริป…")}</div>`:"");
+  h+=tbShots&&tbShots.trip?`<img class="tb-tripmap" data-map="trip" src="${await tbImgSrc(tbShots.trip,mode)}" alt="แผนที่ทั้งทริป">`:(app?`<div class="tb-mapwait tall">${esc(tbShotErr?"ยังวาดแผนที่ไม่ได้ · ต่อเน็ตแล้วแอปจะวาดให้เอง":"กำลังวาดแผนที่ทั้งทริป…")}</div>`:"");
   h+=`<table class="tb-ovt"><tbody>${DAYS.map((d,di)=>{ const w=tbWxDay(di), ht=tbHotel(di), n=phMeta.filter(m=>m.day===di&&!m.tbHide).length;
     return `<tr style="--dc:${cssVar(`--d${d.n}`)}"><td class="tb-ovd"><b>${d.n}</b><span>${esc(d.dow)} ${Number(d.date.slice(8))} ${MON(d.date)}</span></td><td><p class="tb-ovr">${esc(d.title)}</p><p class="tb-ovm">${[w?`${w.e} ${w.tmin}–${w.tmax}°C`:"",tbDayKm(di)?`${tbDayKm(di)} กม.`:"",n?`${n} รูป`:"",ht?`🛏 ${esc(ht)}`:""].filter(Boolean).join(" · ")}</p></td></tr>`; }).join("")}</tbody></table>`;
   if(app&&tbShots&&!tbShotBusy) h+=`<p class="tb-ov-note">${tbShots.sig!==tbShotSig()?"แผนหรือรูปเปลี่ยนไปแล้ว ":""}<button class="btn small" data-tb="ov-retry">วาดแผนที่ใหม่</button></p>`;
@@ -4357,12 +4386,16 @@ function tpCoverLine(){ const tr=TRIP.trip; const cities=[]; DAYS.forEach(d=>{ S
   const drv=DAYS.filter(d=>d.mode==="drive").length; return [`${DAYS.length} วัน`+(drv&&drv<DAYS.length?` (ขับรถ ${drv} วัน)`:drv?" (ขับรถ)":""),tr.travelers?`${tr.travelers} คน`:"",cities.slice(0,6).join(" ")||tr.subtitle||""].filter(Boolean).join(" · "); }
 
 /* the stories at the back of the Tripbook: Wikipedia on the places we went (fetched once, with the maps) */
-async function tbStoriesFetch(){ const out=[], seen=new Set();
-  for(let di=0;di<DAYS.length&&out.length<20;di++) for(const it of planItems(di)){ if(out.length>=20) break;
-    if(!it.p||!P[it.p]||it.k==="opt"||it.k==="drive"||it.k==="train"||it.auto||!tbVisited(di,it._i)||seen.has(it.p)) continue; seen.add(it.p);
-    let w=null; try{ const wp=await tpWikiFind(P[it.p][0],[P[it.p][1],P[it.p][2]]); if(wp) w=await wikiSummary(wp,""); }catch(e){}
-    if(!w||!w.extract) continue; out.push({di,k:TP_TYPES[it.type]?TP_TYPES[it.type].th:"",t:it.n,x:"",body:[w.extract.length>900?w.extract.slice(0,900)+"…":w.extract],facts:[],src:"จาก Wikipedia: "+w.title}); }
-  return out; }
+/* several places at once, each given a few seconds, so a slow answer never holds up the book */
+async function tbStoriesFetch(prog){ const cand=[], seen=new Set();
+  for(let di=0;di<DAYS.length;di++) for(const it of planItems(di)){ if(!it.p||!P[it.p]||it.k==="opt"||it.k==="drive"||it.k==="train"||it.auto||!tbVisited(di,it._i)||seen.has(it.p)) continue; seen.add(it.p); cand.push({di,it}); }
+  if(!cand.length||tbNet.st==="off") return [];
+  const until=Date.now()+30000; let done=0, found=0; prog&&prog(0,cand.length);
+  const res=await tbPool(cand,5,async({di,it})=>{ let r=null;
+    if(found<24&&Date.now()<until){ try{ const w=await Promise.race([(async()=>{ const wp=await tpWikiFind(P[it.p][0],[P[it.p][1],P[it.p][2]]); return wp?await wikiSummary(wp,""):null; })(),tbSleep(8000).then(()=>null)]);
+      if(w&&w.extract){ found++; r={di,k:TP_TYPES[it.type]?TP_TYPES[it.type].th:"",t:it.n,x:"",body:[w.extract.length>900?w.extract.slice(0,900)+"…":w.extract],facts:[],src:"จาก Wikipedia: "+w.title}; } }catch(e){} }
+    prog&&prog(++done,cand.length); return r; });
+  return res.filter(Boolean).slice(0,20); }
 function tbStoriesList(){ return (tbShots&&tbShots.stories)||[]; }
 
 /* ===================== Trip planner: the planning sheet (Excel / Google Sheets) — write, read, check ===================== */
