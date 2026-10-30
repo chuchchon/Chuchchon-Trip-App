@@ -3384,7 +3384,7 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-phr li{display:grid;grid-template-columns:1fr;padding:6px 0;border-bottom:1px solid #EEF1EF;font-size:13.5px}.tb-phr b{font-size:15px}.tb-phr span{color:#69737D}
 @media (min-width:760px){ .tb-stories{columns:2} .tb-drinks{grid-template-columns:1fr 1fr} }
 @media screen{ .tb-dt thead td{position:sticky;top:var(--tbbar,46px);z-index:2} }
-@media print{ .tb-ov-note,.tb-ov-wait,.tb-more,[data-tb="ov-retry"]{display:none!important} .tb-cover{min-height:auto;height:100vh} .tb-ov,.tb-day,.tb-x{page-break-before:always} .tb-ov{padding-top:0} .tb-tripmap{max-height:46vh;width:auto;max-width:100%;margin-left:auto;margin-right:auto} .tb-ovt td{padding:5px 0} .tb-daymap{max-height:52vh;object-fit:cover} .tb-dh,.tb-daymap{break-after:avoid} .tb-ovt tr,.tb-nums li{break-inside:avoid} .tb-stories{columns:2} .tb-drinks{grid-template-columns:1fr 1fr} .tb-x .tb-xt{break-after:avoid} }`;
+@media print{ .tb-ov-note,.tb-ov-wait,.tb-more,[data-tb="ov-retry"]{display:none!important} .tb-cover{min-height:auto;height:100vh} .tb-ov,.tb-day,.tb-x{page-break-before:always} .tb-ov{padding-top:0} .tb-tripmap{max-height:86vh;width:auto;max-width:100%;margin-left:auto;margin-right:auto;break-after:page} .tb-ovt td{padding:5px 0} .tb-daymap{max-height:52vh;object-fit:cover} .tb-dh,.tb-daymap{break-after:avoid} .tb-ovt tr,.tb-nums li{break-inside:avoid} .tb-stories{columns:2} .tb-drinks{grid-template-columns:1fr 1fr} .tb-x .tb-xt{break-after:avoid} }`;
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
   r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">พิมพ์ / PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button><div id="tbProg" class="tb-prog" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); tbProgPaint(); try{ history.pushState({tb:1},""); }catch(e){}
@@ -3439,10 +3439,13 @@ const tbLX=(lon,z)=>(lon+180)/360*TB_TS*2**z;
 const tbLY=(lat,z)=>{ const r=Math.max(-85,Math.min(85,lat))*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*TB_TS*2**z; };
 function tbLoadImg(src,ms){ return new Promise(res=>{ const im=new Image(); im.crossOrigin="anonymous"; let done=false; const fin=v=>{ if(!done){ done=true; res(v); } }; im.onload=()=>fin(im); im.onerror=()=>fin(null); setTimeout(()=>fin(null),ms||9000); im.src=src; }); }
 /* the photo for a stop's circle: the one marked as cover, else the first of ours there, else a picture of the place */
-async function tbStopPic(di,keys,p,allowWeb){ const L=phMeta.filter(m=>m.day===di&&keys.includes(m.key)&&m.kind!=="video"&&!m.tbHide); const m=L.find(x=>x.cover)||L[0];
-  if(m){ try{ const b=await PDB.getBlob(m.id); const bl=b&&(b.thumb||b.full); if(bl) return await createImageBitmap(bl); }catch(e){} }
-  if(allowWeb&&p&&typeof commonsPhotos==="function"){ try{ const ll=[p[1],p[2]]; const list=await Promise.race([commonsPhotos(p[4]||p[0],1,p[6]||latinName(p[0]),ll),tbSleep(5000).then(()=>null)]); if(list&&list[0]&&list[0].src) return await tbLoadImg(list[0].src,6000); }catch(e){} }
+async function tbPhotoBitmap(m){ try{ const b=await PDB.getBlob(m.id); const bl=b&&(b.thumb||b.full); if(bl) return await createImageBitmap(bl); }catch(e){} return null; }
+async function tbStopPic(di,keys,p){ const ok=m=>m.kind!=="video"&&!m.tbHide; const L=phMeta.filter(m=>m.day===di&&keys.includes(m.key)&&ok(m)); const m=L.find(x=>x.cover)||L[0];
+  if(m){ const bm=await tbPhotoBitmap(m); if(bm) return bm; }
+  if(p&&typeof commonsPhotos==="function"){ try{ const list=await Promise.race([commonsPhotos(p[4]||p[0],1,p[6]||latinName(p[0]),[p[1],p[2]]),tbSleep(9000).then(()=>null)]); if(list&&list[0]&&list[0].src){ const im=await tbLoadImg(list[0].src,8000); if(im) return im; } }catch(e){} }
+  if(p){ let best=null, bd=0.3; phMeta.forEach(x=>{ if(!ok(x)||x.lat==null) return; const d=km([x.lat,x.lng],[p[1],p[2]]); if(d<bd){ bd=d; best=x; } }); if(best){ const bm=await tbPhotoBitmap(best); if(bm) return bm; } }
   return null; }
+async function tbPool(items,n,fn){ const out=new Array(items.length); let i=0; await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{ while(i<items.length){ const k=i++; out[k]=await fn(items[k],k); } })); return out; }
 function tbCircle(ctx,x,y,r,img,col,label,sc){ ctx.save(); ctx.shadowColor="rgba(0,0,0,.35)"; ctx.shadowBlur=6*sc; ctx.shadowOffsetY=2*sc;
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=img?"#fff":col; ctx.fill(); ctx.restore();
   if(img){ ctx.save(); ctx.beginPath(); ctx.arc(x,y,r-1.5*sc,0,Math.PI*2); ctx.clip(); const iw=img.width, ih=img.height, s=Math.max(2*r/iw,2*r/ih); ctx.drawImage(img,x-iw*s/2,y-ih*s/2,iw*s,ih*s); ctx.restore(); }
@@ -3455,13 +3458,11 @@ async function tbMapPic(spec,W,H){ const DPR=2, CW=W*DPR, CH=H*DPR, sc=DPR; cons
   const days=spec.trip?DAYS.map((_,i)=>i):[spec.di];
   for(const di of days){ const col=cssVar(`--d${DAYS[di].n}`)||"#2F6FB3"; const L=dayLine(di)||[]; if(L.length>1) lines.push({pts:L,col});
     const seq=stopSeq(di).filter(x=>x.num&&x.it.p&&P[x.it.p]);
-    if(spec.trip){ let best=null,bn=-1; seq.forEach(x=>{ const n=phMeta.filter(m=>m.day===di&&m.key===x.it._i&&m.kind!=="video"&&!m.tbHide).length; if(n>bn){ bn=n; best=x; } });
-      if(best) marks.push({di,p:best.it.p,keys:[best.it._i],col,label:String(DAYS[di].n),r:bn>0?26:13,web:false}); }
-    else { const g={}; seq.forEach(x=>{ (g[x.it.p]=g[x.it.p]||[]).push(x); }); Object.values(g).forEach(L2=>marks.push({di,p:L2[0].it.p,keys:L2.map(y=>y.it._i),col,label:L2.map(y=>y.num).join(","),r:30,web:true})); } }
+    const g={}; seq.forEach(x=>{ (g[x.it.p]=g[x.it.p]||[]).push(x); }); Object.values(g).forEach((L2,j)=>marks.push({di,p:L2[0].it.p,keys:L2.map(y=>y.it._i),col,label:spec.trip?(j===0?"D"+DAYS[di].n:""):L2.map(y=>y.num).join(","),r:spec.trip?22:30})); }
   const pts=lines.flatMap(l=>l.pts).concat(marks.map(m=>[P[m.p][1],P[m.p][2]])); if(!pts.length) return {blob:null,missing:false};
   let s=90,w=180,n=-90,e=-180; pts.forEach(([la,lo])=>{ s=Math.min(s,la); n=Math.max(n,la); w=Math.min(w,lo); e=Math.max(e,lo); });
   /* zoom so everything fits with room for the photo circles */
-  const padX=70, padY=70; const dx=Math.max(1e-9,tbLX(e,0)-tbLX(w,0)), dy=Math.max(1e-9,tbLY(s,0)-tbLY(n,0));
+  const padX=spec.trip?40:70, padY=spec.trip?40:70; const dx=Math.max(1e-9,tbLX(e,0)-tbLX(w,0)), dy=Math.max(1e-9,tbLY(s,0)-tbLY(n,0));
   let fz=Math.min(Math.log2((W-2*padX)/dx),Math.log2((H-2*padY)/dy)); fz=Math.max(2,Math.min(16,fz));
   const zt=Math.min(18,Math.floor(fz)+1), k=2**(fz-zt)*DPR;   /* canvas px per tile px */
   const cx=(tbLX(w,zt)+tbLX(e,zt))/2, cy=(tbLY(n,zt)+tbLY(s,zt))/2; const X=lo=>(tbLX(lo,zt)-cx)*k+CW/2, Y=la=>(tbLY(la,zt)-cy)*k+CH/2;
@@ -3477,8 +3478,17 @@ async function tbMapPic(spec,W,H){ const DPR=2, CW=W*DPR, CH=H*DPR, sc=DPR; cons
   ctx.lineJoin="round"; ctx.lineCap="round";
   lines.forEach(l=>{ ctx.beginPath(); l.pts.forEach(([la,lo],i)=>i?ctx.lineTo(X(lo),Y(la)):ctx.moveTo(X(lo),Y(la))); ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=(spec.trip?7:10)*sc; ctx.stroke(); ctx.strokeStyle=l.col; ctx.lineWidth=(spec.trip?3.5:5)*sc; ctx.stroke(); });
   /* stops: round photos, numbered */
-  const pics=await Promise.all(marks.map(m=>tbStopPic(m.di,m.keys,P[m.p],m.web)));
-  marks.map((m,i)=>({m,i,y:Y(P[m.p][1])})).sort((a,b)=>a.y-b.y).forEach(({m,i})=>{ const img=pics[i]; tbCircle(ctx,X(P[m.p][2]),Y(P[m.p][1]),(img?m.r:Math.min(m.r,13))*sc,img,m.col,m.label,sc); });
+  const pics=await tbPool(marks,6,m=>tbStopPic(m.di,m.keys,P[m.p]));
+  /* stops close together are spread apart so every photo shows; a thin line points back to the real spot */
+  const C=marks.map((m,i)=>{ const ax=X(P[m.p][2]), ay=Y(P[m.p][1]); return {m,i,ax,ay,x:ax,y:ay,R:(pics[i]?m.r:Math.min(m.r,spec.trip?9:13))*sc}; });
+  const gap=3*sc, fit=c=>{ c.x=Math.max(c.R+2*sc,Math.min(CW-c.R-2*sc,c.x)); c.y=Math.max(c.R+2*sc,Math.min(CH-c.R-24*sc,c.y)); };
+  for(let it=0;it<400;it++){ let moved=false;
+    for(let a=0;a<C.length;a++) for(let b=a+1;b<C.length;b++){ const A=C[a], B=C[b]; let dx=B.x-A.x, dy=B.y-A.y, d=Math.hypot(dx,dy); const need=A.R+B.R+gap;
+      if(d<need){ if(d<.01){ const ang=(a*2.399+b*1.7)%(Math.PI*2); dx=Math.cos(ang); dy=Math.sin(ang); d=1; } else { dx/=d; dy/=d; } const push=(need-d)/2+.1; A.x-=dx*push; A.y-=dy*push; B.x+=dx*push; B.y+=dy*push; moved=true; } }
+    if(it<300) C.forEach(c=>{ c.x+=(c.ax-c.x)*.03; c.y+=(c.ay-c.y)*.03; }); C.forEach(fit); if(!moved&&it>=300) break; }
+  C.forEach(c=>{ if(Math.hypot(c.x-c.ax,c.y-c.ay)>c.R*.6){ ctx.beginPath(); ctx.moveTo(c.ax,c.ay); ctx.lineTo(c.x,c.y); ctx.strokeStyle="rgba(255,255,255,.9)"; ctx.lineWidth=4*sc; ctx.stroke(); ctx.strokeStyle=c.m.col; ctx.lineWidth=1.8*sc; ctx.stroke();
+    ctx.beginPath(); ctx.arc(c.ax,c.ay,4*sc,0,Math.PI*2); ctx.fillStyle=c.m.col; ctx.fill(); ctx.lineWidth=1.5*sc; ctx.strokeStyle="#fff"; ctx.stroke(); } });
+  C.sort((a,b)=>a.y-b.y).forEach(c=>tbCircle(ctx,c.x,c.y,c.R,pics[c.i],c.m.col,c.m.label,sc));
   /* credit */
   const cr=missing?"เส้นทางโดยประมาณ (โหลดพื้นแผนที่ไม่ครบ)":"© OpenStreetMap contributors"; ctx.font=`500 ${11*sc}px "Anuphan", system-ui, sans-serif`; const tw=ctx.measureText(cr).width;
   ctx.fillStyle="rgba(255,255,255,.85)"; ctx.fillRect(CW-tw-14*sc,CH-20*sc,tw+14*sc,20*sc); ctx.fillStyle="#3D4650"; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(cr,CW-tw-7*sc,CH-10*sc);
@@ -3488,7 +3498,7 @@ async function makeTbShots(prog){
   const out={sig:tbShotSig(),at:Date.now(),days:DAYS.map(()=>({})),trip:null,stories:null,missing:0}; const total=DAYS.length+2; let k=0;
   const step=m=>{ if(tbShotAbort) throw new Error("abort"); prog&&prog(++k,total,m); };
   for(let di=0;di<DAYS.length;di++){ step(`แผนที่ D${DAYS[di].n}`); const r=await tbMapPic({di},760,500); out.days[di].map=r.blob; if(r.blob&&r.missing) out.missing++; }
-  step("แผนที่ทั้งทริป"); const r=await tbMapPic({trip:true},760,620); out.trip=r.blob; if(r.blob&&r.missing) out.missing++;
+  step("แผนที่ทั้งทริป"); const r=await tbMapPic({trip:true},760,900); out.trip=r.blob; if(r.blob&&r.missing) out.missing++;
   step("เรื่องเล่าท้ายเล่ม"); out.stories=await tbStoriesFetch();
   return out; }
 var tbNet={st:"",ms:0,at:0}, tbProgV={i:0,n:0,msg:""}, tbExp={busy:false,i:0,n:0,t:0}, tbDoneAt=0;
