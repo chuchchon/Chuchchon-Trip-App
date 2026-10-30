@@ -3694,9 +3694,10 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
     return `<div class="tb-grid n${Math.min(show.length,5)}"${app?` data-tbg="${esc(gk)}"`:""}>${(await Promise.all(show.map((m,j)=>fig(m,j<bigN)))).join("")}</div>${app&&list.length>lim?`<button class="btn small tb-more" data-tb="more" data-g="${esc(gk)}">ดูอีก ${list.length-lim} รูปของจุดนี้</button>`:""}`; };
   const st=tripStats(); const pics=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide); const vids=phMeta.filter(m=>m.kind==="video"&&!m.tbHide).length; const cover=pics.find(m=>m.cover)||pics.find(m=>m.key&&m.lat!=null)||pics[0];
   let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>${DAYS.length} วัน (ขับรถ ${CARFREE_DAY} วันแรก) · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${pics.length}</b>รูป</li>${vids?`<li><b>${vids}</b>วิดีโอ</li>`:""}<li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
+  h+=await tbOvHtml(mode);
   for(let i=0;i<DAYS.length;i++){ const d=DAYS[i]; const seq=stopSeq(i).filter(x=>x.num); const dayPh=phMeta.filter(m=>m.day===i&&shown(m));
     if(!dayPh.length&&!seq.some(x=>isVisited(i,x.it._i))) continue;   /* a day we haven't reached yet */
-    h+=`<section class="tb-day" style="--dc:${cssVar(`--d${d.n}`)}"><header><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม</p><h2>${esc(d.title)}</h2></div></header>${routeSketch(i,640,220)}`;
+    h+=`<section class="tb-day" style="--dc:${cssVar(`--d${d.n}`)}"><header><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม</p><h2>${esc(d.title)}</h2></div></header>${await tbDayMap(i,mode)}`;
     for(const x of seq){ const k=x.it._i; const ps=dayPh.filter(m=>m.key===k); const vis=tbVisited(i,k);
       if(!ps.length&&!vis) continue;
       if(!ps.length){ h+=`<p class="tb-line"><span>${x.num}</span>${esc(x.it.n)}<em>${esc(x.it.t)}</em></p>`; continue; }
@@ -3706,7 +3707,6 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
     for(const g of placeGroups().filter(g=>g.day===i&&g.list.some(shown))) h+=`<article class="tb-stop"><h3>${esc(placeLabel(g.place))}</h3>${g.list[0].takenAt?`<p class="tb-t" style="margin-left:0">${fmtMin(jstMin(g.list[0].takenAt))}</p>`:""}${await grid(g.list,1,"g|"+g.id)}</article>`;
     const loose=dayPh.filter(m=>!m.key&&!m.place); if(loose.length) h+=`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3>${await grid(loose,0,i+"|loose")}</article>`;
     h+=`</section>`; }
-  h+=await tbOvHtml(mode);
   h+=`<footer class="tb-end"><p>ฮอกไกโด ตุลาคม 2026</p></footer>`;
   return h; }
 const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,sans-serif}
@@ -3722,7 +3722,11 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-dn{font-size:54px;line-height:.9;font-weight:700;color:var(--dc)}
 .tb-day header p{margin:4px 0 0;color:#69737D;font-size:14px}.tb-day h2{margin:2px 0 0;font-size:22px;line-height:1.3}
 .tb-route{width:100%;height:auto;background:#F5F7F9;border-radius:14px;margin:6px 0 14px}
-.tb-stop{margin:0 0 22px;break-inside:avoid}
+.tb-stop{margin:0 0 22px}
+.tb-stop h3,.tb-t{break-after:avoid;page-break-after:avoid}
+.tb-grid figure{break-inside:avoid}
+.tb-daymap{display:block;width:100%;height:auto;border-radius:14px;margin:6px 0 14px;border:1px solid #E3E8E5}
+.tb-daymap.tall{max-width:412px;margin-left:auto;margin-right:auto}
 .tb-stop h3{display:flex;align-items:center;gap:10px;margin:0;font-size:18px}
 .tb-stop h3 span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--dc);color:#fff;font-size:13px;flex:0 0 auto}
 .tb-t{margin:2px 0 8px 36px;color:#69737D;font-size:13px}
@@ -3741,7 +3745,8 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-ov{padding:34px 18px 10px;max-width:980px;margin:0 auto}
 .tb-ov-h h2{font-size:30px;line-height:1.15;margin:0}.tb-ov-h p{margin:4px 0 18px;color:#69737D;font-size:14px}
 .tb-ov-wait{color:#69737D;font-size:15px}.tb-ov-note{margin:6px 0 0;color:#69737D;font-size:13px}
-.tb-ov-day,.tb-ov-tab{margin:0 0 30px}
+.tb-ov-day,.tb-ov-tab,.tb-ov-trip{margin:0 0 30px}
+.tb-ov-trip h3{margin:0 0 10px;font-size:18px}
 .tb-ov-day h3,.tb-ov-tab h3{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:18px;line-height:1.35}
 .tb-ov-day h3 span{background:var(--dc);color:#fff;border-radius:8px;padding:1px 8px;font-size:14px;flex:0 0 auto}
 .tb-ov-row{display:grid;gap:14px;grid-template-columns:1fr;align-items:start}
@@ -3749,7 +3754,7 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-shots img{display:block;width:100%;height:auto}
 .tb-shots figcaption{font-size:12px;color:#69737D;text-align:center;padding:5px 0}
 @media (min-width:760px){ .tb-ov-row{grid-template-columns:1fr 1fr} .tb-ov-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start} }
-@media print{ .tb-cover{min-height:auto;height:100vh} .tb-day{page-break-before:always} .tb-ov{page-break-before:always} .tb-ov-day,.tb-ov-tab{page-break-before:always} .tb-shots{box-shadow:none} .tb-shots img{break-inside:avoid} }`;
+@media print{ .tb-cover{min-height:auto;height:100vh} .tb-day{page-break-before:always} .tb-ov{page-break-before:always} .tb-ov-day,.tb-ov-tab{page-break-before:always} .tb-ov-trip .tb-shots{max-width:340px} .tb-shots{box-shadow:none} .tb-shots img{break-inside:avoid} .tb-daymap{max-height:62vh;object-fit:cover;break-inside:avoid} .tb-day header{break-after:avoid} }`;
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
   r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">พิมพ์ / PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); try{ history.pushState({tb:1},""); }catch(e){}
@@ -3760,7 +3765,7 @@ async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElem
     if(a==="hid"){ tbShowHid=!tbShowHid; await tbRender(); tbMark(); return; }
     if(a==="ov-retry"){ tbShotsKick(true); return; }
     if(a==="close"){ closeTripbook(); if(history.state&&history.state.tb){ const h=()=>{ removeEventListener("popstate",h); setTimeout(tbReopen,0); }; addEventListener("popstate",h); selfBack(1); } else tbReopen(); }
-    if(a==="print") window.print();
+    if(a==="print"){ const t0=b.textContent; if(tbShotBusy){ b.textContent="รอภาพหน้าจอ…"; try{ await tbShotBusy; }catch(e){} await tbRender(); } b.textContent="กำลังเตรียม…"; await tbImgsReady(); b.textContent=t0; window.print(); }
     if(a==="save"){ if(tbShotBusy){ b.textContent="รอภาพหน้าจอให้เสร็จก่อน…"; try{ await tbShotBusy; }catch(e){} } b.textContent="กำลังเตรียมไฟล์…"; const body=await tripbookHtml("export");
       const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ฮอกไกโด 2026</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
       const blob=new Blob([doc],{type:"text/html"}), fn="Hokkaido-Tripbook-2026.html";
@@ -3787,10 +3792,10 @@ function shotReturn(o){ if(!o) return; o.parent.insertBefore(o.el,o.next&&o.next
 async function shotWarm(el,ms){ const st=$("#shotStage"); try{ hydrateThumbs(el); }catch(e){} try{ hydratePhotos(el); }catch(e){}
   if(st){ for(let y=0;y<el.scrollHeight;y+=500){ st.scrollTop=y; await tbSleep(60); } st.scrollTop=0; }
   const until=Date.now()+(ms||2500); while(Date.now()<until){ const imgs=[...el.querySelectorAll("img")].filter(i=>i.getAttribute("src")&&!i.complete); const busy=[...el.querySelectorAll(".thumb:not(.ok)[data-done]")].length; if(!imgs.length&&!busy) break; await tbSleep(150); } }
-async function shotOf(el,font,maxH){ const H=window.htmlToImage; const w=el.offsetWidth||SHOT_W, h=Math.max(1,el.scrollHeight); const r=Math.max(1,Math.min(2,15000/h));
-  const skip=["tp-ban","fresh","leaflet-control-zoom","loc-ctl","fab-ex","dh-tip"];
+async function shotOf(el,font,maxH,more){ const H=window.htmlToImage; const w=el.offsetWidth||SHOT_W, h=Math.max(1,el.scrollHeight); const r=Math.max(1,Math.min(2,15000/h));
+  const skip=["tp-ban","fresh","leaflet-control-zoom","loc-ctl","fab-ex","dh-tip"].concat(more||[]);
   const cv=await H.toCanvas(el,{pixelRatio:r,width:w,height:h,backgroundColor:getComputedStyle(document.body).backgroundColor||"#fff",cacheBust:false,imagePlaceholder:SHOT_PX,fontEmbedCSS:font||undefined,skipFonts:!font,filter:n=>!(n.classList&&skip.some(c=>n.classList.contains(c)))});
-  const ph=Math.round((maxH||2000)*cv.height/h), out=[];
+  const ph=Math.round((maxH||900)*cv.height/h), out=[];
   for(let y=0;y<cv.height;y+=ph){ let hh=Math.min(ph,cv.height-y); if(cv.height-(y+hh)<ph*.2){ hh=cv.height-y; } const c=document.createElement("canvas"); c.width=cv.width; c.height=hh; c.getContext("2d").drawImage(cv,0,y,cv.width,hh,0,0,cv.width,hh);
     out.push(await new Promise(res=>c.toBlob(res,"image/jpeg",.85))); if(y+hh>=cv.height) break; }
   return out.filter(Boolean); }
@@ -3800,7 +3805,7 @@ async function mapSettled(){ await new Promise(r=>{ let done=false; const f=()=>
 async function makeTbShots(prog){ const H=await loadH2I(); let font=""; try{ font=await H.getFontEmbedCSS($("#p-plan")); }catch(e){ font=""; }
   const keep={day:curDay,mapDay,flags:Object.assign({},mapFlags),view:map?[map.getCenter(),map.getZoom()]:null};
   const tabs=["stories","food","drinks"].filter(t=>{ const b=$(`.tab[data-tab="${t}"]`), p=$("#p-"+t); return b&&p&&p.querySelector(".story,.food-row,.drink,.sp-card,article"); });
-  const out={sig:tbShotSig(),at:Date.now(),days:DAYS.map(()=>({plan:[],map:null})),tabs:[]}; const total=DAYS.length*2+1+tabs.length; let k=0; const step=m=>{ if(tbShotAbort) throw new Error("abort"); prog&&prog(++k,total,m); };
+  const out={sig:tbShotSig(),at:Date.now(),days:DAYS.map(()=>({plan:[],map:null})),tabs:[]}; const total=DAYS.length*3+1+tabs.length; let k=0; const step=m=>{ if(tbShotAbort) throw new Error("abort"); prog&&prog(++k,total,m); };
   let lent=null;
   try{
     lent=shotBorrow($("#p-plan"),"position:relative;inset:auto;height:auto;overflow:visible");
@@ -3809,6 +3814,9 @@ async function makeTbShots(prog){ const H=await loadH2I(); let font=""; try{ fon
     if(typeof L!=="undefined"){ lent=shotBorrow($("#p-map"),`position:relative;inset:auto;height:${Math.round(SHOT_W*1.5)}px;overflow:hidden`);
       if(!map) initMap(); map.invalidateSize({pan:false}); mapFlags.trip=false;
       for(let i=0;i<DAYS.length;i++){ step(`แผนที่ D${DAYS[i].n}`); mapDay=i; renderMapChips(); drawMap(true); await mapSettled(); out.days[i].map=(await shotOf($("#p-map"),font,99999))[0]||null; }
+      lent.el.style.height="470px"; $("#shotStage").style.width="760px"; map.invalidateSize({pan:false});
+      for(let i=0;i<DAYS.length;i++){ step(`แผนที่ D${DAYS[i].n} (หน้าวัน)`); mapDay=i; drawMap(true); await mapSettled(); out.days[i].wide=(await shotOf($("#p-map"),font,99999,["map-ui","map-legend","leaflet-control-container"]))[0]||null; }
+      $("#shotStage").style.width=SHOT_W+"px"; lent.el.style.height=Math.round(SHOT_W*1.5)+"px"; map.invalidateSize({pan:false});
       step(TB_TABS.map); mapFlags.trip=true; renderMapChips(); drawMap(true); await mapSettled(); out.tabs.push({t:"map",imgs:await shotOf($("#p-map"),font,99999)});
       shotReturn(lent); lent=null; }
     for(const t of tabs){ step(TB_TABS[t]); lent=shotBorrow($("#p-"+t),"position:relative;inset:auto;height:auto;overflow:visible"); await shotWarm($("#p-"+t),3000); out.tabs.push({t,imgs:await shotOf($("#p-"+t),font)}); shotReturn(lent); lent=null; }
@@ -3821,17 +3829,22 @@ function tbShotsKick(force){ if(tbShotBusy) return tbShotBusy; if(!force&&tbShot
   tbShotBusy=(async()=>{ try{ const s=await makeTbShots((i,n,m)=>{ tbShotProg=`กำลังทำภาพหน้าจอ ${i}/${n}: ${m}`; const w=$("#tbOv .tb-ov-wait"); if(w) w.textContent=tbShotProg; });
       tbShotURL.forEach(u=>URL.revokeObjectURL(u)); tbShotURL.clear(); tbShots=s; }
     catch(e){ if(!tbShotAbort) tbShotErr="ทำภาพหน้าจอไม่สำเร็จ: "+(e&&e.message||e); }
-    finally{ tbShotBusy=null; tbShotProg=""; if(document.body.classList.contains("tb-open")) tbOvPaint(); } return tbShots; })();
+    finally{ tbShotBusy=null; tbShotProg=""; if(document.body.classList.contains("tb-open")){ if(tbShots) tbRender(); else tbOvPaint(); } } return tbShots; })();
   return tbShotBusy; }
+async function tbDayMap(i,mode){ const x=tbShots&&tbShots.days[i]; const b=x&&(x.wide||x.map); if(!b) return routeSketch(i,640,220);
+  const src=mode!=="export"?(tbShotURL.get(b)||(()=>{ const u=URL.createObjectURL(b); tbShotURL.set(b,u); return u; })()):await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); });
+  return `<img class="tb-daymap${x.wide?"":" tall"}" src="${src}" alt="แผนที่วันที่ ${DAYS[i].n}">`; }
+async function tbImgsReady(){ const until=Date.now()+8000; while(Date.now()<until){ const L=[...document.querySelectorAll("#tbBody img")]; if(L.every(i=>i.complete)) break; await tbSleep(200); } }
 async function tbOvPaint(){ const el=$("#tbOv"); if(!el) return; const h=await tbOvHtml("app"); const el2=$("#tbOv"); if(el2) el2.outerHTML=h; }
 async function tbOvHtml(mode){ const S=tbShots, app=mode!=="export";
   const src=async b=>{ if(app){ let u=tbShotURL.get(b); if(!u){ u=URL.createObjectURL(b); tbShotURL.set(b,u); } return u; } return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); };
   const shots=async(L,cap)=>L&&L.length?`<figure class="tb-shots">${(await Promise.all(L.map(async b=>`<img src="${await src(b)}" alt="">`))).join("")}${cap?`<figcaption>${esc(cap)}</figcaption>`:""}</figure>`:"";
   let h=`<section class="tb-ov" id="tbOv"><header class="tb-ov-h"><h2>ภาพรวมทริป</h2><p>Trip overall · แผนรายวัน แผนที่ และแท็บต่าง ๆ จากในแอป${S?` · ${esc(new Date(S.at).toLocaleString("th-TH",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}))}`:""}</p></header>`;
+  const tm=S&&S.tabs.find(t=>t.t==="map"&&t.imgs&&t.imgs.length); if(tm) h+=`<div class="tb-ov-trip"><h3>${esc(TB_TABS.map)}</h3>${await shots(tm.imgs,"")}</div>`;
   if(!S){ if(!app) return ""; return h+`<p class="tb-ov-wait">${esc(tbShotErr||tbShotProg||"กำลังเตรียมภาพหน้าจอ…")}</p>${tbShotErr?`<button class="btn small" data-tb="ov-retry">ลองอีกครั้ง</button>`:""}</section>`; }
   for(let i=0;i<DAYS.length;i++){ const d=DAYS[i], x=S.days[i]||{}; if(!x.map&&!(x.plan||[]).length) continue;
     h+=`<div class="tb-ov-day" style="--dc:${cssVar(`--d${d.n}`)}"><h3><span>D${d.n}</span>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม · ${esc(d.title)}</h3><div class="tb-ov-row">${await shots(x.plan,"แผนรายวัน")}${x.map?await shots([x.map],"แผนที่"):""}</div></div>`; }
-  const T=S.tabs.filter(t=>t.imgs&&t.imgs.length); if(T.length){ h+=`<div class="tb-ov-tabs">`; for(const t of T) h+=`<div class="tb-ov-tab"><h3>${esc(TB_TABS[t.t]||t.t)}</h3>${await shots(t.imgs,"")}</div>`; h+=`</div>`; }
+  const T=S.tabs.filter(t=>t.t!=="map"&&t.imgs&&t.imgs.length); if(T.length){ h+=`<div class="tb-ov-tabs">`; for(const t of T) h+=`<div class="tb-ov-tab"><h3>${esc(TB_TABS[t.t]||t.t)}</h3>${await shots(t.imgs,"")}</div>`; h+=`</div>`; }
   if(app) h+=`<p class="tb-ov-note">${tbShots.sig!==tbShotSig()?"แผนหรือรูปเปลี่ยนไปแล้ว ":""}<button class="btn small" data-tb="ov-retry">ทำภาพหน้าจอใหม่</button></p>`;
   return h+`</section>`; }
 addEventListener("popstate",()=>{ if(!popSelf&&document.body.classList.contains("tb-open")){ closeTripbook(); setTimeout(tbReopen,0); } });
