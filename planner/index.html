@@ -2384,7 +2384,7 @@ function commonsPhotos(q,n,en,ll){
   if(photoReq[key]) return photoReq[key];
   photoReq[key]=(async()=>{
     let out=[], ok=false; const seen=new Set(); const add=l=>{ (l||[]).forEach(x=>{ if(out.length<n&&x.src&&!seen.has(x.src)){ seen.add(x.src); out.push(x); } }); };
-    const tryS=async f=>{ try{ add(await f()); ok=true; }catch(e){} };
+    const tryS=async f=>{ try{ add(await Promise.race([f(),new Promise((_,no)=>setTimeout(()=>no(new Error("slow")),5000))])); ok=true; }catch(e){} };   /* one slow source must not hold up the others */
     await tryS(()=>srcCommons(q,n));
     if(out.length<n&&q.includes(" ")) await tryS(()=>srcCommons(q.split(" ").slice(0,-1).join(" "),n));
     if(out.length<n) await tryS(()=>srcWiki(q,3));
@@ -3303,8 +3303,9 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
     rows.push(`<header class="tb-dh"><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ${MONF(d.date)}</p><h2>${esc(d.title)}</h2></div></header>${await tbDayMap(di,mode)}<ul class="tb-facts">${w?`<li>${esc(tbWxText(w))}</li>`:""}${dkm?`<li>${carFreeAt(di)?"🚇":"🚗"} ~${dkm} กม.</li>`:""}${ht?`<li>🛏 ${esc(ht)}</li>`:""}<li>📷 ${dayPh.length} ${dayPh.some(m=>m.kind==="video")?"รูปและวิดีโอ":"รูป"}</li></ul>`);
     for(const x of seq){ const k=x.it._i; const ps=dayPh.filter(m=>m.key===k); const vis=tbVisited(i,k);
       if(!ps.length&&!vis) continue;
-      if(!ps.length){ rows.push(`<p class="tb-line"><span>${x.num}</span>${esc(x.it.n)}<em>${esc(x.it.t)}</em></p>`); continue; }
-      rows.push(`<article class="tb-stop"><h3><span>${x.num}</span>${esc(x.it.n)}</h3><p class="tb-t">${esc(x.it.t)}${x.it.e&&x.it.e!==x.it.t?"–"+esc(x.it.e):""}</p>${ps.length?await grid(ps,3,i+"|"+k):""}</article>`); }
+      const wxs=tbWxStop(i,x.it);
+      if(!ps.length){ rows.push(`<p class="tb-line"><span>${x.num}</span>${esc(x.it.n)}<em>${esc(x.it.t)}${wxs?" · "+esc(wxs):""}</em></p>`); continue; }
+      rows.push(`<article class="tb-stop"><h3><span>${x.num}</span>${esc(x.it.n)}</h3><p class="tb-t">${esc(x.it.t)}${x.it.e&&x.it.e!==x.it.t?"–"+esc(x.it.e):""}${wxs?`<span class="tb-wx"> · ${esc(wxs)}</span>`:""}</p>${ps.length?await grid(ps,3,i+"|"+k):""}</article>`); }
     const between=dayPh.filter(m=>m.key&&m.key.startsWith("leg:"));
     if(between.length) rows.push(`<article class="tb-stop"><h3>ระหว่างทาง</h3>${await grid(between,0,i+"|leg")}</article>`);
     for(const g of placeGroups().filter(g=>g.day===i&&g.list.some(shown))) rows.push(`<article class="tb-stop"><h3>${esc(placeLabel(g.place))}</h3>${g.list[0].takenAt?`<p class="tb-t" style="margin-left:0">${fmtMin(jstMin(g.list[0].takenAt))}</p>`:""}${await grid(g.list,1,"g|"+g.id)}</article>`);
@@ -3386,7 +3387,7 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 @media screen{ .tb-dt thead td{position:sticky;top:var(--tbbar,46px);z-index:2} }
 @media print{ .tb-ov-note,.tb-ov-wait,.tb-more,[data-tb="ov-retry"]{display:none!important} .tb-cover{min-height:auto;height:100vh} .tb-ov,.tb-day,.tb-x{page-break-before:always} .tb-ov{padding-top:0} .tb-tripmap{max-height:86vh;width:auto;max-width:100%;margin-left:auto;margin-right:auto;break-after:page} .tb-ovt td{padding:5px 0} .tb-daymap{max-height:52vh;object-fit:cover} .tb-dh,.tb-daymap{break-after:avoid} .tb-ovt tr,.tb-nums li{break-inside:avoid} .tb-stories{columns:2} .tb-drinks{grid-template-columns:1fr 1fr} .tb-x .tb-xt{break-after:avoid} }`;
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
-  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">พิมพ์ / PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button><div id="tbProg" class="tb-prog" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
+  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">สร้าง PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button><div id="tbProg" class="tb-prog" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); tbProgPaint(); try{ history.pushState({tb:1},""); }catch(e){}
   tbSel=null; tbDel=false; $("#tbBody").innerHTML=await tripbookHtml("app"); tbWire(r); tbBarPaint(); setTimeout(()=>tbShotsKick(),300);
   r.onclick=async ev=>{ const b=ev.target.closest("[data-tb]"); if(!b) return; const a=b.dataset.tb;
@@ -3395,7 +3396,7 @@ async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElem
     if(a==="hid"){ tbShowHid=!tbShowHid; await tbRender(); tbMark(); return; }
     if(a==="ov-retry"){ tbShotsKick(true); return; }
     if(a==="close"){ closeTripbook(); if(history.state&&history.state.tb){ const h=()=>{ removeEventListener("popstate",h); setTimeout(tbReopen,0); }; addEventListener("popstate",h); selfBack(1); } else tbReopen(); }
-    if(a==="print"){ const t0=b.textContent; if(tbShotBusy||tbStoryBusy){ b.textContent=tbShotBusy?"รอแผนที่…":"รอเรื่องเล่าท้ายเล่ม…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} await tbRender(); } b.textContent="กำลังเตรียม…"; await tbImgsReady(); b.textContent=t0; window.print(); }
+    if(a==="print"){ tbMakePdf(b); return; }
     if(a==="save"){ if(tbShotBusy||tbStoryBusy){ b.textContent=tbShotBusy?"รอแผนที่ให้เสร็จก่อน…":"รอเรื่องเล่าท้ายเล่ม…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} } b.textContent="กำลังเตรียมไฟล์…"; tbExp={busy:true,i:0,n:phMeta.filter(m=>!m.tbHide&&m.kind!=="video").length,t:0}; tbProgPaint(); let body=""; try{ body=await tripbookHtml("export"); } finally{ tbExp.busy=false; tbProgPaint(); }
       const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ${esc(TRIP.trip.trip_name||"")}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
       const blob=new Blob([doc],{type:"text/html"}), fn=tpFileBase()+"-Tripbook.html";
@@ -3449,7 +3450,7 @@ async function tbLocalSrc(di,keys,p){ const ok=m=>m.kind!=="video"&&!m.tbHide; c
   if(near){ const b=await tbBlobOf(near); if(b) return {blob:b}; }
   return null; }
 async function tbWebSrc(pk){ const p=P[pk]; if(!p||typeof commonsPhotos!=="function"||tbNet.st==="off") return null;
-  try{ const list=await Promise.race([commonsPhotos(p[4]||p[0],5,p[6]||latinName(p[0]),[p[1],p[2]]),tbSleep(7000).then(()=>null)]); const src=list&&list[0]&&list[0].src; if(src){ const im=await tbLoadImg(src,7000); if(im) return {img:im}; } }catch(e){} return null; }
+  try{ const list=await Promise.race([commonsPhotos(p[4]||p[0],5,p[6]||latinName(p[0]),[p[1],p[2]]),tbSleep(11000).then(()=>null)]); const src=list&&list[0]&&list[0].src; if(src){ const im=await tbLoadImg(src,7000); if(im) return {img:im}; } }catch(e){} return null; }
 function tbMemo(k,f){ if(!tbPicMemo) return f(); let pr=tbPicMemo.get(k); if(!pr){ pr=f(); tbPicMemo.set(k,pr); } return pr; }
 async function tbStopPic(di,keys,pk,web){ let src=await tbMemo("L|"+di+"|"+keys.join(",")+"|"+pk,()=>tbLocalSrc(di,keys,P[pk]));
   if(!src&&web) src=await tbMemo("W|"+pk,()=>tbWebSrc(pk)); if(!src) return null; if(src.img) return src.img; try{ return await createImageBitmap(src.blob); }catch(e){ return null; } }
@@ -3540,7 +3541,9 @@ function tbExpTick(){ tbExp.i++; const now=Date.now(); if(now-tbExp.t>250){ tbEx
 function tbProgPaint(){ const el=$("#tbProg"); if(!el) return; const st=tbNet.st;
   const NET={good:["good",`📶 เน็ตดี${tbNet.ms?` · ${tbNet.ms} ms`:""}`],slow:["slow","📶 เน็ตช้า · อาจใช้เวลานานขึ้น"],bad:["bad","⚠️ ต่อเซิร์ฟเวอร์แผนที่ไม่ได้"],off:["bad","📵 ไม่มีอินเทอร์เน็ต"]}[st]||["", "📶 กำลังเช็คเน็ต…"];
   let msg="", pct=-1, extra="";
-  if(tbExp.busy){ msg=tbExp.n?`กำลังรวมรูปลงไฟล์ ${Math.min(tbExp.i,tbExp.n).toLocaleString()} / ${tbExp.n.toLocaleString()}`:"กำลังเตรียมไฟล์…"; pct=tbExp.n?Math.min(100,Math.round(tbExp.i/tbExp.n*100)):-1; }
+  if(tbPdfBusy){ msg=tbPdfV.n?`กำลังสร้าง PDF หน้า ${tbPdfV.i} / ${tbPdfV.n}`:"PDF · "+(tbPdfV.msg||"กำลังเตรียม…"); pct=tbPdfV.n?Math.round(tbPdfV.i/tbPdfV.n*100):-1; }
+  else if(tbPdfOut&&Date.now()-tbPdfOut.at<6000&&(tbPdfOut.err||tbPdfOut.res)){ msg=tbPdfOut.err?tbPdfOut.err:tbPdfOut.res==="ok"?`บันทึก PDF แล้ว ✓ ${tbPdfOut.pages} หน้า · ${tbPdfOut.mb.toFixed(1)} MB`:tbPdfOut.res==="declined"?"ยกเลิกการบันทึก PDF":"บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; pct=tbPdfOut.err?-1:100; }
+  else if(tbExp.busy){ msg=tbExp.n?`กำลังรวมรูปลงไฟล์ ${Math.min(tbExp.i,tbExp.n).toLocaleString()} / ${tbExp.n.toLocaleString()}`:"กำลังเตรียมไฟล์…"; pct=tbExp.n?Math.min(100,Math.round(tbExp.i/tbExp.n*100)):-1; }
   else if(tbShotBusy){ const m=tbProgV.msg||"", web=/^(หา|ใส่)/.test(m); msg=tbProgV.n?`กำลัง${web?"":"วาด"}${m} · ${tbProgV.i}/${tbProgV.n}`:(m?"กำลัง"+m+"…":"กำลังเตรียม…"); pct=tbProgV.n?Math.round((web?tbProgV.i:tbProgV.i-1)/tbProgV.n*100):0; }
   else if(tbStoryBusy){ msg=tbStoryV.n?`แผนที่พร้อมแล้ว ✓ · กำลังหาเรื่องเล่าท้ายเล่ม ${tbStoryV.i}/${tbStoryV.n}`:"แผนที่พร้อมแล้ว ✓ · กำลังหาเรื่องเล่าท้ายเล่ม…"; pct=tbStoryV.n?Math.round(tbStoryV.i/tbStoryV.n*100):-1; }
   else if(tbShotErr){ msg=tbShotErr; extra=`<p>${st==="off"||st==="bad"?"แผนที่ในเล่มจะเป็นเส้นแบบเรียบไปก่อน พอเน็ตกลับมาแอปจะวาดให้เอง":"ลองอีกครั้ง หรือเปลี่ยนไปใช้ Wi-Fi"}</p><button class="btn small" data-tb="ov-retry">ลองอีกครั้ง</button>`; }
@@ -3570,6 +3573,11 @@ function tbWxDay(di){ const d=DAYS[di]; let tmin=99,tmax=-99,wet=0,cnt=0,ws=0,pm
   planItems(di).filter(it=>it.k!=="opt"&&it.k!=="drive"&&it.k!=="train"&&it.p).forEach(it=>{ const w=wxAt(it.p,d.date,it.t); if(!w) return; cnt++; tmin=Math.min(tmin,w.t); tmax=Math.max(tmax,w.t); ws=Math.max(ws,w.ws||0); pmax=Math.max(pmax,w.pp||0); codes[w.wc]=(codes[w.wc]||0)+1; if((w.pr||0)>=0.2) wet++; });
   if(!cnt) return null; const top=+Object.entries(codes).sort((a,b)=>b[1]-a[1])[0][0]; const [e,lab]=wxIcon(top);
   return {e,lab,tmin:Math.round(tmin),tmax:Math.round(tmax),wet,ws:Math.round(ws),past:d.date<jst().date,pmax}; }
+/* the weather at one stop, at the hour we were there */
+function tbWxStop(di,it){ if(!it||!it.p||!P[it.p]||!it.t) return ""; let w=null; try{ w=wxAt(it.p,DAYS[di].date,it.t); }catch(e){} if(!w||w.t==null) return "";
+  const [e,lab]=wxIcon(w.wc), past=DAYS[di].date<jst().date;
+  const rain=past?((w.pr||0)>=0.1?`ฝน ${(+w.pr).toFixed(1)} มม.`:""):(w.pp!=null&&w.pp>=20?`โอกาสฝน ${w.pp}%`:""), wind=(w.ws||0)>=5?`ลม ${Math.round(w.ws)} ม./วิ`:"";
+  return [`${e} ${Math.round(w.t)}°C${lab?" "+lab:""}`,rain,wind].filter(Boolean).join(" · "); }
 function tbWxText(w){ if(!w) return ""; return `${w.e} ${w.lab} · ${w.tmin}–${w.tmax}°C${w.past?(w.wet?" · มีฝน":" · ไม่มีฝน"):w.pmax?` · โอกาสฝน ${w.pmax}%`:""}${w.ws>=8?` · ลมแรง`:""}`; }
 function tbDayKm(di){ const ln=dayLine(di)||[]; let k=0; for(let j=1;j<ln.length;j++) k+=km(ln[j-1],ln[j]); return Math.round(k); }
 function tbHotel(di){ const d=DAYS[di]; if(!d.hotel) return ""; const b=BOOKINGS[d.hotel]; return (b&&b.n)||d.hotelName||(P[d.hotel]||[])[0]||""; }
@@ -3615,6 +3623,181 @@ async function tbExtras(mode){ const app=mode!=="export"; let h=`<section class=
   /* phrases */
   if(PHRASES.length) h+=`<h3 class="tb-xt">ประโยคที่ได้ใช้</h3><ul class="tb-phr">${PHRASES.slice(0,10).map(p=>`<li><b>${esc(p[0])}</b><span>${esc(p[1])}</span><span>${esc(p[2])}</span></li>`).join("")}</ul>`;
   return h+`</section>`; }
+/* ===================== Tripbook as a PDF, made here page by page: a phone's print preview chokes on a book with this many photos ===================== */
+const TBP={W:595.28,H:841.89,S:2.5,ML:40,MR:40,MT:50,MB:46};
+var tbPdfBusy=false, tbPdfV={i:0,n:0,msg:""}, tbPdfOut=null;
+const TBP_FF='"Anuphan","Noto Sans Thai","Sarabun","Leelawadee UI",system-ui,sans-serif';
+const tbpSeg=(()=>{ try{ return new Intl.Segmenter("th",{granularity:"word"}); }catch(e){ return null; } })();
+const tbpGra=(()=>{ try{ return new Intl.Segmenter("th",{granularity:"grapheme"}); }catch(e){ return null; } })();
+let tbpMC=null;
+function tbpW(font,s){ if(!tbpMC) tbpMC=document.createElement("canvas").getContext("2d"); tbpMC.font=font; return tbpMC.measureText(s).width; }
+function tbpFont(sz,w){ return `${w||400} ${sz}px ${TBP_FF}`; }
+/* lines that fit a width; Thai has no spaces between words, so words come from the browser's word breaker */
+function tbpWrap(text,font,maxW){ const out=[];
+  String(text==null?"":text).split("\n").forEach(par=>{ par=par.replace(/[ \t ]+/g," ").trim(); if(!par) return;
+    const toks=tbpSeg?[...tbpSeg.segment(par)].map(s=>s.segment):par.split(/(\s+)/); let line="";
+    for(const t of toks){ if(!t) continue; const cand=line+t;
+      if(tbpW(font,cand.trimEnd())<=maxW){ line=cand; continue; }
+      if(line.trim()){ out.push(line.trimEnd()); line=t.trimStart(); } else line=t.trimStart();
+      if(tbpW(font,line)>maxW){ const gs=tbpGra?[...tbpGra.segment(line)].map(s=>s.segment):Array.from(line); let cur="";
+        for(const g of gs){ if(cur&&tbpW(font,cur+g)>maxW){ out.push(cur); cur=g; } else cur+=g; } line=cur; } }
+    if(line.trim()) out.push(line.trimEnd()); });
+  return out; }
+function tbpClip(s,font,maxW){ s=String(s||""); if(tbpW(font,s)<=maxW) return s; const gs=tbpGra?[...tbpGra.segment(s)].map(x=>x.segment):Array.from(s); let o="";
+  for(const g of gs){ if(tbpW(font,o+g+"…")>maxW) break; o+=g; } return o.trimEnd()+"…"; }
+class TbpDoc{ constructor(){ this.pages=[]; this.pg=null; this.y=0; this.head=null; this.CW=TBP.W-TBP.ML-TBP.MR; this.BOT=TBP.H-TBP.MB; }
+  page(o){ o=o||{}; this.pg={ops:[],num:!o.nonum}; this.pages.push(this.pg); this.y=TBP.MT; if(this.head) this.runHead(); return this.pg; }
+  runHead(){ const [l,r]=this.head, f=tbpFont(8.5), y=24, rw=r?tbpW(f,r):0;
+    this.op({k:"text",s:tbpClip(l,f,this.CW-rw-16),x:TBP.ML,y,font:f,col:"#69737D"}); if(r) this.op({k:"text",s:r,x:TBP.W-TBP.MR,y,font:f,col:"#69737D",al:"right"});
+    this.op({k:"line",x1:TBP.ML,y1:y+15,x2:TBP.W-TBP.MR,y2:y+15,col:"#E3E8E5",lw:.8}); }
+  op(o){ if(!this.pg) this.page(); this.pg.ops.push(o); }
+  room(){ return this.BOT-this.y; }
+  need(h){ if(!this.pg||(this.y+h>this.BOT&&this.y>TBP.MT+1)) this.page(); } }
+function tbpLines(doc,lines,o){ const f=tbpFont(o.sz,o.w), lh=o.sz*(o.lh||1.5), x=o.al==="center"?TBP.W/2:TBP.ML+(o.ind||0);
+  lines.forEach(s=>{ doc.need(lh); doc.op({k:"text",s,x,y:doc.y,font:f,col:o.col||"#1C2228",al:o.al}); doc.y+=lh; }); }
+function tbpPara(doc,text,o){ const f=tbpFont(o.sz,o.w); tbpLines(doc,tbpWrap(text,f,o.mw||doc.CW-(o.ind||0)),o); }
+function tbpOwn(el,skip){ return [...el.childNodes].filter(n=>!skip||!skip.includes(n)).map(n=>n.nodeName==="BR"?"\n":n.textContent).join("").trim(); }
+function tbpHead(doc,sec){ const k=sec.querySelector(".tb-kick"), h2=sec.querySelector("header h2");
+  if(k){ doc.op({k:"text",s:k.innerText.trim().toUpperCase(),x:TBP.ML,y:doc.y,font:tbpFont(9.5),col:"#69737D",ls:1.6}); doc.y+=17; }
+  if(h2){ tbpPara(doc,h2.innerText,{sz:21,w:700,lh:1.35}); doc.y+=8; } }
+function tbpCover(doc,cv){ doc.head=null; doc.page({nonum:true}); const W=TBP.W,H=TBP.H,pad=44,mw=W-2*pad;
+  doc.op({k:"rect",x:0,y:0,w:W,h:H,fill:"#1C2228"});
+  const im=cv.querySelector("img"); if(im&&im.getAttribute("src")) doc.op({k:"img",url:im.src,x:0,y:0,w:W,h:H,alpha:.8});
+  const c=cv.querySelector(".tb-cv"); if(!c) return; const ps=[...c.querySelectorAll(":scope > p")], h1=c.querySelector("h1"), lis=[...c.querySelectorAll("li")];
+  const f1=tbpFont(14.5), fH=tbpFont(48,700), tL=h1?tbpOwn(h1).split("\n").flatMap(s=>tbpWrap(s,fH,mw)):[], sL=ps[1]?tbpWrap(ps[1].innerText,f1,mw):[];
+  const tot=26+tL.length*60+10+sL.length*22+(lis.length?84:0); let y=H-pad-tot;
+  doc.op({k:"grad",x:0,y:y-150,w:W,h:H-y+150,stops:[[0,"rgba(0,0,0,0)"],[.4,"rgba(0,0,0,.5)"],[1,"rgba(0,0,0,.62)"]]});
+  if(ps[0]) doc.op({k:"text",s:ps[0].innerText.trim(),x:pad,y,font:f1,col:"rgba(255,255,255,.92)"}); y+=26;
+  tL.forEach(s=>{ doc.op({k:"text",s,x:pad,y,font:fH,col:"#fff"}); y+=60; }); y+=10;
+  sL.forEach(s=>{ doc.op({k:"text",s,x:pad,y,font:f1,col:"rgba(255,255,255,.92)"}); y+=22; });
+  if(lis.length){ y+=22; let x=pad; const fb=tbpFont(26,700), fl=tbpFont(11);
+    lis.forEach(li=>{ const b=li.querySelector("b"), v=b?b.innerText.trim():"", lab=tbpOwn(li,[b]); doc.op({k:"text",s:v,x,y,font:fb,col:"#fff"}); doc.op({k:"text",s:lab,x,y:y+36,font:fl,col:"rgba(255,255,255,.88)"}); x+=Math.max(tbpW(fb,v),tbpW(fl,lab))+28; }); } }
+function tbpMapImg(doc,im,defAr,maxH){ const ar=im.naturalWidth&&im.naturalHeight?im.naturalHeight/im.naturalWidth:defAr; let w=doc.CW, h=w*ar; const mh=Math.min(maxH||1e9,doc.BOT-TBP.MT-4);
+  if(h>mh){ h=mh; w=h/ar; } doc.need(h); doc.op({k:"img",url:im.src,x:TBP.ML+(doc.CW-w)/2,y:doc.y,w,h,r:9,bd:"#E3E8E5"}); doc.y+=h+12; }
+function tbpOverview(doc,ov){ doc.head=null; doc.page(); tbpHead(doc,ov);
+  const im=ov.querySelector("img.tb-tripmap"); if(im){ tbpMapImg(doc,im,900/760,doc.room()-4); doc.page(); }
+  ov.querySelectorAll(".tb-ovt tr").forEach(tr=>{ const dc=tr.style.getPropertyValue("--dc").trim()||"#2F6FB3", b=tr.querySelector(".tb-ovd b"), sp=tr.querySelector(".tb-ovd span"), r=tr.querySelector(".tb-ovr"), m=tr.querySelector(".tb-ovm");
+    const x2=TBP.ML+66, mw=doc.CW-66, fr=tbpFont(12.5,600), fm=tbpFont(10.5), rl=r?tbpWrap(r.innerText,fr,mw):[], ml=m?tbpWrap(m.innerText,fm,mw):[];
+    const h=Math.max(52,12+rl.length*19+ml.length*16+10); doc.need(h);
+    doc.op({k:"line",x1:TBP.ML,y1:doc.y,x2:TBP.W-TBP.MR,y2:doc.y,col:"#E3E8E5",lw:.8}); let y=doc.y+10;
+    if(b) doc.op({k:"text",s:b.innerText.trim(),x:TBP.ML,y:y-2,font:tbpFont(22,700),col:dc}); if(sp) doc.op({k:"text",s:sp.innerText.trim(),x:TBP.ML,y:y+26,font:tbpFont(9.5),col:"#69737D"});
+    rl.forEach(s=>{ doc.op({k:"text",s,x:x2,y,font:fr}); y+=19; }); ml.forEach(s=>{ doc.op({k:"text",s,x:x2,y,font:fm,col:"#69737D"}); y+=16; }); doc.y+=h; }); }
+/* a stop's photos in rows: the first one wide, then three to a row, as on screen */
+function tbpGridRows(grid,CW){ const figs=[...grid.querySelectorAll(":scope > figure")].filter(f=>!f.classList.contains("hid")), n=figs.length, g=5, rows=[]; if(!n) return rows;
+  const cell=f=>{ const im=f.querySelector("img"), v=f.querySelector("video"), i=f.querySelector("i"); return {url:im?im.src:(v&&v.getAttribute("poster"))||"",vid:f.classList.contains("v")?(i?i.innerText.trim():"▶"):""}; };
+  if(n===1){ rows.push([{...cell(figs[0]),x:0,w:CW,h:Math.min(CW*2/3,330)}]); return rows; }
+  let i=0; if(n>=3){ rows.push([{...cell(figs[0]),x:0,w:CW,h:Math.min(CW*10/16,330)}]); i=1; }
+  const cols=n===2?2:3, w=(CW-g*(cols-1))/cols, h=w*3/4;
+  for(;i<n;i+=cols) rows.push(figs.slice(i,i+cols).map((f,j)=>({...cell(f),x:j*(w+g),w,h})));
+  return rows; }
+function tbpRows(doc,rows){ rows.forEach(r=>{ const h=r[0].h; doc.need(h); r.forEach(c=>doc.op({k:"img",url:c.url,x:TBP.ML+c.x,y:doc.y,w:c.w,h:c.h,r:6,bg:"#EEF1F3",vid:c.vid})); doc.y+=h+5; }); }
+function tbpStop(doc,el,dc){ const h3=el.querySelector("h3"), t=el.querySelector(".tb-t"), grid=el.querySelector(".tb-grid"), sp=h3&&h3.querySelector("span");
+  const num=sp?sp.innerText.trim():"", name=h3?tbpOwn(h3,[sp]):"", ind=num?26:0, fN=tbpFont(14,700), fT=tbpFont(10.5);
+  const nl=tbpWrap(name,fN,doc.CW-ind), tl=t?tbpWrap(t.innerText,fT,doc.CW-ind):[], rows=grid?tbpGridRows(grid,doc.CW):[];
+  const headH=nl.length*20+tl.length*15+8; doc.need(headH+(rows[0]?rows[0][0].h:0)); let y=doc.y;
+  if(num){ doc.op({k:"circle",x:TBP.ML+10,y:y+10,r:10,fill:dc}); doc.op({k:"text",s:num,x:TBP.ML+10,y:y+10.5,font:tbpFont(num.length>2?7.5:9.5,700),col:"#fff",al:"center",bl:"middle"}); }
+  nl.forEach(s=>{ doc.op({k:"text",s,x:TBP.ML+ind,y,font:fN}); y+=20; }); tl.forEach(s=>{ doc.op({k:"text",s,x:TBP.ML+ind,y,font:fT,col:"#5B6570"}); y+=15; });
+  doc.y=y+6; tbpRows(doc,rows); doc.y+=12; }
+function tbpLine(doc,el,dc){ const sp=el.querySelector("span"), em=el.querySelector("em"), num=sp?sp.innerText.trim():"", name=tbpOwn(el,[sp,em]), tm=em?em.innerText.trim():"";
+  const fN=tbpFont(12,600), fT=tbpFont(10), tw=tm?Math.min(tbpW(fT,tm),doc.CW*.48):0, nl=tbpWrap(name,fN,doc.CW-26-tw-12), tL=tm?tbpWrap(tm,fT,doc.CW*.48):[];
+  const h=Math.max(nl.length*18,tL.length*14)+8; doc.need(h); const y=doc.y;
+  doc.op({k:"circle",x:TBP.ML+9,y:y+9,r:8,stroke:dc,lw:1.6}); doc.op({k:"text",s:num,x:TBP.ML+9,y:y+9.5,font:tbpFont(8,700),col:dc,al:"center",bl:"middle"});
+  nl.forEach((s,i)=>doc.op({k:"text",s,x:TBP.ML+26,y:y+i*18+1,font:fN})); tL.forEach((s,i)=>doc.op({k:"text",s,x:TBP.W-TBP.MR,y:y+i*14+3,font:fT,col:"#69737D",al:"right"}));
+  doc.y+=h+4; }
+function tbpDay(doc,sec){ const dc=sec.style.getPropertyValue("--dc").trim()||"#2F6FB3", run=[...sec.querySelectorAll(".tb-run span")].map(s=>s.innerText.trim());
+  doc.head=[run[0]||"",run[1]||""]; doc.page();
+  const els=[...sec.querySelectorAll("tbody > tr > td")].flatMap(td=>[...td.children]);
+  els.forEach((el,i)=>{ const nx=els[i+1];
+    if(el.matches(".tb-dh")){ const dn=el.querySelector(".tb-dn"), p=el.querySelector("p"), h2=el.querySelector("h2"), fn=tbpFont(42,700), nw=dn?tbpW(fn,dn.innerText.trim())+14:0, fT=tbpFont(18,700), tl=h2?tbpWrap(h2.innerText,fT,doc.CW-nw):[];
+      const h=Math.max(50,18+tl.length*25)+8; let mh=0; if(nx&&nx.matches("img.tb-daymap")) mh=Math.min(doc.CW*(nx.naturalWidth?nx.naturalHeight/nx.naturalWidth:500/760),doc.BOT-TBP.MT-h-8);
+      doc.need(h+mh); let y=doc.y; if(dn) doc.op({k:"text",s:dn.innerText.trim(),x:TBP.ML,y:y-4,font:fn,col:dc});
+      if(p) doc.op({k:"text",s:p.innerText.trim(),x:TBP.ML+nw,y,font:tbpFont(11),col:"#69737D"}); y+=18; tl.forEach(s=>{ doc.op({k:"text",s,x:TBP.ML+nw,y,font:fT}); y+=25; }); doc.y+=h; return; }
+    if(el.matches("img.tb-daymap")){ tbpMapImg(doc,el,500/760,doc.BOT-TBP.MT-60); return; }
+    if(el.matches(".tb-mapwait")) return;
+    if(el.matches("ul.tb-facts")){ const t=[...el.querySelectorAll("li")].map(li=>li.innerText.trim()).filter(Boolean).join("     "); tbpPara(doc,t,{sz:10.5,col:"#3D4650"}); doc.y+=12; return; }
+    if(el.matches(".tb-line")){ tbpLine(doc,el,dc); return; }
+    if(el.matches(".tb-stop")){ tbpStop(doc,el,dc); return; }
+    const t=el.innerText.trim(); if(t){ tbpPara(doc,t,{sz:11}); doc.y+=6; } }); }
+function tbpExtras(doc,x){ doc.head=null; doc.page(); tbpHead(doc,x); const G="#69737D";
+  [...x.children].forEach(el=>{ if(el.matches("header")) return;
+    if(el.matches("ul.tb-nums")){ const L=[...el.querySelectorAll("li")], per=4, gp=8, w=(doc.CW-gp*(per-1))/per, h=54;
+      for(let i=0;i<L.length;i+=per){ doc.need(h); L.slice(i,i+per).forEach((li,j)=>{ const b=li.querySelector("b"), s=li.querySelector("span"), xx=TBP.ML+j*(w+gp);
+        doc.op({k:"rect",x:xx,y:doc.y,w,h,r:8,fill:"#F5F7F9"}); if(b) doc.op({k:"text",s:b.innerText.trim(),x:xx+10,y:doc.y+8,font:tbpFont(20,700)}); if(s) doc.op({k:"text",s:tbpClip(s.innerText.trim(),tbpFont(9.5),w-16),x:xx+10,y:doc.y+35,font:tbpFont(9.5),col:G}); }); doc.y+=h+gp; } doc.y+=4; return; }
+    if(el.matches("h3.tb-xt")){ doc.need(110); doc.y+=16; tbpPara(doc,el.innerText,{sz:15,w:700,lh:1.35}); doc.op({k:"line",x1:TBP.ML,y1:doc.y+1,x2:TBP.W-TBP.MR,y2:doc.y+1,col:"#1C2228",lw:1.5}); doc.y+=12; return; }
+    if(el.matches(".tb-stories")){ el.querySelectorAll(".tb-story").forEach(a=>{ const dc=a.style.getPropertyValue("--dc").trim()||"#2F6FB3"; doc.need(70);
+      [...a.children].forEach(c=>{ if(c.matches(".tb-sk")){ doc.op({k:"text",s:c.innerText.trim(),x:TBP.ML,y:doc.y,font:tbpFont(9.5,700),col:dc}); doc.y+=15; }
+        else if(c.matches("h4")) { tbpPara(doc,c.innerText,{sz:13.5,w:700,lh:1.35}); doc.y+=2; }
+        else if(c.matches(".tb-sx")) tbpPara(doc,c.innerText,{sz:10.5,col:G});
+        else if(c.matches(".tb-src")) tbpPara(doc,c.innerText,{sz:8.5,col:G});
+        else if(c.matches("ul")) c.querySelectorAll("li").forEach(li=>tbpPara(doc,"• "+li.innerText.trim(),{sz:10,col:"#3D4650",ind:6}));
+        else { tbpPara(doc,c.innerText,{sz:10.5,lh:1.6}); doc.y+=3; } }); doc.y+=12; }); return; }
+    if(el.matches("ul.tb-meals")){ el.querySelectorAll("li").forEach(li=>{ const im=li.querySelector("img"), ic=li.querySelector("i"), b=li.querySelector("b"), s=li.querySelector("span");
+      const bl=b?tbpWrap(b.innerText,tbpFont(12,700),doc.CW-56):[], sl=s?tbpWrap(s.innerText,tbpFont(10),doc.CW-56):[], h=Math.max(46,bl.length*17+sl.length*14)+10; doc.need(h); const y=doc.y+5;
+      if(im&&im.getAttribute("src")) doc.op({k:"img",url:im.src,x:TBP.ML,y,w:42,h:42,r:7,bg:"#F5F7F9"}); else { doc.op({k:"rect",x:TBP.ML,y,w:42,h:42,r:7,fill:"#F5F7F9"}); if(ic) doc.op({k:"text",s:ic.innerText.trim(),x:TBP.ML+21,y:y+21,font:tbpFont(20),al:"center",bl:"middle"}); }
+      let yy=y; bl.forEach(t=>{ doc.op({k:"text",s:t,x:TBP.ML+56,y:yy,font:tbpFont(12,700)}); yy+=17; }); sl.forEach(t=>{ doc.op({k:"text",s:t,x:TBP.ML+56,y:yy,font:tbpFont(10),col:G}); yy+=14; });
+      doc.y+=h; doc.op({k:"line",x1:TBP.ML,y1:doc.y,x2:TBP.W-TBP.MR,y2:doc.y,col:"#EEF1EF",lw:.8}); }); return; }
+    if(el.matches(".tb-drinks")){ [...el.children].forEach(g=>{ const h4=g.querySelector("h4"); if(h4){ doc.need(60); doc.y+=6; tbpPara(doc,h4.innerText,{sz:12.5,w:700}); }
+      g.querySelectorAll("p").forEach(p=>{ const L=p.innerText.split("\n").map(s=>s.trim()).filter(Boolean); doc.need(34); if(L[0]) tbpPara(doc,L[0],{sz:11,w:600}); if(L.length>1) tbpPara(doc,L.slice(1).join(" "),{sz:10,col:"#3D4650"}); doc.y+=5; }); }); return; }
+    if(el.matches("ul.tb-hotels,ul.tb-phr")){ el.querySelectorAll("li").forEach(li=>{ const b=li.querySelector("b"), ss=[...li.querySelectorAll("span")]; doc.need(40); doc.y+=4;
+      if(b) tbpPara(doc,b.innerText,{sz:12,w:700}); ss.forEach(s=>tbpPara(doc,s.innerText,{sz:10,col:G})); doc.y+=4; doc.op({k:"line",x1:TBP.ML,y1:doc.y,x2:TBP.W-TBP.MR,y2:doc.y,col:"#EEF1EF",lw:.8}); }); return; }
+    const t=el.innerText.trim(); if(t){ tbpPara(doc,t,{sz:10.5}); doc.y+=6; } }); }
+function tbpBuild(root){ const doc=new TbpDoc();
+  const cv=root.querySelector(".tb-cover"); if(cv) tbpCover(doc,cv);
+  const ov=root.querySelector(".tb-ov"); if(ov) tbpOverview(doc,ov);
+  root.querySelectorAll(".tb-day").forEach(sec=>tbpDay(doc,sec));
+  const x=root.querySelector(".tb-x"); if(x) tbpExtras(doc,x);
+  const end=root.querySelector(".tb-end"); if(end&&end.innerText.trim()){ doc.head=null; if(!doc.pg) doc.page(); doc.need(60); doc.y+=28; tbpPara(doc,end.innerText,{sz:10,col:"#69737D",al:"center"}); }
+  return doc; }
+function tbpRR(ctx,x,y,w,h,r){ ctx.beginPath(); if(!r){ ctx.rect(x,y,w,h); return; } r=Math.min(r,w/2,h/2); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function tbpDraw(ctx,o,bm){ ctx.save(); if(o.alpha!=null) ctx.globalAlpha=o.alpha;
+  if(o.k==="text"){ ctx.font=o.font; ctx.fillStyle=o.col||"#1C2228"; ctx.textAlign=o.al||"left"; ctx.textBaseline=o.bl||"top"; try{ ctx.letterSpacing=(o.ls||0)+"px"; }catch(e){} ctx.fillText(o.s,o.x,o.y); }
+  else if(o.k==="rect"){ tbpRR(ctx,o.x,o.y,o.w,o.h,o.r||0); if(o.fill){ ctx.fillStyle=o.fill; ctx.fill(); } }
+  else if(o.k==="circle"){ ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,Math.PI*2); if(o.fill){ ctx.fillStyle=o.fill; ctx.fill(); } if(o.stroke){ ctx.lineWidth=o.lw||1; ctx.strokeStyle=o.stroke; ctx.stroke(); } }
+  else if(o.k==="line"){ ctx.beginPath(); ctx.moveTo(o.x1,o.y1); ctx.lineTo(o.x2,o.y2); ctx.lineWidth=o.lw||1; ctx.strokeStyle=o.col; ctx.stroke(); }
+  else if(o.k==="grad"){ const g=ctx.createLinearGradient(0,o.y,0,o.y+o.h); o.stops.forEach(([p,c])=>g.addColorStop(p,c)); ctx.fillStyle=g; ctx.fillRect(o.x,o.y,o.w,o.h); }
+  else if(o.k==="img"){ const im=bm.get(o.url); ctx.save(); tbpRR(ctx,o.x,o.y,o.w,o.h,o.r||0); ctx.clip(); if(o.bg){ ctx.fillStyle=o.bg; ctx.fillRect(o.x,o.y,o.w,o.h); }
+    if(im){ const iw=im.width, ih=im.height, s=Math.max(o.w/iw,o.h/ih), sw=o.w/s, sh=o.h/s; ctx.drawImage(im,(iw-sw)/2,(ih-sh)/2,sw,sh,o.x,o.y,o.w,o.h); } ctx.restore();
+    if(o.bd){ tbpRR(ctx,o.x,o.y,o.w,o.h,o.r||0); ctx.lineWidth=.8; ctx.strokeStyle=o.bd; ctx.stroke(); }
+    if(o.vid){ ctx.font=tbpFont(8.5,600); const tw=ctx.measureText(o.vid).width; tbpRR(ctx,o.x+6,o.y+o.h-20,tw+12,14,7); ctx.fillStyle="rgba(0,0,0,.55)"; ctx.fill(); ctx.fillStyle="#fff"; ctx.textBaseline="middle"; ctx.textAlign="left"; ctx.fillText(o.vid,o.x+12,o.y+o.h-13); } }
+  ctx.restore(); }
+async function tbpLoad(u){ if(!u) return null; try{ const b=await (await fetch(u)).blob(); return await createImageBitmap(b); }catch(e){ return await tbLoadImg(u,8000); } }
+async function tbpFonts(){ try{ if(document.fonts&&document.fonts.load) await Promise.race([Promise.all([400,600,700].map(w=>document.fonts.load(`${w} 16px Anuphan`,"ทริป abc 123"))),tbSleep(4000)]); }catch(e){} }
+/* each page drawn on one canvas, kept only as a JPEG, so memory stays small however long the book is */
+async function tbpRender(doc,prog){ const S=TBP.S, cw=Math.round(TBP.W*S), ch=Math.round(TBP.H*S), cv=document.createElement("canvas"); cv.width=cw; cv.height=ch; const ctx=cv.getContext("2d"), out=[], n=doc.pages.length;
+  for(let i=0;i<n;i++){ if(!document.body.classList.contains("tb-open")) throw new Error("closed"); prog(i+1,n); const pg=doc.pages[i];
+    const urls=[...new Set(pg.ops.filter(o=>o.k==="img"&&o.url).map(o=>o.url))], bm=new Map(); await tbPool(urls,6,async u=>{ bm.set(u,await tbpLoad(u)); });
+    ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cw,ch); ctx.setTransform(S,0,0,S,0,0);
+    pg.ops.forEach(o=>tbpDraw(ctx,o,bm));
+    if(pg.num) tbpDraw(ctx,{k:"text",s:String(i+1),x:TBP.W/2,y:TBP.H-28,font:tbpFont(8.5),col:"#8A939C",al:"center"},bm);
+    bm.forEach(b=>{ try{ b&&b.close&&b.close(); }catch(e){} });
+    out.push(await new Promise(r=>cv.toBlob(r,"image/jpeg",.84))); }
+  cv.width=cv.height=1; return {jpgs:out,pw:cw,ph:ch}; }
+/* a plain PDF: one JPEG per page */
+function tbpPdf(r){ const parts=[]; let off=0; const offs=[], add=p=>{ parts.push(p); off+=typeof p==="string"?p.length:(p.size!=null?p.size:p.byteLength); };
+  const obj=(id,body)=>{ offs[id]=off; add(`${id} 0 obj\n${body}\nendobj\n`); }, n=r.jpgs.length, W=TBP.W.toFixed(2), H=TBP.H.toFixed(2);
+  add("%PDF-1.4\n"); add(new Uint8Array([37,226,227,207,211,10]));
+  obj(1,"<< /Type /Catalog /Pages 2 0 R >>"); obj(2,`<< /Type /Pages /Kids [${r.jpgs.map((_,i)=>`${4+3*i} 0 R`).join(" ")}] /Count ${n} >>`); obj(3,"<< /Title (Tripbook) /Producer (Trip app) >>");
+  r.jpgs.forEach((b,i)=>{ const pid=4+3*i, cid=pid+1, iid=pid+2, cs=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    obj(pid,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${iid} 0 R >> >> /Contents ${cid} 0 R >>`);
+    obj(cid,`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);
+    offs[iid]=off; add(`${iid} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${r.pw} /Height ${r.ph} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${b.size} >>\nstream\n`); add(b); add("\nendstream\nendobj\n"); });
+  const N=4+3*n, xr=off; let x=`xref\n0 ${N}\n0000000000 65535 f \n`; for(let id=1;id<N;id++) x+=String(offs[id]).padStart(10,"0")+" 00000 n \n";
+  add(x); add(`trailer\n<< /Size ${N} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${xr}\n%%EOF\n`);
+  return new Blob(parts,{type:"application/pdf"}); }
+function tbPdfName(){ return tpFileBase()+"-Tripbook.pdf"; }
+/* hand a file over: through the claude.ai viewer's downloads, or a normal download */
+async function tbDeliver(blob,fn){ let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
+  if(dl){ try{ await dl.save({filename:fn,data:blob}); return "ok"; }catch(e){ return e&&e.code==="declined"?"declined":"fail"; } }
+  const url=URL.createObjectURL(blob), a=document.createElement("a"); a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),120000); return "ok"; }
+async function tbMakePdf(btn){ if(tbPdfBusy) return; tbPdfBusy=true; tbPdfOut=null; const t0=btn.textContent; tbPdfV={i:0,n:0,msg:"กำลังเตรียม…"}; tbProgPaint();
+  try{ if(tbShotBusy||tbStoryBusy){ tbPdfV.msg=tbShotBusy?"รอแผนที่ให้เสร็จก่อน…":"รอเรื่องเล่าท้ายเล่ม…"; tbProgPaint(); try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} }
+    btn.textContent="กำลังสร้าง…"; await tbRender(); tbPdfV.msg="กำลังจัดหน้า…"; tbProgPaint(); await tbpFonts(); await tbSleep(30);
+    const doc=tbpBuild($("#tbBody")); let last=0;
+    const r=await tbpRender(doc,(i,n)=>{ tbPdfV={i,n,msg:""}; const now=Date.now(); if(now-last>200||i===n){ last=now; tbProgPaint(); } });
+    tbPdfV={i:0,n:0,msg:"กำลังรวมเป็นไฟล์…"}; tbProgPaint(); const pdf=tbpPdf(r);
+    const res=await tbDeliver(pdf,tbPdfName()); tbPdfOut={pages:r.jpgs.length,mb:pdf.size/1048576,res,at:Date.now()}; }
+  catch(e){ tbPdfOut={err:e&&e.message==="closed"?"":"สร้าง PDF ไม่สำเร็จ: "+(e&&e.message||e),at:Date.now()}; }
+  finally{ tbPdfBusy=false; btn.textContent=t0; tbProgPaint(); setTimeout(tbProgPaint,6100); } }
 addEventListener("popstate",()=>{ if(!popSelf&&document.body.classList.contains("tb-open")){ closeTripbook(); setTimeout(tbReopen,0); } });
 document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="visit"){ toggleVisited(curDay,b.dataset.key); return; }
