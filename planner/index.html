@@ -74,6 +74,32 @@
 .tpph-days header{font-size:14.5px}.tpph-days header .tiny{display:block}
 .tpph-days ol{margin:6px 0 0;padding-left:18px;font-size:14px}.tpph-days li{margin:2px 0}
 .tpph-days .mono{font-size:12.5px;color:var(--muted);margin-right:4px}
+.tp-back{display:block;font-family:var(--font-body);font-weight:600;font-size:12.5px;color:var(--route-blue);letter-spacing:0;margin-bottom:1px}
+.tp-home{position:fixed;inset:0;z-index:850;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+.tp-home-in{max-width:760px;margin:0 auto}
+.tp-home-h{padding:22px 0 12px}
+.tp-home-h h1{margin:0;font-family:var(--font-display);font-size:28px;line-height:1.15}
+.tp-home-h p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.tp-addbig{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:14px;background:var(--route-blue);color:#fff;font:inherit;font-weight:700;font-size:17px;cursor:pointer;box-shadow:0 6px 18px rgba(31,95,168,.25)}
+.tp-addbig svg{width:20px;height:20px}
+.tp-empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:12px;margin:14px 0 0;font-size:15px}
+.tp-home-sec{font-family:var(--font-display);font-size:15px;letter-spacing:.04em;color:var(--muted);margin:22px 0 8px}
+.tp-cards{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+@media (min-width:640px){.tp-cards{grid-template-columns:1fr 1fr}}
+.tp-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.tp-card.st-now{border-color:var(--ok);box-shadow:0 0 0 2px color-mix(in srgb,var(--ok) 35%,transparent)}
+.tp-card-main{display:flex;gap:12px;width:100%;border:0;background:none;padding:10px;text-align:left;font:inherit;color:inherit;cursor:pointer;align-items:stretch}
+.tp-card-main:active{background:var(--surface-2)}
+.tp-cover{flex:0 0 92px;height:92px;border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--route-blue) 25%,var(--surface)),color-mix(in srgb,var(--gold) 30%,var(--surface))) center/cover no-repeat;display:grid;place-items:center;font-size:30px}
+.tp-cover.has i{display:none}
+.tp-card-b{display:flex;flex-direction:column;gap:2px;min-width:0;padding-right:34px}
+.tp-card-b b{font-size:16.5px;line-height:1.3}
+.tp-card-b>span{font-size:13.5px;color:var(--muted)}
+.tp-st{align-self:flex-start;font-size:12px!important;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)!important}
+.st-soon .tp-st{background:color-mix(in srgb,var(--route-blue) 12%,var(--surface));color:var(--route-blue)!important}
+.st-now .tp-st{background:color-mix(in srgb,var(--ok) 14%,var(--surface));color:var(--ok)!important}
+.tp-card-del{position:absolute;top:8px;right:8px;border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;padding:4px 6px;cursor:pointer}
+.tp-home-note{margin-top:22px}
 
 
 html,body{height:100%}
@@ -4025,7 +4051,7 @@ renderDays(); renderPlan(); renderStories(); renderFood(); renderDrinks(); rende
 setInterval(()=>{ tickClock(); },15000);
 setInterval(()=>{ if(curTab==="plan"&&!$("#sheetRoot").innerHTML&&!drag&&!document.body.classList.contains("tb-open")) renderPlan(); },120000);
 showTab(curTab);
-if(!store.get("tourDone",0)) setTimeout(startTour,500);
+if(!store.get("tourDone",0)) setTimeout(()=>{ if(!document.body.classList.contains("tp-home-on")) startTour(); },500);
 if(drive){ if(driveItem()&&Date.now()-drive.start<6*3600e3){ startGps(); renderDrive(); runDrive(); } else stopDrive(); }
 const chip=$(`.day-chip[data-day="${curDay}"]`); chip&&chip.scrollIntoView({inline:"center",block:"nearest"});
 
@@ -4058,7 +4084,7 @@ function tickClock(){ const j=jst(); $("#clk").textContent=pad(j.h)+":"+pad(j.mi
   const l=$("#clkLabel"); if(l){ const d=DAYS[curDay]||DAYS[0]; l.textContent="เวลา"+(d&&d.city?" "+d.city:"ท้องถิ่น"); } }
 function renderDays(){ const ti=todayIndex();
   $("#days").innerHTML=DAYS.map((d,i)=>`<button class="day-chip" style="--dc:var(--d${d.n})" data-day="${i}" aria-pressed="${i===curDay}"><span class="dn">D${d.n}${i===ti?'<span class="today-dot" title="วันนี้"></span>':''}</span><span class="dd">${d.dow} ${Number(d.date.slice(8))} ${MON(d.date)}</span></button>`).join("");
-  const b=$(".brand"); if(b&&!b.dataset.tp){ b.dataset.tp=1; b.innerHTML=`${esc(TRIP.trip.trip_name||"ทริปของฉัน")}<small id="tripSub">${esc(tpSubline())}</small>`; b.setAttribute("role","button"); b.tabIndex=0; b.title="ทริปของฉัน"; b.addEventListener("click",()=>tpOpen()); }
+  const b=$(".brand"); if(b&&!b.dataset.tp){ b.dataset.tp=1; b.innerHTML=`<span class="tp-back" aria-hidden="true">‹ ทริปทั้งหมด</span>${esc(TRIP.trip.trip_name||"ทริปของฉัน")}<small id="tripSub">${esc(tpSubline())}</small>`; b.setAttribute("role","button"); b.tabIndex=0; b.title="ทริปทั้งหมด"; b.addEventListener("click",()=>tpOpen()); }
   document.title=(TRIP.trip.trip_name||"Trip")+" · Trip Planner"; }
 function cityOf(area){ return area||""; }
 function dayRouteUrl(day){ const i=DAYS.indexOf(day);
@@ -4460,10 +4486,10 @@ function tpStoreTrip(T,makeCur){ const id=String(T.trip.trip_id).replace(/[^A-Za
   const L=tpTripsList().filter(x=>x.id!==id); L.unshift({id,name:T.trip.trip_name||id,from:r.from,to:r.to,n:r.n,at:Date.now()}); tpTripsSave(L);
   if(makeCur) localStorage.setItem("tp:cur",id); return id; }
 function tpUniqueId(id){ const have=new Set(tpTripsList().map(x=>x.id)); if(!have.has(id)) return id; let i=2; while(have.has(id+"-"+i)) i++; return id+"-"+i; }
-function tpGo(id){ try{ if(id) localStorage.setItem("tp:cur",id); else localStorage.removeItem("tp:cur"); }catch(e){} location.reload(); }
-async function tpDeleteTrip(id){ try{ localStorage.removeItem("tp:trip:"+id); const ks=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith("tp:"+id+":")) ks.push(k); } ks.forEach(k=>localStorage.removeItem(k)); }catch(e){}
+function tpGo(id){ try{ sessionStorage.setItem("tp:open","1"); }catch(e){} try{ if(id) localStorage.setItem("tp:cur",id); else localStorage.removeItem("tp:cur"); }catch(e){} location.reload(); }
+async function tpDeleteTrip(id,stay){ try{ localStorage.removeItem("tp:trip:"+id); const ks=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith("tp:"+id+":")) ks.push(k); } ks.forEach(k=>localStorage.removeItem(k)); }catch(e){}
   tpTripsSave(tpTripsList().filter(x=>x.id!==id)); try{ if(id===TRIP_ID&&PDB.db){ PDB.db.close(); PDB.db=null; } indexedDB.deleteDatabase("tp-"+id+"-photos"); }catch(e){}
-  if(id===TRIP_ID&&!TRIP.example){ const L=tpTripsList(); tpGo(L[0]?L[0].id:""); return true; } return false; }
+  if(!stay&&id===TRIP_ID&&!TRIP.example){ const L=tpTripsList(); tpGo(L[0]?L[0].id:""); return true; } return false; }
 /* the plan as it is now in the app (with everything edited here) → trip model */
 function tpCurrentModel(){ const T=JSON.parse(JSON.stringify(TRIP)); delete T.example; const src=TRIP.stops||[];
   const dayRows=(TRIP.days||[]).filter(d=>tpDateNorm(d.date)).slice().sort((a,b)=>tpDateNorm(a.date).localeCompare(tpDateNorm(b.date)));
@@ -4485,12 +4511,11 @@ async function tpSaveXlsx(T,name,opt){ const blob=await xlsxBlob(tpWorkbook(T,op
 function tpFileBase(){ const r=tpTripRange(TRIP); return "Trip-"+TRIP_ID+(r.from&&!TRIP_ID.includes(r.from.slice(0,4))?"-"+r.from.slice(0,7):""); }
 /* ---------- the "my trips" sheet ---------- */
 var tpPending=null, tpDelArm="";
-function tpOpen(){ openSheet(tpHtml()); }
-function tpHtml(){ const L=tpTripsList(); const cur=TRIP.example?"":TRIP_ID;
-  const row=(id,name,sub,isCur)=>`<li class="tp-trip${isCur?" cur":""}"><div><b>${esc(name)}</b><span>${esc(sub)}</span></div>${isCur?`<span class="tp-badge">เปิดอยู่</span>`:`<button class="btn small primary" data-act="tp-go" data-id="${esc(id)}">เปิด</button>`}${id?`<button class="btn small tp-del" data-act="tp-del" data-id="${esc(id)}">${tpDelArm===id?"ลบจริง?":"ลบ"}</button>`:""}</li>`;
-  return `<div id="tp-root"><div class="sk">Trip Planner</div><h2>ทริปของฉัน</h2>
-  <ul class="tp-trips">${L.map(t=>row(t.id,t.name,[tpFmtRange(t.from,t.to),t.n?t.n+" วัน":""].filter(Boolean).join(" · "),t.id===cur)).join("")}${row("","ตัวอย่าง: ฮอกไกโด ใบไม้แดง 2026","ทริปจริงจากแอปฮอกไกโด ลองกดดูได้",!cur)}</ul>
-  <h3 class="sp-h">เริ่มทริปใหม่</h3>
+function tpOpen(){ tpHomeShow(); }
+function tpAdd(){ openSheet(tpHtml()); }
+function tpHtml(){
+  return `<div id="tp-root"><div class="sk">Trip Planner</div><h2>เพิ่มทริป</h2>
+  <p class="tiny" style="margin:2px 0 10px">เลือกวิธีเริ่ม · ทริปใหม่จะขึ้นในรายการทริปของคุณ</p>
   <div class="tp-opts">
    <button class="tp-opt" data-act="tp-import"><b>${I.doc}อัปโหลดไฟล์แผน</b><span>ไฟล์ .xlsx ที่วางแผนใน Excel หรือ Google Sheets</span></button>
    <button class="tp-opt" data-act="tp-photos"><b>${I.camera}สร้างแผนจากรูป</b><span>เลือกรูปทั้งทริป แอปแยกวันและจุดที่ไปให้</span></button>
@@ -4501,9 +4526,7 @@ function tpHtml(){ const L=tpTripsList(); const cur=TRIP.example?"":TRIP_ID;
   <h3 class="sp-h">ไฟล์สำหรับวางแผน</h3>
   <p class="tiny" style="margin:-2px 0 8px">ในไฟล์มีชีต "คู่มือ" อธิบายทุกช่อง และชีต "AI_GUIDE" สำหรับให้ AI อ่านเวลาให้ช่วยวางแผน</p>
   <div class="c-actions"><button class="btn small primary" data-act="tp-tpl">${I.doc}ไฟล์แผนเปล่า (Excel)</button>${TP_GSHEET?aBtn(TP_GSHEET,"ทำสำเนา Google Sheets",I.doc):""}<button class="btn small" data-act="tp-ex">ไฟล์ตัวอย่าง (ฮอกไกโด)</button><button class="btn small" data-act="tp-ai">ให้ AI ช่วยวางแผน</button></div>
-  <h3 class="sp-h">ทริปที่เปิดอยู่</h3>
-  <div class="c-actions"><button class="btn small" data-act="tp-export">${I.doc}ดาวน์โหลดแผนนี้เป็น Excel</button><button class="btn small" data-act="backup">สำรอง / กู้คืน (รวมรูป)</button></div>
-  <p class="tiny">ไฟล์ Excel ของแผนนี้รวมทุกอย่างที่แก้ในแอปแล้ว แก้ต่อในไฟล์แล้วอัปโหลดกลับได้ (รหัสทริปเดิม = อัปเดตทริปนี้ รูปยังอยู่)</p></div>`; }
+  </div>`; }
 function tpOut(h){ const o=$("#tp-out"); if(o){ o.innerHTML=h; o.scrollIntoView({block:"nearest",behavior:"smooth"}); } }
 function tpPick(accept,fn){ const inp=document.createElement("input"); inp.type="file"; inp.accept=accept; inp.style.display="none"; inp.onchange=()=>{ const f=inp.files[0]; inp.remove(); if(f) fn(f); }; document.body.appendChild(inp); inp.click(); }
 async function tpImportFile(f){ tpOut(`<div class="ph-prog"><p><b>กำลังอ่าน ${esc(f.name)}…</b></p></div>`);
@@ -4567,7 +4590,9 @@ function tpBackupSwitch(j,out){ const t=j&&j.trip; if(!t||!t.trip||!t.trip.trip_
 document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='tp-']"); if(!b) return; const a=b.dataset.act; if(a==="tp-story") return; ev.stopPropagation();
   if(a==="tp-open"){ tpDelArm=""; tpOpen(); return; }
   if(a==="tp-go"){ tpGo(b.dataset.id||""); return; }
-  if(a==="tp-del"){ const id=b.dataset.id; if(tpDelArm!==id){ tpDelArm=id; renderSheet(tpHtml()); return; } tpDelArm=""; const gone=await tpDeleteTrip(id); if(!gone) renderSheet(tpHtml()); return; }
+  if(a==="tp-del"){ const id=b.dataset.id; if(tpDelArm!==id){ tpDelArm=id; tpHomePaint(); return; } tpDelArm=""; if(id===TRIP_ID&&!TRIP.example){ try{ localStorage.removeItem("tp:cur"); }catch(e){} } await tpDeleteTrip(id,true); tpHomePaint(); return; }
+  if(a==="tp-add"){ tpAdd(); return; }
+  if(a==="tp-here"){ tpHomeHide(); return; }
   if(a==="tp-import"){ tpPick(".xlsx,.json,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",tpImportFile); return; }
   if(a==="tp-save"){ tpSave(b.dataset.mode); return; }
   if(a==="tp-blank"){ tpOut(tpBlankHtml()); return; }
@@ -4697,6 +4722,43 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='t
   if(a==="tpph-pick") tpPhPick(!!b.dataset.zip);
   else if(a==="tpph-make") tpPhMake();
   else if(a==="tpph-again"){ tpPh={step:"start",name:tpPh.name,mode:tpPh.mode}; tpPhPaint(); } },true);
+
+/* ===================== Trip planner: the home screen — every trip on this phone, and "add a trip" ===================== */
+function tpToday(){ return new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10); }
+function tpTripInfo(id){ let T=null; try{ T=JSON.parse(localStorage.getItem("tp:trip:"+id)||"null"); }catch(e){} if(!T) return {countries:[]};
+  return {countries:[...new Set((T.days||[]).flatMap(d=>String(d.country||"").split(/\s*[\/,·→]\s*/)).filter(Boolean))],sub:(T.trip||{}).subtitle||""}; }
+function tpStatus(from,to){ const t=tpToday(); if(!from) return {k:"plan",th:"ยังไม่มีวันที่"}; if(t<from){ const n=Math.round((Date.parse(from)-Date.parse(t))/864e5); return {k:"soon",th:n<=1?"พรุ่งนี้":`อีก ${n} วัน`}; } if(t<=to) return {k:"now",th:"ระหว่างทริป"}; return {k:"past",th:"ไปมาแล้ว"}; }
+function tpCard(t,isEx){ const st=tpStatus(t.from,t.to), inf=isEx?{countries:["ญี่ปุ่น"]}:tpTripInfo(t.id); const id=isEx?"":t.id;
+  return `<li class="tp-card st-${st.k}"><button class="tp-card-main" data-act="tp-pick" data-id="${esc(id)}"><span class="tp-cover" data-cover="${esc(isEx?"__ex":id)}"><i>🧭</i></span><span class="tp-card-b"><span class="tp-st">${esc(st.th)}</span><b>${esc(t.name)}</b><span>${esc([tpFmtRange(t.from,t.to),t.n?t.n+" วัน":""].filter(Boolean).join(" · "))}</span>${inf.countries.length?`<span>${esc(inf.countries.join(" · "))}</span>`:""}<span class="tp-phn" data-phn="${esc(isEx?"__ex":id)}"></span></span></button>${isEx?"":`<button class="tp-card-del" data-act="tp-del" data-id="${esc(id)}">${tpDelArm===id?"ลบจริง?":"ลบ"}</button>`}</li>`; }
+function tpHomeHtml(){ const L=tpTripsList(); const t=tpToday();
+  const live=L.filter(x=>!x.to||x.to>=t).sort((a,b)=>(a.from||"9").localeCompare(b.from||"9")), past=L.filter(x=>x.to&&x.to<t).sort((a,b)=>b.from.localeCompare(a.from));
+  const ex={id:"",name:"ตัวอย่าง: ฮอกไกโด ใบไม้แดง 2026",from:"2026-10-18",to:"2026-10-24",n:7};
+  return `<div class="tp-home-in wrap"><header class="tp-home-h"><div><h1>ทริปของฉัน</h1><p>วางแผน · ใช้ระหว่างเที่ยว · ทำ Tripbook</p></div></header>
+  <button class="tp-addbig" data-act="tp-add">${I.plus}เพิ่มทริป</button>
+  ${L.length?"":`<p class="tp-empty">ยังไม่มีทริปในเครื่องนี้ กด "เพิ่มทริป" เพื่อวางแผนใน Excel / Google Sheets ให้ AI ช่วย หรือสร้างจากรูปทริปที่ไปมาแล้ว</p>`}
+  ${live.length?`<h2 class="tp-home-sec">กำลังจะไป</h2><ul class="tp-cards">${live.map(x=>tpCard(x)).join("")}</ul>`:""}
+  ${past.length?`<h2 class="tp-home-sec">ไปมาแล้ว</h2><ul class="tp-cards">${past.map(x=>tpCard(x)).join("")}</ul>`:""}
+  <h2 class="tp-home-sec">ตัวอย่าง</h2><ul class="tp-cards">${tpCard(ex,true)}</ul>
+  <p class="tiny tp-home-note">ทริปและรูปเก็บในเบราว์เซอร์ของเครื่องนี้ · ย้ายเครื่องหรือเก็บไว้: เปิดทริป → แท็บ จำเป็น → สำรอง / กู้คืน</p></div>`; }
+function tpHomePaint(){ let r=$("#tpHome"); if(!r){ r=document.createElement("div"); r.id="tpHome"; r.className="tp-home"; document.body.appendChild(r); } const top=r.scrollTop; r.innerHTML=tpHomeHtml(); r.scrollTop=top; tpCovers(); }
+function tpHomeShow(){ try{ closeSheet(); }catch(e){} tpDelArm=""; tpHomePaint(); document.body.classList.add("tp-home-on"); }
+function tpHomeHide(){ try{ sessionStorage.setItem("tp:open","1"); }catch(e){} const r=$("#tpHome"); if(r) r.remove(); document.body.classList.remove("tp-home-on"); }
+/* the cover photo and photo count of each trip, read from that trip's own photo store */
+const tpCoverURL={};
+async function tpCovers(){ let names=null; try{ if(indexedDB.databases) names=new Set((await indexedDB.databases()).map(d=>d.name)); }catch(e){}
+  for(const el of $$("#tpHome [data-cover]")){ const id=el.dataset.cover; const cur=(id==="__ex"&&TRIP.example)||id===TRIP_ID&&!TRIP.example;
+    const dbn=id==="__ex"?"tp-example-hokkaido-photos":"tp-"+id+"-photos"; if(!cur&&!(names&&names.has(dbn))) continue;
+    try{ let r=tpCoverURL[id]; if(!r){ r=await tpCoverOf(dbn); tpCoverURL[id]=r; }
+      if(r.url){ el.style.backgroundImage=`url("${r.url}")`; el.classList.add("has"); } const n=$(`#tpHome [data-phn="${CSS.escape(id)}"]`); if(n&&r.n) n.textContent=`รูป ${r.n}`; }catch(e){} } }
+function tpCoverOf(dbn){ return new Promise(res=>{ let q; try{ q=indexedDB.open(dbn); }catch(e){ return res({}); }
+  q.onerror=()=>res({}); q.onsuccess=()=>{ const db=q.result; if(!db.objectStoreNames.contains("meta")){ db.close(); return res({}); }
+    const tx=db.transaction(["meta","blob"],"readonly"); const g=tx.objectStore("meta").getAll(); g.onsuccess=()=>{ const L=g.result||[]; const m=L.find(x=>x.cover)||L.find(x=>x.kind!=="video"&&x.key)||L.find(x=>x.kind!=="video");
+      if(!m){ db.close(); return res({n:L.length}); } const b=tx.objectStore("blob").get(m.id); b.onsuccess=()=>{ const v=b.result; db.close(); res({n:L.length,url:v&&v.thumb?URL.createObjectURL(v.thumb):""}); }; b.onerror=()=>{ db.close(); res({n:L.length}); }; };
+    g.onerror=()=>{ db.close(); res({}); }; }; }); }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='tp-pick']"); if(!b) return; ev.stopPropagation(); const id=b.dataset.id||"";
+  if((!id&&TRIP.example)||(id&&id===TRIP_ID&&!TRIP.example)) tpHomeHide(); else tpGo(id); },true);
+/* opening the app shows every trip first; choosing one (or adding one) goes into it */
+(()=>{ let go=false; try{ go=sessionStorage.getItem("tp:open")==="1"; }catch(e){} if(!go) tpHomeShow(); })();
 
 })();
 
