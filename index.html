@@ -3759,6 +3759,7 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-ov,.tb-x{padding:34px 18px 10px;max-width:880px;margin:0 auto}
 .tb-ov-h h2,.tb-xh h2{font-size:28px;line-height:1.2;margin:4px 0 16px}
 .tb-tripmap,.tb-daymap{display:block;width:100%;height:auto;border-radius:14px;margin:6px 0 14px;border:1px solid #E3E8E5}
+.tb-mapwait{display:grid;place-items:center;aspect-ratio:760/500;border-radius:14px;margin:6px 0 14px;background:#EEF2F0;color:#69737D;font-size:14px}.tb-mapwait.tall{aspect-ratio:760/620}
 .tb-ov .tb-route{margin-bottom:14px}
 .tb-ov-wait{color:#69737D;font-size:14px;margin:0 0 6px}.tb-ov-note{margin:10px 0 0;color:#69737D;font-size:13px}
 .tb-ovt{width:100%;border-collapse:collapse}
@@ -3840,29 +3841,69 @@ async function mapSettled(){ await new Promise(r=>{ let done=false; const f=()=>
   const until=Date.now()+4000; while(Date.now()<until){ const t=[...document.querySelectorAll("#map img.leaflet-tile")]; if(t.length&&t.every(i=>i.complete)) break; await tbSleep(150); }
   try{ hydrateThumbs($("#map")); }catch(e){} await tbSleep(500); }
 /* the pictures the book needs: a map of each day and of the whole trip, drawn by the app's own map without its buttons */
-async function makeTbShots(prog){ const H=await loadH2I(); let font=""; try{ font=await H.getFontEmbedCSS($("#p-plan")); }catch(e){ font=""; }
-  const keep={mapDay,flags:Object.assign({},mapFlags),view:map?[map.getCenter(),map.getZoom()]:null};
+/* ===================== Tripbook maps: drawn here from the same map tiles as the app, with the route and a round photo at each stop ===================== */
+const TB_TS=256;
+const tbLX=(lon,z)=>(lon+180)/360*TB_TS*2**z;
+const tbLY=(lat,z)=>{ const r=Math.max(-85,Math.min(85,lat))*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*TB_TS*2**z; };
+function tbLoadImg(src,ms){ return new Promise(res=>{ const im=new Image(); im.crossOrigin="anonymous"; let done=false; const fin=v=>{ if(!done){ done=true; res(v); } }; im.onload=()=>fin(im); im.onerror=()=>fin(null); setTimeout(()=>fin(null),ms||9000); im.src=src; }); }
+/* the photo for a stop's circle: the one marked as cover, else the first of ours there, else a picture of the place */
+async function tbStopPic(di,keys,p,allowWeb){ const L=phMeta.filter(m=>m.day===di&&keys.includes(m.key)&&m.kind!=="video"&&!m.tbHide); const m=L.find(x=>x.cover)||L[0];
+  if(m){ try{ const b=await PDB.getBlob(m.id); const bl=b&&(b.thumb||b.full); if(bl) return await createImageBitmap(bl); }catch(e){} }
+  if(allowWeb&&p&&typeof commonsPhotos==="function"){ try{ const ll=[p[1],p[2]]; const list=await Promise.race([commonsPhotos(p[4]||p[0],1,p[6]||latinName(p[0]),ll),tbSleep(5000).then(()=>null)]); if(list&&list[0]&&list[0].src) return await tbLoadImg(list[0].src,6000); }catch(e){} }
+  return null; }
+function tbCircle(ctx,x,y,r,img,col,label,sc){ ctx.save(); ctx.shadowColor="rgba(0,0,0,.35)"; ctx.shadowBlur=6*sc; ctx.shadowOffsetY=2*sc;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=img?"#fff":col; ctx.fill(); ctx.restore();
+  if(img){ ctx.save(); ctx.beginPath(); ctx.arc(x,y,r-1.5*sc,0,Math.PI*2); ctx.clip(); const iw=img.width, ih=img.height, s=Math.max(2*r/iw,2*r/ih); ctx.drawImage(img,x-iw*s/2,y-ih*s/2,iw*s,ih*s); ctx.restore(); }
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.lineWidth=Math.max(3*sc,r*.13); ctx.strokeStyle=col; ctx.stroke();
+  if(label){ const fs=Math.round(11.5*sc), bw=Math.max(20*sc,ctx.measureText?0:0); ctx.font=`700 ${fs}px "Anuphan", system-ui, sans-serif`; const tw=ctx.measureText(label).width; const w=Math.max(20*sc,tw+10*sc), h=20*sc;
+    const bx=img?x+r*.72-w/2+4*sc:x-w/2, by=img?y-r*.72-h/2-2*sc:y-h/2; if(!img&&r<14*sc){ ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(label,x,y+.5*sc); return; }
+    if(img){ ctx.beginPath(); const rr=h/2; ctx.moveTo(bx+rr,by); ctx.arcTo(bx+w,by,bx+w,by+h,rr); ctx.arcTo(bx+w,by+h,bx,by+h,rr); ctx.arcTo(bx,by+h,bx,by,rr); ctx.arcTo(bx,by,bx+w,by,rr); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.lineWidth=2*sc; ctx.strokeStyle="#fff"; ctx.stroke(); }
+    ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(label,bx+w/2,by+h/2+.5*sc); } }
+async function tbMapPic(spec,W,H){ const DPR=2, CW=W*DPR, CH=H*DPR, sc=DPR; const lines=[], marks=[];
+  const days=spec.trip?DAYS.map((_,i)=>i):[spec.di];
+  for(const di of days){ const col=cssVar(`--d${DAYS[di].n}`)||"#2F6FB3"; const L=dayLine(di)||[]; if(L.length>1) lines.push({pts:L,col});
+    const seq=stopSeq(di).filter(x=>x.num&&x.it.p&&P[x.it.p]);
+    if(spec.trip){ let best=null,bn=-1; seq.forEach(x=>{ const n=phMeta.filter(m=>m.day===di&&m.key===x.it._i&&m.kind!=="video"&&!m.tbHide).length; if(n>bn){ bn=n; best=x; } });
+      if(best) marks.push({di,p:best.it.p,keys:[best.it._i],col,label:String(DAYS[di].n),r:bn>0?26:13,web:false}); }
+    else { const g={}; seq.forEach(x=>{ (g[x.it.p]=g[x.it.p]||[]).push(x); }); Object.values(g).forEach(L2=>marks.push({di,p:L2[0].it.p,keys:L2.map(y=>y.it._i),col,label:L2.map(y=>y.num).join(","),r:30,web:true})); } }
+  const pts=lines.flatMap(l=>l.pts).concat(marks.map(m=>[P[m.p][1],P[m.p][2]])); if(!pts.length) return {blob:null,missing:false};
+  let s=90,w=180,n=-90,e=-180; pts.forEach(([la,lo])=>{ s=Math.min(s,la); n=Math.max(n,la); w=Math.min(w,lo); e=Math.max(e,lo); });
+  /* zoom so everything fits with room for the photo circles */
+  const padX=70, padY=70; const dx=Math.max(1e-9,tbLX(e,0)-tbLX(w,0)), dy=Math.max(1e-9,tbLY(s,0)-tbLY(n,0));
+  let fz=Math.min(Math.log2((W-2*padX)/dx),Math.log2((H-2*padY)/dy)); fz=Math.max(2,Math.min(16,fz));
+  const zt=Math.min(18,Math.floor(fz)+1), k=2**(fz-zt)*DPR;   /* canvas px per tile px */
+  const cx=(tbLX(w,zt)+tbLX(e,zt))/2, cy=(tbLY(n,zt)+tbLY(s,zt))/2; const X=lo=>(tbLX(lo,zt)-cx)*k+CW/2, Y=la=>(tbLY(la,zt)-cy)*k+CH/2;
+  const cv=document.createElement("canvas"); cv.width=CW; cv.height=CH; const ctx=cv.getContext("2d"); ctx.fillStyle="#CADCE3"; ctx.fillRect(0,0,CW,CH);
+  /* tiles */
+  const x0=Math.floor((cx-CW/2/k)/TB_TS), x1=Math.floor((cx+CW/2/k)/TB_TS), y0=Math.max(0,Math.floor((cy-CH/2/k)/TB_TS)), y1=Math.min(2**zt-1,Math.floor((cy+CH/2/k)/TB_TS)); const jobs=[];
+  for(let tx=x0;tx<=x1;tx++) for(let ty=y0;ty<=y1;ty++){ const wx=((tx%2**zt)+2**zt)%2**zt; jobs.push(tbLoadImg(`https://tile.openstreetmap.org/${zt}/${wx}/${ty}.png`).then(im=>({im,tx,ty}))); }
+  const tiles=await Promise.all(jobs); const bad=tiles.filter(t=>!t.im).length; const missing=!tiles.length||bad/tiles.length>.25;
+  if(missing&&typeof HOKKAIDO!=="undefined"&&HOKKAIDO&&HOKKAIDO.coordinates){ ctx.fillStyle="#E7ECE3"; ctx.strokeStyle="#B9C7BE"; ctx.lineWidth=1.5*sc;
+    (HOKKAIDO.type==="Polygon"?[HOKKAIDO.coordinates]:HOKKAIDO.coordinates).forEach(poly=>{ ctx.beginPath(); poly.forEach(ring=>ring.forEach(([lo,la],i)=>i?ctx.lineTo(X(lo),Y(la)):ctx.moveTo(X(lo),Y(la)))); ctx.fill("evenodd"); ctx.stroke(); }); }
+  const ts=TB_TS*k; tiles.forEach(t=>{ if(t.im) ctx.drawImage(t.im,(t.tx*TB_TS-cx)*k+CW/2,(t.ty*TB_TS-cy)*k+CH/2,ts+.5,ts+.5); });
+  /* routes: a white edge under the day's colour, like the app */
+  ctx.lineJoin="round"; ctx.lineCap="round";
+  lines.forEach(l=>{ ctx.beginPath(); l.pts.forEach(([la,lo],i)=>i?ctx.lineTo(X(lo),Y(la)):ctx.moveTo(X(lo),Y(la))); ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=(spec.trip?7:10)*sc; ctx.stroke(); ctx.strokeStyle=l.col; ctx.lineWidth=(spec.trip?3.5:5)*sc; ctx.stroke(); });
+  /* stops: round photos, numbered */
+  const pics=await Promise.all(marks.map(m=>tbStopPic(m.di,m.keys,P[m.p],m.web)));
+  marks.map((m,i)=>({m,i,y:Y(P[m.p][1])})).sort((a,b)=>a.y-b.y).forEach(({m,i})=>{ const img=pics[i]; tbCircle(ctx,X(P[m.p][2]),Y(P[m.p][1]),(img?m.r:Math.min(m.r,13))*sc,img,m.col,m.label,sc); });
+  /* credit */
+  const cr=missing?"เส้นทางโดยประมาณ (โหลดพื้นแผนที่ไม่ครบ)":"© OpenStreetMap contributors"; ctx.font=`500 ${11*sc}px "Anuphan", system-ui, sans-serif`; const tw=ctx.measureText(cr).width;
+  ctx.fillStyle="rgba(255,255,255,.85)"; ctx.fillRect(CW-tw-14*sc,CH-20*sc,tw+14*sc,20*sc); ctx.fillStyle="#3D4650"; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(cr,CW-tw-7*sc,CH-10*sc);
+  const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",.88)); pics.forEach(p=>{ try{ p&&p.close&&p.close(); }catch(e){} });
+  return {blob,missing}; }
+async function makeTbShots(prog){
   const out={sig:tbShotSig(),at:Date.now(),days:DAYS.map(()=>({})),trip:null,stories:null,missing:0}; const total=DAYS.length+2; let k=0;
   const step=m=>{ if(tbShotAbort) throw new Error("abort"); prog&&prog(++k,total,m); };
-  const UI=["map-ui","map-legend","leaflet-control-container","pick-bar","ex-bar","ex-panel"];
-  let lent=null; const st=shotStage();
-  try{
-    if(typeof L!=="undefined"){ st.style.width="760px"; lent=shotBorrow($("#p-map"),"position:relative;inset:auto;height:500px;overflow:hidden");
-      if(!map) initMap(); map.invalidateSize({pan:false}); Object.assign(mapFlags,{stops:true,scenic:false,recs:false,food:false,bf:false,trip:false});
-      for(let di=0;di<DAYS.length;di++){ step(`แผนที่ D${DAYS[di].n}`); if(lent.el.hidden){ lent.el.hidden=false; map.invalidateSize({pan:false}); } mapDay=di; drawMap(true); await mapSettled(); out.days[di].map=(await shotOf($("#p-map"),font,99999,UI))[0]||null; if(tbTilesMissing()) out.missing=(out.missing||0)+1; }
-      step("แผนที่ทั้งทริป"); mapFlags.trip=true; lent.el.hidden=false; lent.el.style.height="620px"; map.invalidateSize({pan:false}); drawMap(true); await mapSettled(); out.trip=(await shotOf($("#p-map"),font,99999,UI))[0]||null; if(tbTilesMissing()) out.missing=(out.missing||0)+1;
-      shotReturn(lent); lent=null; }
-    step("เรื่องเล่าท้ายเล่ม"); out.stories=await tbStoriesFetch();
-  } finally {
-    shotReturn(lent); st.style.width=SHOT_W+"px"; mapDay=keep.mapDay; Object.assign(mapFlags,keep.flags); try{ renderMapChips(); }catch(e){}
-    if(map){ try{ map.invalidateSize({pan:false}); if(keep.view) map.setView(keep.view[0],keep.view[1],{animate:false}); drawMap(false); }catch(e){} } }
+  for(let di=0;di<DAYS.length;di++){ step(`แผนที่ D${DAYS[di].n}`); const r=await tbMapPic({di},760,500); out.days[di].map=r.blob; if(r.blob&&r.missing) out.missing++; }
+  step("แผนที่ทั้งทริป"); const r=await tbMapPic({trip:true},760,620); out.trip=r.blob; if(r.blob&&r.missing) out.missing++;
+  step("เรื่องเล่าท้ายเล่ม"); out.stories=await tbStoriesFetch();
   return out; }
 var tbNet={st:"",ms:0,at:0}, tbProgV={i:0,n:0,msg:""}, tbExp={busy:false,i:0,n:0,t:0}, tbDoneAt=0;
 /* is there internet, and how fast: a real request to the map server, not only what the phone claims */
 async function netCheck(){ if(navigator.onLine===false){ tbNet={st:"off",ms:0,at:Date.now()}; tbProgPaint(); return tbNet; }
-  const t0=performance.now(), ac=new AbortController(), to=setTimeout(()=>ac.abort(),7000);
-  try{ const r=await fetch("https://tile.openstreetmap.org/0/0/0.png",{cache:"no-store",mode:"cors",signal:ac.signal}); await r.blob(); const ms=Math.round(performance.now()-t0); tbNet={st:!r.ok?"bad":ms<1200?"good":"slow",ms,at:Date.now()}; }
-  catch(e){ tbNet={st:e&&e.name==="AbortError"?"slow":(navigator.onLine===false?"off":"bad"),ms:0,at:Date.now()}; } finally{ clearTimeout(to); }
+  const t0=performance.now(); const im=await tbLoadImg("https://tile.openstreetmap.org/0/0/0.png?n="+Date.now(),7000); const ms=Math.round(performance.now()-t0);
+  tbNet={st:im?(ms<1200?"good":"slow"):(navigator.onLine===false?"off":ms>=6900?"slow":"bad"),ms:im?ms:0,at:Date.now()}; if(!im&&tbNet.st==="slow") tbNet.st="bad";
   tbProgPaint(); return tbNet; }
 function tbProgSet(i,n,msg){ tbProgV={i,n,msg}; tbProgPaint(); const w=$("#tbOv .tb-ov-wait"); if(w) w.textContent=msg+(n?` (${i}/${n})`:""); }
 function tbExpTick(){ tbExp.i++; const now=Date.now(); if(now-tbExp.t>250){ tbExp.t=now; tbProgPaint(); } }
@@ -3889,7 +3930,7 @@ function tbShotsKick(force){ if(tbShotBusy) return tbShotBusy; if(!force&&tbShot
 addEventListener("online",()=>{ if(!document.body.classList.contains("tb-open")) return; netCheck().then(n=>{ if((n.st==="good"||n.st==="slow")&&!tbShotBusy&&(tbShotErr||!tbShots||tbShots.missing)) tbShotsKick(true); }); });
 addEventListener("offline",()=>{ tbNet={st:"off",ms:0,at:Date.now()}; tbProgPaint(); });
 async function tbImgSrc(b,mode){ if(mode!=="export"){ let u=tbShotURL.get(b); if(!u){ u=URL.createObjectURL(b); tbShotURL.set(b,u); } return u; } return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); }
-async function tbDayMap(di,mode){ const b=tbShots&&tbShots.days[di]&&tbShots.days[di].map; if(!b) return routeSketch(di,760,500);
+async function tbDayMap(di,mode){ const b=tbShots&&tbShots.days[di]&&tbShots.days[di].map; if(!b) return mode!=="export"&&(tbShotBusy||!tbShots)?`<div class="tb-mapwait">กำลังวาดแผนที่ของวันนี้…</div>`:"";
   return `<img class="tb-daymap" src="${await tbImgSrc(b,mode)}" alt="แผนที่วันที่ ${DAYS[di].n}">`; }
 async function tbImgsReady(){ const until=Date.now()+8000; while(Date.now()<until){ const L=[...document.querySelectorAll("#tbBody img")]; if(L.every(i=>i.complete)) break; await tbSleep(200); } }
 async function tbOvPaint(){ const el=$("#tbOv"); if(!el) return; const h=await tbOverview("app"); const el2=$("#tbOv"); if(el2) el2.outerHTML=h; }
@@ -3909,8 +3950,7 @@ function tripSketch(w,h){ const all=[]; DAYS.forEach((d,di)=>{ const L=dayLine(d
 async function tbOverview(mode){ const app=mode!=="export"; const st=tripStats(); const kmAll=DAYS.reduce((a,_,di)=>a+tbDayKm(di),0);
   const nph=phMeta.filter(m=>!m.tbHide).length;
   let h=`<section class="tb-ov" id="tbOv"><header class="tb-ov-h"><p class="tb-kick">ภาพรวมทริป</p><h2>${DAYS.length} วัน · ~${kmAll.toLocaleString()} กม. · ${st.vis} จุดที่ไป · ${nph.toLocaleString()} รูป</h2></header>`;
-  h+=tbShots&&tbShots.trip?`<img class="tb-tripmap" src="${await tbImgSrc(tbShots.trip,mode)}" alt="แผนที่ทั้งทริป">`:tripSketch(760,620);
-  if(app&&(tbShotBusy||tbShotErr||!tbShots)) h+=`<p class="tb-ov-wait">${esc(tbShotErr?tbShotErr+" · ตอนนี้แสดงเส้นทางแบบเรียบ":(tbProgV.msg||"กำลังเตรียมแผนที่…"))}</p>`;
+  h+=tbShots&&tbShots.trip?`<img class="tb-tripmap" src="${await tbImgSrc(tbShots.trip,mode)}" alt="แผนที่ทั้งทริป">`:(app?`<div class="tb-mapwait tall">${esc(tbShotErr?"ยังวาดแผนที่ไม่ได้ · ต่อเน็ตแล้วแอปจะวาดให้เอง":"กำลังวาดแผนที่ทั้งทริป…")}</div>`:"");
   h+=`<table class="tb-ovt"><tbody>${DAYS.map((d,di)=>{ const w=tbWxDay(di), ht=tbHotel(di), n=phMeta.filter(m=>m.day===di&&!m.tbHide).length;
     return `<tr style="--dc:${cssVar(`--d${d.n}`)}"><td class="tb-ovd"><b>${d.n}</b><span>${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค.</span></td><td><p class="tb-ovr">${esc(d.title)}</p><p class="tb-ovm">${[w?`${w.e} ${w.tmin}–${w.tmax}°C`:"",tbDayKm(di)?`${tbDayKm(di)} กม.`:"",n?`${n} รูป`:"",ht?`🛏 ${esc(ht)}`:""].filter(Boolean).join(" · ")}</p></td></tr>`; }).join("")}</tbody></table>`;
   if(app&&tbShots&&!tbShotBusy) h+=`<p class="tb-ov-note">${tbShots.sig!==tbShotSig()?"แผนหรือรูปเปลี่ยนไปแล้ว ":""}<button class="btn small" data-tb="ov-retry">วาดแผนที่ใหม่</button></p>`;
