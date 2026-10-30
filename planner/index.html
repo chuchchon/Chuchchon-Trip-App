@@ -2954,7 +2954,7 @@ const PDB={db:null,
   putMeta(m){ phChanged(); return this.tx("meta","readwrite",s=>s.put(m)); },
   putBlob(b){ return this.tx("blob","readwrite",s=>s.put(b)); },
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
-  del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id))]); } };
+  del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id+"~s"))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
 PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 /* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
@@ -3320,7 +3320,8 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
   const fa=m=>app?` data-tbid="${m.id}" class="${m.kind==="video"?"v":""}${m.tbHide?" hid":""}${tbSel&&tbSel.has(m.id)?" sel":""}${m.cover?" cov":""}"`:(m.kind==="video"?` class="v"`:"");
   const fig=async(m,big)=>{ if(m.kind!=="video") return `<figure${fa(m)}><img src="${await src(m,big)}" alt="" loading="lazy" draggable="false"></figure>`;
     const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); }):"")):await phThumbURL(m.id,false);
-    if(mode==="export") return `<figure class="v">${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}</i></figure>`;
+    if(mode==="export"){ const inV=tbExpVids&&tbExpVids.has(m.id); if(inV) tbExpVidUsed.add(m.id);
+      return `<figure class="v"${inV?` data-v="${m.id}"`:""}>${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}${tbExpVids&&!inV?" · ดูได้ในแอป":""}</i></figure>`; }
     return `<figure${fa(m).replace('class="','class="'+(po?"":"nop "))}><video src="${await phThumbURL(m.id,true)}${po?"":"#t=0.5"}" ${po?`poster="${po}"`:""} playsinline preload="${po?"none":"metadata"}"></video><i>▶ ${fmtDur(m.dur)}</i></figure>`; };
   const grid=async(list,bigN,gk)=>{ list=tbSort(list.filter(shown)); if(!list.length) return ""; if(app) tbGrids[gk]=list.map(m=>m.id);
     const lim=app&&tbMore.has(gk)?list.length:24, show=list.slice(0,lim);
@@ -3374,6 +3375,10 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-grid figure{margin:0;overflow:hidden;border-radius:10px;background:#F5F7F9;aspect-ratio:4/3}
 .tb-grid figure img,.tb-grid figure video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
 .tb-grid figure.v{position:relative}
+.tb-grid figure[data-v]{cursor:pointer}
+.tb-grid figure[data-v]::after{content:"▶";position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(0,0,0,.52);color:#fff;font-size:24px;line-height:56px;text-align:center;text-indent:4px;pointer-events:none}
+.tb-grid figure[data-on]::after{display:none}
+.tb-ask{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .tb-grid figure.nop video{background:linear-gradient(135deg,#E4EBF1,#CBD8E3)}.tb-grid figure.v i{position:absolute;left:8px;bottom:8px;font-style:normal;font-size:12px;color:#fff;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:999px}
 .tb-grid.n1{grid-template-columns:1fr}.tb-grid.n1 figure{aspect-ratio:3/2}
 .tb-grid figure:first-child{grid-column:1/-1;aspect-ratio:16/10}
@@ -3429,13 +3434,46 @@ async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElem
     if(a==="ov-retry"){ tbShotsKick(true); return; }
     if(a==="close"){ closeTripbook(); if(history.state&&history.state.tb){ const h=()=>{ removeEventListener("popstate",h); setTimeout(tbReopen,0); }; addEventListener("popstate",h); selfBack(1); } else tbReopen(); }
     if(a==="print"){ tbMakePdf(b); return; }
-    if(a==="save"){ if(tbShotBusy||tbStoryBusy){ b.textContent=tbShotBusy?"รอแผนที่ให้เสร็จก่อน…":"รอเรื่องเล่าท้ายเล่ม…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} } b.textContent="กำลังเตรียมไฟล์…"; tbExp={busy:true,i:0,n:phMeta.filter(m=>!m.tbHide&&m.kind!=="video").length,t:0}; tbProgPaint(); let body=""; try{ body=await tripbookHtml("export"); } finally{ tbExp.busy=false; tbProgPaint(); }
+    if(a==="save"){ const V=tbBookVideos(); if(V.length&&!tbSaving){ tbAsk={n:V.length,mb:await tbVidEstimate(V)}; tbProgPaint(); return; } tbSaveFile(b,false); return; }
+    if(a==="save-v"||a==="save-nv"){ tbAsk=null; tbProgPaint(); const sb=$('#tbRoot [data-tb="save"]'); if(sb) tbSaveFile(sb,a==="save-v"); return; }
+    if(a==="save-x"){ tbAsk=null; tbProgPaint(); return; } }; }
+async function tbSaveFile(b,withV){ if(tbSaving) return; tbSaving=true; try{ if(tbShotBusy||tbStoryBusy){ b.textContent=tbShotBusy?"รอแผนที่ให้เสร็จก่อน…":"รอเรื่องเล่าท้ายเล่ม…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} } b.textContent="กำลังเตรียมไฟล์…"; tbExpVids=null; tbExpVidUsed=new Set(); if(withV) await tbPrepVideos();
+      tbExp={busy:true,i:0,n:phMeta.filter(m=>!m.tbHide&&m.kind!=="video").length,t:0}; tbProgPaint(); let body=""; try{ body=await tripbookHtml("export"); } finally{ tbExp.busy=false; tbProgPaint(); }
       const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ${esc(TRIP.trip.trip_name||"")}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
-      const blob=new Blob([doc],{type:"text/html"}), fn=tpFileBase()+"-Tripbook.html";
+      const parts=[doc.slice(0,doc.lastIndexOf("</body>"))];
+      if(tbExpVids&&tbExpVidUsed.size){ tbVidPrep={stage:"pack",i:0,n:tbExpVidUsed.size}; for(const id of tbExpVidUsed){ tbVidPrep.i++; tbProgPaint(); const vb=tbExpVids.get(id);
+          parts.push(`<script type="application/octet-stream" id="tbv-${id}" data-mime="${esc(vb.type||"video/mp4")}">`); for(const c of await tbB64Parts(vb)) parts.push(c); parts.push("<\/script>"); } parts.push(TB_PLAYER); }
+      parts.push("</body></html>"); const blob=new Blob(parts,{type:"text/html"}), fn=tpFileBase()+"-Tripbook.html";
+      tbSaveOut={at:Date.now(),mb:blob.size/1048576,n:tbExpVids?tbExpVidUsed.size:0,skip:tbVidPrep&&tbVidPrep.skip||0};
       /* inside the claude.ai viewer a page may only offer files through its downloads capability */
       let dl=null; try{ if(window.claude&&typeof window.claude.use==="function") dl=await window.claude.use("downloads"); }catch(e){}
       if(dl){ try{ await dl.save({filename:fn,data:blob}); b.textContent="บันทึกเป็นไฟล์"; } catch(e){ b.textContent=e&&e.code==="declined"?"บันทึกเป็นไฟล์":"บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; } return; }
-      const url=URL.createObjectURL(blob); const al=document.createElement("a"); al.href=url; al.download=fn; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); b.textContent="บันทึกเป็นไฟล์"; } }; }
+      const url=URL.createObjectURL(blob); const al=document.createElement("a"); al.href=url; al.download=fn; document.body.appendChild(al); al.click(); al.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); b.textContent="บันทึกเป็นไฟล์"; } finally{ tbSaving=false; tbExpVids=null; tbVidPrep=null; tbProgPaint(); setTimeout(tbProgPaint,7100); } }
+/* videos inside the saved file: made small once (kept for next time), carried as text, turned back into a video when tapped */
+var tbAsk=null, tbSaving=false, tbExpVids=null, tbExpVidUsed=new Set(), tbVidPrep=null, tbVidLibP=null, tbSaveOut=null;
+function tbBookVideos(){ return phMeta.filter(m=>m.kind==="video"&&!m.tbHide&&m.day!=null); }
+async function tbVidEstimate(V){ let mb=0; for(const m of V){ let sm=null; try{ const r=await PDB.getBlob(m.id+"~s"); sm=r&&r.full; }catch(e){} mb+=sm?sm.size/1048576:(m.dur||30)*0.125; } return Math.max(1,Math.round(mb*1.34)); }
+function tbVidLib(){ return tbVidLibP||(tbVidLibP=import("https://cdn.jsdelivr.net/npm/mediabunny@1.61.5/dist/bundles/mediabunny.min.mjs").catch(e=>{ tbVidLibP=null; throw e; })); }
+async function tbSmallVideo(m,onp){ try{ const r=await PDB.getBlob(m.id+"~s"); if(r&&r.full) return r.full; }catch(e){}
+  const b=await PDB.getBlob(m.id); const full=b&&b.full; if(!full) return null; let small=null;
+  try{ if(typeof VideoEncoder==="undefined") throw new Error("no WebCodecs"); const MB=await tbVidLib();
+    const input=new MB.Input({source:new MB.BlobSource(full),formats:MB.ALL_FORMATS}), vt=await input.getPrimaryVideoTrack(); if(!vt) throw new Error("no video track");
+    const dw=vt.displayWidth||640, dh=vt.displayHeight||360, k=Math.min(1,640/Math.max(dw,dh)), W=Math.max(2,Math.round(dw*k/2)*2), H=Math.max(2,Math.round(dh*k/2)*2);
+    const output=new MB.Output({format:new MB.Mp4OutputFormat({fastStart:"in-memory"}),target:new MB.BufferTarget()});
+    const conv=await MB.Conversion.init({input,output,video:{width:W,height:H,fit:"contain",bitrate:900e3},audio:{bitrate:64e3}});
+    if(!conv.isValid) throw new Error("cannot convert"); conv.onProgress=p=>{ try{ onp&&onp(p); }catch(e){} }; await conv.execute();
+    small=new Blob([output.target.buffer],{type:"video/mp4"}); }
+  catch(e){ try{ console.warn("video shrink:",e&&e.message||e); }catch(x){} small=null; }
+  if(small&&small.size>1000&&small.size<full.size){ try{ await PDB.putBlob({id:m.id+"~s",full:small,thumb:null}); }catch(e){} return small; }
+  return full.size<=30*1048576?full:null; }
+async function tbPrepVideos(){ const V=tbBookVideos(); tbExpVids=new Map(); tbExpVidUsed=new Set(); tbVidPrep={i:0,n:V.length,p:0,skip:0}; tbProgPaint(); let last=0;
+  for(const m of V){ tbVidPrep.i++; tbVidPrep.p=0; tbProgPaint(); const v=await tbSmallVideo(m,p=>{ tbVidPrep.p=p; const now=Date.now(); if(now-last>300){ last=now; tbProgPaint(); } }); if(v) tbExpVids.set(m.id,v); else tbVidPrep.skip++; } }
+async function tbB64Parts(blob){ const out=[], CH=3*1024*1024; for(let o=0;o<blob.size;o+=CH){ const u=new Uint8Array(await blob.slice(o,o+CH).arrayBuffer()); let s="";
+    for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); out.push(btoa(s)); } return out; }
+const TB_PLAYER=`<script>document.addEventListener("click",function(e){var f=e.target.closest("figure[data-v]");if(!f||f.dataset.on)return;var s=document.getElementById("tbv-"+f.dataset.v);if(!s)return;f.dataset.on="1";
+var t=s.textContent.replace(/\\s+/g,""),P=[],C=4194304;for(var i=0;i<t.length;i+=C){var b=atob(t.slice(i,i+C)),u=new Uint8Array(b.length);for(var j=0;j<b.length;j++)u[j]=b.charCodeAt(j);P.push(u);}
+var v=document.createElement("video");v.src=URL.createObjectURL(new Blob(P,{type:s.getAttribute("data-mime")||"video/mp4"}));v.controls=true;v.autoplay=true;v.playsInline=true;v.setAttribute("playsinline","");
+v.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000";f.appendChild(v);var p=v.play&&v.play();if(p&&p.catch)p.catch(function(){});});<\/script>`;
 function closeTripbook(){ tbShotAbort=true; const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open","tb-selecting","tb-dragging"); tbSel=null; tbPress=null; }
 var tbReturn=false;
 function tbReopen(){ if(tbReturn){ tbReturn=false; photoSheetPaint(true); } }   /* opened from "รูปของเรา": go back there */
@@ -3573,8 +3611,12 @@ function tbExpTick(){ tbExp.i++; const now=Date.now(); if(now-tbExp.t>250){ tbEx
 function tbProgPaint(){ const el=$("#tbProg"); if(!el) return; const st=tbNet.st;
   const NET={good:["good",`📶 เน็ตดี${tbNet.ms?` · ${tbNet.ms} ms`:""}`],slow:["slow","📶 เน็ตช้า · อาจใช้เวลานานขึ้น"],bad:["bad","⚠️ ต่อเซิร์ฟเวอร์แผนที่ไม่ได้"],off:["bad","📵 ไม่มีอินเทอร์เน็ต"]}[st]||["", "📶 กำลังเช็คเน็ต…"];
   let msg="", pct=-1, extra="";
-  if(tbPdfBusy){ msg=tbPdfV.n?`กำลังสร้าง PDF หน้า ${tbPdfV.i} / ${tbPdfV.n}`:"PDF · "+(tbPdfV.msg||"กำลังเตรียม…"); pct=tbPdfV.n?Math.round(tbPdfV.i/tbPdfV.n*100):-1; }
+  if(tbAsk){ msg=`Tripbook นี้มีวิดีโอ ${tbAsk.n} คลิป`; extra=`<p>ใส่วิดีโอลงไฟล์ด้วย จะกดเล่นในไฟล์ได้ แต่ไฟล์ใหญ่ขึ้นราว ${tbAsk.mb.toLocaleString()} MB และครั้งแรกต้องรอแอปย่อวิดีโอให้เล็กลงสักพัก (ครั้งต่อไปเร็วขึ้น)</p><div class="tb-ask"><button class="btn small primary" data-tb="save-v">ใส่วิดีโอด้วย</button><button class="btn small" data-tb="save-nv">เฉพาะรูป (เร็ว)</button><button class="btn small" data-tb="save-x">ยกเลิก</button></div>`; }
+  else if(tbSaving&&tbVidPrep&&tbVidPrep.stage==="pack"){ msg=`กำลังใส่วิดีโอลงไฟล์ ${tbVidPrep.i} / ${tbVidPrep.n}`; pct=Math.round(tbVidPrep.i/Math.max(1,tbVidPrep.n)*100); }
+  else if(tbSaving&&tbVidPrep&&!tbExp.busy){ msg=`กำลังย่อวิดีโอ ${tbVidPrep.i} / ${tbVidPrep.n}${tbVidPrep.p?` · ${Math.round(tbVidPrep.p*100)}%`:""}`; pct=Math.round(((tbVidPrep.i-1)+(tbVidPrep.p||0))/Math.max(1,tbVidPrep.n)*100); }
+  else if(tbPdfBusy){ msg=tbPdfV.n?`กำลังสร้าง PDF หน้า ${tbPdfV.i} / ${tbPdfV.n}`:"PDF · "+(tbPdfV.msg||"กำลังเตรียม…"); pct=tbPdfV.n?Math.round(tbPdfV.i/tbPdfV.n*100):-1; }
   else if(tbPdfOut&&Date.now()-tbPdfOut.at<6000&&(tbPdfOut.err||tbPdfOut.res)){ msg=tbPdfOut.err?tbPdfOut.err:tbPdfOut.res==="ok"?`บันทึก PDF แล้ว ✓ ${tbPdfOut.pages} หน้า · ${tbPdfOut.mb.toFixed(1)} MB`:tbPdfOut.res==="declined"?"ยกเลิกการบันทึก PDF":"บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; pct=tbPdfOut.err?-1:100; }
+  else if(tbSaveOut&&!tbSaving&&Date.now()-tbSaveOut.at<7000){ msg=`บันทึกไฟล์แล้ว ✓ ${tbSaveOut.mb.toFixed(1)} MB${tbSaveOut.n?` · วิดีโอ ${tbSaveOut.n} คลิป`:""}${tbSaveOut.skip?` · ${tbSaveOut.skip} คลิปใส่ไม่ได้ (ดูได้ในแอป)`:""}`; pct=100; }
   else if(tbExp.busy){ msg=tbExp.n?`กำลังรวมรูปลงไฟล์ ${Math.min(tbExp.i,tbExp.n).toLocaleString()} / ${tbExp.n.toLocaleString()}`:"กำลังเตรียมไฟล์…"; pct=tbExp.n?Math.min(100,Math.round(tbExp.i/tbExp.n*100)):-1; }
   else if(tbShotBusy){ const m=tbProgV.msg||"", web=/^(หา|ใส่)/.test(m); msg=tbProgV.n?`กำลัง${web?"":"วาด"}${m} · ${tbProgV.i}/${tbProgV.n}`:(m?"กำลัง"+m+"…":"กำลังเตรียม…"); pct=tbProgV.n?Math.round((web?tbProgV.i:tbProgV.i-1)/tbProgV.n*100):0; }
   else if(tbStoryBusy){ msg=tbStoryV.n?`แผนที่พร้อมแล้ว ✓ · กำลังหาเรื่องเล่าท้ายเล่ม ${tbStoryV.i}/${tbStoryV.n}`:"แผนที่พร้อมแล้ว ✓ · กำลังหาเรื่องเล่าท้ายเล่ม…"; pct=tbStoryV.n?Math.round(tbStoryV.i/tbStoryV.n*100):-1; }
