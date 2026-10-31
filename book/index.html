@@ -56,6 +56,11 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
 .tc-s a{font-size:13px;padding:5px 10px;border-radius:999px;background:#F3F6F4;color:#3D4650}
 .tc-s a b{color:var(--dc);margin-right:5px}
 #tocb{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;border:0;border-radius:999px;padding:12px 16px;background:#1C2228;color:#fff;font:600 14.5px "Anuphan",system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);cursor:pointer}
+.tc-back{margin:4px 0 26px;text-align:center}
+.tc-back a{display:inline-block;padding:8px 16px;border-radius:999px;background:#F3F6F4;color:#2F6FB3;font-weight:600;font-size:14px;text-decoration:none}
+figure .spr{position:absolute;inset:0;background-size:800% 100%;background-repeat:no-repeat;animation:spr 6s steps(8,jump-none) infinite;pointer-events:none}
+@keyframes spr{from{background-position:0% 0}to{background-position:100% 0}}
+@media (prefers-reduced-motion:reduce){ figure .spr{animation:none} }
 #vo{position:fixed;inset:0;z-index:100;background:#000;display:flex;align-items:center;justify-content:center}
 #vo .vs{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top,0px)) 0 calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
 #vo iframe,#vo video{width:100%;height:100%;border:0;background:#000;object-fit:contain}
@@ -127,6 +132,9 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
     catch(e){ setTimeout(function(){ io.observe(im); },4000); }
     busy--; done++; bar(); }
   var io=null;
+  async function sprite(f){ var r=M.refs[+f.getAttribute("data-spr")]; if(!r) return; var url;
+    try{ if(r[0]==="d") url="https://lh3.googleusercontent.com/d/"+r[1]+"=w2560"; else { var k=r.join(","); if(!urls[k]){ var p=await pack(r[0]); urls[k]=URL.createObjectURL(new Blob([p.subarray(r[1],r[1]+r[2])],{type:r[3]||"image/jpeg"})); } url=urls[k]; }
+      var im=new Image(); im.onload=function(){ var s=document.createElement("span"); s.className="spr"; s.style.backgroundImage='url("'+url+'")'; f.insertBefore(s,f.firstChild.nextSibling); }; im.src=url; }catch(e){} }
   function render(){
     document.title=M.title||"Tripbook";
     var st=document.createElement("style"); st.textContent=(M.css||"")+"\nbody{margin:0;background:#fff}"; document.head.appendChild(st);
@@ -138,6 +146,8 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
     var lk=$("#lock"); lk.classList.add("out"); setTimeout(function(){ lk.hidden=true; b.hidden=false; window.scrollTo(0,0); },420);
     io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); load(e.target); } }); },{rootMargin:"1600px 0px"});
     b.querySelectorAll("img[data-r]").forEach(function(im){ io.observe(im); });
+    var so=new IntersectionObserver(function(es){ es.forEach(function(e){ if(!e.isIntersecting) return; so.unobserve(e.target); sprite(e.target); }); },{rootMargin:"800px 0px"});
+    b.querySelectorAll("figure[data-spr]").forEach(function(f){ so.observe(f); });
     b.addEventListener("click",play); }
   /* contents after the cover: every day and its stops, to jump to; a button brings you back from anywhere */
   function toc(b){ var tb=b.querySelector(".tb"), cover=tb.querySelector(".tb-cover"), n=0, h='<section class="tb-toc" id="toc"><p class="tb-kick">สารบัญ</p><h2>เลือกดูได้เลย</h2><ol>';
@@ -151,8 +161,9 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
     if(cover) cover.insertAdjacentHTML("afterend",h); else tb.insertAdjacentHTML("afterbegin",h);
     var btn=document.createElement("button"); btn.id="tocb"; btn.type="button"; btn.innerHTML="☰ สารบัญ"; btn.hidden=true; document.body.appendChild(btn);
     btn.onclick=function(){ $("#toc").scrollIntoView({behavior:"smooth"}); };
-    b.addEventListener("click",function(e){ var a=e.target.closest(".tb-toc a"); if(!a) return; e.preventDefault(); var t=document.getElementById(a.getAttribute("href").slice(1)); if(t) t.scrollIntoView({behavior:"smooth"}); });
-    var tocEl=$("#toc"); window.addEventListener("scroll",function(){ var r=tocEl.getBoundingClientRect(); btn.hidden=r.bottom>0; },{passive:true}); }
+    b.addEventListener("click",function(e){ var a=e.target.closest(".tb-toc a,.tc-back a"); if(!a) return; e.preventDefault(); var t=document.getElementById(a.getAttribute("href").slice(1)); if(t) t.scrollIntoView({behavior:"smooth"}); });
+    btn.hidden=false;
+    tb.querySelectorAll(".tb-day").forEach(function(sec){ sec.insertAdjacentHTML("beforeend",'<p class="tc-back"><a href="#toc">↑ กลับไปสารบัญ</a></p>'); }); }
   /* a video opens over the whole screen, at its own shape, with a close button */
   function closeVid(){ var o=$("#vo"); if(o){ o.remove(); document.body.style.overflow=""; } }
   async function play(e){ var sa=e.target.closest(".tb-showall"); if(sa){ var g=sa.previousElementSibling; if(g) g.classList.remove("clip"); sa.remove(); return; }

@@ -3291,6 +3291,17 @@ function videoPoster(file){ return new Promise(async res=>{ const v=document.cre
       if(best&&(vpGood(best)||best.mean>8||best.sd>3)) break; } }catch(e){}
   if(!best) return fin({blob:null,dur});
   best.c.toBlob(b=>fin({blob:b,dur,w:v.videoWidth,h:v.videoHeight,pv:2}),"image/jpeg",.8); }); }
+/* a moving preview of a video for the shared book: 8 frames from across the clip, each cropped 4:3, in one strip (made once, kept) */
+var tbSprites=null;
+async function tbVidSprite(m){ try{ const r=await PDB.getBlob(m.id+"~p"); if(r&&r.full) return r.full; }catch(e){}
+  const b=await PDB.getBlob(m.id); if(!b||!b.full) return null;
+  const v=document.createElement("video"), url=URL.createObjectURL(b.full); v.muted=true; v.playsInline=true; v.setAttribute("playsinline",""); v.preload="auto";
+  try{ const ok=await new Promise(r=>{ v.onloadeddata=()=>r(true); v.onerror=()=>r(false); setTimeout(()=>r(v.readyState>=2),12000); v.src=url; }); if(!ok) return null;
+    const dur=isFinite(v.duration)?v.duration:0; if(!dur) return null; const N=8, w=320, h=240, cv=document.createElement("canvas"); cv.width=w*N; cv.height=h; const ctx=cv.getContext("2d");
+    for(let i=0;i<N;i++){ const g=await vpFrame(v,Math.max(0,Math.min(dur-0.05,dur*(i+0.5)/N)),false), sw=g.c.width, sh=g.c.height, sc=Math.max(w/sw,h/sh), cw=w/sc, ch=h/sc;
+      ctx.drawImage(g.c,(sw-cw)/2,(sh-ch)/2,cw,ch,i*w,0,w,h); }
+    const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",.7)); if(blob) try{ await PDB.putBlob({id:m.id+"~p",full:blob,thumb:null}); }catch(e){} return blob; }
+  catch(e){ return null; } finally{ try{ v.removeAttribute("src"); v.load(); }catch(e){} URL.revokeObjectURL(url); } }
 /* videos added before: check their thumbnails once and make a new one where it came out dark */
 var vpRep={busy:null,i:0,n:0};
 function vpRepairKick(){ if(vpRep.busy) return vpRep.busy; const L=phMeta.filter(m=>m.kind==="video"&&(m.pv||0)<2); if(!L.length) return Promise.resolve(0);
@@ -3392,7 +3403,7 @@ const PDB={db:null,
   putMeta(m){ phChanged(); return this.tx("meta","readwrite",s=>s.put(m)); },
   putBlob(b){ return this.tx("blob","readwrite",s=>s.put(b)); },
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
-  del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id+"~s"))]); } };
+  del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id+"~s")),this.tx("blob","readwrite",s=>s.delete(id+"~p"))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
 PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 /* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
@@ -3759,7 +3770,8 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
   const fig=async(m,big)=>{ if(m.kind!=="video") return `<figure${fa(m)}><img src="${await src(m,big)}" alt="" loading="lazy" draggable="false"></figure>`;
     const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?(tbShareReg?tbRegAdd(b.thumb,{m,poster:1}):new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); })):"")):await phThumbURL(m.id,false);
     if(mode==="export"){ const inV=tbExpVids&&tbExpVids.has(m.id); if(inV) tbExpVidUsed.add(m.id);
-      return `<figure class="v"${inV?` data-v="${m.id}"`:""}>${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}${tbExpVids&&!inV&&!tbShareReg?" · ดูได้ในแอป":""}</i></figure>`; }
+      const spb=inV&&tbShareReg&&tbSprites&&tbSprites.get(m.id), spr=spb?tbRegAdd(spb,{sprite:1}):"";
+      return `<figure class="v"${inV?` data-v="${m.id}"`:""}${spr?` data-spr="${spr.slice(4)}"`:""}>${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}${tbExpVids&&!inV&&!tbShareReg?" · ดูได้ในแอป":""}</i></figure>`; }
     return `<figure${fa(m).replace('class="','class="'+(po?"":"nop "))}><video src="${await phThumbURL(m.id,true)}${po?"":"#t=0.5"}" ${po?`poster="${po}"`:""} playsinline preload="${po?"none":"metadata"}"></video><i>▶ ${fmtDur(m.dur)}</i></figure>`; };
   const grid=async(list,bigN,gk)=>{ list=tbSort(list.filter(shown)); if(!list.length) return ""; tbRegGroup="g|"+gk; if(app) tbGrids[gk]=list.map(m=>m.id);
     /* a shared link carries every photo of the stop; past the first 24 they wait behind "ดูอีก" */
@@ -3869,10 +3881,11 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 @media screen{ .tb-dt thead td{position:sticky;top:var(--tbbar,46px);z-index:2} }
 @media print{ .tb-ov-note,.tb-ov-wait,.tb-more,[data-tb="ov-retry"]{display:none!important} .tb-cover{min-height:auto;height:100vh} .tb-ov,.tb-day,.tb-x{page-break-before:always} .tb-ov{padding-top:0} .tb-tripmap{max-height:86vh;width:auto;max-width:100%;margin-left:auto;margin-right:auto;break-after:page} .tb-ovt td{padding:5px 0} .tb-daymap{max-height:52vh;object-fit:cover} .tb-dh,.tb-daymap{break-after:avoid} .tb-ovt tr,.tb-nums li{break-inside:avoid} .tb-stories{columns:2} .tb-drinks{grid-template-columns:1fr 1fr} .tb-x .tb-xt{break-after:avoid} }`;
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
-  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">สร้าง PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button><button class="btn small" data-tb="share">แชร์ลิงก์</button><div id="tbProg" class="tb-prog" hidden></div><div id="tbShareBox" class="tb-prog tb-share" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
+  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small primary" data-tb="preview" aria-pressed="true">ดูตัวอย่าง</button><button class="btn small" data-tb="print">สร้าง PDF</button><button class="btn small" data-tb="save">บันทึกเป็นไฟล์</button><button class="btn small" data-tb="share">แชร์ลิงก์</button><div id="tbProg" class="tb-prog" hidden></div><div id="tbShareBox" class="tb-prog tb-share" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); tbProgPaint(); try{ history.pushState({tb:1},""); }catch(e){}
   tbSel=null; tbDel=false; await tbShotsFromCache(); if(!tbDrv) await tbDrvLoad(); $("#tbBody").innerHTML=await tripbookHtml("app"); tbsBtn(); tbWire(r); tbBarPaint(); setTimeout(()=>tbShotsKick(),300);
   r.onclick=async ev=>{ const b=ev.target.closest("[data-tb]"); if(!b) return; const a=b.dataset.tb;
+    if(a==="preview"){ if(!tbShareBusy){ tbShare=null; tbsPaint(); } tbAsk=null; tbProgPaint(); r.scrollTo({top:0,behavior:"smooth"}); return; }
     if(a==="share"){ tbsOpen(); return; }
     if(a.startsWith("sh-")){ tbsAction(a,b); return; }
     if(a.startsWith("s-")){ tbSelAction(a); return; }
@@ -4092,6 +4105,7 @@ async function tbsUpload(o,say){ const {withV,pass,mode}=o, repo=tbsRepo(), RP="
   st.pass=pass; st.mode=mode; const key=await tbsKey(pass,tbsU8(st.salt),st.it);
   /* 1. the book, every picture a numbered reference */
   say("กำลังเตรียมหน้า…");
+  tbSprites=null; if(withV){ const V=tbBookVideos(); tbSprites=new Map(); let i=0; for(const m of V){ say("กำลังทำภาพเคลื่อนไหวของวิดีโอ",++i,V.length); const sp=await tbVidSprite(m); if(sp) tbSprites.set(m.id,sp); } }
   if(withV&&mode!=="drive") await tbPrepVideos(); else { tbExpVids=withV?new Map(tbBookVideos().map(m=>[m.id,true])):null; tbExpVidUsed=new Set(); }
   tbShareReg=[]; tbRegGroup="cover"; let body="", reg;
   try{ body=await tripbookHtml("export"); } finally{ reg=tbShareReg; tbShareReg=null; }
@@ -4244,7 +4258,7 @@ async function tbsAction(a,btn){ const s=tbShare||{};
       const r=await tbsUpload({withV,pass,mode},(msg,i,n,bytes,mb)=>{ tbShare.msg=msg; tbShare.i=i||0; tbShare.n=n||0; tbShare.bytes=!!bytes; tbShare.mb=mb||0; if(msg!=="กำลังเตรียมหน้า…") tbShare.video=false; });
       r.st.key0=k0; r.st.withV=withV; r.st.pending=null; await tbCachePut(r.st); tbShare={step:"link",st:r.st,changed:false,text:tbsMessage(r.st),flash:r.sent?`อัปเดตแล้ว · ส่งไป ${(r.sent/1048576).toFixed(1)} MB`:"อัปเดตแล้ว"}; tbsBtn(); tbDrvLoad(); }
     catch(e){ tbShare=Object.assign({step:"form",nv:tbBookVideos().length,had:!!((await tbCacheGet("tb~share"))||{}).link},keepForm,{err:e.message||String(e)}); if(e.code==="auth"){ tbShare.err+=" · กด “อัปโหลด” อีกครั้งเพื่อเข้าสู่ระบบแล้วทำต่อ"; } }
-    finally{ clearInterval(tbShareTick); tbShareBusy=false; tbExpVids=null; tbVidPrep=null; tbShareReg=null; tbWakeOff(); tbsPaint(); } return; }
+    finally{ clearInterval(tbShareTick); tbShareBusy=false; tbExpVids=null; tbSprites=null; tbVidPrep=null; tbShareReg=null; tbWakeOff(); tbsPaint(); } return; }
   if(a==="sh-copy"||a==="sh-copylink"){ const t=a==="sh-copy"?(s.text||""):(s.st&&s.st.link||""); let ok=false; try{ await navigator.clipboard.writeText(t); ok=true; }catch(e){}
     if(!ok){ const ta=document.createElement("textarea"); ta.value=t; ta.style.cssText="position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); try{ ok=document.execCommand("copy"); }catch(e){} ta.remove(); }
     s.copied=ok?(a==="sh-copy"?"text":"link"):""; return tbsPaint(); }
