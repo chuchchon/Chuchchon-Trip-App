@@ -707,6 +707,16 @@ body.is-dragging{cursor:grabbing}
 .tb-err{color:#B3261E;font-weight:600}
 .tb-msg{display:block;width:100%;box-sizing:border-box;margin:8px 0 2px;padding:10px;border:1px solid #CBD5D0;border-radius:10px;font:14px/1.5 inherit;background:#fff;color:#1C2228;resize:vertical}
 .tb-link{background:none;border:0;padding:0;color:#B3261E;font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer}
+.tb-seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:2px 0 6px}
+.tb-seg button{border:1.5px solid #CBD5D0;background:#fff;border-radius:10px;padding:8px 6px;font:600 13.5px/1.3 inherit;color:#1C2228;cursor:pointer;text-align:center}
+.tb-seg button small{display:block;font-weight:400;font-size:11.5px;color:#69737D}
+.tb-seg button.on{border-color:#2F6FB3;background:#EAF2FB;box-shadow:inset 0 0 0 1px #2F6FB3}
+.tb-drv{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tb-crumb{font-size:13px}
+.tb-link2{background:none;border:0;padding:0;color:#2F6FB3;font:inherit;text-decoration:underline;cursor:pointer}
+.tb-fl{display:flex;flex-direction:column;gap:4px;max-height:42vh;overflow:auto;margin:6px 0;padding:2px}
+.tb-fl button{text-align:left;border:1px solid #DDE3E0;background:#fff;border-radius:9px;padding:9px 10px;font:500 14px inherit;color:#1C2228;cursor:pointer}
+.tb-share code{font-size:12px;background:#fff;border:1px solid #DDE3E0;border-radius:6px;padding:1px 5px;word-break:break-all}
 .tb-prog[hidden]{display:none}
 .tb-prog-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .tb-prog-top b{font-size:13.5px;flex:1 1 auto;font-weight:600}
@@ -932,11 +942,11 @@ const TRIP=(()=>{ let id=""; try{ id=localStorage.getItem("tp:cur")||""; }catch(
 const TRIP_ID=String(TRIP.trip.trip_id).replace(/[^A-Za-z0-9_-]/g,"_");
 const TP_PFX="tp:"+TRIP_ID+":";
 /* settings that belong to the phone, not to one trip */
-const TP_GLOBAL=new Set(["gkey","glite","gvia","tourDone","bkPartMB","theme","ghTok","ghRepo"]);
+const TP_GLOBAL=new Set(["gkey","glite","gvia","tourDone","bkPartMB","theme","ghTok","ghRepo","gcid"]);
 function tpKey(k){ return TP_GLOBAL.has(k)?"tp:"+k:TP_PFX+k; }
 const tpG={ get(k,d){ try{ const v=localStorage.getItem("tp:"+k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem("tp:"+k,JSON.stringify(v)); }catch(e){} } };
 /* the Google key typed into the Hokkaido app on this phone works here too */
-try{ ["gkey","ghTok","ghRepo"].forEach(k=>{ if(localStorage.getItem("tp:"+k)==null&&localStorage.getItem("hkd26:"+k)) localStorage.setItem("tp:"+k,localStorage.getItem("hkd26:"+k)); }); }catch(e){}
+try{ ["gkey","ghTok","ghRepo","gcid"].forEach(k=>{ if(localStorage.getItem("tp:"+k)==null&&localStorage.getItem("hkd26:"+k)) localStorage.setItem("tp:"+k,localStorage.getItem("hkd26:"+k)); }); }catch(e){}
 const TP_DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
 const TP_TYPES={sight:{k:"stop",dur:60,th:"เที่ยว"},activity:{k:"stop",dur:90,th:"กิจกรรม"},shopping:{k:"stop",dur:60,th:"ช้อปปิ้ง"},meal:{k:"meal",dur:60,th:"มื้ออาหาร"},cafe:{k:"meal",dur:40,th:"คาเฟ่"},
   breakfast:{k:"bf",dur:45,th:"อาหารเช้า"},hotel:{k:"hotel",dur:30,th:"ที่พัก"},night:{k:"night",dur:60,th:"กลางคืน"},
@@ -2967,7 +2977,7 @@ const PDB={db:null,
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
   del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id+"~s"))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
-PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
+PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 /* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
    so this copy never writes an old plan back (that is how a removed stop could come back) */
 var TAB_ID=Math.random().toString(36).slice(2), phRevSeen=(store.get("phRev",null)||{}).t||0, phSyncT=null;
@@ -3327,10 +3337,10 @@ function tripStats(){ let kmT=0; DAYS.forEach((d,i)=>{ const ln=dayLine(i)||[]; 
   let vis=0; DAYS.forEach((d,i)=>dayStops(i).forEach(s=>{ if(tbVisited(i,s._i)) vis++; })); return {km:Math.round(kmT/10)*10,vis,photos:phMeta.length}; }
 async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → images embedded */
   const app=mode!=="export"; const shown=m=>!m.tbHide||(app&&tbShowHid); if(app) tbGrids={};
-  const src=async(m,big)=>{ if(mode!=="export") return await phThumbURL(m.id,big)||""; tbExpTick(); const b=await PDB.getBlob(m.id); if(!b) return ""; const blob=big?b.full:b.thumb; if(tbShareReg) return tbRegAdd(blob); return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); };
+  const src=async(m,big)=>{ if(mode!=="export") return await phThumbURL(m.id,big)||""; tbExpTick(); const b=await PDB.getBlob(m.id); if(!b) return ""; const blob=big?b.full:b.thumb; if(tbShareReg) return tbRegAdd(blob,{m,big}); return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); };
   const fa=m=>app?` data-tbid="${m.id}" class="${m.kind==="video"?"v":""}${m.tbHide?" hid":""}${tbSel&&tbSel.has(m.id)?" sel":""}${m.cover?" cov":""}"`:(m.kind==="video"?` class="v"`:"");
   const fig=async(m,big)=>{ if(m.kind!=="video") return `<figure${fa(m)}><img src="${await src(m,big)}" alt="" loading="lazy" draggable="false"></figure>`;
-    const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?(tbShareReg?tbRegAdd(b.thumb):new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); })):"")):await phThumbURL(m.id,false);
+    const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?(tbShareReg?tbRegAdd(b.thumb,{m,poster:1}):new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); })):"")):await phThumbURL(m.id,false);
     if(mode==="export"){ const inV=tbExpVids&&tbExpVids.has(m.id); if(inV) tbExpVidUsed.add(m.id);
       return `<figure class="v"${inV?` data-v="${m.id}"`:""}>${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}${tbExpVids&&!inV&&!tbShareReg?" · ดูได้ในแอป":""}</i></figure>`; }
     return `<figure${fa(m).replace('class="','class="'+(po?"":"nop "))}><video src="${await phThumbURL(m.id,true)}${po?"":"#t=0.5"}" ${po?`poster="${po}"`:""} playsinline preload="${po?"none":"metadata"}"></video><i>▶ ${fmtDur(m.dur)}</i></figure>`; };
@@ -3487,14 +3497,14 @@ const TB_PLAYER=`<script>document.addEventListener("click",function(e){var f=e.t
 var t=s.textContent.replace(/\\s+/g,""),P=[],C=4194304;for(var i=0;i<t.length;i+=C){var b=atob(t.slice(i,i+C)),u=new Uint8Array(b.length);for(var j=0;j<b.length;j++)u[j]=b.charCodeAt(j);P.push(u);}
 var v=document.createElement("video");v.src=URL.createObjectURL(new Blob(P,{type:s.getAttribute("data-mime")||"video/mp4"}));v.controls=true;v.autoplay=true;v.playsInline=true;v.setAttribute("playsinline","");
 v.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000";f.appendChild(v);var p=v.play&&v.play();if(p&&p.catch)p.catch(function(){});});<\/script>`;
-/* ===================== Tripbook as a link: the book is locked with a passcode (AES, key from the passcode),
-   kept on a "tripbooks" branch of the app's own GitHub repo, and opened by the book/ page on GitHub Pages ===================== */
+/* ===================== Tripbook as a link: the book is locked with a passcode the owner sets (AES, key from the passcode),
+   its contents page kept on a "tripbooks" branch of the app's own GitHub repo and opened by the book/ page on GitHub Pages.
+   Photos and videos go either with it on GitHub (locked too) or, as plain files, into a Google Drive folder the owner picks ===================== */
 const TBS_BRANCH="tripbooks", TBS_IT=250000, TBS_PACK=4*1048576;
 var tbShareReg=null, tbRegGroup="", tbShare=null, tbShareBusy=false, tbShareTick=null;
-function tbRegAdd(blob){ if(!blob||!tbShareReg) return ""; tbShareReg.push({blob,g:tbRegGroup}); return "tbr:"+(tbShareReg.length-1); }
+function tbRegAdd(blob,meta){ if(!blob||!tbShareReg) return ""; tbShareReg.push({blob,g:tbRegGroup,meta:meta||{}}); return "tbr:"+(tbShareReg.length-1); }
 function tbsRepo(){ const s=store.get("ghRepo",""); if(s) return s; const h=location.hostname; if(/\.github\.io$/.test(h)){ const seg=location.pathname.split("/").filter(Boolean)[0]; if(seg) return h.split(".")[0]+"/"+seg; } return ""; }
 function tbsPagesUrl(repo){ const [o,r]=repo.split("/"); return `https://${o.toLowerCase()}.github.io/${r}/book/`; }
-function tbsNewPass(){ const A="23456789ABCDEFGHJKMNPQRSTUVWXYZ", u=crypto.getRandomValues(new Uint8Array(8)); let s=""; u.forEach((x,i)=>{ s+=A[x%A.length]; if(i===3) s+="-"; }); return s; }
 function tbsNewId(){ const A="abcdefghijkmnpqrstuvwxyz23456789", u=crypto.getRandomValues(new Uint8Array(12)); let s=""; u.forEach(x=>{ s+=A[x%A.length]; }); return s; }
 function tbsNorm(p){ return String(p||"").toUpperCase().replace(/[\s-]/g,""); }
 function tbsB64(u8){ let s=""; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000)); return btoa(s); }
@@ -3518,33 +3528,113 @@ async function tbsGh(path,opt){ opt=opt||{}; const tok=opt.tok||store.get("ghTok
     if(r.status===403||r.status===404) throw new Error(`token นี้เขียนลง repo นี้ไม่ได้ ตรวจว่าเลือก repo นี้ และให้สิทธิ์ Contents: Read and write (${r.status}${m?" · "+m:""})`);
     throw new Error(`GitHub ตอบว่า ${r.status}${m?" · "+m:""}`); }
   throw new Error("GitHub ไม่ตอบ ลองใหม่อีกครั้ง"); }
+/* ---------- Google Drive: sign-in by redirect (works in the installed app too), folders, uploads ---------- */
+const GD="https://www.googleapis.com/drive/v3", GDU="https://www.googleapis.com/upload/drive/v3", GD_FOLDER="application/vnd.google-apps.folder";
+function gdClientId(){ return store.get("gcid",""); }
+function gdBase(){ return location.origin+location.pathname.replace(/planner\/.*$/,"").replace(/[^/]*$/,""); }
+function gdRedirect(){ return location.origin+location.pathname.replace(/index\.html$/,""); }
+function gdToken(){ try{ const t=JSON.parse(sessionStorage.getItem("gdTok")||"null"); if(t&&t.exp>Date.now()+90000) return t.tok; }catch(e){} return ""; }
+function gdSignIn(resume){ const st=tbsNewId(); try{ sessionStorage.setItem("gdState",JSON.stringify({st,resume,form:tbShare&&tbShare.step==="form"?tbsFormRead():null})); }catch(e){}
+  location.href="https://accounts.google.com/o/oauth2/v2/auth?"+new URLSearchParams({client_id:gdClientId(),redirect_uri:gdRedirect(),response_type:"token",scope:"https://www.googleapis.com/auth/drive",state:st,include_granted_scopes:"true",prompt:"select_account"}); }
+/* back from Google: keep the token for this tab (it lasts an hour) and take the address bar back */
+(function gdCatch(){ try{ const h=location.hash||""; if(!/access_token=|error=/.test(h)) return; const p=new URLSearchParams(h.slice(1)); const s=JSON.parse(sessionStorage.getItem("gdState")||"null");
+    history.replaceState(null,"",location.pathname+location.search); if(!s||s.st!==p.get("state")) return;
+    if(p.get("access_token")) sessionStorage.setItem("gdTok",JSON.stringify({tok:p.get("access_token"),exp:Date.now()+(+p.get("expires_in")||3600)*1000}));
+    sessionStorage.setItem("gdResume",JSON.stringify({to:s.resume||"form",form:s.form,err:p.get("error")||""})); }catch(e){} })();
+async function gdReq(url,opt){ opt=opt||{}; const tok=gdToken(); if(!tok) throw Object.assign(new Error("ต้องเข้าสู่ระบบ Google ก่อน"),{code:"auth"});
+  for(let a=0;a<6;a++){ let r;
+    try{ r=await fetch(url,{method:opt.method||"GET",headers:Object.assign({Authorization:"Bearer "+tok},opt.json?{"Content-Type":"application/json; charset=UTF-8"}:{},opt.headers||{}),body:opt.json?JSON.stringify(opt.json):opt.body}); }
+    catch(e){ if(a===5) throw new Error("ต่อ Google Drive ไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่"); await tbSleep(1500*(a+1)); continue; }
+    if(r.ok) return opt.raw?r:(r.status===204?null:await r.json());
+    if(opt.ok404&&r.status===404) return null;
+    if(r.status===401){ try{ sessionStorage.removeItem("gdTok"); }catch(e){} throw Object.assign(new Error("การเข้าสู่ระบบ Google หมดเวลา เข้าสู่ระบบใหม่แล้วกดต่อ (ส่วนที่อัปโหลดแล้วไม่ต้องส่งซ้ำ)"),{code:"auth"}); }
+    let m=""; try{ m=(await r.clone().json()).error.message||""; }catch(e){}
+    if(r.status===429||r.status>=500||(r.status===403&&/rate|quota|limit/i.test(m))){ await tbSleep(2500*(a+1)); continue; }
+    throw new Error(`Google Drive ตอบว่า ${r.status}${m?" · "+m:""}`); }
+  throw new Error("Google Drive ไม่ตอบ ลองใหม่อีกครั้ง"); }
+async function gdFolders(parent){ const q=`'${parent}' in parents and mimeType='${GD_FOLDER}' and trashed=false`; return ((await gdReq(`${GD}/files?q=${enc(q)}&fields=files(id,name)&orderBy=name&pageSize=300`)).files)||[]; }
+async function gdMkdir(name,parent){ return gdReq(`${GD}/files?fields=id,name`,{method:"POST",json:{name,mimeType:GD_FOLDER,parents:[parent]}}); }
+async function gdChildren(parent){ const out=new Set(); let pt="";
+  do{ const q=`'${parent}' in parents and trashed=false`; const j=await gdReq(`${GD}/files?q=${enc(q)}&fields=nextPageToken,files(id)&pageSize=1000${pt?"&pageToken="+enc(pt):""}`); (j.files||[]).forEach(f=>out.add(f.id)); pt=j.nextPageToken||""; } while(pt);
+  return out; }
+async function gdAlive(id){ const j=await gdReq(`${GD}/files/${id}?fields=id,trashed`,{ok404:true}); return !!(j&&!j.trashed); }
+async function gdUpload(blob,name,parent,mime,onp){
+  if(blob.size<5*1048576){ const b="tb"+tbsNewId();
+    const body=new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({name,parents:[parent]})}\r\n--${b}\r\nContent-Type: ${mime}\r\n\r\n`,blob,`\r\n--${b}--`]);
+    const j=await gdReq(`${GDU}/files?uploadType=multipart&fields=id`,{method:"POST",headers:{"Content-Type":"multipart/related; boundary="+b},body}); onp&&onp(blob.size); return j; }
+  const r=await gdReq(`${GDU}/files?uploadType=resumable&fields=id`,{method:"POST",json:{name,parents:[parent]},headers:{"X-Upload-Content-Type":mime,"X-Upload-Content-Length":String(blob.size)},raw:true});
+  const loc=r.headers.get("Location"); if(!loc) throw new Error("Google Drive ไม่ให้ที่อัปโหลดไฟล์ใหญ่");
+  const CH=8*1048576; let off=0;
+  while(off<blob.size){ const end=Math.min(blob.size,off+CH); let rr=null;
+    for(let a=0;a<5&&!rr;a++){ try{ rr=await fetch(loc,{method:"PUT",headers:{"Content-Range":`bytes ${off}-${end-1}/${blob.size}`},body:blob.slice(off,end)}); }catch(e){ await tbSleep(2000*(a+1)); } }
+    if(!rr) throw new Error("อัปโหลดวิดีโอไม่สำเร็จ เน็ตหลุด ลองใหม่อีกครั้ง");
+    if(rr.status===308){ const rg=rr.headers.get("Range"); const nx=rg?+rg.split("-")[1]+1:end; onp&&onp(nx-off); off=nx; continue; }
+    if(rr.ok){ onp&&onp(end-off); return await rr.json(); }
+    throw new Error("อัปโหลดวิดีโอไม่สำเร็จ ("+rr.status+")"); }
+  throw new Error("อัปโหลดวิดีโอไม่สำเร็จ"); }
+/* ---------- the share record kept with the photos (one per trip) ---------- */
+async function tbsState(){ const repo=tbsRepo(); let st=await tbCacheGet("tb~share"); if(!st||st.stopped||(st.repo&&st.repo!==repo)) st={id:"tb~share",repo,bookId:tbsNewId(),drive:st&&st.drive?{folder:st.drive.folder}:null}; st.repo=repo; return st; }
 /* has anything in the book changed since the link was made */
-function tbsKey0(withV,pass){ return tbHash(["s1",TB_CACHE_V,$("#tbBody").innerHTML.replace(/(src|poster)="blob:[^"]*"/g,'$1=""'),JSON.stringify(phMeta),tbShots?tbShots.at:0,withV?1:0,tbsNorm(pass),tbsRepo()].join("\n")); }
-function tbsEstimate(withV){ const ph=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide&&m.day!=null).length, v=withV?tbBookVideos().reduce((a,m)=>a+(m.dur||30),0):0; return Math.max(1,Math.round(ph*0.07+v*0.12+3)); }
-function tbsMessage(st){ const c=$("#tbBody .tb-cover"), h1=c&&c.querySelector("h1"), p=c&&c.querySelector(".tb-cv p");
-  const title=h1?tbpOwn(h1).replace(/\s*\n\s*/g," ").trim():"Tripbook", dates=p?p.innerText.trim():"";
+function tbsKey0(withV,pass,mode){ return tbHash(["s2",TB_CACHE_V,$("#tbBody").innerHTML.replace(/(src|poster)="blob:[^"]*"/g,'$1=""'),JSON.stringify(phMeta),tbShots?tbShots.at:0,withV?1:0,tbsNorm(pass),tbsRepo(),mode||"gh"].join("\n")); }
+function tbsEstimate(withV,mode){ const ph=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide&&m.day!=null).length, V=withV?tbBookVideos():[]; const vs=mode==="drive"?V.reduce((a,m)=>a+(m.size||((m.dur||30)*2e6)),0)/1048576:V.reduce((a,m)=>a+(m.dur||30),0)*0.12;
+  return Math.max(1,Math.round(ph*(mode==="drive"?0.35:0.07)+vs+3)); }
+function tbsTitle(){ const h1=$("#tbBody .tb-cover h1"); return h1?tbpOwn(h1).replace(/\s*\n\s*/g," ").trim():"Tripbook"; }
+function tbsMessage(st){ const c=$("#tbBody .tb-cover"), p=c&&c.querySelector(".tb-cv p"), dates=p?p.innerText.trim():"";
   const stats=c?[...c.querySelectorAll(".tb-cv li")].map(li=>{ const b=li.querySelector("b"); return ((b?b.innerText.trim():"")+" "+tbpOwn(li,[b])).trim(); }).join(" · "):"";
-  return `📖 Tripbook: ${title}\n${[dates,stats].filter(Boolean).join("\n")}\n\nเปิดดูได้ที่ 👉 ${st.link}\n🔑 รหัสเปิด: ${st.pass}`; }
-async function tbsUpload(withV,pass,say){ const repo=tbsRepo(), RP="/repos/"+repo;
-  let st=await tbCacheGet("tb~share"); if(!st||st.repo!==repo||st.stopped) st={id:"tb~share",repo,bookId:tbsNewId()};
-  if(!st.salt||tbsNorm(st.pass)!==tbsNorm(pass)){ st.salt=tbsB64(crypto.getRandomValues(new Uint8Array(16))); st.it=TBS_IT; }
-  st.pass=pass; const key=await tbsKey(pass,tbsU8(st.salt),st.it);
+  return `📖 Tripbook: ${tbsTitle()}\n${[dates,stats].filter(Boolean).join("\n")}\n\nเปิดดูได้ที่ 👉 ${st.link}\n🔑 รหัสเปิด: ${st.pass}`; }
+function tbsFileName(s){ return String(s||"").replace(/[\\/:*?"<>|\n\r\t]+/g," ").replace(/\s+/g," ").trim().slice(0,90); }
+/* photos and videos as plain files in a "Tripbook …" folder inside the chosen Drive folder, open to anyone with a file's link */
+async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) throw new Error("ยังไม่ได้เลือกโฟลเดอร์ใน Google Drive");
+  if(D.sub&&D.subParent===D.folder.id&&!(await gdAlive(D.sub))) D.sub=null;
+  if(!D.sub||D.subParent!==D.folder.id){ say("กำลังสร้างโฟลเดอร์ใน Drive…"); const f=await gdMkdir(tbsFileName("Tripbook "+tbsTitle()),D.folder.id); D.sub=f.id; D.subParent=D.folder.id; D.files={}; D.extra=null;
+    await gdReq(`${GD}/files/${f.id}/permissions?fields=id`,{method:"POST",json:{role:"reader",type:"anyone"}}); await tbCachePut(st); }
+  else { say("กำลังเช็คไฟล์ใน Drive…"); const ids=await gdChildren(D.sub); if(D.extra&&ids.has(D.extra)) (await gdChildren(D.extra)).forEach(x=>ids.add(x)); else D.extra=null;
+    Object.keys(D.files||{}).forEach(k=>{ if(!ids.has(D.files[k])) delete D.files[k]; }); }
+  D.files=D.files||{}; if(!D.extra){ D.extra=(await gdMkdir("_ประกอบเล่ม (แผนที่และภาพย่อ)",D.sub)).id; }
+  /* what goes up: each photo once (full size), each video as the original file, maps and the small pictures in a side folder */
+  const assets=new Map(), refs=new Array(reg.length), seq={};
+  const stopName=m=>{ if(m.key){ const it=planItems(m.day).find(x=>x._i===m.key); if(it) return it.n; } return m.place&&m.place.name||""; };
+  const named=(m,ext)=>{ const n=DAYS[m.day]?DAYS[m.day].n:0; seq[n]=(seq[n]||0)+1; return tbsFileName(`D${n}-${String(seq[n]).padStart(3,"0")} ${stopName(m)}`)+"."+ext; };
+  for(let i=0;i<reg.length;i++){ const e=reg[i], mt=e.meta||{}; let key, w=1600;
+    if(mt.m&&!mt.poster&&mt.m.kind!=="video"){ key="ph:"+mt.m.id; w=mt.big?1600:640; if(!assets.has(key)) assets.set(key,{key,m:mt.m,photo:true,name:named(mt.m,"jpg"),parent:D.sub,mime:"image/jpeg"}); }
+    else if(mt.poster){ key="pv:"+mt.m.id+":"+(mt.m.pv||0); w=640; if(!assets.has(key)) assets.set(key,{key,blob:e.blob,name:tbsFileName("ภาพวิดีโอ "+(mt.m.name||mt.m.id))+".jpg",parent:D.extra,mime:"image/jpeg"}); }
+    else { const h=(await tbsSha(await e.blob.arrayBuffer())).slice(0,16); key="img:"+h; const g=e.g||"";
+      if(!assets.has(key)) assets.set(key,{key,blob:e.blob,parent:D.extra,mime:e.blob.type||"image/jpeg",name:(g.startsWith("map|")&&DAYS[+g.split("|")[1]]?"แผนที่ D"+DAYS[+g.split("|")[1]].n:g==="ov"?"แผนที่ทั้งทริป":"ภาพย่อ "+h.slice(0,6))+".jpg"}); }
+    refs[i]={key,w}; }
+  const vidKeys={}; for(const id of tbExpVidUsed){ const m=phMeta.find(x=>x.id===id); if(!m) continue; const key="v:"+id; vidKeys[id]=key; if(!assets.has(key)) assets.set(key,{key,m,video:true,name:named(m,((m.ext||"mp4")+"").toLowerCase()),parent:D.sub,mime:m.mime||"video/mp4"}); }
+  const todo=[...assets.values()].filter(a=>!D.files[a.key]); let done=0, bytes=0, last=0;
+  say("กำลังอัปโหลดไป Google Drive",0,todo.length);
+  const one=async a=>{ let blob=a.blob; if(!blob){ const b=await PDB.getBlob(a.m.id); blob=b&&b.full; } if(!blob){ done++; return; }
+    const f=await gdUpload(blob,a.name,a.parent,a.mime,n=>{ bytes+=n; const now=Date.now(); if(now-last>300){ last=now; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); } });
+    D.files[a.key]=f.id; done++; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); if(done%15===0) await tbCachePut(st); };
+  try{ const small=todo.filter(a=>!a.video), big=todo.filter(a=>a.video); await tbPool(small,3,one); for(const a of big) await one(a); }
+  finally{ await tbCachePut(st); }
+  const R=refs.map(r=>D.files[r.key]?["d",D.files[r.key],r.w]:null), vids={};
+  Object.keys(vidKeys).forEach(id=>{ const fid=D.files[vidKeys[id]]; if(fid) vids[id]=["d",fid]; });
+  return {refs:R,vids}; }
+/* ---------- make or update the link ---------- */
+async function tbsUpload(o,say){ const {withV,pass,mode}=o, repo=tbsRepo(), RP="/repos/"+repo;
+  const st=await tbsState(); if(!st.salt||tbsNorm(st.pass)!==tbsNorm(pass)){ st.salt=tbsB64(crypto.getRandomValues(new Uint8Array(16))); st.it=TBS_IT; }
+  st.pass=pass; st.mode=mode; const key=await tbsKey(pass,tbsU8(st.salt),st.it);
   /* 1. the book, every picture a numbered reference */
   say("กำลังเตรียมหน้า…");
-  if(withV) await tbPrepVideos(); else { tbExpVids=null; tbExpVidUsed=new Set(); }
+  if(withV&&mode!=="drive") await tbPrepVideos(); else { tbExpVids=withV?new Map(tbBookVideos().map(m=>[m.id,true])):null; tbExpVidUsed=new Set(); }
   tbShareReg=[]; tbRegGroup="cover"; let body="", reg;
   try{ body=await tripbookHtml("export"); } finally{ reg=tbShareReg; tbShareReg=null; }
-  /* 2. pictures by section, each in a pack named after what is inside, so an unchanged section is not sent again */
-  const ents=[]; for(let i=0;i<reg.length;i++){ const buf=await reg[i].blob.arrayBuffer(); ents.push({h:await tbsSha(buf),size:buf.byteLength,type:reg[i].blob.type||"image/jpeg",g:reg[i].g}); if(i%25===0) say("กำลังเตรียมรูป",i,reg.length); }
-  const groups=new Map(); ents.forEach((e,i)=>{ if(!groups.has(e.g)) groups.set(e.g,[]); groups.get(e.g).push(i); });
-  const packs=[], refs=new Array(ents.length), at=new Map();
-  for(const idx of groups.values()){ const first=new Map(); idx.forEach(i=>{ if(!at.has(ents[i].h)&&!first.has(ents[i].h)) first.set(ents[i].h,i); });
-    const items=[...first.values()].sort((a,b)=>ents[a].h<ents[b].h?-1:1); let cur=null;
-    items.forEach(i=>{ const e=ents[i]; if(!cur||(cur.size+e.size>TBS_PACK&&cur.items.length)){ cur={items:[],size:0}; packs.push(cur); } at.set(e.h,[packs.length-1,cur.size,e.size,e.type]); cur.items.push(i); cur.size+=e.size; });
-    idx.forEach(i=>{ refs[i]=at.get(ents[i].h); }); }
-  for(const p of packs){ p.path="p/"+(await tbsSha(new TextEncoder().encode(st.salt+"|"+p.items.map(i=>ents[i].h).join(",")))).slice(0,24)+".bin"; }
-  const vids={}, vfiles=[];
-  if(tbExpVids) for(const vid of tbExpVidUsed){ const vb=tbExpVids.get(vid); if(!vb) continue; const h=await tbsSha(await vb.arrayBuffer()); const path="v/"+(await tbsSha(new TextEncoder().encode(st.salt+"|v|"+h))).slice(0,24)+".bin"; vids[vid]=[path,vb.type||"video/mp4",vb.size]; vfiles.push({path,blob:vb}); }
+  let refs, vids={}, packs=[], vfiles=[];
+  if(mode==="drive"){ const r=await tbsDriveMedia(reg,st,say); refs=r.refs; vids=r.vids; }
+  else {
+    /* 2. pictures by section, each in a pack named after what is inside, so an unchanged section is not sent again */
+    const ents=[]; for(let i=0;i<reg.length;i++){ const buf=await reg[i].blob.arrayBuffer(); ents.push({h:await tbsSha(buf),size:buf.byteLength,type:reg[i].blob.type||"image/jpeg",g:reg[i].g}); if(i%25===0) say("กำลังเตรียมรูป",i,reg.length); }
+    const groups=new Map(); ents.forEach((e,i)=>{ if(!groups.has(e.g)) groups.set(e.g,[]); groups.get(e.g).push(i); });
+    const at=new Map(); refs=new Array(ents.length);
+    for(const idx of groups.values()){ const first=new Map(); idx.forEach(i=>{ if(!at.has(ents[i].h)&&!first.has(ents[i].h)) first.set(ents[i].h,i); });
+      const items=[...first.values()].sort((a,b)=>ents[a].h<ents[b].h?-1:1); let cur=null;
+      items.forEach(i=>{ const e=ents[i]; if(!cur||(cur.size+e.size>TBS_PACK&&cur.items.length)){ cur={items:[],size:0}; packs.push(cur); } at.set(e.h,[packs.length-1,cur.size,e.size,e.type]); cur.items.push(i); cur.size+=e.size; });
+      idx.forEach(i=>{ refs[i]=at.get(ents[i].h); }); }
+    for(const p of packs){ p.path="p/"+(await tbsSha(new TextEncoder().encode(st.salt+"|"+p.items.map(i=>ents[i].h).join(",")))).slice(0,24)+".bin"; }
+    if(tbExpVids) for(const vid of tbExpVidUsed){ const vb=tbExpVids.get(vid); if(!vb||vb===true) continue; const h=await tbsSha(await vb.arrayBuffer()); const path="v/"+(await tbsSha(new TextEncoder().encode(st.salt+"|v|"+h))).slice(0,24)+".bin"; vids[vid]=[path,vb.type||"video/mp4",vb.size]; vfiles.push({path,blob:vb}); }
+    packs.reg=reg; }
   /* 3. what is up there already */
   say("กำลังเช็ค GitHub…"); await tbsGh(RP);
   const ref=await tbsGh(`${RP}/git/ref/heads/${TBS_BRANCH}`,{ok404:true}); let baseTree=null; const have=new Map();
@@ -3553,15 +3643,14 @@ async function tbsUpload(withV,pass,say){ const repo=tbsRepo(), RP="/repos/"+rep
   /* 4. send what is new, locked */
   const need=[]; packs.forEach(p=>{ if(!have.has(p.path)) need.push({path:p.path,pack:p}); }); vfiles.forEach(v=>{ if(!have.has(v.path)&&!need.some(n=>n.path===v.path)) need.push(v); });
   const total=need.reduce((a,n)=>a+(n.pack?n.pack.size:n.blob.size),0); let sent=0; const tree=[];
-  say("กำลังอัปโหลด",0,total,true);
+  if(need.length) say("กำลังอัปโหลด",0,total,true);
   for(const n of need){ let data;
-    if(n.pack){ data=new Uint8Array(n.pack.size); let o=0; for(const i of n.pack.items){ const u=new Uint8Array(await reg[i].blob.arrayBuffer()); data.set(u,o); o+=u.length; } }
+    if(n.pack){ data=new Uint8Array(n.pack.size); let off=0; for(const i of n.pack.items){ const u=new Uint8Array(await packs.reg[i].blob.arrayBuffer()); data.set(u,off); off+=u.length; } }
     else data=new Uint8Array(await n.blob.arrayBuffer());
     const b=await tbsGh(`${RP}/git/blobs`,{method:"POST",body:{content:tbsB64(await tbsSeal(key,data)),encoding:"base64"}});
     tree.push({path:`${st.bookId}/${n.path}`,mode:"100644",type:"blob",sha:b.sha}); sent+=data.length; say("กำลังอัปโหลด",sent,total,true); }
   /* 5. the contents page, locked too */
-  const c=$("#tbBody .tb-cover h1"), title="Tripbook"+(c?" · "+tbpOwn(c).replace(/\s*\n\s*/g," ").trim():"");
-  const M={v:1,title,at:Date.now(),css:TB_CSS,html:body,refs,packs:packs.map(p=>p.path),vids};
+  const M={v:1,title:"Tripbook · "+tbsTitle(),at:Date.now(),css:TB_CSS,html:body,refs,packs:packs.map(p=>p.path),vids};
   const mf=JSON.stringify({v:1,salt:st.salt,it:st.it,d:tbsB64(await tbsSeal(key,new TextEncoder().encode(JSON.stringify(M))))});
   const mb=await tbsGh(`${RP}/git/blobs`,{method:"POST",body:{content:mf,encoding:"utf-8"}}); tree.push({path:`${st.bookId}/m.json`,mode:"100644",type:"blob",sha:mb.sha});
   /* 6. pieces of the old version that are no longer used go; one commit, no history kept */
@@ -3573,69 +3662,116 @@ async function tbsUpload(withV,pass,say){ const repo=tbsRepo(), RP="/repos/"+rep
   if(ref&&ref.object) await tbsGh(`${RP}/git/refs/heads/${TBS_BRANCH}`,{method:"PATCH",body:{sha:cm.sha,force:true}});
   else await tbsGh(`${RP}/git/refs`,{method:"POST",body:{ref:"refs/heads/"+TBS_BRANCH,sha:cm.sha}});
   st.link=tbsPagesUrl(repo)+"#"+st.bookId; st.at=Date.now(); st.stopped=0;
-  return {st,sent,files:need.length}; }
+  return {st,sent}; }
 async function tbsStop(){ const st=await tbCacheGet("tb~share"); if(!st||!st.link) return; const RP="/repos/"+st.repo;
   const ref=await tbsGh(`${RP}/git/ref/heads/${TBS_BRANCH}`,{ok404:true});
   if(ref&&ref.object){ const c=await tbsGh(`${RP}/git/commits/${ref.object.sha}`), t=await tbsGh(`${RP}/git/trees/${c.tree.sha}?recursive=1`);
     const del=(t.tree||[]).filter(x=>x.type==="blob"&&x.path.startsWith(st.bookId+"/")).map(x=>({path:x.path,mode:"100644",type:"blob",sha:null}));
     if(del.length){ const nt=await tbsGh(`${RP}/git/trees`,{method:"POST",body:{base_tree:c.tree.sha,tree:del}}); const cm=await tbsGh(`${RP}/git/commits`,{method:"POST",body:{message:"Stop sharing "+st.bookId,tree:nt.sha,parents:[]}});
       await tbsGh(`${RP}/git/refs/heads/${TBS_BRANCH}`,{method:"PATCH",body:{sha:cm.sha,force:true}}); } }
-  await tbCachePut({id:"tb~share",repo:st.repo,stopped:Date.now()}); }
-/* the share panel under the Tripbook bar */
+  /* the Drive folder stays: it is the owner's collection; only the link stops working */
+  await tbCachePut({id:"tb~share",repo:st.repo,stopped:Date.now(),drive:st.drive?{folder:st.drive.folder}:null}); }
+/* ---------- the share panel under the Tripbook bar ---------- */
+function tbsFormRead(){ const s=tbShare||{}; const p=$("#tbsPass"), v=$("#tbsV"); return {pass:p?p.value:s.pass||"",withV:v?v.checked:s.withV,mode:s.mode||"gh",folder:s.folder||null}; }
 function tbsPaint(){ const el=$("#tbShareBox"); if(!el) return; const s=tbShare; if(!s){ el.hidden=true; el.innerHTML=""; return; } el.hidden=false;
   const E=s.err?`<p class="tb-err">${esc(s.err)}</p>`:"";
-  if(s.step==="setup") el.innerHTML=`<div class="tb-prog-top"><b>แชร์ Tripbook เป็นลิงก์ · ตั้งค่าครั้งแรก</b></div>
-    <p>แอปจะล็อก Tripbook ด้วยรหัสเปิด แล้วเก็บไว้ใน GitHub repo ของแอปนี้ (ฟรี) คนที่ไม่มีรหัสเปิดดูไม่ได้ ครั้งแรกต้องให้แอปเขียนลง repo ได้ก่อน:</p>
+  if(s.step==="setup") el.innerHTML=`<div class="tb-prog-top"><b>แชร์ Tripbook เป็นลิงก์ · ตั้งค่า GitHub ครั้งแรก</b></div>
+    <p>หน้าเว็บ Tripbook อยู่บน GitHub Pages ของแอปนี้ (ฟรี) ล็อกด้วยรหัสเปิดที่คุณตั้งเอง ครั้งแรกต้องให้แอปเขียนลง repo ได้ก่อน:</p>
     <ol class="tb-steps"><li>เปิด <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → สร้าง token ใหม่</a> (Fine-grained)</li><li>Repository access → <b>Only select repositories</b> → เลือก repo ของแอปนี้</li><li>Permissions → Repository permissions → <b>Contents: Read and write</b></li><li>กด Generate token แล้วคัดลอกมาวางตรงนี้</li></ol>
     <label class="tb-f">GitHub token<input id="tbsTok" type="password" autocomplete="off" spellcheck="false" placeholder="${store.get("ghTok","")?"ใช้ token เดิม (วางใหม่ถ้าจะเปลี่ยน)":"github_pat_…"}"></label>
     <label class="tb-f">Repo (ชื่อผู้ใช้/ชื่อ repo)<input id="tbsRepo" type="text" autocomplete="off" spellcheck="false" value="${esc(tbsRepo())}"></label>
     <p class="tb-note">token เก็บไว้ในเครื่องนี้เท่านั้น ไม่อยู่ในไฟล์สำรองหรือ Tripbook</p>${E}
     <div class="tb-ask"><button class="btn small primary" data-tb="sh-save"${s.wait?" disabled":""}>${s.wait?"กำลังตรวจ…":"บันทึก"}</button><button class="btn small" data-tb="sh-x">ยกเลิก</button></div>`;
-  else if(s.step==="form") el.innerHTML=`<div class="tb-prog-top"><b>${s.had?"อัปเดต Tripbook ที่แชร์ไว้ (ลิงก์เดิม)":"แชร์ Tripbook เป็นลิงก์"}</b></div>
-    <label class="tb-f">รหัสเปิด (ส่งไปพร้อมลิงก์)<input id="tbsPass" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" value="${esc(s.pass)}"></label>
+  else if(s.step==="gsetup") el.innerHTML=`<div class="tb-prog-top"><b>เก็บรูปและวิดีโอใน Google Drive · ตั้งค่าครั้งแรก</b></div>
+    <p>ทำครั้งเดียวด้วยบัญชี Google ที่จะเก็บไฟล์ ที่ <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>:</p>
+    <ol class="tb-steps"><li>สร้างโปรเจกต์ใหม่ (ชื่ออะไรก็ได้ เช่น Trip App)</li><li>APIs &amp; Services → Library → เปิด <b>Google Drive API</b></li><li>Google Auth Platform → Branding: ใส่ชื่อแอปและอีเมล · Audience: <b>External</b> และสถานะ <b>Testing</b> → Test users: เพิ่มอีเมลที่จะเก็บไฟล์</li><li>Clients → Create client → <b>Web application</b><br>Authorized JavaScript origins: <code>${esc(location.origin)}</code><br>Authorized redirect URIs (ใส่ทั้งสองบรรทัด): <code>${esc(gdBase())}</code> และ <code>${esc(gdBase()+"planner/")}</code></li><li>คัดลอก Client ID มาวางตรงนี้</li></ol>
+    <label class="tb-f">Client ID<input id="tbsGcid" type="text" autocomplete="off" spellcheck="false" placeholder="ตัวเลข-xxxx.apps.googleusercontent.com" value="${esc(gdClientId())}"></label>
+    <p class="tb-note">ตอนเข้าสู่ระบบ Google จะเตือนว่าแอปยังไม่ผ่านการตรวจ เพราะเป็นแอปส่วนตัวของคุณ กด Continue ได้ · แอปขอสิทธิ์ Drive เพื่อให้เลือกโฟลเดอร์ไหนก็ได้</p>${E}
+    <div class="tb-ask"><button class="btn small primary" data-tb="sh-gsave">บันทึกแล้วเข้าสู่ระบบ Google</button><button class="btn small" data-tb="sh-back">กลับ</button></div>`;
+  else if(s.step==="gfolder"){ const path=s.path||[{id:"root",name:"ไดรฟ์ของฉัน"}];
+    el.innerHTML=`<div class="tb-prog-top"><b>เลือกโฟลเดอร์ใน Google Drive</b></div>
+    <p class="tb-crumb">${path.map((p,i)=>i<path.length-1?`<button class="tb-link2" data-tb="sh-fup" data-i="${i}">${esc(p.name)}</button>`:`<b>${esc(p.name)}</b>`).join(" › ")}</p>
+    ${s.wait?`<p class="tb-note">กำลังโหลด…</p>`:`<div class="tb-fl">${(s.list||[]).map(f=>`<button data-tb="sh-fopen" data-id="${esc(f.id)}" data-name="${esc(f.name)}">📁 ${esc(f.name)}</button>`).join("")||`<p class="tb-note">ไม่มีโฟลเดอร์ย่อย</p>`}</div>`}
+    <label class="tb-f">หรือสร้างโฟลเดอร์ใหม่ในนี้<input id="tbsFName" type="text" autocomplete="off" placeholder="ชื่อโฟลเดอร์ เช่น ทริปฮอกไกโด 2026"></label>${E}
+    <div class="tb-ask"><button class="btn small primary" data-tb="sh-fpick">ใช้โฟลเดอร์ “${esc(path[path.length-1].name)}”</button><button class="btn small" data-tb="sh-fnew">สร้างโฟลเดอร์ใหม่</button><button class="btn small" data-tb="sh-back">กลับ</button></div>`; }
+  else if(s.step==="form"){ const drv=s.mode==="drive";
+    el.innerHTML=`<div class="tb-prog-top"><b>${s.had?"อัปเดต Tripbook ที่แชร์ไว้ (ลิงก์เดิม)":"แชร์ Tripbook เป็นลิงก์"}</b></div>
+    <label class="tb-f">ตั้งรหัสเปิด (คนรับต้องใส่รหัสนี้ แอปจะใส่ไว้ในข้อความให้)<input id="tbsPass" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="อย่างน้อย 6 ตัว เช่น HOKKAIDO26" value="${esc(s.pass||"")}"></label>
     ${s.nv?`<label class="tb-chk"><input id="tbsV" type="checkbox"${s.withV?" checked":""}> ใส่วิดีโอ ${s.nv} คลิป (กดเล่นได้ในลิงก์)</label>`:""}
-    <p class="tb-note">${s.had?"ส่งเฉพาะส่วนที่เปลี่ยน คนที่มีลิงก์จะเห็นฉบับใหม่":"อัปโหลดครั้งแรกราว "+s.mb.toLocaleString()+" MB ควรใช้ Wi-Fi · ครั้งต่อไปส่งเฉพาะส่วนที่เปลี่ยน"} · เปลี่ยนรหัสเปิด = ต้องส่งใหม่ทั้งเล่ม</p>${E}
-    <div class="tb-ask"><button class="btn small primary" data-tb="sh-go">${s.had?"อัปเดตลิงก์":"อัปโหลดและสร้างลิงก์"}</button><button class="btn small" data-tb="sh-x">ยกเลิก</button><button class="btn small" data-tb="sh-setup">ตั้งค่า GitHub</button></div>`;
+    <p class="tb-f" style="margin-bottom:4px">เก็บรูปและวิดีโอไว้ที่</p>
+    <div class="tb-seg"><button data-tb="sh-mode" data-m="gh" class="${drv?"":"on"}">GitHub<small>ล็อกด้วยรหัสทั้งหมด</small></button><button data-tb="sh-mode" data-m="drive" class="${drv?"on":""}">Google Drive ของฉัน<small>เป็นไฟล์รูปและวิดีโอปกติ</small></button></div>
+    ${drv?`<p class="tb-drv">📁 ${s.folder?`<b>${esc(s.folder.name)}</b>`:`<span class="tb-err">ยังไม่ได้เลือกโฟลเดอร์</span>`} <button class="btn small" data-tb="sh-folder">${s.folder?"เปลี่ยนโฟลเดอร์":"เลือกโฟลเดอร์"}</button></p>
+      <p class="tb-note">แอปจะสร้างโฟลเดอร์ “Tripbook ${esc(tbsTitle())}” ไว้ในนั้น รูปขนาดเต็มในแอปและวิดีโอต้นฉบับเป็นไฟล์ปกติ เปิดได้เฉพาะคนที่มีลิงก์ของแต่ละไฟล์ ซึ่งอยู่ในหน้า Tripbook ที่ล็อกด้วยรหัสเปิด · หน้าเว็บยังอยู่บน GitHub</p>`
+      :`<p class="tb-note">ทุกอย่างถูกล็อกด้วยรหัสเปิดก่อนส่งขึ้น GitHub</p>`}
+    <p class="tb-note">${s.had?"ส่งเฉพาะส่วนที่เปลี่ยน คนที่มีลิงก์จะเห็นฉบับใหม่":"อัปโหลดครั้งแรกราว "+tbsEstimate(s.withV,s.mode).toLocaleString()+" MB ควรใช้ Wi-Fi · ครั้งต่อไปส่งเฉพาะส่วนที่เปลี่ยน"} · เปลี่ยนรหัสเปิด = ลิงก์เดิมต้องใช้รหัสใหม่</p>${E}
+    <div class="tb-ask"><button class="btn small primary" data-tb="sh-go">${s.had?"อัปเดตลิงก์":"อัปโหลดและสร้างลิงก์"}</button><button class="btn small" data-tb="sh-x">ยกเลิก</button><button class="btn small" data-tb="sh-setup">ตั้งค่า GitHub</button></div>`; }
   else if(s.step==="busy"){ const vp=s.video&&tbVidPrep&&tbVidPrep.stage!=="pack"?tbVidPrep:null;
-    const msg=vp?`กำลังย่อวิดีโอ ${vp.i} / ${vp.n}${vp.p?` · ${Math.round(vp.p*100)}%`:""}`:s.msg+(s.n?(s.bytes?` ${(s.i/1048576).toFixed(1)} / ${(s.n/1048576).toFixed(1)} MB`:` ${s.i} / ${s.n}`):"");
+    const msg=vp?`กำลังย่อวิดีโอ ${vp.i} / ${vp.n}${vp.p?` · ${Math.round(vp.p*100)}%`:""}`:s.msg+(s.n?(s.bytes?` ${(s.i/1048576).toFixed(1)} / ${(s.n/1048576).toFixed(1)} MB`:` ${s.i.toLocaleString()} / ${s.n.toLocaleString()}${s.mb?` ไฟล์ · ${(s.mb/1048576).toFixed(0)} MB`:""}`):"");
     const pct=vp?Math.round(((vp.i-1)+(vp.p||0))/Math.max(1,vp.n)*100):s.n?Math.round(s.i/s.n*100):-1;
     el.innerHTML=`<div class="tb-prog-top"><b>${esc(msg)}</b></div>${pct>=0?`<div class="tb-pbar"><i style="width:${Math.max(3,pct)}%"></i></div>`:""}<p class="tb-note">อย่าปิดหน้านี้จนกว่าจะเสร็จ</p>`; }
-  else if(s.step==="done") el.innerHTML=`<div class="tb-prog-top"><b>ลิงก์พร้อมส่ง ✓${s.same?" · เล่มไม่ได้เปลี่ยน ใช้ลิงก์เดิม":s.sent!=null?` · ส่งไป ${(s.sent/1048576).toFixed(1)} MB`:""}</b></div>
+  else if(s.step==="done") el.innerHTML=`<div class="tb-prog-top"><b>ลิงก์พร้อมส่ง ✓${s.same?" · เล่มไม่ได้เปลี่ยน ใช้ลิงก์เดิม":s.sent?` · ส่งไป ${(s.sent/1048576).toFixed(1)} MB`:""}</b></div>
     <textarea class="tb-msg" id="tbsMsg" readonly rows="7">${esc(s.text)}</textarea>
     ${E}<div class="tb-ask"><button class="btn small primary" data-tb="sh-share">แชร์</button><button class="btn small" data-tb="sh-copy">${s.copied?"คัดลอกแล้ว ✓":"คัดลอกข้อความ"}</button><button class="btn small" data-tb="sh-edit">เปลี่ยนรหัส / อัปเดต</button><button class="btn small" data-tb="sh-x">ปิด</button></div>
-    <p class="tb-note"><button class="tb-link" data-tb="sh-stop">${s.arm?"กดอีกครั้งเพื่อยืนยัน: ลบ Tripbook ออกจาก GitHub ลิงก์นี้จะเปิดไม่ได้":"หยุดแชร์ลิงก์นี้"}</button></p>`;
+    <p class="tb-note"><button class="tb-link" data-tb="sh-stop">${s.arm?"กดอีกครั้งเพื่อยืนยัน: ลิงก์นี้จะเปิดไม่ได้ (ไฟล์ใน Drive ยังอยู่)":"หยุดแชร์ลิงก์นี้"}</button></p>`;
   else if(s.step==="stopped") el.innerHTML=`<div class="tb-prog-top"><b>หยุดแชร์แล้ว · ลิงก์เดิมเปิดไม่ได้</b></div><div class="tb-ask"><button class="btn small" data-tb="sh-x">ปิด</button></div>`;
   const r=$("#tbRoot"), bar=$("#tbRoot .tb-bar"); if(r&&bar) r.style.setProperty("--tbbar",bar.offsetHeight+"px"); }
-async function tbsOpen(force){ if(tbShareBusy) return; const nv=tbBookVideos().length;
+async function tbsOpen(force,keep){ if(tbShareBusy) return; const nv=tbBookVideos().length;
   if(!store.get("ghTok","")||!tbsRepo()){ tbShare={step:"setup"}; return tbsPaint(); }
   const st=await tbCacheGet("tb~share"), live=st&&st.link&&!st.stopped&&st.repo===tbsRepo();
-  const pass=live?st.pass:tbsNewPass(), withV=live&&st.withV!=null?st.withV:true;
-  if(live&&!force&&!tbShotBusy&&st.key0===tbsKey0(withV,pass)){ tbShare={step:"done",same:true,text:tbsMessage(st)}; return tbsPaint(); }
-  tbShare={step:"form",pass,withV,nv,had:!!live,mb:tbsEstimate(withV)}; tbsPaint(); }
+  const pass=keep&&keep.pass!=null?keep.pass:live?st.pass:"", withV=keep&&keep.withV!=null?keep.withV:live&&st.withV!=null?st.withV:true;
+  const mode=keep&&keep.mode||st&&st.mode||"gh", folder=keep&&keep.folder||st&&st.drive&&st.drive.folder||null;
+  if(live&&!force&&!keep&&!tbShotBusy&&st.key0===tbsKey0(withV,pass,mode)){ tbShare={step:"done",same:true,text:tbsMessage(st)}; return tbsPaint(); }
+  tbShare={step:"form",pass,withV,nv,had:!!live,mode,folder}; tbsPaint(); }
+async function tbsFolderList(){ const s=tbShare; s.wait=true; s.err=""; tbsPaint();
+  try{ s.list=await gdFolders(s.path[s.path.length-1].id); }catch(e){ if(e.code==="auth") return gdSignIn("folder"); s.err=e.message; } s.wait=false; tbsPaint(); }
 async function tbsAction(a,btn){ const s=tbShare||{};
   if(a==="sh-x"){ tbShare=null; return tbsPaint(); }
-  if(a==="sh-setup"){ tbShare={step:"setup"}; return tbsPaint(); }
+  if(a==="sh-setup"){ tbShare={step:"setup",back:s.step==="form"?tbsFormRead():null}; return tbsPaint(); }
+  if(a==="sh-back"){ return tbsOpen(true,s.back||null); }
   if(a==="sh-edit") return tbsOpen(true);
   if(a==="sh-save"){ const tok=($("#tbsTok")||{}).value.trim()||store.get("ghTok",""), repo=($("#tbsRepo")||{}).value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/\/+$/,"");
     if(!tok){ s.err="วาง GitHub token ก่อน"; return tbsPaint(); } if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){ s.err="ใส่ repo แบบ ชื่อผู้ใช้/ชื่อrepo"; return tbsPaint(); }
     s.wait=true; s.err=""; tbsPaint();
     try{ const j=await tbsGh("/repos/"+repo,{tok}); if(j&&j.permissions&&j.permissions.push===false) throw new Error("token นี้ไม่มีสิทธิ์เขียนลง repo นี้");
-      store.set("ghTok",tok); store.set("ghRepo",repo); tbShare=null; return tbsOpen(); }
+      store.set("ghTok",tok); store.set("ghRepo",repo); tbShare=null; return tbsOpen(true,s.back||null); }
     catch(e){ s.wait=false; s.err=e.message||String(e); return tbsPaint(); } }
-  if(a==="sh-go"){ const pass=($("#tbsPass")||{}).value.trim(), vb=$("#tbsV"), withV=vb?vb.checked:false;
-    if(tbsNorm(pass).length<6){ s.err="รหัสเปิดสั้นเกินไป ใช้อย่างน้อย 6 ตัว (ยิ่งยาวยิ่งปลอดภัย)"; return tbsPaint(); }
-    tbShareBusy=true; tbShare={step:"busy",msg:"กำลังเตรียม…",video:withV}; tbsPaint(); tbShareTick=setInterval(tbsPaint,400);
+  if(a==="sh-mode"){ const f=tbsFormRead(); Object.assign(s,f,{mode:btn.dataset.m,err:""}); return tbsPaint(); }
+  if(a==="sh-folder"){ const f=tbsFormRead(); const back=Object.assign({},f);
+    if(!gdClientId()){ tbShare={step:"gsetup",back}; return tbsPaint(); }
+    if(!gdToken()){ tbShare=Object.assign(s,f); return gdSignIn("folder"); }
+    tbShare={step:"gfolder",back,path:[{id:"root",name:"ไดรฟ์ของฉัน"}]}; return tbsFolderList(); }
+  if(a==="sh-gsave"){ const id=($("#tbsGcid")||{}).value.trim(); if(!/\.apps\.googleusercontent\.com$/.test(id)){ s.err="Client ID ต้องลงท้ายด้วย .apps.googleusercontent.com"; return tbsPaint(); }
+    store.set("gcid",id); tbShare=Object.assign({step:"form"},s.back||{}); return gdSignIn("folder"); }
+  if(a==="sh-fopen"){ s.path.push({id:btn.dataset.id,name:btn.dataset.name}); return tbsFolderList(); }
+  if(a==="sh-fup"){ s.path=s.path.slice(0,+btn.dataset.i+1); return tbsFolderList(); }
+  if(a==="sh-fnew"){ const n=($("#tbsFName")||{}).value.trim(); if(!n){ s.err="ใส่ชื่อโฟลเดอร์ก่อน"; return tbsPaint(); }
+    try{ const f=await gdMkdir(tbsFileName(n),s.path[s.path.length-1].id); s.path.push({id:f.id,name:f.name}); }catch(e){ if(e.code==="auth") return gdSignIn("folder"); s.err=e.message; return tbsPaint(); }
+    return tbsAction("sh-fpick"); }
+  if(a==="sh-fpick"){ const cur=s.path[s.path.length-1]; const folder={id:cur.id==="root"?(await gdReq(`${GD}/files/root?fields=id`).catch(()=>({id:"root"}))).id:cur.id,name:s.path.map(p=>p.name).join(" › ")};
+    const st=await tbsState(); if(!st.drive||!st.drive.folder||st.drive.folder.id!==folder.id) st.drive={folder}; await tbCachePut(st);
+    return tbsOpen(true,Object.assign({},s.back||{},{mode:"drive",folder})); }
+  if(a==="sh-go"){ const f=tbsFormRead(), pass=f.pass.trim(), withV=f.withV!=null?!!f.withV:false, mode=s.mode||"gh";
+    Object.assign(s,f,{mode});
+    if(tbsNorm(pass).length<6){ s.err="ตั้งรหัสเปิดอย่างน้อย 6 ตัว (ตัวอักษรหรือตัวเลข ยิ่งยาวยิ่งปลอดภัย)"; return tbsPaint(); }
+    if(mode==="drive"){ if(!s.folder){ s.err="เลือกโฟลเดอร์ใน Google Drive ก่อน"; return tbsPaint(); } if(!gdClientId()){ tbShare={step:"gsetup",back:Object.assign({},f,{mode})}; return tbsPaint(); } if(!gdToken()) return gdSignIn("go"); }
+    tbShareBusy=true; const keepForm=Object.assign({},f,{mode,pass}); tbShare={step:"busy",msg:"กำลังเตรียม…",video:withV&&mode!=="drive"}; tbsPaint(); tbShareTick=setInterval(tbsPaint,400);
     try{ if(tbShotBusy||tbStoryBusy){ tbShare.msg="รอแผนที่ให้เสร็จก่อน…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} }
-      await tbRender(); const k0=tbsKey0(withV,pass);
-      const r=await tbsUpload(withV,pass,(msg,i,n,bytes)=>{ tbShare.msg=msg; tbShare.i=i||0; tbShare.n=n||0; tbShare.bytes=!!bytes; if(msg!=="กำลังเตรียมหน้า…") tbShare.video=false; });
+      await tbRender(); const k0=tbsKey0(withV,pass,mode);
+      const r=await tbsUpload({withV,pass,mode},(msg,i,n,bytes,mb)=>{ tbShare.msg=msg; tbShare.i=i||0; tbShare.n=n||0; tbShare.bytes=!!bytes; tbShare.mb=mb||0; if(msg!=="กำลังเตรียมหน้า…") tbShare.video=false; });
       r.st.key0=k0; r.st.withV=withV; await tbCachePut(r.st); tbShare={step:"done",text:tbsMessage(r.st),sent:r.sent}; }
-    catch(e){ tbShare={step:"form",pass,withV,nv:tbBookVideos().length,mb:tbsEstimate(withV),err:e.message||String(e)}; }
+    catch(e){ tbShare=Object.assign({step:"form",nv:tbBookVideos().length,had:!!((await tbCacheGet("tb~share"))||{}).link},keepForm,{err:e.message||String(e)}); if(e.code==="auth"){ tbShare.err+=" · กด “อัปโหลด” อีกครั้งเพื่อเข้าสู่ระบบแล้วทำต่อ"; } }
     finally{ clearInterval(tbShareTick); tbShareBusy=false; tbExpVids=null; tbVidPrep=null; tbShareReg=null; tbsPaint(); } return; }
   if(a==="sh-copy"){ const t=s.text||""; let ok=false; try{ await navigator.clipboard.writeText(t); ok=true; }catch(e){}
     if(!ok){ const ta=$("#tbsMsg"); if(ta){ ta.select(); try{ ok=document.execCommand("copy"); }catch(e){} } } s.copied=ok; return tbsPaint(); }
   if(a==="sh-share"){ if(navigator.share){ try{ await navigator.share({title:"Tripbook",text:s.text}); }catch(e){} return; } return tbsAction("sh-copy"); }
-  if(a==="sh-stop"){ if(!s.arm){ s.arm=true; return tbsPaint(); } tbShareBusy=true; tbShare={step:"busy",msg:"กำลังลบออกจาก GitHub…"}; tbsPaint();
+  if(a==="sh-stop"){ if(!s.arm){ s.arm=true; return tbsPaint(); } tbShareBusy=true; tbShare={step:"busy",msg:"กำลังหยุดแชร์…"}; tbsPaint();
     try{ await tbsStop(); tbShare={step:"stopped"}; }catch(e){ tbShare={step:"done",text:s.text,err:e.message}; } finally{ tbShareBusy=false; tbsPaint(); } return; } }
+/* back from Google sign-in: open the Tripbook again where we were */
+async function gdResumeKick(){ let r=null; try{ r=JSON.parse(sessionStorage.getItem("gdResume")||"null"); sessionStorage.removeItem("gdResume"); }catch(e){} if(!r) return;
+  if(!document.body.classList.contains("tb-open")) await openTripbook(); await tbSleep(300);
+  if(r.err||!gdToken()){ await tbsOpen(true,r.form||{mode:"drive"}); tbShare.err="เข้าสู่ระบบ Google ไม่สำเร็จ"+(r.err?" ("+r.err+")":""); return tbsPaint(); }
+  if(r.to==="go"){ await tbsOpen(true,r.form||{mode:"drive"}); return tbsAction("sh-go"); }
+  tbShare={step:"gfolder",back:r.form||{mode:"drive"},path:[{id:"root",name:"ไดรฟ์ของฉัน"}]}; return tbsFolderList(); }
 function closeTripbook(){ tbShotAbort=true; const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open","tb-selecting","tb-dragging"); tbSel=null; tbPress=null; }
 var tbReturn=false;
 function tbReopen(){ if(tbReturn){ tbReturn=false; photoSheetPaint(true); } }   /* opened from "รูปของเรา": go back there */
@@ -3811,7 +3947,7 @@ function tbShotsKick(force){ if(tbShotBusy) return tbShotBusy; if(!force&&tbShot
   tbProgPaint(); return tbShotBusy; }
 addEventListener("online",()=>{ if(!document.body.classList.contains("tb-open")) return; netCheck().then(n=>{ if((n.st==="good"||n.st==="slow")&&!tbShotBusy&&(tbShotErr||!tbShots||tbShots.missing)) tbShotsKick(true); }); });
 addEventListener("offline",()=>{ tbNet={st:"off",ms:0,at:Date.now()}; tbProgPaint(); });
-async function tbImgSrc(b,mode){ if(mode==="export"&&tbShareReg) return tbRegAdd(b); if(mode!=="export"){ let u=tbShotURL.get(b); if(!u){ u=URL.createObjectURL(b); tbShotURL.set(b,u); } return u; } return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); }
+async function tbImgSrc(b,mode){ if(mode==="export"&&tbShareReg) return tbRegAdd(b,{img:1}); if(mode!=="export"){ let u=tbShotURL.get(b); if(!u){ u=URL.createObjectURL(b); tbShotURL.set(b,u); } return u; } return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); }
 async function tbDayMap(di,mode){ const b=tbShots&&tbShots.days[di]&&tbShots.days[di].map; if(!b) return mode!=="export"&&(tbShotBusy||!tbShots)?`<div class="tb-mapwait" data-di="${di}">กำลังวาดแผนที่ของวันนี้…</div>`:"";
   return `<img class="tb-daymap" data-map="${di}" src="${await tbImgSrc(b,mode)}" alt="แผนที่วันที่ ${DAYS[di].n}">`; }
 async function tbImgsReady(){ const until=Date.now()+8000; while(Date.now()<until){ const L=[...document.querySelectorAll("#tbBody img")]; if(L.every(i=>i.complete)) break; await tbSleep(200); } }

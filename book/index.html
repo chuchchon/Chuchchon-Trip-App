@@ -23,7 +23,7 @@ html,body{margin:0;background:#fff;color:var(--ink);font-family:"Anuphan",system
 .card label{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13.5px;color:var(--mute)}
 .err{color:var(--err);font-size:14px;min-height:20px;margin-top:12px;line-height:1.45}
 #bar{position:fixed;left:0;top:0;height:3px;width:100%;background:var(--acc);transform-origin:left;transform:scaleX(0);transition:transform .25s,opacity .4s;z-index:50;opacity:0}
-#book img[data-r]{background:#EEF1F3}
+#book img[data-r],#book img[data-d]{background:#EEF1F3}
 </style>
 </head>
 <body>
@@ -73,13 +73,18 @@ html,body{margin:0;background:#fff;color:var(--ink);font-family:"Anuphan",system
   function render(){
     document.title=M.title||"Tripbook";
     var st=document.createElement("style"); st.textContent=(M.css||"")+"\nbody{margin:0}"; document.head.appendChild(st);
-    var b=$("#book"); b.innerHTML='<div class="tb">'+String(M.html||"").replace(/src="tbr:(\d+)"/g,'src="'+PX+'" data-r="$1"')+'</div>';
+    /* pictures are either locked inside packs here, or plain files in the owner's Google Drive */
+    var html=String(M.html||"").replace(/src="tbr:(\d+)"/g,function(x,n){ var r=M.refs[+n]; if(r&&r[0]==="d") return 'src="https://lh3.googleusercontent.com/d/'+r[1]+'=w'+r[2]+'" data-d="'+r[1]+'" data-w="'+r[2]+'" loading="lazy"'; return 'src="'+PX+'" data-r="'+n+'"'; });
+    var b=$("#book"); b.innerHTML='<div class="tb">'+html+'</div>';
+    b.addEventListener("error",function(e){ var im=e.target; if(im&&im.tagName==="IMG"&&im.getAttribute("data-d")&&!im.getAttribute("data-f")){ im.setAttribute("data-f","1"); im.src="https://drive.google.com/thumbnail?id="+im.getAttribute("data-d")+"&sz=w"+im.getAttribute("data-w"); } },true);
     $("#lock").hidden=true; b.hidden=false; window.scrollTo(0,0);
     io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); load(e.target); } }); },{rootMargin:"1600px 0px"});
     b.querySelectorAll("img[data-r]").forEach(function(im){ io.observe(im); });
     b.addEventListener("click",play); }
   async function play(e){ var f=e.target.closest("figure[data-v]"); if(!f||f.getAttribute("data-on")) return; var v=M.vids&&M.vids[f.getAttribute("data-v")]; if(!v) return;
-    f.setAttribute("data-on","1"); var lab=f.querySelector("i"), t0=lab?lab.textContent:""; if(lab) lab.textContent="กำลังโหลดวิดีโอ…";
+    f.setAttribute("data-on","1"); var lab=f.querySelector("i"), t0=lab?lab.textContent:"";
+    if(v[0]==="d"){ var fr=document.createElement("iframe"); fr.src="https://drive.google.com/file/d/"+v[1]+"/preview"; fr.setAttribute("allow","autoplay; fullscreen"); fr.setAttribute("allowfullscreen",""); fr.style.cssText="position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;z-index:2"; f.appendChild(fr); return; }
+    if(lab) lab.textContent="กำลังโหลดวิดีโอ…";
     try{ var u=await unseal(KEY,await bin(v[0])), el=document.createElement("video"); el.src=URL.createObjectURL(new Blob([u],{type:v[1]||"video/mp4"})); el.controls=true; el.autoplay=true; el.playsInline=true; el.setAttribute("playsinline","");
       el.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:2"; f.appendChild(el); if(lab) lab.textContent=t0; var pr=el.play(); if(pr&&pr.catch) pr.catch(function(){}); }
     catch(x){ f.removeAttribute("data-on"); if(lab) lab.textContent="โหลดวิดีโอไม่ได้ แตะเพื่อลองอีกครั้ง"; } }
