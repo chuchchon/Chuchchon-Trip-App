@@ -3013,7 +3013,7 @@ async function unzipGet(file,e,type){ const h=new DataView(await file.slice(e.lo
 
 /* ===================== trip photos: stored on this phone (IndexedDB), sorted into stops by when/where they were taken ===================== */
 const PDB={db:null,
-  open(){ return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{ let r; try{ r=indexedDB.open("tp-"+TRIP_ID+"-photos",1); }catch(e){ return rej(e); }
+  open(){ return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{ let r; try{ r=indexedDB.open(this.dbn||("tp-"+TRIP_ID+"-photos"),1); }catch(e){ return rej(e); }
     r.onupgradeneeded=()=>{ const db=r.result; if(!db.objectStoreNames.contains("meta")) db.createObjectStore("meta",{keyPath:"id"}); if(!db.objectStoreNames.contains("blob")) db.createObjectStore("blob",{keyPath:"id"}); };
     r.onsuccess=()=>{ this.db=r.result; res(this.db); }; r.onerror=()=>rej(r.error); }); },
   async tx(store,mode,fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction(store,mode); const s=t.objectStore(store); const q=fn(s); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); },
@@ -5995,15 +5995,20 @@ async function tpPhBuild(){ const s=tpPh; const days=tpPhCluster(s.pts); if(!day
   s.plan=T; s.step="review"; tpPhPaint(); }
 async function tpPhPick(zip){ const s=tpPh; s.name=(($("#tpph-name")||{}).value||"").trim(); s.mode=($("#tpph-mode")||{}).value||"transit";
   const inp=document.createElement("input"); inp.type="file"; inp.multiple=true; inp.accept=zip?".zip,application/zip":"image/*"; inp.style.display="none";
-  inp.onchange=async()=>{ const files=[...inp.files]; inp.remove(); if(!files.length) return; let items=[];
+  inp.onchange=async()=>{ const files=[...inp.files]; inp.remove(); if(!files.length) return; let items=[]; s.files=files;
     try{ for(const f of files){ if(isZip(f)){ const idx=await unzipIndex(f); items=items.concat(zipItems(f,idx)); } else items.push(srcOf(f)); }
       await tpPhRead(items); if(!s.pts.length) throw new Error("ไม่เจอรูปที่มีวันเวลาที่ถ่ายในไฟล์ที่เลือก"); if(!s.pts.some(p=>p.ll)) throw new Error("รูปที่เลือกไม่มีตำแหน่ง GPS เลย จึงแยกจุดไม่ได้ (ลองใช้ไฟล์ต้นฉบับจากกล้องมือถือ หรือ Google Takeout — กด “จาก Google Photos” ดูวิธี)");
       s.count=s.pts.length; await tpPhBuild(); }
     catch(e){ s.step="err"; s.err=e&&e.message||String(e); tpPhPaint(); } };
   document.body.appendChild(inp); inp.click(); }
-function tpPhMake(){ const s=tpPh; if(!s||!s.plan) return; const T=s.plan; const nm=(($("#tpph-name2")||{}).value||"").trim(); if(nm) T.trip.trip_name=nm;
-  T.stops.forEach(x=>{ delete x._n; }); tpNormalize(T); T.trip.trip_id=tpUniqueId(T.trip.trip_id); const id=tpStoreTrip(T,true);
-  try{ localStorage.setItem("tp:"+id+":askPhotos",JSON.stringify(s.count||s.pts.length)); }catch(e){} tpGo(id); }
+/* the photos just read go straight into the new trip: they are stored in its photo box now, and placed into its stops when it opens */
+async function tpPhMake(){ const s=tpPh; if(!s||!s.plan||s.making) return; const T=s.plan; const nm=(($("#tpph-name2")||{}).value||"").trim(); if(nm) T.trip.trip_name=nm;
+  T.stops.forEach(x=>{ delete x._n; }); tpNormalize(T); T.trip.trip_id=tpUniqueId(T.trip.trip_id); const id=tpStoreTrip(T,true); s.making=true;
+  let ok=false;
+  if(s.files&&s.files.length){ s.step="read"; s.msg="กำลังใส่รูปเข้าทริปใหม่ (ครั้งเดียว ไม่ต้องเลือกรูปอีก)"; s.n=0; tpPhPaint();
+    try{ PDB.db=null; PDB.dbn="tp-"+id+"-photos"; phMeta=[]; phURL={}; phURLfull={}; await importPhotos(s.files,null); ok=phMeta.length>0; }catch(e){ ok=false; } }
+  try{ if(ok) localStorage.setItem("tp:"+id+":resortOnBoot","1"); else localStorage.setItem("tp:"+id+":askPhotos",JSON.stringify(s.count||s.pts.length)); }catch(e){}
+  tpGo(id); }
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='tpph-']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="tpph-pick") tpPhPick(!!b.dataset.zip);
   else if(a==="tpph-make") tpPhMake();
