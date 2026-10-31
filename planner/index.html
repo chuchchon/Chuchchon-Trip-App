@@ -716,6 +716,12 @@ body.is-dragging{cursor:grabbing}
 .tb-link2{background:none;border:0;padding:0;color:#2F6FB3;font:inherit;text-decoration:underline;cursor:pointer}
 .tb-fl{display:flex;flex-direction:column;gap:4px;max-height:42vh;overflow:auto;margin:6px 0;padding:2px}
 .tb-fl button{text-align:left;border:1px solid #DDE3E0;background:#fff;border-radius:9px;padding:9px 10px;font:500 14px inherit;color:#1C2228;cursor:pointer}
+.pool{margin:12px 0;padding:12px;border:1px solid #DDE3E0;border-radius:12px;background:#F6F9F7}
+.pool p{margin:6px 0;font-size:13.5px;line-height:1.5}
+.pool-h{font-size:15px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pool .inp{width:100%;box-sizing:border-box;margin:6px 0}
+.pool-row{display:flex;gap:6px;align-items:center}.pool-row .inp{flex:1;margin:0}
+.pool-inv{margin-top:8px;padding-top:8px;border-top:1px dashed #CBD5D0}
 .tb-lk{margin:6px 0;padding:9px 10px;background:#fff;border:1px solid #DDE3E0;border-radius:10px;word-break:break-all;font-weight:600}
 .tb-lk a{color:#2F6FB3}
 .tb-lkm{list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:3px;font-size:13px}
@@ -3216,6 +3222,7 @@ function photoSheetHtml(){
   <p class="ph-intro">แอปวางรูปเข้าจุดในแผนจากตำแหน่งที่ถ่าย ถ้ารูปไม่มีตำแหน่งจะดูจากเวลาที่ถ่าย · แตะรูปเพื่อดูใหญ่และย้าย · ไฟล์อยู่ในเครื่องนี้เท่านั้น</p>
   <div class="c-actions ph-main"><button class="btn small primary" data-act="ph-addmenu" aria-expanded="${phAddOpen}">${I.plus}เพิ่มรูป/วิดีโอ</button>${loose.length?`<button class="btn small" data-act="srt-open">จัดรูปที่ยังไม่ได้จัด (${loose.length})</button>`:""}${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}Tripbook</button>`:""}</div>
   ${phAddOpen?`<div class="ph-addmenu"><button class="ph-addopt" data-act="ph-pick"><b>เลือกจากรูปในมือถือ</b><span>เร็วที่สุด แต่มือถือบางรุ่นตัดตำแหน่งที่ถ่ายออก แอปจะจัดตามเวลาแทน</span></button><button class="ph-addopt" data-act="ph-pick-files"><b>ไฟล์ ZIP</b><span>ได้ตำแหน่งที่ถ่ายครบ · รูปที่มีอยู่แล้วจะถูกเติมตำแหน่ง ไม่เพิ่มซ้ำ</span></button>${zipHow()}<label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียวที่คมชัดที่สุด</label></div>`:""}
+  ${poolHtml()}
   ${prog}
   ${!imp&&noLoc>=5&&noLoc>phMeta.length/2?`<div class="ph-geo-note"><b>${noLoc} รูปไม่มีตำแหน่งที่ถ่าย</b> จึงจัดได้แค่ตามเวลา · ถ้ามีไฟล์ต้นฉบับ นำเข้าเป็น ZIP อีกครั้งเพื่อเติมตำแหน่ง (ไม่เพิ่มซ้ำ)</div>`:""}
   ${phMeta.length?`<p class="ph-days-h">แตะวันเพื่อดูรูปในแผนของวันนั้น</p><div class="ph-days" role="group" aria-label="ดูรูปในแผนของวัน" style="margin-top:6px">${DAYS.map((d,i)=>`<button class="ph-day${byDay[i]?"":" z"}" data-act="ph-goday" data-d="${i}" style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</button>`).join("")}</div>`:""}
@@ -3296,7 +3303,7 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
     ${grp.length>1?`<label class="lb-grp"><input type="checkbox" id="ph-grp"> ย้ายรูปอื่นที่ถ่ายช่วงเดียวกัน (±45 นาที) ไปด้วย อีก ${grp.length-1} ไฟล์</label>`:""}
     <div class="c-actions"><button class="btn small primary" data-mp="domove">ย้าย</button><button class="btn small" data-mp="move">ยกเลิก</button></div></div>`:"";
   $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button><div class="lb-stage">${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}</div>
-  <div class="lb-cap"><b>${esc(photoWhere(m))}</b><span>${esc(when)}${m.tsrc==="file"?" (วันที่ของไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${how}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>
+  <div class="lb-cap"><b>${esc(photoWhere(m))}</b><span>${esc(when)}${m.tsrc==="file"?" (วันที่ของไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${how}${m.by?" · 📷 จาก "+esc(m.by):""}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>
   ${v.flash?`<span class="lb-flash" role="status">${esc(v.flash)}</span>`:""}${m.tbHide?`<span class="lb-hid">เอาออกจาก Tripbook อยู่ · <button class="lnk" data-mp="tbshow">เอากลับเข้า Tripbook</button></span>`:""}${tbDrvLine(m)}${mv}</div>
   <div class="lb-nav"><button class="btn lb-arr" data-mp="prev" ${v.i===0?"disabled":""} aria-label="รูปก่อนหน้า">‹</button><span class="lb-pos" aria-live="polite"><b>${v.i+1} / ${v.list.length}</b><small>${galState&&$("#gal-root")?(galState.all?`ทั้งวัน D${DAYS[galState.day].n}`:"จุดนี้"):m.day!=null?`ทั้งวัน D${DAYS[m.day].n}`:"ยังไม่ได้จัด"}</small></span><button class="btn lb-arr" data-mp="next" ${v.i>=v.list.length-1?"disabled":""} aria-label="รูปถัดไป">›</button></div>
   <div class="lb-acts"><button class="btn small${v.move?" on":""}" data-mp="move">ย้ายไปจุดอื่น</button>${m.kind!=="video"?`<button class="btn small" data-mp="cover">${m.cover?"★ ปก Tripbook":"ตั้งเป็นปก Tripbook"}</button>`:""}<button class="btn small lb-del${v.confirm?" danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้ง: ลบออกจากแอปถาวร":"ลบรูปนี้"}</button></div></div>`;
@@ -3681,6 +3688,7 @@ async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) th
   { const byTag=new Map(), byName=new Map(), used=new Set(Object.values(D.files));
     ids.forEach((v,id)=>{ if(used.has(id)) return; if(v.tb){ if(!byTag.has(v.tb)) byTag.set(v.tb,id); } else if(!byName.has(v.name)) byName.set(v.name,id); });
     assets.forEach(a=>{ if(D.files[a.key]) return; const id=byTag.get(a.key)||byName.get(a.name); if(id){ D.files[a.key]=id; byTag.delete(a.key); byName.delete(a.name); } }); }
+  { const pl=poolGet(); if(pl&&pl.id===D.sub) assets.forEach(a=>{ if(!D.files[a.key]&&a.m&&a.m.gd) D.files[a.key]=a.m.gd; }); }   /* a friend's photo already in this folder */
   const todo=[...assets.values()].filter(a=>!D.files[a.key]); let done=0, bytes=0, last=0;
   say("กำลังอัปโหลดไป Google Drive",0,todo.length);
   const one=async a=>{ let blob=a.blob; if(!blob){ const b=await PDB.getBlob(a.m.id); blob=b&&b.full; } if(!blob){ done++; return; } if(a.photo) blob=await tbPhotoForDrive(a.m,blob);
@@ -3864,9 +3872,104 @@ async function tbDrvLoad(){ const st=await tbCacheGet("tb~share"), D=st&&st.driv
   if(D&&D.files) Object.keys(D.files).forEach(k=>{ const x=k.match(/^(?:ph2?|v):(.+)$/); if(x) map[x[1]]=D.files[k]; });
   tbDrv={map,where:D&&D.sub?`${D.folder?D.folder.name:"Google Drive"} › ${D.subName||"Tripbook"}`:""};
   $$("#tbBody figure[data-tbid]").forEach(f=>f.classList.toggle("up",!!map[f.dataset.tbid])); }
-function tbDrvLine(m){ const id=tbDrv&&tbDrv.map[m.id]; if(!id) return "";
+function tbDrvLine(m){ const id=tbDrv&&tbDrv.map[m.id]||m.gd; if(!id) return ""; if(!tbDrv) tbDrv={map:{},where:""};
   return `<span class="lb-up">✓ อัปโหลดขึ้น Google Drive แล้ว · ${esc(tbDrv.where)} · <a href="https://drive.google.com/file/d/${esc(id)}/view" target="_blank" rel="noopener">เปิดใน Drive</a></span>`; }
 async function tbsBtn(){ const b=$('#tbRoot [data-tb="share"]'); if(!b) return; const st=await tbCacheGet("tb~share"); b.textContent=st&&st.link&&!st.stopped?"ลิงก์ที่แชร์ ✓":"แชร์ลิงก์"; }
+/* ===================== Shared photos: everyone on the trip puts their photos into one Google Drive folder,
+   and every phone brings in the photos the others added (step 1 of working together) ===================== */
+var poolS={busy:false,msg:"",i:0,n:0,err:"",path:null,list:null,pick:false,inv:false,last:null};
+function poolGet(){ return store.get("gdPool",null); }
+/* a friend's invite link: #join=<folder>~<client id> */
+(function poolJoin(){ try{ const m=(location.hash||"").match(/join=([A-Za-z0-9_-]{3,})~([0-9]+-[A-Za-z0-9_]+\.apps\.googleusercontent\.com)/); if(!m) return;
+    store.set("gdPool",{id:m[1],name:"",joined:Date.now()}); if(!store.get("gcid","")) store.set("gcid",m[2]); history.replaceState(null,"",location.pathname+location.search); sessionStorage.setItem("poolJoin","1"); }catch(e){} })();
+function poolInvite(){ const p=poolGet(); return p?`${gdRedirect()}#join=${p.id}~${gdClientId()}`:""; }
+function poolHtml(){ const p=poolGet(), s=poolS, tok=!!gdToken();
+  let h=`<div class="pool" id="pool"><div class="pool-h">👥 <b>รูปรวมกับเพื่อนร่วมทริป</b></div>`;
+  if(!p){ h+=`<p>ทุกคนใส่รูปเข้าโฟลเดอร์เดียวกันใน Google Drive แอปของทุกเครื่องจะเห็นรูปของทุกคน และจัดเข้าจุดในแผนให้เอง</p>`;
+    if(s.pick) h+=poolPickerHtml(); else h+=`<div class="c-actions"><button class="btn small primary" data-act="pool-start">เริ่มใช้รูปรวม</button></div>`; }
+  else {
+    const mine=phMeta.filter(m=>!m.gd).length, theirs=phMeta.filter(m=>m.gd).length;
+    h+=`<p>📁 ${esc(p.name||"โฟลเดอร์รวมรูป")} · รูปของเรา ${mine.toLocaleString()} · จากเพื่อน ${theirs.toLocaleString()}${s.last?` · ซิงก์ล่าสุด ${new Date(s.last).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})}`:""}</p>`;
+    if(s.busy) h+=`<p><b>${esc(s.msg)}${s.n?` ${s.i.toLocaleString()} / ${s.n.toLocaleString()}`:""}</b></p>${s.n?`<div class="tb-pbar"><i style="width:${Math.max(3,Math.round(s.i/s.n*100))}%"></i></div>`:""}`;
+    else if(s.ask) h+=`<p><b>มีรูปจากเพื่อน ${s.ask.n.toLocaleString()} รูป (ราว ${s.ask.mb.toLocaleString()} MB)</b> จะดึงเข้ามาในเครื่องนี้ไหม</p><div class="c-actions"><button class="btn small primary" data-act="pool-get">ดึงรูปเข้ามา</button><button class="btn small" data-act="pool-later">ไว้ก่อน</button></div>`;
+    else h+=`<div class="c-actions"><button class="btn small primary" data-act="pool-sync">${tok?"ซิงก์ตอนนี้":"เข้าสู่ระบบ Google แล้วซิงก์"}</button><button class="btn small" data-act="pool-inv">ชวนเพื่อน</button></div>`;
+    if(s.inv&&!s.busy) h+=poolInviteHtml(); }
+  if(s.err) h+=`<p class="tb-err">${esc(s.err)}</p>`;
+  return h+`</div>`; }
+function poolPickerHtml(){ const s=poolS, path=s.path||[{id:"root",name:"ไดรฟ์ของฉัน"}];
+  return `<p class="tb-crumb">${path.map((x,i)=>i<path.length-1?`<button class="tb-link2" data-act="pool-up" data-i="${i}">${esc(x.name)}</button>`:`<b>${esc(x.name)}</b>`).join(" › ")}</p>
+    ${s.list?`<div class="tb-fl">${s.list.map(f=>`<button data-act="pool-open" data-id="${esc(f.id)}" data-name="${esc(f.name)}">📁 ${esc(f.name)}</button>`).join("")||`<p class="tb-note">ไม่มีโฟลเดอร์ย่อย</p>`}</div>`:`<p class="tb-note">กำลังโหลด…</p>`}
+    <input class="inp" id="poolNew" placeholder="หรือตั้งชื่อโฟลเดอร์ใหม่ เช่น รูปรวมทริปฮอกไกโด">
+    <div class="c-actions"><button class="btn small primary" data-act="pool-use">ใช้โฟลเดอร์ “${esc(path[path.length-1].name)}”</button><button class="btn small" data-act="pool-new">สร้างโฟลเดอร์ใหม่</button><button class="btn small" data-act="pool-cancel">ยกเลิก</button></div>`; }
+function poolInviteHtml(){ const link=poolInvite();
+  return `<div class="pool-inv"><p><b>ชวนเพื่อนมาใส่รูปด้วยกัน</b></p>
+    <ol class="tb-steps"><li>ใส่อีเมล Google ของเพื่อนด้านล่าง แอปจะแชร์โฟลเดอร์ให้เขาแก้ไขได้</li><li>ที่ <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">Google Cloud → Audience → Test users</a> เพิ่มอีเมลเพื่อนคนนั้นด้วย (ทำครั้งเดียวต่อคน)</li><li>ส่งลิงก์ชวนให้เพื่อน เปิดในมือถือของเขา แล้วกดซิงก์</li></ol>
+    <div class="pool-row"><input class="inp" id="poolMail" type="email" placeholder="อีเมลเพื่อน"><button class="btn small" data-act="pool-addmail">แชร์โฟลเดอร์ให้</button></div>
+    <textarea class="tb-msg" id="poolMsg" readonly rows="4">มาใส่รูปทริปรวมกันนะ 📷\nเปิดลิงก์นี้ในมือถือ แล้วเข้าไปที่ "รูปของเรา" → กดซิงก์ (ใช้บัญชี Google ที่ได้รับแชร์)\n${link}</textarea>
+    <div class="c-actions"><button class="btn small primary" data-act="pool-share">แชร์ลิงก์ชวน</button><button class="btn small" data-act="pool-copy">คัดลอก</button></div></div>`; }
+function poolPaint(){ const el=$("#pool"); if(el) el.outerHTML=poolHtml(); }
+async function poolList(){ poolS.list=null; poolPaint(); try{ poolS.list=await gdFolders(poolS.path[poolS.path.length-1].id); }catch(e){ if(e.code==="auth") return gdSignIn("pool-pick"); poolS.err=e.message; } poolPaint(); }
+/* what is in the folder: id, name, size, kind, the app tag, and who put it there */
+async function poolFiles(fid){ const out=[]; let pt="";
+  do{ const q=`'${fid}' in parents and trashed=false and mimeType!='${GD_FOLDER}'`;
+    const j=await gdReq(`${GD}/files?q=${enc(q)}&fields=nextPageToken,files(id,name,size,mimeType,appProperties,owners(displayName,me))&pageSize=1000${pt?"&pageToken="+enc(pt):""}`);
+    (j.files||[]).forEach(f=>out.push(f)); pt=j.nextPageToken||""; } while(pt);
+  return out; }
+function poolName(m,ext){ const n=m.day!=null&&DAYS[m.day]?"D"+DAYS[m.day].n:"รูป"; let t=""; if(m.takenAt){ const off=typeof tzo==="function"?tzo(m.takenAt):9*3600e3, d=new Date(m.takenAt+off), z=x=>String(x).padStart(2,"0"); t=`${z(d.getUTCHours())}-${z(d.getUTCMinutes())}-${z(d.getUTCSeconds())}`; }
+  let stop=""; if(m.key&&m.day!=null){ const it=planItems(m.day).find(x=>x._i===m.key); if(it) stop=it.n; } else if(m.place) stop=m.place.name||"";
+  return tbsFileName(`${n} ${t} ${stop}`)+"."+ext; }
+async function poolSync(opts){ opts=opts||{}; const p=poolGet(); if(!p||poolS.busy) return; if(!gdClientId()){ poolS.err="ยังไม่ได้ตั้งค่า Google (Client ID) ลองเปิดลิงก์ชวนจากเจ้าของทริปอีกครั้ง"; return poolPaint(); }
+  if(!gdToken()){ if(opts.quiet) return; return gdSignIn("pool"); }
+  poolS.busy=true; poolS.err=""; poolS.msg="กำลังดูรูปในโฟลเดอร์…"; poolS.i=poolS.n=0; poolPaint();
+  try{ if(!p.name){ const j=await gdReq(`${GD}/files/${p.id}?fields=name`); p.name=j.name; store.set("gdPool",p); }
+    const files=await poolFiles(p.id), tags=new Set(files.map(f=>f.appProperties&&f.appProperties.tb).filter(Boolean)), have=new Set(phMeta.map(m=>m.gd).filter(Boolean));
+    /* 1. ours that are not there yet */
+    const up=phMeta.filter(m=>!m.gd&&!tags.has((m.kind==="video"?"v:":"ph2:")+m.id)); let k=0; poolS.msg="กำลังส่งรูปของเราขึ้นไป"; poolS.n=up.length;
+    await tbPool(up,4,async m=>{ const b=await PDB.getBlob(m.id); let blob=b&&b.full; if(blob){ if(m.kind!=="video") blob=await tbPhotoForDrive(m,blob);
+        await gdUpload(blob,poolName(m,m.kind==="video"?((m.ext||"mp4")+"").toLowerCase():"jpg"),p.id,m.kind==="video"?(m.mime||"video/mp4"):"image/jpeg",null,(m.kind==="video"?"v:":"ph2:")+m.id); }
+      poolS.i=++k; if(k%3===0) poolPaint(); });
+    /* 2. theirs that we do not have: photos come in; videos stay in Drive */
+    const mineTags=new Set(phMeta.map(m=>(m.kind==="video"?"v:":"ph2:")+m.id));
+    const down=files.filter(f=>/^image\//.test(f.mimeType||"")&&!have.has(f.id)&&!(f.appProperties&&mineTags.has(f.appProperties.tb)));
+    poolS.last=Date.now();
+    if(down.length&&!opts.get){ poolS.ask={n:down.length,mb:Math.max(1,Math.round(down.reduce((a,f)=>a+(+f.size||0),0)/1048576)),files:down}; return; }
+    if(down.length) await poolDownload(down); }
+  catch(e){ if(e.code==="auth"){ poolS.err="การเข้าสู่ระบบ Google หมดเวลา กดซิงก์อีกครั้ง"; } else poolS.err=e.message||String(e); }
+  finally{ poolS.busy=false; poolPaint(); } }
+async function poolDownload(files){ poolS.busy=true; poolS.ask=null; poolS.msg="กำลังดึงรูปจากเพื่อน"; poolS.n=files.length; poolS.i=0; poolPaint();
+  const got=[], by={}; let k=0;
+  await tbPool(files,4,async f=>{ try{ const r=await gdReq(`${GD}/files/${f.id}?alt=media`,{raw:true}); const blob=await r.blob();
+      got.push(new File([blob],`gd_${f.id}__${f.name}`,{type:f.mimeType||"image/jpeg",lastModified:0})); by[f.id]=(f.owners&&f.owners[0]&&f.owners[0].displayName)||""; }catch(e){ if(e.code==="auth") throw e; }
+    poolS.i=++k; if(k%3===0) poolPaint(); });
+  if(!got.length) return;
+  poolS.msg="กำลังจัดรูปเข้าแผน"; poolS.n=0; poolPaint();
+  await importPhotos(got,null);
+  for(const m of phMeta){ const x=(m.name||"").match(/^gd_([A-Za-z0-9_-]+)__(.*)$/); if(!x||m.gd) continue; m.gd=x[1]; m.name=x[2]; if(by[x[1]]) m.by=by[x[1]]; try{ await PDB.putMeta(m); }catch(e){} }
+  if($("#ph-root")) photoSheetPaint(); renderPlan(); }
+async function poolAct(a,b){ const s=poolS;
+  if(a==="pool-start"){ s.err=""; const st=await tbCacheGet("tb~share"); if(st&&st.drive&&st.drive.sub&&st.mode==="drive"){ store.set("gdPool",{id:st.drive.sub,name:st.drive.subName||""}); return poolSync(); }
+    if(!gdClientId()){ s.err="ตั้งค่า Google ก่อน: เปิด Tripbook → แชร์ลิงก์ → Google Drive ของฉัน → เลือกโฟลเดอร์ (ทำครั้งเดียว)"; return poolPaint(); }
+    if(!gdToken()) return gdSignIn("pool-pick"); s.pick=true; s.path=[{id:"root",name:"ไดรฟ์ของฉัน"}]; return poolList(); }
+  if(a==="pool-open"){ s.path.push({id:b.dataset.id,name:b.dataset.name}); return poolList(); }
+  if(a==="pool-up"){ s.path=s.path.slice(0,+b.dataset.i+1); return poolList(); }
+  if(a==="pool-cancel"){ s.pick=false; return poolPaint(); }
+  if(a==="pool-new"){ const n=($("#poolNew")||{}).value||""; if(!n.trim()){ s.err="ตั้งชื่อโฟลเดอร์ก่อน"; return poolPaint(); } try{ const f=await gdMkdir(tbsFileName(n),s.path[s.path.length-1].id); s.path.push({id:f.id,name:f.name}); }catch(e){ s.err=e.message; return poolPaint(); } return poolAct("pool-use"); }
+  if(a==="pool-use"){ const cur=s.path[s.path.length-1]; let id=cur.id; if(id==="root"){ try{ id=(await gdReq(`${GD}/files/root?fields=id`)).id; }catch(e){} } store.set("gdPool",{id,name:cur.name}); s.pick=false; return poolSync(); }
+  if(a==="pool-sync"){ s.ask=null; return poolSync(); }
+  if(a==="pool-get"){ const f=s.ask&&s.ask.files; s.ask=null; if(f){ try{ await poolDownload(f); }catch(e){ s.err=e.code==="auth"?"การเข้าสู่ระบบ Google หมดเวลา กดซิงก์อีกครั้ง":e.message; } finally{ s.busy=false; poolPaint(); } } return; }
+  if(a==="pool-later"){ s.ask=null; return poolPaint(); }
+  if(a==="pool-inv"){ s.inv=!s.inv; return poolPaint(); }
+  if(a==="pool-addmail"){ const em=(($("#poolMail")||{}).value||"").trim(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ s.err="ใส่อีเมลให้ถูกก่อน"; return poolPaint(); }
+    if(!gdToken()) return gdSignIn("pool");
+    try{ await gdReq(`${GD}/files/${poolGet().id}/permissions?sendNotificationEmail=true&fields=id`,{method:"POST",json:{role:"writer",type:"user",emailAddress:em}}); s.err=""; s.okMail=em; alertless(`แชร์โฟลเดอร์ให้ ${em} แล้ว`); }
+    catch(e){ s.err=e.message; } return poolPaint(); }
+  if(a==="pool-copy"||a==="pool-share"){ const t=($("#poolMsg")||{}).value||poolInvite();
+    if(a==="pool-share"&&navigator.share){ try{ await navigator.share({text:t}); }catch(e){} return; }
+    try{ await navigator.clipboard.writeText(t); s.err=""; alertless("คัดลอกแล้ว"); }catch(e){ const ta=$("#poolMsg"); if(ta){ ta.select(); try{ document.execCommand("copy"); }catch(x){} } } return; } }
+function alertless(t){ const el=$("#pool .pool-h"); if(!el) return; const sp=document.createElement("span"); sp.className="tb-ok"; sp.textContent=t; el.appendChild(sp); setTimeout(()=>sp.remove(),2500); }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='pool-']"); if(!b) return; ev.stopPropagation(); poolAct(b.dataset.act,b); },true);
+/* quietly bring in new photos when the app opens and every 10 minutes, while signed in */
+setInterval(()=>{ if(poolGet()&&gdToken()&&document.visibilityState==="visible") poolSync({quiet:true}); },600000);
 var tbWake=null;
 async function tbWakeOn(){ try{ if("wakeLock" in navigator&&!tbWake&&document.visibilityState==="visible"){ tbWake=await navigator.wakeLock.request("screen"); tbWake.addEventListener("release",()=>{ tbWake=null; }); } }catch(e){} }
 function tbWakeOff(){ try{ if(tbWake) tbWake.release(); }catch(e){} tbWake=null; }
@@ -3878,7 +3981,10 @@ async function tbsPendingKick(soft){ if(tbShareBusy) return; const st=await tbCa
   await tbsOpen(true,{pass:p.pass,withV:p.withV,mode:p.mode,folder:st.drive&&st.drive.folder}); tbShare.resume=true;
   if(p.mode==="drive"&&!gdToken()){ tbShare.err="อัปโหลดค้างอยู่ · การเข้าสู่ระบบ Google หมดเวลาแล้ว กด “อัปโหลด” เพื่อเข้าสู่ระบบอีกครั้ง แล้วแอปจะทำต่อเอง"; return tbsPaint(); }
   return tbsAction("sh-go"); }
-async function gdResumeKick(){ let r=null; try{ r=JSON.parse(sessionStorage.getItem("gdResume")||"null"); sessionStorage.removeItem("gdResume"); }catch(e){} if(!r) return tbsPendingKick();
+async function gdResumeKick(){ let r=null; try{ r=JSON.parse(sessionStorage.getItem("gdResume")||"null"); sessionStorage.removeItem("gdResume"); }catch(e){}
+  if(!r){ let j=null; try{ j=sessionStorage.getItem("poolJoin"); sessionStorage.removeItem("poolJoin"); }catch(e){} if(j){ photoSheetPaint(true); return; } if(poolGet()&&gdToken()) setTimeout(()=>poolSync({quiet:true}),2500); return tbsPendingKick(); }
+  if(r.to&&r.to.indexOf("pool")===0){ photoSheetPaint(true); await tbSleep(200); if(r.err||!gdToken()){ poolS.err="เข้าสู่ระบบ Google ไม่สำเร็จ"+(r.err?" ("+r.err+")":""); return poolPaint(); }
+    if(r.to==="pool-pick"){ poolS.pick=true; poolS.path=[{id:"root",name:"ไดรฟ์ของฉัน"}]; return poolList(); } return poolSync(); }
   if(!document.body.classList.contains("tb-open")) await openTripbook(); await tbSleep(300);
   if(r.err||!gdToken()){ await tbsOpen(true,r.form||{mode:"drive"}); tbShare.err="เข้าสู่ระบบ Google ไม่สำเร็จ"+(r.err?" ("+r.err+")":""); return tbsPaint(); }
   if(r.to==="go"){ await tbsOpen(true,r.form||{mode:"drive"}); return tbsAction("sh-go"); }
