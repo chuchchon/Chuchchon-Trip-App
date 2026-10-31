@@ -12,6 +12,8 @@
 <style>
 :root{--ink:#1C2228;--mute:#69737D;--line:#DDE3E0;--acc:#2F6FB3;--err:#C0392B;--ok:#1E8E3E}
 [hidden]{display:none!important}
+#book .tb-dt{table-layout:fixed}
+#book .tb-run span:last-child{flex:0 1 auto;min-width:0;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html,body{margin:0;background:#14191E;color:var(--ink);font-family:"Anuphan",system-ui,sans-serif;-webkit-text-size-adjust:100%}
 #lock{position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;color:#fff;transition:opacity .45s}
 #lock.out{opacity:0}
