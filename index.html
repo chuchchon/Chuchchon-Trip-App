@@ -3980,6 +3980,41 @@ async function gdUpload(blob,name,parent,mime,onp){
     if(rr.ok){ onp&&onp(end-off); return await rr.json(); }
     throw new Error("อัปโหลดวิดีโอไม่สำเร็จ ("+rr.status+")"); }
   throw new Error("อัปโหลดวิดีโอไม่สำเร็จ"); }
+/* ---------- where and when, written into each photo that goes to Drive, the way a camera writes it ----------
+   The app keeps a re-saved copy of every photo, which has lost the camera's data: a photo whose camera recorded where it was
+   gets exactly that place back; one without gets the place of the stop it belongs to. A file that still carries its own data is left as it is. */
+function tbJpgInfo(u8){ if(u8[0]!==0xFF||u8[1]!==0xD8) return {jpeg:false}; let o=2;
+  while(o+9<u8.length&&u8[o]===0xFF){ const mk=u8[o+1], len=(u8[o+2]<<8)|u8[o+3];
+    if(mk===0xE1&&u8[o+4]===0x45&&u8[o+5]===0x78&&u8[o+6]===0x69&&u8[o+7]===0x66){ let x={}; try{ x=readExif(u8.slice(0,Math.min(u8.length,o+4+len)).buffer); }catch(e){} return {jpeg:true,exif:true,gps:x.lat!=null}; }
+    if(mk===0xDA||mk===0xD9) break; o+=2+len; }
+  return {jpeg:true,exif:false}; }
+function tbExifApp1(o){ const A=t=>new TextEncoder().encode(t+"\0"), R=v=>{ const b=new Uint8Array(8*v.length), d=new DataView(b.buffer); v.forEach((x,i)=>{ d.setUint32(i*8,x[0]); d.setUint32(i*8+4,x[1]); }); return b; };
+  const dms=x=>{ x=Math.abs(x); const D=Math.floor(x), mf=(x-D)*60, M=Math.floor(mf), S=Math.round((mf-M)*60*10000); return [[D,1],[M,1],[S,10000]]; };
+  const ifd0=[], exif=[], gps=[];
+  if(o.model) ifd0.push({tag:0x0110,type:2,v:A(o.model)});
+  if(o.dt){ exif.push({tag:0x9003,type:2,v:A(o.dt)},{tag:0x9004,type:2,v:A(o.dt)}); if(o.off) exif.push({tag:0x9011,type:2,v:A(o.off)}); }
+  if(o.lat!=null&&o.lng!=null) gps.push({tag:0,type:1,v:new Uint8Array([2,3,0,0])},{tag:1,type:2,v:A(o.lat<0?"S":"N")},{tag:2,type:5,v:R(dms(o.lat))},{tag:3,type:2,v:A(o.lng<0?"W":"E")},{tag:4,type:5,v:R(dms(o.lng))});
+  if(exif.length) ifd0.push({tag:0x8769,type:4,ptr:"exif"}); if(gps.length) ifd0.push({tag:0x8825,type:4,ptr:"gps"}); ifd0.sort((a,b)=>a.tag-b.tag);
+  const list=[["ifd0",ifd0],["exif",exif],["gps",gps]].filter(x=>x[1].length), at={}; let off=8;
+  list.forEach(([k,e])=>{ at[k]=off; off+=2+e.length*12+4; });
+  list.forEach(([k,e])=>e.forEach(en=>{ if(en.v&&en.v.length>4){ en.off=off; off+=en.v.length+(en.v.length&1); } }));
+  const t=new Uint8Array(off), d=new DataView(t.buffer); t.set([0x4D,0x4D,0,42,0,0,0,8]);
+  list.forEach(([k,e])=>{ let p=at[k]; d.setUint16(p,e.length); p+=2;
+    e.forEach(en=>{ d.setUint16(p,en.tag); d.setUint16(p+2,en.type);
+      if(en.ptr){ d.setUint32(p+4,1); d.setUint32(p+8,at[en.ptr]); }
+      else { d.setUint32(p+4,en.type===5?en.v.length/8:en.v.length); if(en.v.length>4){ d.setUint32(p+8,en.off); t.set(en.v,en.off); } else t.set(en.v,p+8); }
+      p+=12; }); d.setUint32(p,0); });
+  const len=2+6+t.length, h=new Uint8Array([0xFF,0xE1,len>>8,len&255,0x45,0x78,0x69,0x66,0,0]); return [h,t]; }
+function tbPhotoPlace(m){ if(m.lat!=null&&m.lng!=null) return [m.lat,m.lng];
+  if(m.key&&m.day!=null&&!/^leg:/.test(m.key)){ const it=planItems(m.day).find(x=>x._i===m.key); const pk=it&&(it.p||it.to); if(pk&&P[pk]) return [P[pk][1],P[pk][2]]; }
+  if(m.place&&m.place.lat!=null) return [m.place.lat,m.place.lng]; return null; }
+async function tbPhotoForDrive(m,blob){ try{ const u8=new Uint8Array(await blob.arrayBuffer()), info=tbJpgInfo(u8); if(!info.jpeg||info.exif) return blob;
+    const ll=tbPhotoPlace(m); let dt=null, offS=null;
+    if(m.takenAt){ const off=typeof tzo==="function"?tzo(m.takenAt):9*3600e3, d=new Date(m.takenAt+off), z=n=>String(n).padStart(2,"0");
+      dt=`${d.getUTCFullYear()}:${z(d.getUTCMonth()+1)}:${z(d.getUTCDate())} ${z(d.getUTCHours())}:${z(d.getUTCMinutes())}:${z(d.getUTCSeconds())}`;
+      const om=Math.round(off/60000); offS=(om<0?"-":"+")+z(Math.floor(Math.abs(om)/60))+":"+z(Math.abs(om)%60); }
+    if(!ll&&!dt) return blob; const [h,t]=tbExifApp1({lat:ll&&ll[0],lng:ll&&ll[1],dt,off:offS,model:m.model||""});
+    return new Blob([u8.subarray(0,2),h,t,u8.subarray(2)],{type:"image/jpeg"}); }catch(e){ return blob; } }
 /* ---------- the share record kept with the photos (one per trip) ---------- */
 async function tbsState(){ const repo=tbsRepo(); let st=await tbCacheGet("tb~share"); if(!st||st.stopped||(st.repo&&st.repo!==repo)) st={id:"tb~share",repo,bookId:tbsNewId(),drive:st&&st.drive?{folder:st.drive.folder}:null}; st.repo=repo; return st; }
 /* has anything in the book changed since the link was made */
@@ -4004,7 +4039,7 @@ async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) th
   const stopName=m=>{ if(m.key){ const it=planItems(m.day).find(x=>x._i===m.key); if(it) return it.n; } return m.place&&m.place.name||""; };
   const named=(m,ext)=>{ const n=DAYS[m.day]?DAYS[m.day].n:0; seq[n]=(seq[n]||0)+1; return tbsFileName(`D${n}-${String(seq[n]).padStart(3,"0")} ${stopName(m)}`)+"."+ext; };
   for(let i=0;i<reg.length;i++){ const e=reg[i], mt=e.meta||{}; let key, w=1600;
-    if(mt.m&&!mt.poster&&mt.m.kind!=="video"){ key="ph:"+mt.m.id; w=mt.big?1600:640; if(!assets.has(key)) assets.set(key,{key,m:mt.m,photo:true,name:named(mt.m,"jpg"),parent:D.sub,mime:"image/jpeg"}); }
+    if(mt.m&&!mt.poster&&mt.m.kind!=="video"){ key="ph2:"+mt.m.id; w=mt.big?1600:640; if(!assets.has(key)) assets.set(key,{key,m:mt.m,photo:true,name:named(mt.m,"jpg"),parent:D.sub,mime:"image/jpeg"}); }
     else if(mt.poster){ key="pv:"+mt.m.id+":"+(mt.m.pv||0); w=640; if(!assets.has(key)) assets.set(key,{key,blob:e.blob,name:tbsFileName("ภาพวิดีโอ "+(mt.m.name||mt.m.id))+".jpg",parent:D.extra,mime:"image/jpeg"}); }
     else { const h=(await tbsSha(await e.blob.arrayBuffer())).slice(0,16); key="img:"+h; const g=e.g||"";
       if(!assets.has(key)) assets.set(key,{key,blob:e.blob,parent:D.extra,mime:e.blob.type||"image/jpeg",name:(g.startsWith("map|")&&DAYS[+g.split("|")[1]]?"แผนที่ D"+DAYS[+g.split("|")[1]].n:g==="ov"?"แผนที่ทั้งทริป":"ภาพย่อ "+h.slice(0,6))+".jpg"}); }
@@ -4012,7 +4047,7 @@ async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) th
   const vidKeys={}; for(const id of tbExpVidUsed){ const m=phMeta.find(x=>x.id===id); if(!m) continue; const key="v:"+id; vidKeys[id]=key; if(!assets.has(key)) assets.set(key,{key,m,video:true,name:named(m,((m.ext||"mp4")+"").toLowerCase()),parent:D.sub,mime:m.mime||"video/mp4"}); }
   const todo=[...assets.values()].filter(a=>!D.files[a.key]); let done=0, bytes=0, last=0;
   say("กำลังอัปโหลดไป Google Drive",0,todo.length);
-  const one=async a=>{ let blob=a.blob; if(!blob){ const b=await PDB.getBlob(a.m.id); blob=b&&b.full; } if(!blob){ done++; return; }
+  const one=async a=>{ let blob=a.blob; if(!blob){ const b=await PDB.getBlob(a.m.id); blob=b&&b.full; } if(!blob){ done++; return; } if(a.photo) blob=await tbPhotoForDrive(a.m,blob);
     const f=await gdUpload(blob,a.name,a.parent,a.mime,n=>{ bytes+=n; const now=Date.now(); if(now-last>300){ last=now; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); } });
     D.files[a.key]=f.id; done++; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); if(done%15===0) await tbCachePut(st); };
   try{ const small=todo.filter(a=>!a.video), big=todo.filter(a=>a.video); await tbPool(small,3,one); for(const a of big) await one(a); }
