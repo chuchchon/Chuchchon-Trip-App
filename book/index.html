@@ -42,6 +42,20 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
 #bar{position:fixed;left:0;top:0;height:3px;width:100%;background:var(--acc);transform-origin:left;transform:scaleX(0);transition:transform .25s,opacity .4s;z-index:50;opacity:0}
 #book{background:#fff;min-height:100vh}
 #book img[data-r],#book img[data-d]{background:#EEF1F3}
+.tb-toc{max-width:880px;margin:0 auto;padding:34px 18px 24px}
+.tb-toc h2{font-size:26px;margin:4px 0 14px}
+.tb-toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tb-toc li{border:1px solid #E3E8E5;border-radius:14px;overflow:hidden;background:#fff}
+.tb-toc a{color:#1C2228;text-decoration:none}
+.tc-x a{display:block;padding:14px 14px;font-weight:600;font-size:16px}
+.tc-d{display:flex;gap:12px;align-items:center;padding:12px 14px}
+.tc-n{font-size:32px;font-weight:700;line-height:1;color:var(--dc);min-width:28px}
+.tc-d span:last-child{font-weight:600;font-size:15.5px;line-height:1.35}
+.tc-d small{display:block;font-weight:400;font-size:12.5px;color:#69737D}
+.tc-s{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px 54px}
+.tc-s a{font-size:13px;padding:5px 10px;border-radius:999px;background:#F3F6F4;color:#3D4650}
+.tc-s a b{color:var(--dc);margin-right:5px}
+#tocb{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;border:0;border-radius:999px;padding:12px 16px;background:#1C2228;color:#fff;font:600 14.5px "Anuphan",system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);cursor:pointer}
 #vo{position:fixed;inset:0;z-index:100;background:#000;display:flex;align-items:center;justify-content:center}
 #vo .vs{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top,0px)) 0 calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
 #vo iframe,#vo video{width:100%;height:100%;border:0;background:#000;object-fit:contain}
@@ -120,10 +134,25 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
     var html=String(M.html||"").replace(/src="tbr:(\d+)"/g,function(x,n){ var r=M.refs[+n]; if(r&&r[0]==="d") return 'src="https://lh3.googleusercontent.com/d/'+r[1]+'=w'+r[2]+'" data-d="'+r[1]+'" data-w="'+r[2]+'" loading="lazy"'; return 'src="'+PX+'" data-r="'+n+'"'; });
     var b=$("#book"); b.innerHTML='<div class="tb">'+html+'</div>';
     b.addEventListener("error",function(e){ var im=e.target; if(im&&im.tagName==="IMG"&&im.getAttribute("data-d")&&!im.getAttribute("data-f")){ im.setAttribute("data-f","1"); im.src="https://drive.google.com/thumbnail?id="+im.getAttribute("data-d")+"&sz=w"+im.getAttribute("data-w"); } },true);
+    toc(b);
     var lk=$("#lock"); lk.classList.add("out"); setTimeout(function(){ lk.hidden=true; b.hidden=false; window.scrollTo(0,0); },420);
     io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); load(e.target); } }); },{rootMargin:"1600px 0px"});
     b.querySelectorAll("img[data-r]").forEach(function(im){ io.observe(im); });
     b.addEventListener("click",play); }
+  /* contents after the cover: every day and its stops, to jump to; a button brings you back from anywhere */
+  function toc(b){ var tb=b.querySelector(".tb"), cover=tb.querySelector(".tb-cover"), n=0, h='<section class="tb-toc" id="toc"><p class="tb-kick">สารบัญ</p><h2>เลือกดูได้เลย</h2><ol>';
+    function mark(el){ if(!el.id) el.id="tc"+(++n); return el.id; }
+    var ov=tb.querySelector(".tb-ov"); if(ov) h+='<li class="tc-x"><a href="#'+mark(ov)+'">🗺️ ภาพรวมทริป</a></li>';
+    tb.querySelectorAll(".tb-day").forEach(function(sec){ var dh=sec.querySelector(".tb-dh"); if(!dh) return; var dn=dh.querySelector(".tb-dn"), dt=dh.querySelector("p"), tt=dh.querySelector("h2"), dc=sec.style.getPropertyValue("--dc")||"#2F6FB3";
+      var stops=[].slice.call(sec.querySelectorAll(".tb-stop h3")).map(function(h3){ var art=h3.closest(".tb-stop"); var sp=h3.querySelector("span"); var nm=[].slice.call(h3.childNodes).filter(function(x){ return x!==sp; }).map(function(x){ return x.textContent; }).join("").trim(); return '<a href="#'+mark(art)+'">'+(sp?'<b>'+sp.textContent+'</b>':'')+nm+'</a>'; });
+      h+='<li style="--dc:'+dc+'"><a class="tc-d" href="#'+mark(sec)+'"><span class="tc-n">'+(dn?dn.textContent:"")+'</span><span><small>'+(dt?dt.textContent:"")+'</small>'+(tt?tt.textContent:"")+'</span></a>'+(stops.length?'<div class="tc-s">'+stops.join("")+'</div>':'')+'</li>'; });
+    var x=tb.querySelector(".tb-x"); if(x) h+='<li class="tc-x"><a href="#'+mark(x)+'">📚 ท้ายเล่ม · เกร็ดเล็กเกร็ดน้อย</a></li>';
+    h+='</ol></section>';
+    if(cover) cover.insertAdjacentHTML("afterend",h); else tb.insertAdjacentHTML("afterbegin",h);
+    var btn=document.createElement("button"); btn.id="tocb"; btn.type="button"; btn.innerHTML="☰ สารบัญ"; btn.hidden=true; document.body.appendChild(btn);
+    btn.onclick=function(){ $("#toc").scrollIntoView({behavior:"smooth"}); };
+    b.addEventListener("click",function(e){ var a=e.target.closest(".tb-toc a"); if(!a) return; e.preventDefault(); var t=document.getElementById(a.getAttribute("href").slice(1)); if(t) t.scrollIntoView({behavior:"smooth"}); });
+    var tocEl=$("#toc"); window.addEventListener("scroll",function(){ var r=tocEl.getBoundingClientRect(); btn.hidden=r.bottom>0; },{passive:true}); }
   /* a video opens over the whole screen, at its own shape, with a close button */
   function closeVid(){ var o=$("#vo"); if(o){ o.remove(); document.body.style.overflow=""; } }
   async function play(e){ var sa=e.target.closest(".tb-showall"); if(sa){ var g=sa.previousElementSibling; if(g) g.classList.remove("clip"); sa.remove(); return; }
