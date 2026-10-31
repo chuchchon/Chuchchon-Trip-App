@@ -692,7 +692,7 @@ body.is-dragging{cursor:grabbing}
 .tb-cta .btn{flex:0 0 auto}
 #tbRoot{position:fixed;inset:0;z-index:1400;overflow-y:auto;background:#fff;-webkit-overflow-scrolling:touch}
 #tbRoot[hidden]{display:none}
-.tb-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid #E3E7EB;color:#1C2228}
+.tb-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid #E3E7EB;color:#1C2228}
 .tb-bar b{flex:1 1 auto;font-size:16px}
 .tb-bar{flex-wrap:wrap}
 .tb-prog{flex:1 1 100%;margin-top:4px;padding:8px 10px;border-radius:10px;background:#F3F6F4;font-size:13.5px}
@@ -3406,7 +3406,7 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-grid figure img,.tb-grid figure video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
 .tb-grid figure.v{position:relative}
 .tb-grid figure.up{position:relative}
-.tb-grid figure.up::before{content:"✓";position:absolute;right:6px;top:6px;z-index:2;width:22px;height:22px;border-radius:50%;background:#1E8E3E;color:#fff;font:700 13px/22px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.tb-grid figure.up::before{content:"✓";position:absolute;right:6px;top:6px;z-index:1;width:22px;height:22px;border-radius:50%;background:#1E8E3E;color:#fff;font:700 13px/22px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .tb-grid figure[data-v]{cursor:pointer}
 .tb-grid figure[data-v]::after{content:"▶";position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(0,0,0,.52);color:#fff;font-size:24px;line-height:56px;text-align:center;text-indent:4px;pointer-events:none}
 .tb-grid figure[data-on]::after{display:none}
@@ -3632,6 +3632,12 @@ function tbsTitle(){ const h1=$("#tbBody .tb-cover h1"); return h1?tbpOwn(h1).re
 function tbsMessage(st){ const c=$("#tbBody .tb-cover"), p=c&&c.querySelector(".tb-cv p"), dates=p?p.innerText.trim():"";
   const stats=c?[...c.querySelectorAll(".tb-cv li")].map(li=>{ const b=li.querySelector("b"); return ((b?b.innerText.trim():"")+" "+tbpOwn(li,[b])).trim(); }).join(" · "):"";
   return `📖 Tripbook: ${tbsTitle()}\n${[dates,stats].filter(Boolean).join("\n")}\n\nเปิดดูได้ที่ 👉 ${st.link}\n🔑 รหัสเปิด: ${st.pass}`; }
+async function tbsPub(pass){ const c=$("#tbBody .tb-cover"), p=c&&c.querySelector(".tb-cv p"), dates=p?p.innerText.trim():"";
+  const stats=c?[...c.querySelectorAll(".tb-cv li")].map(li=>{ const b=li.querySelector("b"); return ((b?b.innerText.trim():"")+" "+tbpOwn(li,[b])).trim(); }).join(" · "):"";
+  let cover=""; const im=c&&c.querySelector("img");
+  if(im&&im.getAttribute("src")){ try{ const bm=await createImageBitmap(await (await fetch(im.src)).blob()), k=Math.min(1,1100/Math.max(bm.width,bm.height)), cv=document.createElement("canvas");
+      cv.width=Math.round(bm.width*k); cv.height=Math.round(bm.height*k); cv.getContext("2d").drawImage(bm,0,0,cv.width,cv.height); try{ bm.close(); }catch(e){} cover=cv.toDataURL("image/jpeg",.74); }catch(e){} }
+  return {title:tbsTitle(),sub:[dates,stats].filter(Boolean).join(" · "),cover,kb:/^\d+$/.test(tbsNorm(pass))?"num":""}; }
 function tbsFileName(s){ return String(s||"").replace(/[\\/:*?"<>|\n\r\t]+/g," ").replace(/\s+/g," ").trim().slice(0,90); }
 /* photos and videos as plain files in a "Tripbook …" folder inside the chosen Drive folder, open to anyone with a file's link */
 async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) throw new Error("ยังไม่ได้เลือกโฟลเดอร์ใน Google Drive");
@@ -3706,7 +3712,7 @@ async function tbsUpload(o,say){ const {withV,pass,mode}=o, repo=tbsRepo(), RP="
     tree.push({path:`${st.bookId}/${n.path}`,mode:"100644",type:"blob",sha:b.sha}); sent+=data.length; say("กำลังอัปโหลด",sent,total,true); }
   /* 5. the contents page, locked too */
   const M={v:1,title:"Tripbook · "+tbsTitle(),at:Date.now(),css:TB_CSS,html:body,refs,packs:packs.map(p=>p.path),vids};
-  const mf=JSON.stringify({v:1,salt:st.salt,it:st.it,d:tbsB64(await tbsSeal(key,new TextEncoder().encode(JSON.stringify(M))))});
+  const mf=JSON.stringify({v:1,salt:st.salt,it:st.it,d:tbsB64(await tbsSeal(key,new TextEncoder().encode(JSON.stringify(M)))),pub:await tbsPub(pass)});
   const mb=await tbsGh(`${RP}/git/blobs`,{method:"POST",body:{content:mf,encoding:"utf-8"}}); tree.push({path:`${st.bookId}/m.json`,mode:"100644",type:"blob",sha:mb.sha});
   /* 6. pieces of the old version that are no longer used go; one commit, no history kept */
   const keep=new Set(["m.json",...packs.map(p=>p.path),...vfiles.map(v=>v.path)]);
