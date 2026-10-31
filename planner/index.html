@@ -956,8 +956,11 @@ const EXAMPLE_TRIP={"trip":{"trip_id":"example-hokkaido","trip_name":"ตัว�
 const TP_GSHEET="https://docs.google.com/spreadsheets/d/1I71-nQp40qq8pa4SOYyu0W4CGhM1W4cTPaHkF6HlS9o/copy";
 /* ===== Trip planner: the trip comes from this phone's storage (made from the planning sheet) or the bundled example ===== */
 const TP_TRIPS=(()=>{ try{ return JSON.parse(localStorage.getItem("tp:trips")||"[]"); }catch(e){ return []; } })();
+/* a view-only link (#view=<id>) shows the owner's trip, kept apart from this phone's own trips */
+const TP_VIEW=(()=>{ const m=(location.hash||"").match(/view=([a-z0-9]{8,24})/); if(!m) return null; try{ const c=JSON.parse(localStorage.getItem("view:"+m[1])||"null"); return {id:m[1],trip:c&&c.s&&c.s.trip||null}; }catch(e){ return {id:m[1],trip:null}; } })();
 const TRIP=(()=>{ let id=""; try{ id=localStorage.getItem("tp:cur")||""; }catch(e){}
-  let t=null; if(id){ try{ t=JSON.parse(localStorage.getItem("tp:trip:"+id)||"null"); }catch(e){} }
+  let t=null; if(TP_VIEW){ t=TP_VIEW.trip?JSON.parse(JSON.stringify(TP_VIEW.trip)):null; if(t){ t.trip=t.trip||{}; t.trip.trip_id="view_"+TP_VIEW.id; } id=""; }
+  if(id){ try{ t=JSON.parse(localStorage.getItem("tp:trip:"+id)||"null"); }catch(e){} }
   if(!t){ t=JSON.parse(JSON.stringify(EXAMPLE_TRIP)); t.example=true; }
   t.trip=t.trip||{}; if(!t.trip.trip_id) t.trip.trip_id="trip"; return t; })();
 const TRIP_ID=String(TRIP.trip.trip_id).replace(/[^A-Za-z0-9_-]/g,"_");
@@ -1071,11 +1074,17 @@ const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const enc = encodeURIComponent;
 const APP_SNAP=(()=>{ try{ return "<!DOCTYPE html>\n"+document.documentElement.outerHTML; }catch(e){ return ""; } })();
+/* someone opened the owner's trip as a view-only link (#view=<id>): until the passcode is in, only the lock screen shows;
+   after that, everything the app reads comes from the owner's copy, held in memory, and nothing is written to this phone's own trip */
+const VG_UI=new Set(["tab","day","mapFlags2","theme","tourDone","glite","gvia","gkey","drinkCat","tpCur"]);
+const VIEW=(()=>{ const m=(location.hash||"").match(/view=([a-z0-9]{8,24})/); if(!m) return null; let c=null; try{ c=JSON.parse(localStorage.getItem("view:"+m[1])||"null"); }catch(e){} return {id:m[1],c}; })();
+if(VIEW&&!(VIEW.c&&VIEW.c.s)){ vgLock(VIEW.id); return; }
+const VMEM=VIEW?Object.assign({},VIEW.c.s.ls||{}):null;
 const store = {
-  get(k,d){ try{ const v=localStorage.getItem(tpKey(k)); return v==null?d:JSON.parse(v);}catch(e){ return d; } },
-  set(k,v){ try{ localStorage.setItem(tpKey(k),JSON.stringify(v)); }catch(e){} }
+  get(k,d){ if(VMEM&&!VG_UI.has(k)){ const v=VMEM[k]; try{ return v==null?d:JSON.parse(v); }catch(e){ return d; } } try{ const v=localStorage.getItem(tpKey(k)); return v==null?d:JSON.parse(v);}catch(e){ return d; } },
+  set(k,v){ if(VMEM&&!VG_UI.has(k)){ VMEM[k]=JSON.stringify(v); return; } try{ localStorage.setItem(tpKey(k),JSON.stringify(v)); }catch(e){} vsDirtyKey(k); }
 };
-const HAD_DATA=(()=>{ try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(TP_PFX)) return true; } }catch(e){} return false; })();
+const HAD_DATA=VIEW?true:(()=>{ try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(TP_PFX)) return true; } }catch(e){} return false; })();
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 /* ===== Trip planner: values the boot code needs before the functions at the end run ===== */
 const TP_TZC=new Map();
@@ -1368,7 +1377,7 @@ function renderInfo(){
   h+=`<div class="box"><h3>ประโยคภาษาญี่ปุ่น</h3>`+PHRASES.map(([jp,ro,th])=>`<div class="phrase"><span class="jp">${esc(jp)}</span><span class="ro">${esc(ro)}</span><span class="th">${esc(th)}</span><button class="btn small" data-copy="${esc(jp)}">${I.copy}คัดลอก</button></div>`).join("")+`<p class="tiny" style="margin:6px 0 0">กดคัดลอกแล้ววางใน Google Translate หรือยื่นหน้าจอให้พนักงานอ่าน</p></div>`;
   h+=`<div class="box"><h3>สภาพอากาศ</h3><div class="c-actions">${["洞爺湖","ニセコ","中山峠","定山渓","小樽","札幌"].map(n=>aBtn("https://www.google.com/search?q="+enc(n+" 天気"),n,"")).join("")}</div></div>`;
   h+=`<div class="box"><h3>สำรอง / กู้คืน</h3><p style="margin:0 0 8px;font-size:15px">ข้อมูลที่แก้ในแอปและรูปของเราเก็บอยู่ในเบราว์เซอร์ของเครื่องนี้ ทำไฟล์สำรองไว้ใน Google Drive แล้วเปิดในเครื่องไหนก็ได้</p><div class="c-actions"><button class="btn small primary" data-act="backup">เปิดสำรอง / กู้คืน</button></div></div>`;
-  h+=`<div class="box"><h3>แชร์ให้เพื่อนร่วมทริป</h3><p style="margin:0;font-size:15px">ส่งลิงก์ของหน้านี้ให้ทุกคน เปิดบนมือถือได้เลย ทุกคนใช้โหมดขับรถและแผนที่ได้เหมือนกัน (เช็คลิสต์แยกกันในแต่ละเครื่อง)</p></div>`;
+  h+=vsBoxHtml();
   $("#p-info").innerHTML=h; convUpdate();
 }
 async function refreshRate(force){
@@ -3009,11 +3018,12 @@ const PDB={db:null,
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
   del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id+"~s")),this.tx("blob","readwrite",s=>s.delete(id+"~p"))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
+if(VIEW){ PDB.all=()=>vgGet(VIEW.id+":p").then(p=>((p&&p.ph)||[]).map(m=>Object.assign({},m))); PDB.putMeta=()=>Promise.resolve(); PDB.putBlob=()=>Promise.resolve(); PDB.getBlob=()=>Promise.resolve(null); PDB.del=()=>Promise.resolve(); }
 PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 /* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
    so this copy never writes an old plan back (that is how a removed stop could come back) */
 var TAB_ID=Math.random().toString(36).slice(2), phRevSeen=(store.get("phRev",null)||{}).t||0, phSyncT=null;
-function phChanged(){ clearTimeout(phSyncT); phSyncT=setTimeout(()=>{ const r={t:Date.now(),by:TAB_ID}; phRevSeen=r.t; store.set("phRev",r); },600); }
+function phChanged(){ vsDirty(); clearTimeout(phSyncT); phSyncT=setTimeout(()=>{ const r={t:Date.now(),by:TAB_ID}; phRevSeen=r.t; store.set("phRev",r); },600); }
 async function reloadPhotos(){ const r=store.get("phRev",null); if(!r||r.by===TAB_ID||r.t<=phRevSeen||!phReady||(phImport&&!phImport.end)) return; phRevSeen=r.t;
   try{ const l=await PDB.all(); phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); refreshPhotoViews(); if(map&&curTab==="map") drawMap(false); }catch(e){} }
 function reloadStored(){ let ch=false; const e=store.get("edits",{}); if(JSON.stringify(e)!==JSON.stringify(edits)){ edits=e; ch=true; } const v=store.get("visited",{}); if(JSON.stringify(v)!==JSON.stringify(visited)){ visited=v; ch=true; }
@@ -3021,7 +3031,8 @@ function reloadStored(){ let ch=false; const e=store.get("edits",{}); if(JSON.st
 addEventListener("storage",ev=>{ if(ev.key===TP_PFX+"edits"||ev.key===TP_PFX+"visited") reloadStored(); if(ev.key===TP_PFX+"phRev") reloadPhotos(); });
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ reloadStored(); reloadPhotos(); } });
 function photosFor(di,key){ return tbSort(phMeta.filter(m=>m.day===di&&m.key===key)); }
-async function phThumbURL(id,full){ const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); const bl=b&&(full?b.full:b.thumb); if(!bl) return ""; cache[id]=URL.createObjectURL(bl); return cache[id]; }
+async function phThumbURL(id,full){ if(VIEW){ const m=phMeta.find(x=>x.id===id); if(!m||!m.vd) return ""; if(m.kind==="video") return full?"":`https://drive.google.com/thumbnail?id=${m.vd}&sz=w480`; return `https://lh3.googleusercontent.com/d/${m.vd}=w${full?2048:480}`; }
+  const cache=full?phURLfull:phURL; if(cache[id]) return cache[id]; const b=await PDB.getBlob(id); const bl=b&&(full?b.full:b.thumb); if(!bl) return ""; cache[id]=URL.createObjectURL(bl); return cache[id]; }
 function hydrateMyPhotos(root){ $$("img[data-phid]:not([data-done])",root||document).forEach(im=>{ im.dataset.done=1; phThumbURL(im.dataset.phid,im.dataset.full==="1").then(u=>{ if(u) im.src=u; }); }); }
 /* --- EXIF: capture time and GPS from JPEG files (phones keep these unless the sharing app strips them) --- */
 function readExif(buf){ try{ const v=new DataView(buf); if(v.byteLength<4||v.getUint16(0)!==0xFFD8) return {}; let o=2;
@@ -3313,8 +3324,9 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
   ${v.flash?`<span class="lb-flash" role="status">${esc(v.flash)}</span>`:""}${m.tbHide?`<span class="lb-hid">เอาออกจาก Tripbook อยู่ · <button class="lnk" data-mp="tbshow">เอากลับเข้า Tripbook</button></span>`:""}${tbDrvLine(m)}${mv}</div>
   <div class="lb-nav"><button class="btn lb-arr" data-mp="prev" ${v.i===0?"disabled":""} aria-label="รูปก่อนหน้า">‹</button><span class="lb-pos" aria-live="polite"><b>${v.i+1} / ${v.list.length}</b><small>${galState&&$("#gal-root")?(galState.all?`ทั้งวัน D${DAYS[galState.day].n}`:"จุดนี้"):m.day!=null?`ทั้งวัน D${DAYS[m.day].n}`:"ยังไม่ได้จัด"}</small></span><button class="btn lb-arr" data-mp="next" ${v.i>=v.list.length-1?"disabled":""} aria-label="รูปถัดไป">›</button></div>
   <div class="lb-acts"><button class="btn small${v.move?" on":""}" data-mp="move">ย้ายไปจุดอื่น</button>${m.kind!=="video"?`<button class="btn small" data-mp="cover">${m.cover?"★ ปก Tripbook":"ตั้งเป็นปก Tripbook"}</button>`:""}<button class="btn small lb-del${v.confirm?" danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้ง: ลบออกจากแอปถาวร":"ลบรูปนี้"}</button></div></div>`;
+  if(VIEW&&m.kind==="video"){ const sg=$("#lbRoot .lb-stage"); if(sg) sg.innerHTML=m.vd?`<iframe class="vg-vid" src="https://drive.google.com/file/d/${esc(m.vd)}/preview" allow="autoplay; fullscreen" allowfullscreen></iframe>`:""; }
   hydrateMyPhotos($("#lbRoot")); { const ve=$("#lbRoot video[data-vid]"); if(ve){ phThumbURL(id,false).then(u=>{ if(u) ve.poster=u; }); phThumbURL(id,true).then(u=>{ if(u) ve.src=u; }); } }
-  const root=$("#lbRoot"); root.onclick=async ev=>{ const b=ev.target.closest("[data-mp]"); if(!b) return; ev.stopPropagation(); const a=b.dataset.mp;
+  const root=$("#lbRoot"); root.onclick=async ev=>{ const b=ev.target.closest("[data-mp]"); if(!b) return; ev.stopPropagation(); const a=b.dataset.mp; if(VIEW&&!["close","prev","next"].includes(a)) return vgToast("โหมดดูอย่างเดียว · แก้ไขไม่ได้");
     if(a==="close"){ phView=null; closeLightbox(false); return; } if(a==="prev"&&v.i>0){ v.i--; v.confirm=false; v.move=false; drawMyPhoto(); } if(a==="next"&&v.i<v.list.length-1){ v.i++; v.confirm=false; v.move=false; drawMyPhoto(); }
     if(a==="move"){ v.move=!v.move; v.confirm=false; drawMyPhoto(); }
     if(a==="tbshow"){ m.tbHide=false; await PDB.putMeta(m); drawMyPhoto(); refreshPhotoViews(); }
@@ -3755,7 +3767,7 @@ async function tbsUpload(o,say){ const {withV,pass,mode}=o, repo=tbsRepo(), RP="
   const cm=await tbsGh(`${RP}/git/commits`,{method:"POST",body:{message:"Tripbook "+st.bookId,tree:nt.sha,parents:[]}});
   if(ref&&ref.object) await tbsGh(`${RP}/git/refs/heads/${TBS_BRANCH}`,{method:"PATCH",body:{sha:cm.sha,force:true}});
   else await tbsGh(`${RP}/git/refs`,{method:"POST",body:{ref:"refs/heads/"+TBS_BRANCH,sha:cm.sha}});
-  st.link=tbsPagesUrl(repo)+"#"+st.bookId; st.at=Date.now(); st.stopped=0;
+  st.link=tbsPagesUrl(repo)+"#"+st.bookId; st.at=Date.now(); st.stopped=0; if(store.get("viewShare",null)) setTimeout(()=>vsPush(true),2500);
   return {st,sent}; }
 async function tbsStop(){ const st=await tbCacheGet("tb~share"); if(!st||!st.link) return; const RP="/repos/"+st.repo;
   const ref=await tbsGh(`${RP}/git/ref/heads/${TBS_BRANCH}`,{ok404:true});
@@ -4003,6 +4015,156 @@ document.addEventListener("change",ev=>{ const c=ev.target; if(!c||c.name!=="poo
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='pool-']"); if(!b) return; ev.stopPropagation(); poolAct(b.dataset.act,b); },true);
 /* quietly bring in new photos when the app opens and every 10 minutes, while signed in */
 setInterval(()=>{ if(poolGet()&&gdToken()&&document.visibilityState==="visible") poolSync({quiet:true}); },600000);
+/* ===================== Share the whole trip to view only =====================
+   The owner's plan, ticks, notes and the photo list go up locked with a passcode, next to the Tripbooks on GitHub,
+   and again a little after every change. Whoever opens <app>#view=<id> types the passcode once and sees the same app,
+   read only; nothing they tap is saved, and their own trip on that phone is not touched. Photos show from Google Drive. */
+var VS_SKIP=new Set(["viewShare","gkey","ghTok","ghRepo","gcid","gdPool","tourDone","glite","gvia","bkPartMB","phRev","lastBackup","tab","day","firstSeen","freshOk","askPhotos","gused","resortOnBoot","phUndo","editsHist","wikiImg","theme","mapFlags2","drinkCat","tpCur","gnophoto"]);
+var vsS={busy:false,err:"",t:null,last:0,keyC:null,form:false,pass:"",msg:"",copied:0};
+function appPfx(){ return TP_PFX; }
+function vsDirtyKey(k){ try{ if(VS_SKIP.has(k)) return; }catch(e){ return; } vsDirty(); }
+function vsDirty(){ if(!vsS||VIEW) return; let V=null; try{ V=store.get("viewShare",null); }catch(e){} if(!V||!V.id) return;
+  clearTimeout(vsS.t); vsS.t=setTimeout(()=>vsPush(false),Math.max(15000,60000-(Date.now()-vsS.last))); }
+function vsTitle(){ return poolTripName(); }
+function vsSub(){ try{ const f=x=>new Date(x+"T00:00:00").toLocaleDateString("th-TH-u-ca-gregory",{day:"numeric",month:"short",year:"numeric"}); return `${f(DAYS[0].date)} – ${f(DAYS[DAYS.length-1].date)} · ${DAYS.length} วัน`; }catch(e){ return ""; } }
+function vsAppUrl(repo){ const [o,r]=repo.split("/"); return `https://${o.toLowerCase()}.github.io/${r}/${typeof TP_PFX!=="undefined"?"planner/":""}`; }
+function vsLink(V){ return vsAppUrl(V.repo||tbsRepo())+"#view="+V.id; }
+function vsState(){ const P=appPfx(), ls={};
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||!k.startsWith(P)) continue; const n=k.slice(P.length); if(VS_SKIP.has(n)) continue; const v=localStorage.getItem(k); if(v!=null&&v.length<400000) ls[n]=v; } }catch(e){}
+  const o={v:1,ls}; try{ if(typeof TRIP!=="undefined"&&TRIP&&!TRIP.example) o.trip=TRIP; }catch(e){} return o; }
+async function vsPhotos(){ const st=await tbCacheGet("tb~share"), F=st&&st.drive&&st.drive.files||{}, map={};
+  Object.keys(F).forEach(k=>{ const x=k.match(/^(ph2?|v):(.+)$/); if(!x) return; if(x[1]==="ph"&&map[x[2]]) return; map[x[2]]=F[k]; });
+  const ph=[]; for(const m of phMeta){ const d=map[m.id]||m.gd; if(!d) continue; const o={}; for(const k in m){ const v=m[k]; if(typeof v==="string"&&v.length>1500) continue; o[k]=v; } o.vd=d; ph.push(o); }
+  return {ph,n:phMeta.length}; }
+async function vsCommit(RP,V,tree,ref,base,msg){
+  const nt=await tbsGh(`${RP}/git/trees`,{method:"POST",body:base?{base_tree:base,tree}:{tree:tree.filter(x=>x.sha)}});
+  const cm=await tbsGh(`${RP}/git/commits`,{method:"POST",body:{message:msg,tree:nt.sha,parents:[]}});
+  /* someone else (a Tripbook upload) moved the branch meanwhile: start again from theirs */
+  const now=await tbsGh(`${RP}/git/ref/heads/${TBS_BRANCH}`,{ok404:true});
+  if((now&&now.object&&now.object.sha)!==(ref&&ref.object&&ref.object.sha)) return false;
+  if(ref&&ref.object) await tbsGh(`${RP}/git/refs/heads/${TBS_BRANCH}`,{method:"PATCH",body:{sha:cm.sha,force:true}});
+  else await tbsGh(`${RP}/git/refs`,{method:"POST",body:{ref:"refs/heads/"+TBS_BRANCH,sha:cm.sha}});
+  return true; }
+async function vsPush(force){ const V=store.get("viewShare",null); if(!V||!V.id||VIEW) return; if(vsS.busy){ vsS.again=true; return; }
+  if(typeof tbShareBusy!=="undefined"&&tbShareBusy){ clearTimeout(vsS.t); vsS.t=setTimeout(()=>vsPush(force),30000); return; }
+  if(!navigator.onLine){ vsS.err="ตอนนี้ไม่มีเน็ต จะส่งให้เองเมื่อกลับมาออนไลน์"; vsPaint(); return; }
+  vsS.busy=true; vsS.err=""; vsPaint();
+  try{ const repo=V.repo||tbsRepo(), RP="/repos/"+repo, te=new TextEncoder();
+    if(!vsS.keyC||vsS.keyC.salt!==V.salt||vsS.keyC.pass!==V.pass) vsS.keyC={salt:V.salt,pass:V.pass,key:await tbsKey(V.pass,tbsU8(V.salt),V.it)};
+    const key=vsS.keyC.key, sJ=JSON.stringify(vsState()), P=await vsPhotos(), pJ=JSON.stringify(P);
+    const sh=(await tbsSha(te.encode(V.salt+"|"+sJ))).slice(0,24), ph=(await tbsSha(te.encode(V.salt+"|"+pJ))).slice(0,24), pf="p-"+ph+".bin";
+    if(!force&&sh===V.sh&&ph===V.ph){ vsS.last=Date.now(); return; }
+    let ok=false;
+    for(let a=0;a<3&&!ok;a++){
+      const ref=await tbsGh(`${RP}/git/ref/heads/${TBS_BRANCH}`,{ok404:true}); let base=null; const have=[];
+      if(ref&&ref.object){ const c=await tbsGh(`${RP}/git/commits/${ref.object.sha}`); base=c.tree.sha; const t=await tbsGh(`${RP}/git/trees/${base}?recursive=1`); (t.tree||[]).forEach(x=>{ if(x.type==="blob"&&x.path.startsWith(V.id+"/")) have.push(x.path); }); }
+      const tree=[];
+      if(!have.includes(V.id+"/"+pf)){ const b=await tbsGh(`${RP}/git/blobs`,{method:"POST",body:{content:tbsB64(await tbsSeal(key,te.encode(pJ))),encoding:"base64"}}); tree.push({path:`${V.id}/${pf}`,mode:"100644",type:"blob",sha:b.sha}); }
+      const mf=JSON.stringify({v:1,kind:"view",salt:V.salt,it:V.it,at:Date.now(),p:pf,d:tbsB64(await tbsSeal(key,te.encode(sJ))),pub:{title:vsTitle(),sub:vsSub()}});
+      const mb=await tbsGh(`${RP}/git/blobs`,{method:"POST",body:{content:mf,encoding:"utf-8"}}); tree.push({path:`${V.id}/v.json`,mode:"100644",type:"blob",sha:mb.sha});
+      have.forEach(p=>{ const n=p.slice(V.id.length+1); if(n!=="v.json"&&n!==pf) tree.push({path:p,mode:"100644",type:"blob",sha:null}); });
+      ok=await vsCommit(RP,V,tree,ref,base,"View "+V.id); }
+    if(!ok) throw new Error("GitHub กำลังยุ่ง จะลองส่งใหม่อีกครั้ง");
+    const W=store.get("viewShare",null)||V; Object.assign(W,{sh,ph,at:Date.now(),np:P.ph.length,nall:P.n,repo}); vsS.last=Date.now(); store.set("viewShare",W); }
+  catch(e){ vsS.err=e.message||String(e); clearTimeout(vsS.t); vsS.t=setTimeout(()=>vsPush(false),90000); }
+  finally{ vsS.busy=false; vsPaint(); if(vsS.again){ vsS.again=false; vsDirty(); } } }
+async function vsStop(){ const V=store.get("viewShare",null); if(!V) return; const RP="/repos/"+(V.repo||tbsRepo());
+  for(let a=0;a<3;a++){ const ref=await tbsGh(`${RP}/git/ref/heads/${TBS_BRANCH}`,{ok404:true}); if(!ref||!ref.object) break;
+    const c=await tbsGh(`${RP}/git/commits/${ref.object.sha}`), t=await tbsGh(`${RP}/git/trees/${c.tree.sha}?recursive=1`);
+    const del=(t.tree||[]).filter(x=>x.type==="blob"&&x.path.startsWith(V.id+"/")).map(x=>({path:x.path,mode:"100644",type:"blob",sha:null}));
+    if(!del.length||await vsCommit(RP,V,del,ref,c.tree.sha,"Stop view "+V.id)) break; }
+  store.set("viewShare",null); }
+function vsMessage(V){ return `👀 ทริป ${vsTitle()}\nดูแผน แผนที่ อากาศ และรูประหว่างทริปได้ที่ 👉 ${vsLink(V)}\n🔑 รหัสเปิด: ${V.pass}\n(ดูได้อย่างเดียว แผนอัปเดตให้เองเรื่อยๆ)`; }
+function vsBoxHtml(){ const V=store.get("viewShare",null), s=vsS, E=s.err?`<p class="tb-err">${esc(s.err)}</p>`:"";
+  let h=`<div class="box" id="vsBox"><h3>👀 แชร์ทริปให้ดู (ดูอย่างเดียว)</h3>`;
+  if(!V){
+    h+=`<p style="margin:0 0 8px;font-size:15px">ส่งลิงก์ให้ใครก็ได้ เขาจะเห็นแอปเหมือนของเรา ทั้งแผนที่แก้แล้ว จุดที่ไปแล้ว อากาศ และรูป แต่แก้อะไรไม่ได้ ทุกครั้งที่เราแก้แผน แอปจะส่งของใหม่ให้เอง</p>`;
+    if(!store.get("ghTok","")||!tbsRepo()) h+=`<p class="tiny">ต้องตั้งค่า GitHub ก่อน (ใช้ token เดียวกับแชร์ลิงก์ Tripbook): เปิด Tripbook → แชร์ลิงก์ → ใส่ token</p>`;
+    else if(!s.form) h+=`<div class="c-actions"><button class="btn small primary" data-act="vs-new">สร้างลิงก์ให้ดู</button></div>`;
+    else h+=`<label class="tiny" for="vsPass">ตั้งรหัสเปิด (อย่างน้อย 6 ตัว แอปจะใส่ไว้ในข้อความให้)</label><input class="inp" id="vsPass" autocomplete="off" autocapitalize="off" value="${esc(s.pass)}" placeholder="เช่น hokkaido26">${E}
+      <div class="c-actions"><button class="btn small primary" data-act="vs-make"${s.busy?" disabled":""}>${s.busy?"กำลังสร้าง…":"สร้างลิงก์"}</button><button class="btn small" data-act="vs-cancel">ยกเลิก</button></div>`;
+    return h+`</div>`; }
+  const t=V.at?new Date(V.at).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"";
+  h+=`<div class="tb-lk"><a href="${esc(vsLink(V))}" target="_blank" rel="noopener">${esc(vsLink(V))}</a></div>
+    <p style="margin:4px 0;font-size:14px">🔑 รหัสเปิด: <b>${esc(V.pass)}</b></p>
+    <p class="tiny">${s.busy?"กำลังส่งของล่าสุดให้คนดู…":V.at?`ส่งให้คนดูล่าสุด ${esc(t)} ✓`:"ยังไม่ได้ส่ง"}${V.nall!=null?` · รูปที่คนดูเห็น ${(V.np||0).toLocaleString()} จาก ${V.nall.toLocaleString()} (เฉพาะรูปที่ขึ้น Google Drive ผ่าน Tripbook แล้ว)`:""}</p>${E}
+    <textarea class="tb-msg" id="vsMsg" readonly rows="4">${esc(vsMessage(V))}</textarea>
+    <div class="c-actions"><button class="btn small primary" data-act="vs-share">แชร์ลิงก์</button><button class="btn small" data-act="vs-copy">${s.copied&&Date.now()-s.copied<3000?"คัดลอกแล้ว ✓":"คัดลอกข้อความ"}</button><button class="btn small" data-act="vs-now"${s.busy?" disabled":""}>ส่งของล่าสุดตอนนี้</button><button class="btn small" data-act="vs-stop">${s.stopAsk?"แตะอีกครั้งเพื่อหยุดแชร์":"หยุดแชร์"}</button></div></div>`;
+  return h; }
+function vsPaint(){ const el=$("#vsBox"); if(el) el.outerHTML=vsBoxHtml(); }
+async function vsAct(a){ const s=vsS;
+  if(a==="vs-new"){ s.form=true; s.err=""; s.pass=""; vsPaint(); const i=$("#vsPass"); if(i) i.focus(); return; }
+  if(a==="vs-cancel"){ s.form=false; s.err=""; return vsPaint(); }
+  if(a==="vs-make"){ const p=(($("#vsPass")||{}).value||"").trim(); s.pass=p; if(tbsNorm(p).length<6){ s.err="ตั้งรหัสเปิดอย่างน้อย 6 ตัว (ตัวอักษรหรือตัวเลข)"; return vsPaint(); }
+    const V={id:tbsNewId(),pass:p,salt:tbsB64(crypto.getRandomValues(new Uint8Array(16))),it:TBS_IT,repo:tbsRepo(),made:Date.now()}; store.set("viewShare",V); s.form=false; s.err="";
+    await vsPush(true); const W=store.get("viewShare",null); if(W&&!W.at){ /* not sent: keep the link, say why, try again later */ } return vsPaint(); }
+  if(a==="vs-now") return vsPush(true);
+  if(a==="vs-copy"){ const V=store.get("viewShare",null); if(!V) return; try{ await navigator.clipboard.writeText(vsMessage(V)); }catch(e){ const t=$("#vsMsg"); if(t){ t.select(); try{ document.execCommand("copy"); }catch(_){} } } s.copied=Date.now(); vsPaint(); setTimeout(vsPaint,3100); return; }
+  if(a==="vs-share"){ const V=store.get("viewShare",null); if(!V) return; const text=vsMessage(V); if(navigator.share){ try{ await navigator.share({text}); return; }catch(e){ if(e&&e.name==="AbortError") return; } } return vsAct("vs-copy"); }
+  if(a==="vs-stop"){ if(!s.stopAsk){ s.stopAsk=true; vsPaint(); setTimeout(()=>{ s.stopAsk=false; vsPaint(); },4000); return; } s.stopAsk=false; s.busy=true; vsPaint();
+    try{ await vsStop(); s.err=""; }catch(e){ s.err=e.message||String(e); } finally{ s.busy=false; vsPaint(); } return; } }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='vs-']"); if(!b||VIEW) return; ev.stopPropagation(); vsAct(b.dataset.act); },true);
+window.addEventListener("online",()=>{ if(vsS.err) vsDirty(); });
+setTimeout(()=>{ const V=store.get("viewShare",null); if(V&&!VIEW) vsPush(false); },6000);
+
+/* ---------- the viewer's side ---------- */
+function vgRepo(){ const q=new URLSearchParams(location.search), h=location.hostname; const o=q.get("o")||(/\.github\.io$/.test(h)?h.split(".")[0]:""), r=q.get("r")||(/\.github\.io$/.test(h)?(location.pathname.split("/").filter(Boolean)[0]||""):""); return o&&r?[o,r]:null; }
+async function vgT(url,ms,opt){ const c=new AbortController(), t=setTimeout(()=>c.abort(),ms); try{ return await fetch(url,Object.assign({signal:c.signal},opt||{})); } finally{ clearTimeout(t); } }
+async function vgRef(R){ try{ const r=await vgT(`https://api.github.com/repos/${R[0]}/${R[1]}/git/ref/heads/tripbooks`,8000,{cache:"no-store"}); if(r.ok){ const j=await r.json(); if(j&&j.object&&j.object.sha) return j.object.sha; } }catch(e){} return "tripbooks"; }
+async function vgFile(R,ref,id,path,text){ const S=[`https://raw.githubusercontent.com/${R[0]}/${R[1]}/${ref}/${id}/${path}`,`https://cdn.jsdelivr.net/gh/${R[0]}/${R[1]}@${ref}/${id}/${path}`]; let gone=false;
+  for(let i=0;i<S.length;i++){ try{ const r=await vgT(S[i],20000,{cache:path==="v.json"?"no-store":"default"}); if(r.status===404&&i===0){ gone=true; continue; } if(r.ok) return text?await r.text():new Uint8Array(await r.arrayBuffer()); }catch(e){} }
+  throw Object.assign(new Error(gone?"gone":"net"),{gone}); }
+async function vgKey(pass,salt,it){ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(tbsNorm(pass)),"PBKDF2",false,["deriveKey"]); return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:it,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["decrypt"]); }
+async function vgOpen(key,u){ return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:u.subarray(0,12)},key,u.subarray(12)))); }
+function vgDb(){ return new Promise((res,rej)=>{ let r; try{ r=indexedDB.open("hkview",1); }catch(e){ return rej(e); } r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("kv")) r.result.createObjectStore("kv"); }; r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function vgPut(k,v){ const db=await vgDb(); return new Promise((res,rej)=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").put(v,k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+async function vgGet(k){ try{ const db=await vgDb(); return await new Promise(res=>{ const q=db.transaction("kv","readonly").objectStore("kv").get(k); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }catch(e){ return null; } }
+/* fetch, unlock and keep the newest copy on this phone; true when something new came */
+async function vgLoad(id,pass,old){ const R=vgRepo(); if(!R) throw new Error("link"); const ref=await vgRef(R);
+  const mf=JSON.parse(await vgFile(R,ref,id,"v.json",true)); if(old&&old.at>=mf.at) return false;
+  const key=await vgKey(pass,tbsU8(mf.salt),mf.it); let s;
+  try{ s=await vgOpen(key,tbsU8(mf.d)); }catch(e){ throw Object.assign(new Error("bad"),{bad:true}); }
+  if(!old||old.pf!==mf.p){ const p=await vgOpen(key,await vgFile(R,ref,id,mf.p)); await vgPut(id+":p",p); }
+  localStorage.setItem("view:"+id,JSON.stringify({pass,at:mf.at,pf:mf.p,s,pub:mf.pub})); return true; }
+function vgLock(id){ const st=document.createElement("style");
+  st.textContent=`body.vg-lock>*:not(#vg){display:none!important}#vg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,#2C5E9E,#13325F);font-family:"Anuphan",system-ui,sans-serif;z-index:99999}#vg form{background:#fff;border-radius:22px;padding:26px 22px 20px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35);text-align:center;color:#1C2228}#vg .ic{font-size:42px;line-height:1}#vg h1{font-size:22px;margin:10px 0 4px;line-height:1.3}#vg p{margin:4px 0;color:#5A6670;font-size:14px;line-height:1.5}#vg input{width:100%;box-sizing:border-box;font:600 20px inherit;padding:12px;border:1.5px solid #CBD5D0;border-radius:12px;text-align:center;margin:16px 0 6px;letter-spacing:.06em}#vg input:focus{outline:none;border-color:#2C5E9E}#vg .e{color:#C0392B;min-height:22px;font-size:13.5px}#vg button{width:100%;padding:14px;border:0;border-radius:12px;background:#1D4E9E;color:#fff;font:600 16px inherit;cursor:pointer}#vg button:disabled{opacity:.6}#vg small{display:block;margin-top:12px;color:#8A949C;font-size:12px}#vg .sh{animation:vgsh .35s}@keyframes vgsh{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}`;
+  document.head.appendChild(st); document.body.classList.add("vg-lock");
+  const el=document.createElement("div"); el.id="vg";
+  el.innerHTML=`<form><div class="ic">👀</div><h1 id="vgT">ทริปที่แชร์ให้ดู</h1><p id="vgS">กำลังโหลด…</p><input id="vgP" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ใส่รหัสเปิด" aria-label="รหัสเปิด"><p class="e" id="vgE"></p><button id="vgGo" type="submit">เปิดดูทริป</button><small>ดูได้อย่างเดียว · ไม่ยุ่งกับข้อมูลในเครื่องนี้</small></form>`;
+  document.body.appendChild(el); const $e=s=>el.querySelector(s);
+  const R=vgRepo(); if(!R){ $e("#vgS").textContent="ลิงก์นี้ไม่ครบ ขอลิงก์ใหม่จากเจ้าของทริป"; return; }
+  (async()=>{ try{ const mf=JSON.parse(await vgFile(R,await vgRef(R),id,"v.json",true)); if(mf.pub){ $e("#vgT").textContent=mf.pub.title||"ทริปที่แชร์ให้ดู"; $e("#vgS").textContent=mf.pub.sub||""; document.title=(mf.pub.title||"ทริป")+" · ดูทริป"; } }
+    catch(e){ $e("#vgS").textContent=e.gone?"เจ้าของทริปหยุดแชร์ลิงก์นี้แล้ว":"โหลดไม่ได้ตอนนี้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"; } })();
+  $e("form").onsubmit=async ev=>{ ev.preventDefault(); const p=$e("#vgP").value.trim(); if(!p) return; const b=$e("#vgGo"); b.disabled=true; b.textContent="กำลังเปิด…"; $e("#vgE").textContent="";
+    try{ await vgLoad(id,p,null); location.reload(); }
+    catch(e){ b.disabled=false; b.textContent="เปิดดูทริป"; $e("#vgE").textContent=e.bad?"รหัสไม่ถูกต้อง ลองใหม่อีกครั้งนะ":e.gone?"เจ้าของทริปหยุดแชร์ลิงก์นี้แล้ว":"โหลดไม่ได้ตอนนี้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"; if(e.bad){ const f=$e("form"); f.classList.remove("sh"); void f.offsetWidth; f.classList.add("sh"); } } };
+  setTimeout(()=>{ try{ $e("#vgP").focus(); }catch(e){} },300); }
+const VG_HIDE=["ph-addmenu","ph-pick","ph-pick-files","ph-add","ph-addstop","tb-open","backup","addstop","srt-open","ph-resort","ph-undo","dup-open","phx-open","cs-edit","rec-add","rec-hide","ex-add","reorder","dshift","dstop","bk-restore","bk-import","act-apply","act-open","gk-open","cs-recplus"];
+const VG_BLOCK=/^(addstop|visit|reorder|dshift|dstop|rec-add|rec-hide|ex-add|ph-pick|ph-pick-files|ph-add|ph-addmenu|ph-addstop|ph-gmv|ph-undo|ph-resort|ph-strip|ph-justno|ph-galsel|ph-galundo|ph-gpick|ph-gname|srt-.*|cs-(edit|save|reset|del|ins|time|qt.*|leg.*|mv|moveday|promote|pick.*|noplace|here|fradd|recplus|atclear)|backup|bk-.*|tb-open|pool-.*|gk-.*|act-apply|act-all|dup-.*|phx-.*|vs-.*)$/;
+function vgToast(t){ let el=$("#vgToast"); if(!el){ el=document.createElement("div"); el.id="vgToast"; document.body.appendChild(el); } el.textContent=t; el.classList.add("on"); clearTimeout(vgToast.t); vgToast.t=setTimeout(()=>el.classList.remove("on"),1800); }
+function vgBarPaint(){ const b=$("#vgBar"); if(!b) return; const c=VIEW.c, d=new Date(c.at||0), today=d.toDateString()===new Date().toDateString();
+  const t=c.at?(today?"":d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})+" ")+d.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}):"";
+  b.innerHTML=`<span>👀 <b>ดูอย่างเดียว</b> · อัปเดต ${esc(t)}</span>${vgBar.newer?`<button data-vg="reload" class="on">มีของใหม่ · แตะเพื่อดู</button>`:`<button data-vg="check">${vgBar.busy?"กำลังดู…":"↻ ดูของใหม่"}</button>`}`; }
+var vgBar={busy:false,newer:false,timer:null};
+async function vgRefresh(manual){ if(vgBar.busy||document.hidden&&!manual) return; vgBar.busy=true; if(manual) vgBarPaint();
+  try{ const got=await vgLoad(VIEW.id,VIEW.c.pass,VIEW.c); if(got){ const open=$("#lbRoot .lb")||$(".sheet:not([hidden])")||$("#ph-root"); if(!open||manual) return location.reload(); vgBar.newer=true; } else if(manual) vgToast("ล่าสุดแล้ว"); }
+  catch(e){ if(e.bad){ localStorage.removeItem("view:"+VIEW.id); return location.reload(); } if(e.gone){ localStorage.removeItem("view:"+VIEW.id); return location.reload(); } if(manual) vgToast("ดูของใหม่ไม่ได้ตอนนี้ ลองอีกครั้ง"); }
+  finally{ vgBar.busy=false; vgBarPaint(); } }
+function vgBoot(){ const st=document.createElement("style"); document.body.classList.add("vg-view");
+  st.textContent=`body.vg-view :is(${VG_HIDE.map(n=>`[data-act="${n}"]`).join(",")}),body.vg-view #pool,body.vg-view .ph-tools,body.vg-view .dh-ph-warn,body.vg-view .dh-ph-prog,body.vg-view .lb-acts,body.vg-view .lb-move,body.vg-view .tb-cta,body.vg-view #vsBox{display:none!important}
+#vgBar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 2px;padding:7px 8px 7px 12px;border-radius:12px;background:#E8F0FB;color:#1D3D6E;font-size:13px;line-height:1.35}
+#vgBar button{flex:none;border:1px solid #B9CDEB;background:#fff;color:#1D4E9E;border-radius:999px;padding:5px 10px;font:600 12.5px inherit;cursor:pointer}#vgBar button.on{background:#1D4E9E;color:#fff;border-color:#1D4E9E}
+#vgToast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);background:rgba(20,28,36,.92);color:#fff;padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:9999}#vgToast.on{opacity:1;transform:translate(-50%,0)}
+.vg-vid{width:100%;height:100%;min-height:60vh;border:0;background:#000}`;
+  document.head.appendChild(st);
+  const top=$("header.top"), days=$("#days"); const bar=document.createElement("div"); bar.id="vgBar"; if(top&&days) top.insertBefore(bar,days); else document.body.prepend(bar); vgBarPaint();
+  bar.addEventListener("click",ev=>{ const b=ev.target.closest("[data-vg]"); if(!b) return; if(b.dataset.vg==="reload") location.reload(); else vgRefresh(true); });
+  window.addEventListener("click",ev=>{ const b=ev.target.closest&&ev.target.closest("[data-act]"); if(b&&VG_BLOCK.test(b.dataset.act)){ ev.stopImmediatePropagation(); ev.stopPropagation(); ev.preventDefault(); vgToast("โหมดดูอย่างเดียว · แก้ไขไม่ได้"); } },true);
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) vgRefresh(false); });
+  vgBar.timer=setInterval(()=>vgRefresh(false),180000); setTimeout(()=>vgRefresh(false),4000);
+  if(VIEW.c.pub&&VIEW.c.pub.title) document.title=VIEW.c.pub.title+" · ดูทริป"; }
+if(VIEW) setTimeout(vgBoot,0);
+
 var tbWake=null;
 async function tbWakeOn(){ try{ if("wakeLock" in navigator&&!tbWake&&document.visibilityState==="visible"){ tbWake=await navigator.wakeLock.request("screen"); tbWake.addEventListener("release",()=>{ tbWake=null; }); } }catch(e){} }
 function tbWakeOff(){ try{ if(tbWake) tbWake.release(); }catch(e){} tbWake=null; }
@@ -4035,7 +4197,7 @@ function loadH2I(){ if(window.htmlToImage) return Promise.resolve(window.htmlToI
 const TB_CACHE_V="c1";
 function tbHash(s){ let a=0x811c9dc5, b=5381; for(let i=0;i<s.length;i++){ const c=s.charCodeAt(i); a=Math.imul(a^c,16777619); b=((b<<5)+b+c)|0; } return s.length.toString(36)+"."+(a>>>0).toString(36)+"."+(b>>>0).toString(36); }
 async function tbCacheGet(k){ try{ return (await PDB.getBlob(k))||null; }catch(e){ return null; } }
-async function tbCachePut(rec){ try{ await PDB.putBlob(rec); }catch(e){} }
+async function tbCachePut(rec){ try{ await PDB.putBlob(rec); }catch(e){} if(rec&&rec.id==="tb~share") vsDirty(); }
 function tbShotSig(){ let plan=[]; try{ plan=DAYS.map((d,di)=>{ const L=dayLine(di)||[]; let a=0; L.forEach(q=>{ a+=q[0]*7+q[1]*3; });
     return [d.date,L.length,Math.round(a*1e3),planItems(di).map(it=>[it._i,it.p||"",it.t||"",it.k,it.p&&P[it.p]?(+P[it.p][1]).toFixed(5)+","+(+P[it.p][2]).toFixed(5):""])]; }); }catch(e){}
   return tbHash(JSON.stringify([TB_CACHE_V,edits,visited,plan,phMeta.map(m=>m.id+"|"+m.day+"|"+m.key+"|"+(m.tbHide?1:0)+"|"+(m.cover?1:0)+"|"+(m.lat!=null?(+m.lat).toFixed(4)+","+(+m.lng).toFixed(4):""))])); }
@@ -5096,7 +5258,8 @@ function tickClock(){ const j=jst(); $("#clk").textContent=pad(j.h)+":"+pad(j.mi
   const l=$("#clkLabel"); if(l){ const d=DAYS[curDay]||DAYS[0]; l.textContent="เวลา"+(d&&d.city?" "+d.city:"ท้องถิ่น"); } }
 function renderDays(){ const ti=todayIndex();
   $("#days").innerHTML=DAYS.map((d,i)=>`<button class="day-chip" style="--dc:var(--d${d.n})" data-day="${i}" aria-pressed="${i===curDay}"><span class="dn">D${d.n}${i===ti?'<span class="today-dot" title="วันนี้"></span>':''}</span><span class="dd">${d.dow} ${Number(d.date.slice(8))} ${MON(d.date)}</span></button>`).join("");
-  const b=$(".brand"); if(b&&!b.dataset.tp){ b.dataset.tp=1; b.innerHTML=`<span class="tp-back" aria-hidden="true">‹ ทริปทั้งหมด</span>${esc(TRIP.trip.trip_name||"ทริปของฉัน")}<small id="tripSub">${esc(tpSubline())}</small>`; b.setAttribute("role","button"); b.tabIndex=0; b.title="ทริปทั้งหมด"; b.addEventListener("click",()=>tpOpen()); }
+  const b=$(".brand"); if(b&&!b.dataset.tp&&TP_VIEW){ b.dataset.tp=1; b.innerHTML=`${esc(TRIP.trip.trip_name||"ทริป")}<small id="tripSub">${esc(tpSubline())}</small>`; }
+  if(b&&!b.dataset.tp){ b.dataset.tp=1; b.innerHTML=`<span class="tp-back" aria-hidden="true">‹ ทริปทั้งหมด</span>${esc(TRIP.trip.trip_name||"ทริปของฉัน")}<small id="tripSub">${esc(tpSubline())}</small>`; b.setAttribute("role","button"); b.tabIndex=0; b.title="ทริปทั้งหมด"; b.addEventListener("click",()=>tpOpen()); }
   document.title=(TRIP.trip.trip_name||"Trip")+" · Trip Planner"; }
 function cityOf(area){ return area||""; }
 function dayRouteUrl(day){ const i=DAYS.indexOf(day);
@@ -5190,7 +5353,7 @@ function renderInfo(){
   if(tr.notes) h+=`<div class="box"><h3>โน้ตของทริป</h3><p style="margin:0;white-space:pre-wrap">${esc(tr.notes)}</p></div>`;
   h+=`<div class="box"><h3>สำรอง / กู้คืน</h3><p style="margin:0 0 8px;font-size:15px">ข้อมูลที่แก้ในแอปและรูปของเราเก็บอยู่ในเบราว์เซอร์ของเครื่องนี้ ทำไฟล์สำรองไว้ใน Google Drive แล้วเปิดในเครื่องไหนก็ได้</p><div class="c-actions"><button class="btn small primary" data-act="backup">เปิดสำรอง / กู้คืน</button></div></div>`;
   h+=`<div class="box"><h3>แชร์ให้เพื่อนร่วมทริป</h3><p style="margin:0;font-size:15px">ส่งไฟล์แผน (Excel) ให้เพื่อน แล้วให้เปิดลิงก์แอปนี้และอัปโหลดไฟล์ จะเห็นแผนเดียวกัน (เช็คลิสต์และรูปแยกกันในแต่ละเครื่อง)</p><div class="c-actions"><button class="btn small" data-act="tp-export">ดาวน์โหลดแผนนี้เป็น Excel</button></div></div>`;
-  $("#p-info").innerHTML=h; convUpdate(); }
+  h+=vsBoxHtml(); $("#p-info").innerHTML=h; convUpdate(); }
 /* a clock time read from a photo (no zone written in the file) is local time of that trip day */
 function tpWallOffMin(y,mo,d,h,mi){ const date=`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`; let day=DAYS.find(x=>x.date===date);
   if(!day){ day=date<DAYS[0].date?DAYS[0]:DAYS[DAYS.length-1]; } const guess=Date.UTC(y,mo-1,d,h||0,mi||0); return Math.round(tzOffAt(day.tz,guess-tzOffAt(day.tz,guess))/6e4); }
@@ -5784,7 +5947,7 @@ function tpCoverOf(dbn){ return new Promise(res=>{ let q; try{ q=indexedDB.open(
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='tp-pick']"); if(!b) return; ev.stopPropagation(); const id=b.dataset.id||"";
   if((!id&&TRIP.example)||(id&&id===TRIP_ID&&!TRIP.example)) tpHomeHide(); else tpGo(id); },true);
 /* opening the app shows every trip first; choosing one (or adding one) goes into it */
-(()=>{ let go=false; try{ go=sessionStorage.getItem("tp:open")==="1"; }catch(e){} if(!go) tpHomeShow(); })();
+(()=>{ let go=false; try{ go=sessionStorage.getItem("tp:open")==="1"; }catch(e){} if(!go&&!TP_VIEW) tpHomeShow(); })();
 
 /* ===================== Trip planner: bring the real Hokkaido trip over from the Hokkaido app (same website) or from its backup file ===================== */
 const TP_HK_ID="hokkaido-2026";
