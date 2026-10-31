@@ -716,6 +716,13 @@ body.is-dragging{cursor:grabbing}
 .tb-link2{background:none;border:0;padding:0;color:#2F6FB3;font:inherit;text-decoration:underline;cursor:pointer}
 .tb-fl{display:flex;flex-direction:column;gap:4px;max-height:42vh;overflow:auto;margin:6px 0;padding:2px}
 .tb-fl button{text-align:left;border:1px solid #DDE3E0;background:#fff;border-radius:9px;padding:9px 10px;font:500 14px inherit;color:#1C2228;cursor:pointer}
+.tb-lk{margin:6px 0;padding:9px 10px;background:#fff;border:1px solid #DDE3E0;border-radius:10px;word-break:break-all;font-weight:600}
+.tb-lk a{color:#2F6FB3}
+.tb-lkm{list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:3px;font-size:13px}
+.tb-lkm a{color:#2F6FB3}
+.tb-ok{margin-left:8px;color:#1E8E3E;font-weight:600;font-size:12.5px}
+.tb-det{margin:4px 0 6px;font-size:13px}
+.tb-det summary{cursor:pointer;color:#2F6FB3}
 .tb-share code{font-size:12px;background:#fff;border:1px solid #DDE3E0;border-radius:6px;padding:1px 5px;word-break:break-all}
 .tb-prog[hidden]{display:none}
 .tb-prog-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -833,6 +840,8 @@ body.tb-dragging{overflow:hidden}
 .act-tg{display:flex;gap:8px;align-items:flex-start}.act-tg input{width:18px;height:18px;margin-top:3px;flex:0 0 auto}
 .act-list li.warn{background:color-mix(in srgb,#B9820F 8%,transparent);margin:0 -10px;padding:6px 10px}.act-warn{font-size:12px;color:#8A4B00;font-weight:600}
 .lb-move{margin-top:8px}.lb-move .c-actions{margin-top:6px}.lb-hid{display:block;margin-top:4px;font-size:12px;color:#F5C26B}
+.lb-cap .lb-up{display:block;margin-top:4px;font-size:12.5px;color:#8FE0A8}
+.lb-up a{color:#fff;text-decoration:underline}
 body.tb-open .lb{z-index:1450}
 .dup-kbtn{display:block;width:100%;margin-top:4px;min-height:34px;border-radius:8px;border:1px solid var(--line,#D3D8DE);background:var(--surface,#fff);font:600 13px inherit;color:#B3261E;cursor:pointer}
 .dup-c.keep .dup-kbtn{background:#2F6B45;border-color:#2F6B45;color:#fff}.dup-c .dup-keep{display:none}
@@ -2977,7 +2986,7 @@ const PDB={db:null,
   getBlob(id){ return this.tx("blob","readonly",s=>s.get(id)); },
   del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id+"~s"))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
-PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
+PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 /* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
    so this copy never writes an old plan back (that is how a removed stop could come back) */
 var TAB_ID=Math.random().toString(36).slice(2), phRevSeen=(store.get("phRev",null)||{}).t||0, phSyncT=null;
@@ -3277,7 +3286,7 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
     <div class="c-actions"><button class="btn small primary" data-mp="domove">ย้าย</button><button class="btn small" data-mp="move">ยกเลิก</button></div></div>`:"";
   $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button><div class="lb-stage">${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}</div>
   <div class="lb-cap"><b>${esc(photoWhere(m))}</b><span>${esc(when)}${m.tsrc==="file"?" (วันที่ของไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${how}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>
-  ${v.flash?`<span class="lb-flash" role="status">${esc(v.flash)}</span>`:""}${m.tbHide?`<span class="lb-hid">เอาออกจาก Tripbook อยู่ · <button class="lnk" data-mp="tbshow">เอากลับเข้า Tripbook</button></span>`:""}${mv}</div>
+  ${v.flash?`<span class="lb-flash" role="status">${esc(v.flash)}</span>`:""}${m.tbHide?`<span class="lb-hid">เอาออกจาก Tripbook อยู่ · <button class="lnk" data-mp="tbshow">เอากลับเข้า Tripbook</button></span>`:""}${tbDrvLine(m)}${mv}</div>
   <div class="lb-nav"><button class="btn lb-arr" data-mp="prev" ${v.i===0?"disabled":""} aria-label="รูปก่อนหน้า">‹</button><span class="lb-pos" aria-live="polite"><b>${v.i+1} / ${v.list.length}</b><small>${galState&&$("#gal-root")?(galState.all?`ทั้งวัน D${DAYS[galState.day].n}`:"จุดนี้"):m.day!=null?`ทั้งวัน D${DAYS[m.day].n}`:"ยังไม่ได้จัด"}</small></span><button class="btn lb-arr" data-mp="next" ${v.i>=v.list.length-1?"disabled":""} aria-label="รูปถัดไป">›</button></div>
   <div class="lb-acts"><button class="btn small${v.move?" on":""}" data-mp="move">ย้ายไปจุดอื่น</button>${m.kind!=="video"?`<button class="btn small" data-mp="cover">${m.cover?"★ ปก Tripbook":"ตั้งเป็นปก Tripbook"}</button>`:""}<button class="btn small lb-del${v.confirm?" danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้ง: ลบออกจากแอปถาวร":"ลบรูปนี้"}</button></div></div>`;
   hydrateMyPhotos($("#lbRoot")); { const ve=$("#lbRoot video[data-vid]"); if(ve){ phThumbURL(id,false).then(u=>{ if(u) ve.poster=u; }); phThumbURL(id,true).then(u=>{ if(u) ve.src=u; }); } }
@@ -3338,7 +3347,7 @@ function tripStats(){ let kmT=0; DAYS.forEach((d,i)=>{ const ln=dayLine(i)||[]; 
 async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → images embedded */
   const app=mode!=="export"; const shown=m=>!m.tbHide||(app&&tbShowHid); if(app) tbGrids={};
   const src=async(m,big)=>{ if(mode!=="export") return await phThumbURL(m.id,big)||""; tbExpTick(); const b=await PDB.getBlob(m.id); if(!b) return ""; const blob=big?b.full:b.thumb; if(tbShareReg) return tbRegAdd(blob,{m,big}); return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); };
-  const fa=m=>app?` data-tbid="${m.id}" class="${m.kind==="video"?"v":""}${m.tbHide?" hid":""}${tbSel&&tbSel.has(m.id)?" sel":""}${m.cover?" cov":""}"`:(m.kind==="video"?` class="v"`:"");
+  const fa=m=>app?` data-tbid="${m.id}" class="${m.kind==="video"?"v":""}${m.tbHide?" hid":""}${tbSel&&tbSel.has(m.id)?" sel":""}${m.cover?" cov":""}${tbDrv&&tbDrv.map[m.id]?" up":""}"`:(m.kind==="video"?` class="v"`:"");
   const fig=async(m,big)=>{ if(m.kind!=="video") return `<figure${fa(m)}><img src="${await src(m,big)}" alt="" loading="lazy" draggable="false"></figure>`;
     const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?(tbShareReg?tbRegAdd(b.thumb,{m,poster:1}):new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); })):"")):await phThumbURL(m.id,false);
     if(mode==="export"){ const inV=tbExpVids&&tbExpVids.has(m.id); if(inV) tbExpVidUsed.add(m.id);
@@ -3396,6 +3405,8 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-grid figure{margin:0;overflow:hidden;border-radius:10px;background:#F5F7F9;aspect-ratio:4/3}
 .tb-grid figure img,.tb-grid figure video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
 .tb-grid figure.v{position:relative}
+.tb-grid figure.up{position:relative}
+.tb-grid figure.up::before{content:"✓";position:absolute;right:6px;top:6px;z-index:2;width:22px;height:22px;border-radius:50%;background:#1E8E3E;color:#fff;font:700 13px/22px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .tb-grid figure[data-v]{cursor:pointer}
 .tb-grid figure[data-v]::after{content:"▶";position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(0,0,0,.52);color:#fff;font-size:24px;line-height:56px;text-align:center;text-indent:4px;pointer-events:none}
 .tb-grid figure[data-on]::after{display:none}
@@ -3447,7 +3458,7 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
   r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">สร้าง PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button><button class="btn small" data-tb="share">แชร์ลิงก์</button><div id="tbProg" class="tb-prog" hidden></div><div id="tbShareBox" class="tb-prog tb-share" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); tbProgPaint(); try{ history.pushState({tb:1},""); }catch(e){}
-  tbSel=null; tbDel=false; await tbShotsFromCache(); $("#tbBody").innerHTML=await tripbookHtml("app"); tbWire(r); tbBarPaint(); setTimeout(()=>tbShotsKick(),300);
+  tbSel=null; tbDel=false; await tbShotsFromCache(); if(!tbDrv) await tbDrvLoad(); $("#tbBody").innerHTML=await tripbookHtml("app"); tbsBtn(); tbWire(r); tbBarPaint(); setTimeout(()=>tbShotsKick(),300);
   r.onclick=async ev=>{ const b=ev.target.closest("[data-tb]"); if(!b) return; const a=b.dataset.tb;
     if(a==="share"){ tbsOpen(); return; }
     if(a.startsWith("sh-")){ tbsAction(a,b); return; }
@@ -3612,7 +3623,9 @@ async function tbPhotoForDrive(m,blob){ try{ const u8=new Uint8Array(await blob.
 /* ---------- the share record kept with the photos (one per trip) ---------- */
 async function tbsState(){ const repo=tbsRepo(); let st=await tbCacheGet("tb~share"); if(!st||st.stopped||(st.repo&&st.repo!==repo)) st={id:"tb~share",repo,bookId:tbsNewId(),drive:st&&st.drive?{folder:st.drive.folder}:null}; st.repo=repo; return st; }
 /* has anything in the book changed since the link was made */
-function tbsKey0(withV,pass,mode){ return tbHash(["s2",TB_CACHE_V,$("#tbBody").innerHTML.replace(/(src|poster)="blob:[^"]*"/g,'$1=""'),JSON.stringify(phMeta),tbShots?tbShots.at:0,withV?1:0,tbsNorm(pass),tbsRepo(),mode||"gh"].join("\n")); }
+/* the book as it reads, without what only this screen shows (picture addresses, upload ticks, selection) */
+function tbBookText(){ return $("#tbBody").innerHTML.replace(/(src|poster)="blob:[^"]*"/g,'$1=""').replace(/class="([^"]*)"/g,(x,c)=>'class="'+c.split(" ").filter(w=>w&&w!=="up"&&w!=="sel").join(" ")+'"'); }
+function tbsKey0(withV,pass,mode){ return tbHash(["s2",TB_CACHE_V,tbBookText(),JSON.stringify(phMeta),tbShots?tbShots.at:0,withV?1:0,tbsNorm(pass),tbsRepo(),mode||"gh"].join("\n")); }
 function tbsEstimate(withV,mode){ const ph=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide&&m.day!=null).length, V=withV?tbBookVideos():[]; const vs=mode==="drive"?V.reduce((a,m)=>a+(m.size||((m.dur||30)*2e6)),0)/1048576:V.reduce((a,m)=>a+(m.dur||30),0)*0.12;
   return Math.max(1,Math.round(ph*(mode==="drive"?0.35:0.07)+vs+3)); }
 function tbsTitle(){ const h1=$("#tbBody .tb-cover h1"); return h1?tbpOwn(h1).replace(/\s*\n\s*/g," ").trim():"Tripbook"; }
@@ -3623,7 +3636,7 @@ function tbsFileName(s){ return String(s||"").replace(/[\\/:*?"<>|\n\r\t]+/g," "
 /* photos and videos as plain files in a "Tripbook …" folder inside the chosen Drive folder, open to anyone with a file's link */
 async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) throw new Error("ยังไม่ได้เลือกโฟลเดอร์ใน Google Drive");
   if(D.sub&&D.subParent===D.folder.id&&!(await gdAlive(D.sub))) D.sub=null;
-  if(!D.sub||D.subParent!==D.folder.id){ say("กำลังสร้างโฟลเดอร์ใน Drive…"); const f=await gdMkdir(tbsFileName("Tripbook "+tbsTitle()),D.folder.id); D.sub=f.id; D.subParent=D.folder.id; D.files={}; D.extra=null;
+  if(!D.sub||D.subParent!==D.folder.id){ say("กำลังสร้างโฟลเดอร์ใน Drive…"); const f=await gdMkdir(tbsFileName("Tripbook "+tbsTitle()),D.folder.id); D.sub=f.id; D.subName=f.name; D.subParent=D.folder.id; D.files={}; D.extra=null;
     await gdReq(`${GD}/files/${f.id}/permissions?fields=id`,{method:"POST",json:{role:"reader",type:"anyone"}}); await tbCachePut(st); }
   let ids=new Map();
   if(D.sub&&D.subParent===D.folder.id){ say("กำลังเช็คไฟล์ใน Drive…"); ids=await gdChildren(D.sub); if(D.extra&&ids.has(D.extra)) (await gdChildren(D.extra)).forEach((v,id)=>ids.set(id,v)); else D.extra=null;
@@ -3648,7 +3661,7 @@ async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) th
   say("กำลังอัปโหลดไป Google Drive",0,todo.length);
   const one=async a=>{ let blob=a.blob; if(!blob){ const b=await PDB.getBlob(a.m.id); blob=b&&b.full; } if(!blob){ done++; return; } if(a.photo) blob=await tbPhotoForDrive(a.m,blob);
     const f=await gdUpload(blob,a.name,a.parent,a.mime,n=>{ bytes+=n; const now=Date.now(); if(now-last>300){ last=now; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); } },a.key);
-    D.files[a.key]=f.id; done++; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); await tbCachePut(st); };
+    D.files[a.key]=f.id; done++; if(a.m&&(a.photo||a.video)){ if(tbDrv){ tbDrv.map[a.m.id]=f.id; if(!tbDrv.where) tbDrv.where=`${D.folder?D.folder.name:"Google Drive"} › ${D.subName||"Tripbook"}`; } const fg=document.querySelector(`#tbBody figure[data-tbid="${a.m.id}"]`); if(fg) fg.classList.add("up"); } say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); await tbCachePut(st); };
   try{ const small=todo.filter(a=>!a.video), big=todo.filter(a=>a.video); await tbPool(small,5,one); for(const a of big) await one(a); }
   finally{ await tbCachePut(st); }
   const R=refs.map(r=>D.files[r.key]?["d",D.files[r.key],r.w]:null), vids={};
@@ -3738,6 +3751,7 @@ function tbsPaint(){ const el=$("#tbShareBox"); if(!el) return; const s=tbShare;
     <div class="tb-ask"><button class="btn small primary" data-tb="sh-fpick">ใช้โฟลเดอร์ “${esc(path[path.length-1].name)}”</button><button class="btn small" data-tb="sh-fnew">สร้างโฟลเดอร์ใหม่</button><button class="btn small" data-tb="sh-back">กลับ</button></div>`; }
   else if(s.step==="form"){ const drv=s.mode==="drive";
     el.innerHTML=`<div class="tb-prog-top"><b>${s.had?"อัปเดต Tripbook ที่แชร์ไว้ (ลิงก์เดิม)":"แชร์ Tripbook เป็นลิงก์"}</b></div>
+    ${s.newPass?`<p class="tb-note"><b>ตั้งรหัสเปิดใหม่:</b> ลิงก์เดิมใช้ต่อได้ แต่ต้องใช้รหัสใหม่ คนที่มีรหัสเก่าจะเปิดไม่ได้อีก</p>`:""}
     <label class="tb-f">ตั้งรหัสเปิด (คนรับต้องใส่รหัสนี้ แอปจะใส่ไว้ในข้อความให้)<input id="tbsPass" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="อย่างน้อย 6 ตัว เช่น HOKKAIDO26" value="${esc(s.pass||"")}"></label>
     ${s.nv?`<label class="tb-chk"><input id="tbsV" type="checkbox"${s.withV?" checked":""}> ใส่วิดีโอ ${s.nv} คลิป (กดเล่นได้ในลิงก์)</label>`:""}
     <p class="tb-f" style="margin-bottom:4px">เก็บรูปและวิดีโอไว้ที่</p>
@@ -3752,10 +3766,17 @@ function tbsPaint(){ const el=$("#tbShareBox"); if(!el) return; const s=tbShare;
     const msg=vp?`กำลังย่อวิดีโอ ${vp.i} / ${vp.n}${vp.p?` · ${Math.round(vp.p*100)}%`:""}`:s.msg+(s.n?(s.bytes?` ${(s.i/1048576).toFixed(1)} / ${(s.n/1048576).toFixed(1)} MB`:` ${s.i.toLocaleString()} / ${s.n.toLocaleString()}${s.mb?` ไฟล์ · ${(s.mb/1048576).toFixed(0)} MB`:""}`):"");
     const pct=vp?Math.round(((vp.i-1)+(vp.p||0))/Math.max(1,vp.n)*100):s.n?Math.round(s.i/s.n*100):-1;
     el.innerHTML=`<div class="tb-prog-top"><b>${esc(msg)}</b></div>${pct>=0?`<div class="tb-pbar"><i style="width:${Math.max(3,pct)}%"></i></div>`:""}<p class="tb-note">หน้าจอจะเปิดค้างไว้ระหว่างอัปโหลด · ถ้าต้องออกจากแอปก็ไม่เป็นไร กลับมาเปิดแอปเมื่อไร แอปจะอัปโหลดต่อจากที่ค้างไว้เอง (ไฟล์ที่ส่งแล้วไม่ส่งซ้ำ)</p>`; }
-  else if(s.step==="done") el.innerHTML=`<div class="tb-prog-top"><b>ลิงก์พร้อมส่ง ✓${s.same?" · เล่มไม่ได้เปลี่ยน ใช้ลิงก์เดิม":s.sent?` · ส่งไป ${(s.sent/1048576).toFixed(1)} MB`:""}</b></div>
-    <textarea class="tb-msg" id="tbsMsg" readonly rows="7">${esc(s.text)}</textarea>
-    ${E}<div class="tb-ask"><button class="btn small primary" data-tb="sh-share">แชร์</button><button class="btn small" data-tb="sh-copy">${s.copied?"คัดลอกแล้ว ✓":"คัดลอกข้อความ"}</button><button class="btn small" data-tb="sh-edit">เปลี่ยนรหัส / อัปเดต</button><button class="btn small" data-tb="sh-x">ปิด</button></div>
-    <p class="tb-note"><button class="tb-link" data-tb="sh-stop">${s.arm?"กดอีกครั้งเพื่อยืนยัน: ลิงก์นี้จะเปิดไม่ได้ (ไฟล์ใน Drive ยังอยู่)":"หยุดแชร์ลิงก์นี้"}</button></p>`;
+  else if(s.step==="link"){ const st=s.st, D=st.drive||{}, drv=st.mode==="drive"&&D.sub, nf=Object.keys(D.files||{}).length;
+    const when=st.at?new Date(st.at).toLocaleString("th-TH",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+    el.innerHTML=`<div class="tb-prog-top"><b>ลิงก์ Tripbook · แชร์อยู่ ✓</b>${s.flash?`<span class="tb-ok">${esc(s.flash)}</span>`:""}</div>
+    <p class="tb-lk"><a href="${esc(st.link)}" target="_blank" rel="noopener">${esc(st.link)}</a></p>
+    <ul class="tb-lkm"><li>🔑 รหัสเปิด <b>${esc(st.pass)}</b></li>
+      <li>🕑 อัปเดตล่าสุด ${esc(when)}${s.changed===true?` · <span class="tb-err">เล่มมีการเปลี่ยนแปลงหลังจากนั้น</span>`:s.changed===false?" · ตรงกับเล่มตอนนี้":""}</li>
+      <li>${drv?`📁 รูปและวิดีโอใน Google Drive: ${esc(D.folder?D.folder.name:"")} › ${esc(D.subName||"Tripbook "+tbsTitle())} · ${nf.toLocaleString()} ไฟล์ · <a href="https://drive.google.com/drive/folders/${esc(D.sub)}" target="_blank" rel="noopener">เปิดโฟลเดอร์</a>`:"🔒 รูปและวิดีโอเก็บใน GitHub แบบล็อกด้วยรหัส"}</li></ul>
+    ${E}<div class="tb-ask"><button class="btn small primary" data-tb="sh-share">แชร์</button><button class="btn small" data-tb="sh-copy">${s.copied==="text"?"คัดลอกแล้ว ✓":"คัดลอกข้อความ"}</button><button class="btn small" data-tb="sh-copylink">${s.copied==="link"?"คัดลอกแล้ว ✓":"คัดลอกลิงก์"}</button></div>
+    <details class="tb-det"><summary>ดูข้อความที่จะส่ง</summary><textarea class="tb-msg" id="tbsMsg" readonly rows="6">${esc(s.text)}</textarea></details>
+    <div class="tb-ask">${s.changed?`<button class="btn small primary" data-tb="sh-edit">อัปเดตลิงก์ให้ตรงกับเล่มตอนนี้</button>`:`<button class="btn small" data-tb="sh-edit">ส่งเล่มขึ้นใหม่</button>`}<button class="btn small" data-tb="sh-pass">เปลี่ยนรหัสเปิด</button><button class="btn small" data-tb="sh-x">ปิด</button></div>
+    <p class="tb-note"><button class="tb-link" data-tb="sh-stop">${s.arm?"กดอีกครั้งเพื่อยืนยัน: ลิงก์นี้จะเปิดไม่ได้"+(drv?" (ไฟล์ใน Drive ยังอยู่)":""):"หยุดแชร์ลิงก์นี้"}</button></p>`; }
   else if(s.step==="stopped") el.innerHTML=`<div class="tb-prog-top"><b>หยุดแชร์แล้ว · ลิงก์เดิมเปิดไม่ได้</b></div><div class="tb-ask"><button class="btn small" data-tb="sh-x">ปิด</button></div>`;
   const r=$("#tbRoot"), bar=$("#tbRoot .tb-bar"); if(r&&bar) r.style.setProperty("--tbbar",bar.offsetHeight+"px"); }
 async function tbsOpen(force,keep){ if(tbShareBusy) return; const nv=tbBookVideos().length;
@@ -3763,7 +3784,7 @@ async function tbsOpen(force,keep){ if(tbShareBusy) return; const nv=tbBookVideo
   const st=await tbCacheGet("tb~share"), live=st&&st.link&&!st.stopped&&st.repo===tbsRepo();
   const pass=keep&&keep.pass!=null?keep.pass:live?st.pass:"", withV=keep&&keep.withV!=null?keep.withV:live&&st.withV!=null?st.withV:true;
   const mode=keep&&keep.mode||st&&st.mode||"gh", folder=keep&&keep.folder||st&&st.drive&&st.drive.folder||null;
-  if(live&&!force&&!keep&&!tbShotBusy&&st.key0===tbsKey0(withV,pass,mode)){ tbShare={step:"done",same:true,text:tbsMessage(st)}; return tbsPaint(); }
+  if(live&&!force&&!keep){ tbShare={step:"link",st,changed:tbShotBusy?null:st.key0!==tbsKey0(st.withV!=null?st.withV:true,st.pass,st.mode||"gh"),text:tbsMessage(st)}; return tbsPaint(); }
   tbShare={step:"form",pass,withV,nv,had:!!live,mode,folder}; tbsPaint(); }
 async function tbsFolderList(){ const s=tbShare; s.wait=true; s.err=""; tbsPaint();
   try{ s.list=await gdFolders(s.path[s.path.length-1].id); }catch(e){ if(e.code==="auth") return gdSignIn("folder"); s.err=e.message; } s.wait=false; tbsPaint(); }
@@ -3802,15 +3823,25 @@ async function tbsAction(a,btn){ const s=tbShare||{};
     try{ if(tbShotBusy||tbStoryBusy){ tbShare.msg="รอแผนที่ให้เสร็จก่อน…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} }
       await tbRender(); const k0=tbsKey0(withV,pass,mode);
       const r=await tbsUpload({withV,pass,mode},(msg,i,n,bytes,mb)=>{ tbShare.msg=msg; tbShare.i=i||0; tbShare.n=n||0; tbShare.bytes=!!bytes; tbShare.mb=mb||0; if(msg!=="กำลังเตรียมหน้า…") tbShare.video=false; });
-      r.st.key0=k0; r.st.withV=withV; r.st.pending=null; await tbCachePut(r.st); tbShare={step:"done",text:tbsMessage(r.st),sent:r.sent}; }
+      r.st.key0=k0; r.st.withV=withV; r.st.pending=null; await tbCachePut(r.st); tbShare={step:"link",st:r.st,changed:false,text:tbsMessage(r.st),flash:r.sent?`อัปเดตแล้ว · ส่งไป ${(r.sent/1048576).toFixed(1)} MB`:"อัปเดตแล้ว"}; tbsBtn(); tbDrvLoad(); }
     catch(e){ tbShare=Object.assign({step:"form",nv:tbBookVideos().length,had:!!((await tbCacheGet("tb~share"))||{}).link},keepForm,{err:e.message||String(e)}); if(e.code==="auth"){ tbShare.err+=" · กด “อัปโหลด” อีกครั้งเพื่อเข้าสู่ระบบแล้วทำต่อ"; } }
     finally{ clearInterval(tbShareTick); tbShareBusy=false; tbExpVids=null; tbVidPrep=null; tbShareReg=null; tbWakeOff(); tbsPaint(); } return; }
-  if(a==="sh-copy"){ const t=s.text||""; let ok=false; try{ await navigator.clipboard.writeText(t); ok=true; }catch(e){}
-    if(!ok){ const ta=$("#tbsMsg"); if(ta){ ta.select(); try{ ok=document.execCommand("copy"); }catch(e){} } } s.copied=ok; return tbsPaint(); }
+  if(a==="sh-copy"||a==="sh-copylink"){ const t=a==="sh-copy"?(s.text||""):(s.st&&s.st.link||""); let ok=false; try{ await navigator.clipboard.writeText(t); ok=true; }catch(e){}
+    if(!ok){ const ta=document.createElement("textarea"); ta.value=t; ta.style.cssText="position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); try{ ok=document.execCommand("copy"); }catch(e){} ta.remove(); }
+    s.copied=ok?(a==="sh-copy"?"text":"link"):""; return tbsPaint(); }
+  if(a==="sh-pass"){ await tbsOpen(true,{pass:"",withV:s.st&&s.st.withV,mode:s.st&&s.st.mode||"gh",folder:s.st&&s.st.drive&&s.st.drive.folder}); tbShare.newPass=true; tbsPaint(); const i=$("#tbsPass"); if(i) i.focus(); return; }
   if(a==="sh-share"){ if(navigator.share){ try{ await navigator.share({title:"Tripbook",text:s.text}); }catch(e){} return; } return tbsAction("sh-copy"); }
   if(a==="sh-stop"){ if(!s.arm){ s.arm=true; return tbsPaint(); } tbShareBusy=true; tbShare={step:"busy",msg:"กำลังหยุดแชร์…"}; tbsPaint();
-    try{ await tbsStop(); tbShare={step:"stopped"}; }catch(e){ tbShare={step:"done",text:s.text,err:e.message}; } finally{ tbShareBusy=false; tbsPaint(); } return; } }
+    try{ await tbsStop(); tbShare={step:"stopped"}; }catch(e){ s.err=e.message; s.arm=false; tbShare=s; } finally{ tbShareBusy=false; tbsBtn(); tbsPaint(); } return; } }
 /* back from Google sign-in: open the Tripbook again where we were */
+var tbDrv=null;
+async function tbDrvLoad(){ const st=await tbCacheGet("tb~share"), D=st&&st.drive, map={};
+  if(D&&D.files) Object.keys(D.files).forEach(k=>{ const x=k.match(/^(?:ph2?|v):(.+)$/); if(x) map[x[1]]=D.files[k]; });
+  tbDrv={map,where:D&&D.sub?`${D.folder?D.folder.name:"Google Drive"} › ${D.subName||"Tripbook"}`:""};
+  $$("#tbBody figure[data-tbid]").forEach(f=>f.classList.toggle("up",!!map[f.dataset.tbid])); }
+function tbDrvLine(m){ const id=tbDrv&&tbDrv.map[m.id]; if(!id) return "";
+  return `<span class="lb-up">✓ อัปโหลดขึ้น Google Drive แล้ว · ${esc(tbDrv.where)} · <a href="https://drive.google.com/file/d/${esc(id)}/view" target="_blank" rel="noopener">เปิดใน Drive</a></span>`; }
+async function tbsBtn(){ const b=$('#tbRoot [data-tb="share"]'); if(!b) return; const st=await tbCacheGet("tb~share"); b.textContent=st&&st.link&&!st.stopped?"ลิงก์ที่แชร์ ✓":"แชร์ลิงก์"; }
 var tbWake=null;
 async function tbWakeOn(){ try{ if("wakeLock" in navigator&&!tbWake&&document.visibilityState==="visible"){ tbWake=await navigator.wakeLock.request("screen"); tbWake.addEventListener("release",()=>{ tbWake=null; }); } }catch(e){} }
 function tbWakeOff(){ try{ if(tbWake) tbWake.release(); }catch(e){} tbWake=null; }
@@ -4232,7 +4263,7 @@ async function tbMakePdf(btn){ if(tbPdfBusy) return; tbPdfBusy=true; tbPdfOut=nu
   try{ if(tbShotBusy||tbStoryBusy){ tbPdfV.msg=tbShotBusy?"รอแผนที่ให้เสร็จก่อน…":"รอเรื่องเล่าท้ายเล่ม…"; tbProgPaint(); try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} }
     if(vpRep.busy){ tbPdfV.msg="รอภาพตัวอย่างวิดีโอ…"; tbProgPaint(); try{ await vpRep.busy; }catch(e){} }
     btn.textContent="กำลังสร้าง…"; await tbRender(); tbPdfV.msg="กำลังจัดหน้า…"; tbProgPaint(); await tbpFonts(); await tbSleep(30);
-    const key=tbHash(["p1",TB_CACHE_V,$("#tbBody").innerHTML.replace(/(src|poster)="blob:[^"]*"/g,'$1=""'),JSON.stringify(phMeta),tbShots?tbShots.at:0].join("\n"));
+    const key=tbHash(["p1",TB_CACHE_V,tbBookText(),JSON.stringify(phMeta),tbShots?tbShots.at:0].join("\n"));
     const old=await tbCacheGet("tb~pdf"); if(old&&old.key===key&&old.blob){ tbPdfV={i:0,n:0,msg:"ไม่มีอะไรเปลี่ยน ใช้ไฟล์เดิม…"}; tbProgPaint(); const res=await tbDeliver(old.blob,tbPdfName()); tbPdfOut={pages:old.pages,mb:old.blob.size/1048576,res,at:Date.now(),cached:true}; return; }
     const doc=tbpBuild($("#tbBody")); let last=0;
     const r=await tbpRender(doc,(i,n)=>{ tbPdfV={i,n,msg:""}; const now=Date.now(); if(now-last>200||i===n){ last=now; tbProgPaint(); } });
