@@ -3354,6 +3354,9 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
       return `<figure class="v"${inV?` data-v="${m.id}"`:""}>${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}${tbExpVids&&!inV&&!tbShareReg?" · ดูได้ในแอป":""}</i></figure>`; }
     return `<figure${fa(m).replace('class="','class="'+(po?"":"nop "))}><video src="${await phThumbURL(m.id,true)}${po?"":"#t=0.5"}" ${po?`poster="${po}"`:""} playsinline preload="${po?"none":"metadata"}"></video><i>▶ ${fmtDur(m.dur)}</i></figure>`; };
   const grid=async(list,bigN,gk)=>{ list=tbSort(list.filter(shown)); if(!list.length) return ""; tbRegGroup="g|"+gk; if(app) tbGrids[gk]=list.map(m=>m.id);
+    /* a shared link carries every photo of the stop; past the first 24 they wait behind "ดูอีก" */
+    if(tbShareReg){ const figs=await Promise.all(list.map((m,j)=>fig(m,j<bigN))); const more=list.length-24;
+      return `<div class="tb-grid n${Math.min(list.length,5)}${more>0?" clip":""}">${figs.map((h,j)=>j>=24?h.replace(/^<figure/,'<figure data-x="1"'):h).join("")}</div>${more>0?`<button class="tb-showall" type="button">ดูอีก ${more} รูปของจุดนี้</button>`:""}`; }
     const lim=app&&tbMore.has(gk)?list.length:24, show=list.slice(0,lim);
     return `<div class="tb-grid n${Math.min(show.length,5)}"${app?` data-tbg="${esc(gk)}"`:""}>${(await Promise.all(show.map((m,j)=>fig(m,j<bigN)))).join("")}</div>${app&&list.length>lim?`<button class="btn small tb-more" data-tb="more" data-g="${esc(gk)}">ดูอีก ${list.length-lim} รูปของจุดนี้</button>`:""}`; };
   const st=tripStats(); const pics=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide); const vids=phMeta.filter(m=>m.kind==="video"&&!m.tbHide).length; const cover=pics.find(m=>m.cover)||pics.find(m=>m.key&&m.lat!=null)||pics[0];
@@ -3406,6 +3409,8 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-grid figure img,.tb-grid figure video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
 .tb-grid figure.v{position:relative}
 .tb-grid figure.up{position:relative}
+.tb-grid.clip figure[data-x]{display:none}
+.tb-showall{display:block;margin:6px auto 0;padding:9px 16px;border:1px solid #CBD5D0;border-radius:999px;background:#fff;font:600 14px inherit;color:#2F6FB3;cursor:pointer}
 .tb-grid figure.up::before{content:"✓";position:absolute;right:6px;top:6px;z-index:1;width:22px;height:22px;border-radius:50%;background:#1E8E3E;color:#fff;font:700 13px/22px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .tb-grid figure[data-v]{cursor:pointer}
 .tb-grid figure[data-v]::after{content:"▶";position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(0,0,0,.52);color:#fff;font-size:24px;line-height:56px;text-align:center;text-indent:4px;pointer-events:none}

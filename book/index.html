@@ -42,6 +42,11 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
 #bar{position:fixed;left:0;top:0;height:3px;width:100%;background:var(--acc);transform-origin:left;transform:scaleX(0);transition:transform .25s,opacity .4s;z-index:50;opacity:0}
 #book{background:#fff;min-height:100vh}
 #book img[data-r],#book img[data-d]{background:#EEF1F3}
+#vo{position:fixed;inset:0;z-index:100;background:#000;display:flex;align-items:center;justify-content:center}
+#vo .vs{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top,0px)) 0 calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+#vo iframe,#vo video{width:100%;height:100%;border:0;background:#000;object-fit:contain}
+#vo .vx{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:2;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:20px;cursor:pointer}
+#vo .vw{color:#ccc;font-size:15px}
 @media (min-width:700px){ h1{font-size:44px} .wrap{padding-bottom:48px} }
 </style>
 </head>
@@ -119,13 +124,17 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
     io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); load(e.target); } }); },{rootMargin:"1600px 0px"});
     b.querySelectorAll("img[data-r]").forEach(function(im){ io.observe(im); });
     b.addEventListener("click",play); }
-  async function play(e){ var f=e.target.closest("figure[data-v]"); if(!f||f.getAttribute("data-on")) return; var v=M.vids&&M.vids[f.getAttribute("data-v")]; if(!v) return;
-    f.setAttribute("data-on","1"); var lab=f.querySelector("i"), t0=lab?lab.textContent:"";
-    if(v[0]==="d"){ var fr=document.createElement("iframe"); fr.src="https://drive.google.com/file/d/"+v[1]+"/preview"; fr.setAttribute("allow","autoplay; fullscreen"); fr.setAttribute("allowfullscreen",""); fr.style.cssText="position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;z-index:2"; f.appendChild(fr); return; }
-    if(lab) lab.textContent="กำลังโหลดวิดีโอ…";
-    try{ var u=await unseal(KEY,await get(v[0],60000)), el=document.createElement("video"); el.src=URL.createObjectURL(new Blob([u],{type:v[1]||"video/mp4"})); el.controls=true; el.autoplay=true; el.playsInline=true; el.setAttribute("playsinline","");
-      el.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:2"; f.appendChild(el); if(lab) lab.textContent=t0; var pr=el.play(); if(pr&&pr.catch) pr.catch(function(){}); }
-    catch(x){ f.removeAttribute("data-on"); if(lab) lab.textContent="โหลดวิดีโอไม่ได้ แตะเพื่อลองอีกครั้ง"; } }
+  /* a video opens over the whole screen, at its own shape, with a close button */
+  function closeVid(){ var o=$("#vo"); if(o){ o.remove(); document.body.style.overflow=""; } }
+  async function play(e){ var sa=e.target.closest(".tb-showall"); if(sa){ var g=sa.previousElementSibling; if(g) g.classList.remove("clip"); sa.remove(); return; }
+    var f=e.target.closest("figure[data-v]"); if(!f) return; var v=M.vids&&M.vids[f.getAttribute("data-v")]; if(!v) return;
+    closeVid(); var o=document.createElement("div"); o.id="vo"; o.innerHTML='<button class="vx" aria-label="ปิด">✕</button><div class="vs"><p class="vw">กำลังโหลดวิดีโอ…</p></div>'; document.body.appendChild(o); document.body.style.overflow="hidden";
+    o.querySelector(".vx").onclick=closeVid; var stg=o.querySelector(".vs");
+    if(v[0]==="d"){ var fr=document.createElement("iframe"); fr.src="https://drive.google.com/file/d/"+v[1]+"/preview"; fr.setAttribute("allow","autoplay; fullscreen"); fr.setAttribute("allowfullscreen",""); stg.innerHTML=""; stg.appendChild(fr); return; }
+    try{ var u=await unseal(KEY,await get(v[0],60000)); if(!$("#vo")) return; var el=document.createElement("video"); el.src=URL.createObjectURL(new Blob([u],{type:v[1]||"video/mp4"})); el.controls=true; el.autoplay=true; el.playsInline=true; el.setAttribute("playsinline","");
+      stg.innerHTML=""; stg.appendChild(el); var pr=el.play(); if(pr&&pr.catch) pr.catch(function(){}); }
+    catch(x){ stg.innerHTML='<p class="vw">โหลดวิดีโอไม่ได้ ลองอีกครั้ง</p>'; } }
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeVid(); });
   var MSG={bad:"รหัสไม่ถูกต้อง ลองใหม่อีกครั้งนะ",gone:"ไม่พบ Tripbook นี้ อาจหยุดแชร์ไปแล้ว ลองขอลิงก์ใหม่จากคนที่ส่งมา",link:"ลิงก์ไม่ครบ ขอลิงก์ใหม่จากคนที่ส่งมา",old:"เบราว์เซอร์นี้เก่าเกินไป ลองเปิดด้วย Chrome หรือ Safari รุ่นใหม่",net:"เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วกดเปิดอีกครั้ง"};
   async function submit(ev){ if(ev) ev.preventDefault(); var pw=$("#pw").value; if(!norm(pw)){ err("ใส่รหัสก่อนนะ"); $("#pw").focus(); return; }
     err(""); why=[]; wait(true,MF?"กำลังตรวจรหัส…":"กำลังโหลด…"); try{ $("#pw").blur(); }catch(x){}
