@@ -102,6 +102,8 @@
 .tp-home-note{margin-top:22px}
 .tp-hk{margin:12px 0 0;padding:12px;border-radius:14px;background:color-mix(in srgb,var(--gold) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line))}
 .tp-hk b{font-size:15.5px}.tp-hk p{margin:4px 0 8px;font-size:14px}
+.tpph-gp{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:14px}
+.tpph-gp p{margin:6px 0}.tpph-gp .fl{margin-top:12px;font-weight:600}.tpph-gp ol{margin:4px 0 6px;padding-left:20px}.tpph-gp li{margin:3px 0}
 
 
 html,body{height:100%}
@@ -3104,12 +3106,27 @@ var zipErr="";
 const isZip=f=>/\.zip$/i.test(f.name||"")||/zip/.test(f.type||"");
 /* one picked file, or one photo inside a ZIP. Nothing is read until needed, so a big ZIP never sits in memory at once */
 function srcOf(f){ return {name:f.name,size:f.size,type:f.type,lastModified:f.lastModified,head:n=>f.slice(0,n).arrayBuffer(),file:async()=>f}; }
-function zipItems(f,idx){ const out=[]; for(const [nm,e] of Object.entries(idx)){ const base=nm.split("/").pop(); if(!MEDIA_EXT.test(base)||/^\._/.test(base)||/__MACOSX/.test(nm)) continue;
+/* Google Takeout puts a .json next to every photo with the place and time Google Photos shows (also the ones it guessed or you edited).
+   Names: IMG_1.JPG.json · IMG_1.JPG.supplemental-metadata.json (often cut short) · IMG_1.JPG.supplemental-metadata(1).json for IMG_1(1).JPG */
+function gjIndex(idx){ const J={}; for(const [nm,e] of Object.entries(idx)){ if(!/\.json$/i.test(nm)||/__MACOSX/.test(nm)) continue;
+    const dir=nm.slice(0,nm.lastIndexOf("/")+1); let b=nm.slice(dir.length).replace(/\.json$/i,""), dup="";
+    const d=b.match(/\((\d+)\)$/); if(d){ dup=d[1]; b=b.slice(0,-d[0].length); }
+    const dot=b.lastIndexOf("."); if(dot>0){ const suf=b.slice(dot+1).toLowerCase(); if(suf.length&&"supplemental-metadata".startsWith(suf)&&!/^(jpe?g|png|heic|heif|mp4|mov|m4v|gif|webp|dng)$/.test(suf)) b=b.slice(0,dot); }
+    if(dup){ const x=b.lastIndexOf("."); b=x>0?b.slice(0,x)+"("+dup+")"+b.slice(x):b+"("+dup+")"; }
+    J[(dir+b).toLowerCase()]=e; }
+  return J; }
+async function gjRead(f,e){ try{ let b=await unzipGet(f,e,""); if(e.method===8) b=await new Response(b.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob(); const j=JSON.parse(await b.text());
+    const g=[j.geoData,j.geoDataExif].find(x=>x&&(+x.latitude||+x.longitude)), ts=+(j.photoTakenTime&&j.photoTakenTime.timestamp)||0;
+    return {lat:g?+g.latitude:null,lng:g?+g.longitude:null,ts:ts?ts*1000:null}; }catch(err){ return null; } }
+async function gjFill(it,x,t){ if(!it.gjson||(x.lat!=null&&t)) return [x,t]; const g=await it.gjson(); if(!g) return [x,t];
+  if(x.lat==null&&g.lat!=null) x=Object.assign({},x,{lat:g.lat,lng:g.lng,gsrc:"takeout"}); if(!t&&g.ts) t=g.ts; return [x,t]; }
+function zipItems(f,idx){ const out=[], J=gjIndex(idx); for(const [nm,e] of Object.entries(idx)){ const base=nm.split("/").pop(); if(!MEDIA_EXT.test(base)||/^\._/.test(base)||/__MACOSX/.test(nm)) continue;
     if(e.method!==0&&!(e.method===8&&typeof DecompressionStream!=="undefined")) continue;
     const ext=base.split(".").pop().toLowerCase(); const type=/mp4|m4v/.test(ext)?"video/mp4":ext==="mov"?"video/quicktime":ext==="png"?"image/png":/hei/.test(ext)?"image/heic":ext==="webp"?"image/webp":"image/jpeg";
     const raw=()=>unzipGet(f,e,"");
     const inflate=b=>b.stream().pipeThrough(new DecompressionStream("deflate-raw"));
-    out.push({name:base,size:e.usz||e.sz,type,lastModified:Date.now(),zip:true,
+    const lk=nm.toLowerCase(), je=J[lk]||J[lk.replace(/-(edited|bearbeitet|modifié|editado|modificato)(\.[a-z0-9]+)$/,"$2")]||null;
+    out.push({name:base,size:e.usz||e.sz,type,lastModified:Date.now(),zip:true,gjson:je?(()=>{ let p=null; return ()=>p||(p=gjRead(f,je)); })():null,
       file:async()=>{ let b=await raw(); if(e.method===8) b=await new Response(inflate(b)).blob(); return new File([b],base,{type}); },
       head:async n=>{ const b=await raw(); if(e.method===0) return b.slice(0,n).arrayBuffer(); const rd=inflate(b).getReader(); const parts=[]; let got=0;
         while(got<n){ const {done,value}=await rd.read(); if(done) break; parts.push(value); got+=value.length; } try{ await rd.cancel(); }catch(err){} return new Blob(parts).slice(0,n).arrayBuffer(); } }); }
@@ -3163,8 +3180,8 @@ async function importPhotos(files,forKey){
   for(const it of items){
     if(drop.has(it)){ phImport.burst++; phImport.done++; phTick(); continue; }
     try{ const vid=isVideo(it); let x={}, takenAt=null, tsrc=null, f=null;
-      if(vid){ f=await it.file(); const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; }
-      else { x=exc.get(it)||readExif(await it.head(262144)); takenAt=exifTime(x); phImport.pics++; if(x.lat==null){ if(x.gz) phImport.gz++; else phImport.gn++; } }
+      if(vid){ f=await it.file(); const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; [x,takenAt]=await gjFill(it,x,takenAt); }
+      else { x=exc.get(it)||readExif(await it.head(262144)); takenAt=exifTime(x); [x,takenAt]=await gjFill(it,x,takenAt); phImport.pics++; if(x.lat==null){ if(x.gz) phImport.gz++; else phImport.gn++; } }
       let cls=null; const unCount=()=>{ if(cls) phImport.cls[cls]--; if(vid) return; phImport.pics--; if(x.lat==null){ if(x.gz) phImport.gz--; else phImport.gn--; } if(tsrc!=="meta"&&tsrc!=="name") phImport.notime--; };   /* a copy we skip says nothing about this import */
       if(takenAt) tsrc="meta"; else if((takenAt=nameTime(it.name))) tsrc="name"; else if(it.lastModified&&!it.zip&&Math.abs(Date.now()-it.lastModified)>30*60e3){ takenAt=it.lastModified; tsrc="file"; }
       if(tsrc!=="meta"&&tsrc!=="name") phImport.notime++;
@@ -5875,30 +5892,40 @@ function tpPhPaint(){ const r=$("#tpph-root"); if(r) renderSheet(tpPhHtml()); }
 function tpPhHtml(){ const s=tpPh||{step:"start"};
   let h=`<div id="tpph-root"><div class="sk">ทริปของฉัน</div><h2>สร้างแผนจากรูป</h2>`;
   if(s.step==="start"||s.step==="err") h+=`<p>เลือกรูปทั้งหมดของทริปที่ไปมาแล้ว (หรือไฟล์ ZIP) แอปอ่านวันเวลาและตำแหน่ง GPS ในรูป แยกเป็นวันและจุดที่แวะ ตั้งชื่อสถานที่ และหาที่พักแต่ละคืนให้ จากนั้นรูปจะถูกจัดเข้าแผนและทำ Tripbook ได้เหมือนทริปที่วางแผนไว้</p>
-    <ul class="tipl"><li>ใช้ไฟล์ต้นฉบับที่ถ่ายตอนเปิดตำแหน่ง (GPS) · รูปที่ส่งผ่าน LINE/Facebook มักไม่มีตำแหน่งแล้ว</li><li>Google Photos: กดดาวน์โหลดรูป (ได้ ZIP) ไม่ใช่แชร์ลิงก์ · iPhone: เลือกจาก "คลังรูปภาพ" ได้เลย</li><li>รูปไม่ได้ถูกอัปโหลด มีแค่พิกัดของแต่ละจุดที่ส่งไปหาชื่อสถานที่</li></ul>
+    <ul class="tipl"><li>ใช้ไฟล์ต้นฉบับที่ถ่ายตอนเปิดตำแหน่ง (GPS) · รูปที่ส่งผ่าน LINE/Facebook มักไม่มีตำแหน่งแล้ว</li><li>iPhone: เลือกจาก "คลังรูปภาพ" ได้เลย · รูปอยู่ใน Google Photos: กด “จาก Google Photos”</li><li>รูปไม่ได้ถูกอัปโหลด มีแค่พิกัดของแต่ละจุดที่ส่งไปหาชื่อสถานที่</li></ul>
     <label class="fl" for="tpph-name">ชื่อทริป (ว่างได้ แอปตั้งจากชื่อเมือง)</label><input id="tpph-name" class="inp" value="${esc(s.name||"")}" placeholder="เช่น ไต้หวัน 2025">
     <label class="fl" for="tpph-mode">ส่วนใหญ่เดินทางด้วย</label><select id="tpph-mode" class="inp"><option value="transit"${s.mode!=="drive"?" selected":""}>รถไฟ / รถบัส / เดิน</option><option value="drive"${s.mode==="drive"?" selected":""}>ขับรถ</option></select>
     ${s.step==="err"?`<p class="sc-warn">${esc(s.err)}</p>`:""}
-    <div class="c-actions" style="margin-top:12px"><button class="btn small primary" data-act="tpph-pick">${I.camera}เลือกรูป</button><button class="btn small" data-act="tpph-pick" data-zip="1">เลือกไฟล์ ZIP</button></div>`;
+    <div class="c-actions" style="margin-top:12px"><button class="btn small primary" data-act="tpph-pick">${I.camera}เลือกรูป</button><button class="btn small" data-act="tpph-pick" data-zip="1">เลือกไฟล์ ZIP</button><button class="btn small${s.gp?" on":""}" data-act="tpph-gp" aria-expanded="${!!s.gp}">จาก Google Photos</button></div>${s.gp?tpPhGpHtml():""}`;
   if(s.step==="read"||s.step==="name") h+=`<div class="ph-prog"><div class="ph-bar"><i style="width:${s.n?Math.round(s.i/s.n*100):0}%"></i></div><p><b>${esc(s.msg||"")}</b>${s.n?` ${s.i} / ${s.n}`:""}</p></div>`;
   if(s.step==="review"){ const P2=s.plan; const nPh=s.pts.length;
     h+=`<p>${esc(tpFmtRange(P2.days[0].date,P2.days[P2.days.length-1].date))} · ${P2.days.length} วัน · ${P2.stops.filter(x=>x.type!=="flight").length} จุด${P2.hotels.length?` · ที่พัก ${P2.hotels.length} แห่ง`:""} · จากรูป ${nPh} รูป</p>
-      ${s.noGps?`<p class="tiny">${s.noGps} รูปไม่มีตำแหน่ง จะถูกจัดตามเวลาที่ถ่ายแทน</p>`:""}${s.noTime?`<p class="tiny">${s.noTime} ไฟล์ไม่มีวันเวลา (เช่น ภาพแคปหน้าจอ HEIC หรือไฟล์ที่ถูกแก้) ข้ามไป</p>`:""}
+      ${s.tk?`<p class="tiny">${s.tk} รูปได้ตำแหน่งจากไฟล์ของ Google Takeout</p>`:""}${s.noGps?`<p class="tiny">${s.noGps} รูปไม่มีตำแหน่ง จะถูกจัดตามเวลาที่ถ่ายแทน</p>`:""}${s.noTime?`<p class="tiny">${s.noTime} ไฟล์ไม่มีวันเวลา (เช่น ภาพแคปหน้าจอ HEIC หรือไฟล์ที่ถูกแก้) ข้ามไป</p>`:""}
       <label class="fl" for="tpph-name2">ชื่อทริป</label><input id="tpph-name2" class="inp" value="${esc(P2.trip.trip_name)}">
       <div class="tpph-days">${P2.days.map(d=>{ const L=P2.stops.filter(x=>x.day===d.day); const ht=P2.hotels.find(x=>{ const a=Date.parse(x.checkin_date), t=Date.parse(d.date); return t>=a&&t<a+x.nights*864e5; });
         return `<section><header><b>D${d.day}</b> ${esc(tpFmtRange(d.date,d.date).replace(/ \d{4}$/,""))} · ${esc(d.title)}<span class="tiny">${esc([d.country,d.timezone].filter(Boolean).join(" · "))}</span></header><ol>${L.map(x=>`<li><span class="mono">${esc(x.time)}</span> ${x.type==="flight"?"✈ ":""}${esc(x.name)}${x._n?` <span class="tiny">${x._n} รูป</span>`:""}</li>`).join("")||`<li class="tiny">ไม่มีรูปที่มีตำแหน่ง</li>`}</ol>${ht?`<p class="tiny">🛏 ${esc(ht.name)}</p>`:""}</section>`; }).join("")}</div>
       <p class="tiny">ชื่อสถานที่มาจาก ${s.gUsed?"Google Maps":"OpenStreetMap"} ตามพิกัดของรูป อาจไม่ตรงทุกจุด แก้ชื่อได้ในแอป (กดแก้ไขที่การ์ด) หรือดาวน์โหลดเป็น Excel แล้วแก้</p>
       <div class="c-actions"><button class="btn small primary" data-act="tpph-make">สร้างทริปนี้</button><button class="btn small" data-act="tpph-again">เลือกรูปใหม่</button></div>`; }
   return h+`</div>`; }
+/* Google removes the place from photos an app picks out of Google Photos, so a plan needs the files themselves, as a ZIP */
+function tpPhGpHtml(){ return `<div class="tpph-gp"><p><b>เอารูปจาก Google Photos มาสร้างแผน</b> ต้องดาวน์โหลดเป็นไฟล์ ZIP ก่อน (ถ้าเลือกรูปผ่านแอปโดยตรง Google จะตัดตำแหน่งออก แยกจุดไม่ได้)</p>
+  <p class="fl">แบบที่ 1 · ดาวน์โหลดอัลบั้ม (เร็ว)</p><ol class="tb-steps"><li>เปิด <a href="https://photos.google.com/albums" target="_blank" rel="noopener">photos.google.com</a> ในคอมหรือเบราว์เซอร์มือถือ แล้วเปิดอัลบั้มของทริป (ยังไม่มีอัลบั้ม: เลือกรูปของทริป แล้วกด + → อัลบั้ม)</li><li>กด ⋮ มุมขวาบน → <b>ดาวน์โหลดทั้งหมด</b> จะได้ไฟล์ ZIP</li><li>กด “เลือกไฟล์ ZIP” ด้านบน แล้วเลือกไฟล์นั้น</li></ol>
+  <p class="tiny">ได้ตำแหน่งที่มือถือบันทึกไว้ในรูป แต่ตำแหน่งที่ Google เดาให้หรือที่แก้เองใน Google Photos จะไม่ติดมา</p>
+  <p class="fl">แบบที่ 2 · Google Takeout (ได้ตำแหน่งครบที่สุด)</p><ol class="tb-steps"><li>เปิด <a href="https://takeout.google.com/" target="_blank" rel="noopener">takeout.google.com</a> → กด “ยกเลิกการเลือกทั้งหมด” → ติ๊ก <b>Google Photos</b></li><li>กด “รวมอัลบั้มรูปภาพทั้งหมด” → เลือกเฉพาะอัลบั้มของทริป → ขั้นตอนถัดไป → ส่งออกครั้งเดียว ไฟล์ .zip</li><li>เมื่อ Google ส่งอีเมลว่าเสร็จ ดาวน์โหลด ZIP (ถ้าแบ่งมาหลายไฟล์ เลือกพร้อมกันได้) แล้วกด “เลือกไฟล์ ZIP”</li></ol>
+  <p class="tiny">แอปอ่านไฟล์ .json ที่มากับ Takeout ด้วย จึงได้ตำแหน่งและเวลาตามที่เห็นใน Google Photos ทุกรูป</p></div>`; }
 function tpPhWall(dt){ const m=String(dt||"").match(/^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d):(\d\d)/); if(!m) return null; return Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]); }
 function tpPhNameWall(n){ const m=String(n||"").match(/(?:^|[^0-9])(20\d{2})(\d{2})(\d{2})[_\-\s]?(\d{2})(\d{2})(\d{2})/); if(!m) return null; const [y,mo,d,h,mi,se]=m.slice(1).map(Number); if(mo<1||mo>12||d<1||d>31||h>23||mi>59) return null; return Date.UTC(y,mo-1,d,h,mi,se); }
 const tpHM=w=>new Date(w).toISOString().slice(11,16);
-async function tpPhRead(items){ const s=tpPh; s.step="read"; s.msg="กำลังอ่านวันเวลาและตำแหน่งในรูป"; s.n=items.length; s.i=0; tpPhPaint();
+async function tpPhRead(items){ const s=tpPh; s.step="read"; s.tk=0; s.msg="กำลังอ่านวันเวลาและตำแหน่งในรูป"; s.n=items.length; s.i=0; tpPhPaint();
   const pts=[]; let noTime=0, noGps=0, t0=Date.now();
   for(const it of items){ s.i++; if(Date.now()-t0>250){ t0=Date.now(); tpPhPaint(); }
     if(/^video\//.test(it.type||"")||/\.(mp4|mov|m4v)$/i.test(it.name)) continue;
     let x={}; try{ x=readExif(await it.head(262144)); }catch(e){}
-    let w=tpPhWall(x.dt); if(w==null) w=tpPhNameWall(it.name); if(w==null){ noTime++; continue; }
+    let w=tpPhWall(x.dt); if(w==null) w=tpPhNameWall(it.name);
+    if((w==null||x.lat==null)&&it.gjson){ const g=await it.gjson(); if(g){ if(x.lat==null&&g.lat!=null){ x=Object.assign({},x,{lat:g.lat,lng:g.lng}); s.tk=(s.tk||0)+1; }
+        /* Takeout gives the moment in UTC; the wall clock there is about one hour per 15° of longitude */
+        if(w==null&&g.ts) w=g.ts+(x.lng!=null?Math.round(x.lng/15)*3600e3:0); } }
+    if(w==null){ noTime++; continue; }
     const o=String(x.off||"").match(/^([+-])(\d\d):(\d\d)/); const off=o?(o[1]==="-"?-1:1)*(+o[2]*60+ +o[3]):null;
     const ll=x.lat!=null&&x.lng!=null?[x.lat,x.lng]:null; if(!ll) noGps++;
     pts.push({w,date:new Date(w).toISOString().slice(0,10),ll,off,name:it.name}); }
@@ -5967,7 +5994,7 @@ async function tpPhPick(zip){ const s=tpPh; s.name=(($("#tpph-name")||{}).value|
   const inp=document.createElement("input"); inp.type="file"; inp.multiple=true; inp.accept=zip?".zip,application/zip":"image/*"; inp.style.display="none";
   inp.onchange=async()=>{ const files=[...inp.files]; inp.remove(); if(!files.length) return; let items=[];
     try{ for(const f of files){ if(isZip(f)){ const idx=await unzipIndex(f); items=items.concat(zipItems(f,idx)); } else items.push(srcOf(f)); }
-      await tpPhRead(items); if(!s.pts.length) throw new Error("ไม่เจอรูปที่มีวันเวลาที่ถ่ายในไฟล์ที่เลือก"); if(!s.pts.some(p=>p.ll)) throw new Error("รูปที่เลือกไม่มีตำแหน่ง GPS เลย จึงแยกจุดไม่ได้ (ลองใช้ไฟล์ต้นฉบับจากกล้องมือถือ)");
+      await tpPhRead(items); if(!s.pts.length) throw new Error("ไม่เจอรูปที่มีวันเวลาที่ถ่ายในไฟล์ที่เลือก"); if(!s.pts.some(p=>p.ll)) throw new Error("รูปที่เลือกไม่มีตำแหน่ง GPS เลย จึงแยกจุดไม่ได้ (ลองใช้ไฟล์ต้นฉบับจากกล้องมือถือ หรือ Google Takeout — กด “จาก Google Photos” ดูวิธี)");
       s.count=s.pts.length; await tpPhBuild(); }
     catch(e){ s.step="err"; s.err=e&&e.message||String(e); tpPhPaint(); } };
   document.body.appendChild(inp); inp.click(); }
@@ -5977,6 +6004,7 @@ function tpPhMake(){ const s=tpPh; if(!s||!s.plan) return; const T=s.plan; const
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='tpph-']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="tpph-pick") tpPhPick(!!b.dataset.zip);
   else if(a==="tpph-make") tpPhMake();
+  else if(a==="tpph-gp"){ tpPh.name=(($("#tpph-name")||{}).value||tpPh.name||"").trim(); tpPh.mode=($("#tpph-mode")||{}).value||tpPh.mode; tpPh.gp=!tpPh.gp; tpPhPaint(); }
   else if(a==="tpph-again"){ tpPh={step:"start",name:tpPh.name,mode:tpPh.mode}; tpPhPaint(); } },true);
 
 /* ===================== Trip planner: the home screen — every trip on this phone, and "add a trip" ===================== */

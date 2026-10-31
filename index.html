@@ -3509,12 +3509,27 @@ var zipErr="";
 const isZip=f=>/\.zip$/i.test(f.name||"")||/zip/.test(f.type||"");
 /* one picked file, or one photo inside a ZIP. Nothing is read until needed, so a big ZIP never sits in memory at once */
 function srcOf(f){ return {name:f.name,size:f.size,type:f.type,lastModified:f.lastModified,head:n=>f.slice(0,n).arrayBuffer(),file:async()=>f}; }
-function zipItems(f,idx){ const out=[]; for(const [nm,e] of Object.entries(idx)){ const base=nm.split("/").pop(); if(!MEDIA_EXT.test(base)||/^\._/.test(base)||/__MACOSX/.test(nm)) continue;
+/* Google Takeout puts a .json next to every photo with the place and time Google Photos shows (also the ones it guessed or you edited).
+   Names: IMG_1.JPG.json · IMG_1.JPG.supplemental-metadata.json (often cut short) · IMG_1.JPG.supplemental-metadata(1).json for IMG_1(1).JPG */
+function gjIndex(idx){ const J={}; for(const [nm,e] of Object.entries(idx)){ if(!/\.json$/i.test(nm)||/__MACOSX/.test(nm)) continue;
+    const dir=nm.slice(0,nm.lastIndexOf("/")+1); let b=nm.slice(dir.length).replace(/\.json$/i,""), dup="";
+    const d=b.match(/\((\d+)\)$/); if(d){ dup=d[1]; b=b.slice(0,-d[0].length); }
+    const dot=b.lastIndexOf("."); if(dot>0){ const suf=b.slice(dot+1).toLowerCase(); if(suf.length&&"supplemental-metadata".startsWith(suf)&&!/^(jpe?g|png|heic|heif|mp4|mov|m4v|gif|webp|dng)$/.test(suf)) b=b.slice(0,dot); }
+    if(dup){ const x=b.lastIndexOf("."); b=x>0?b.slice(0,x)+"("+dup+")"+b.slice(x):b+"("+dup+")"; }
+    J[(dir+b).toLowerCase()]=e; }
+  return J; }
+async function gjRead(f,e){ try{ let b=await unzipGet(f,e,""); if(e.method===8) b=await new Response(b.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob(); const j=JSON.parse(await b.text());
+    const g=[j.geoData,j.geoDataExif].find(x=>x&&(+x.latitude||+x.longitude)), ts=+(j.photoTakenTime&&j.photoTakenTime.timestamp)||0;
+    return {lat:g?+g.latitude:null,lng:g?+g.longitude:null,ts:ts?ts*1000:null}; }catch(err){ return null; } }
+async function gjFill(it,x,t){ if(!it.gjson||(x.lat!=null&&t)) return [x,t]; const g=await it.gjson(); if(!g) return [x,t];
+  if(x.lat==null&&g.lat!=null) x=Object.assign({},x,{lat:g.lat,lng:g.lng,gsrc:"takeout"}); if(!t&&g.ts) t=g.ts; return [x,t]; }
+function zipItems(f,idx){ const out=[], J=gjIndex(idx); for(const [nm,e] of Object.entries(idx)){ const base=nm.split("/").pop(); if(!MEDIA_EXT.test(base)||/^\._/.test(base)||/__MACOSX/.test(nm)) continue;
     if(e.method!==0&&!(e.method===8&&typeof DecompressionStream!=="undefined")) continue;
     const ext=base.split(".").pop().toLowerCase(); const type=/mp4|m4v/.test(ext)?"video/mp4":ext==="mov"?"video/quicktime":ext==="png"?"image/png":/hei/.test(ext)?"image/heic":ext==="webp"?"image/webp":"image/jpeg";
     const raw=()=>unzipGet(f,e,"");
     const inflate=b=>b.stream().pipeThrough(new DecompressionStream("deflate-raw"));
-    out.push({name:base,size:e.usz||e.sz,type,lastModified:Date.now(),zip:true,
+    const lk=nm.toLowerCase(), je=J[lk]||J[lk.replace(/-(edited|bearbeitet|modifié|editado|modificato)(\.[a-z0-9]+)$/,"$2")]||null;
+    out.push({name:base,size:e.usz||e.sz,type,lastModified:Date.now(),zip:true,gjson:je?(()=>{ let p=null; return ()=>p||(p=gjRead(f,je)); })():null,
       file:async()=>{ let b=await raw(); if(e.method===8) b=await new Response(inflate(b)).blob(); return new File([b],base,{type}); },
       head:async n=>{ const b=await raw(); if(e.method===0) return b.slice(0,n).arrayBuffer(); const rd=inflate(b).getReader(); const parts=[]; let got=0;
         while(got<n){ const {done,value}=await rd.read(); if(done) break; parts.push(value); got+=value.length; } try{ await rd.cancel(); }catch(err){} return new Blob(parts).slice(0,n).arrayBuffer(); } }); }
@@ -3568,8 +3583,8 @@ async function importPhotos(files,forKey){
   for(const it of items){
     if(drop.has(it)){ phImport.burst++; phImport.done++; phTick(); continue; }
     try{ const vid=isVideo(it); let x={}, takenAt=null, tsrc=null, f=null;
-      if(vid){ f=await it.file(); const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; }
-      else { x=exc.get(it)||readExif(await it.head(262144)); takenAt=exifTime(x); phImport.pics++; if(x.lat==null){ if(x.gz) phImport.gz++; else phImport.gn++; } }
+      if(vid){ f=await it.file(); const mm=await readMp4Meta(f); x={lat:mm.lat,lng:mm.lng}; takenAt=mm.t||null; [x,takenAt]=await gjFill(it,x,takenAt); }
+      else { x=exc.get(it)||readExif(await it.head(262144)); takenAt=exifTime(x); [x,takenAt]=await gjFill(it,x,takenAt); phImport.pics++; if(x.lat==null){ if(x.gz) phImport.gz++; else phImport.gn++; } }
       let cls=null; const unCount=()=>{ if(cls) phImport.cls[cls]--; if(vid) return; phImport.pics--; if(x.lat==null){ if(x.gz) phImport.gz--; else phImport.gn--; } if(tsrc!=="meta"&&tsrc!=="name") phImport.notime--; };   /* a copy we skip says nothing about this import */
       if(takenAt) tsrc="meta"; else if((takenAt=nameTime(it.name))) tsrc="name"; else if(it.lastModified&&!it.zip&&Math.abs(Date.now()-it.lastModified)>30*60e3){ takenAt=it.lastModified; tsrc="file"; }
       if(tsrc!=="meta"&&tsrc!=="name") phImport.notime++;
