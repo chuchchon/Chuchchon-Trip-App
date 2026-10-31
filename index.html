@@ -3643,8 +3643,8 @@ function photoSheetHtml(){
   return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปและวิดีโอของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${mediaWord(phMeta)}</span>`:""}</h2>
   <p class="ph-intro">แอปวางรูปเข้าจุดในแผนจากตำแหน่งที่ถ่าย ถ้ารูปไม่มีตำแหน่งจะดูจากเวลาที่ถ่าย · แตะรูปเพื่อดูใหญ่และย้าย · ไฟล์อยู่ในเครื่องนี้เท่านั้น</p>
   <div class="c-actions ph-main"><button class="btn small primary" data-act="ph-addmenu" aria-expanded="${phAddOpen}">${I.plus}เพิ่มรูป/วิดีโอ</button>${loose.length?`<button class="btn small" data-act="srt-open">จัดรูปที่ยังไม่ได้จัด (${loose.length})</button>`:""}${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}Tripbook</button>`:""}</div>
-  ${phAddOpen?`<div class="ph-addmenu"><button class="ph-addopt" data-act="ph-pick"><b>เลือกจากรูปในมือถือ</b><span>เร็วที่สุด แต่มือถือบางรุ่นตัดตำแหน่งที่ถ่ายออก แอปจะจัดตามเวลาแทน</span></button><button class="ph-addopt" data-act="ph-pick-files"><b>ไฟล์ ZIP</b><span>ได้ตำแหน่งที่ถ่ายครบ · รูปที่มีอยู่แล้วจะถูกเติมตำแหน่ง ไม่เพิ่มซ้ำ</span></button>${zipHow()}<label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียวที่คมชัดที่สุด</label></div>`:""}
-  ${poolHtml()}
+  ${phAddOpen?`<div class="ph-addmenu"><button class="ph-addopt" data-act="ph-pick"><b>เลือกจากรูปในมือถือ</b><span>เร็วที่สุด แต่มือถือบางรุ่นตัดตำแหน่งที่ถ่ายออก แอปจะจัดตามเวลาแทน</span></button><button class="ph-addopt" data-act="gp-pick"><b>จาก Google Photos</b><span>เลือกจากคลัง Google Photos ได้เลย · Google ตัดตำแหน่งที่ถ่ายออก แอปจะจัดตามเวลาที่ถ่าย</span></button><button class="ph-addopt" data-act="ph-pick-files"><b>ไฟล์ ZIP</b><span>ได้ตำแหน่งที่ถ่ายครบ · รูปที่มีอยู่แล้วจะถูกเติมตำแหน่ง ไม่เพิ่มซ้ำ</span></button>${zipHow()}<label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียวที่คมชัดที่สุด</label></div>`:""}
+  ${gpHtml()}${poolHtml()}
   ${prog}
   ${!imp&&noLoc>=5&&noLoc>phMeta.length/2?`<div class="ph-geo-note"><b>${noLoc} รูปไม่มีตำแหน่งที่ถ่าย</b> จึงจัดได้แค่ตามเวลา · ถ้ามีไฟล์ต้นฉบับ นำเข้าเป็น ZIP อีกครั้งเพื่อเติมตำแหน่ง (ไม่เพิ่มซ้ำ)</div>`:""}
   ${phMeta.length?`<p class="ph-days-h">แตะวันเพื่อดูรูปในแผนของวันนั้น</p><div class="ph-days" role="group" aria-label="ดูรูปในแผนของวัน" style="margin-top:6px">${DAYS.map((d,i)=>`<button class="ph-day${byDay[i]?"":" z"}" data-act="ph-goday" data-d="${i}" style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</button>`).join("")}</div>`:""}
@@ -3803,6 +3803,7 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
     return `<div class="tb-grid n${Math.min(show.length,5)}"${app?` data-tbg="${esc(gk)}"`:""}>${(await Promise.all(show.map((m,j)=>fig(m,j<bigN)))).join("")}</div>${app&&list.length>lim?`<button class="btn small tb-more" data-tb="more" data-g="${esc(gk)}">ดูอีก ${list.length-lim} รูปของจุดนี้</button>`:""}`; };
   const st=tripStats(); const pics=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide); const vids=phMeta.filter(m=>m.kind==="video"&&!m.tbHide).length; const cover=pics.find(m=>m.cover)||pics.find(m=>m.key&&m.lat!=null)||pics[0];
   let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>${DAYS.length} วัน (ขับรถ ${CARFREE_DAY} วันแรก) · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${pics.length}</b>รูป</li>${vids?`<li><b>${vids}</b>วิดีโอ</li>`:""}<li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
+  h+=tbAlbumHtml();
   tbRegGroup="ov"; h+=await tbOverview(mode);
   for(let i=0;i<DAYS.length;i++){ const d=DAYS[i]; const seq=stopSeq(i).filter(x=>x.num); const dayPh=phMeta.filter(m=>m.day===i&&shown(m));
     if(!dayPh.length&&!seq.some(x=>isVisited(i,x.it._i))) continue;   /* a day we haven't reached yet */
@@ -3852,6 +3853,7 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 .tb-grid figure.v{position:relative}
 .tb-grid figure.up{position:relative}
 .tb-grid.clip figure[data-x]{display:none}
+.tb-album{margin:16px 0 0;text-align:center}.tb-album a{display:inline-block;padding:10px 18px;border-radius:999px;background:#EEF4FB;color:#1D4E9E;font-weight:600;text-decoration:none;border:1px solid #C9D9EE}
 .tb-showall{display:block;margin:6px auto 0;padding:9px 16px;border:1px solid #CBD5D0;border-radius:999px;background:#fff;font:600 14px inherit;color:#2F6FB3;cursor:pointer}
 .tb-grid figure.up::before{content:"Drive";position:absolute;right:6px;bottom:6px;z-index:1;height:20px;padding:0 7px 0 23px;border-radius:999px;color:#fff;font:600 11px/20px system-ui,sans-serif;background:rgba(0,0,0,.5) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A6 6 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z'/%3E%3C/svg%3E") 7px 50%/13px no-repeat;pointer-events:none}
 .tb-grid figure[data-v]{cursor:pointer}
@@ -3993,12 +3995,12 @@ function gdClientId(){ return store.get("gcid",""); }
 function gdBase(){ return location.origin+location.pathname.replace(/planner\/.*$/,"").replace(/[^/]*$/,""); }
 function gdRedirect(){ return location.origin+location.pathname.replace(/index\.html$/,""); }
 function gdToken(){ try{ const t=JSON.parse(sessionStorage.getItem("gdTok")||"null"); if(t&&t.exp>Date.now()+90000) return t.tok; }catch(e){} return ""; }
-function gdSignIn(resume){ const st=tbsNewId(); try{ sessionStorage.setItem("gdState",JSON.stringify({st,resume,form:tbShare&&tbShare.step==="form"?tbsFormRead():null})); }catch(e){}
-  location.href="https://accounts.google.com/o/oauth2/v2/auth?"+new URLSearchParams({client_id:gdClientId(),redirect_uri:gdRedirect(),response_type:"token",scope:"https://www.googleapis.com/auth/drive",state:st,include_granted_scopes:"true"}); }
+function gdSignIn(resume,photos){ const st=tbsNewId(); try{ sessionStorage.setItem("gdState",JSON.stringify({st,resume,form:tbShare&&tbShare.step==="form"?tbsFormRead():null})); }catch(e){}
+  location.href="https://accounts.google.com/o/oauth2/v2/auth?"+new URLSearchParams({client_id:gdClientId(),redirect_uri:gdRedirect(),response_type:"token",scope:"https://www.googleapis.com/auth/drive"+(photos?" https://www.googleapis.com/auth/photospicker.mediaitems.readonly":""),state:st,include_granted_scopes:"true"}); }
 /* back from Google: keep the token for this tab (it lasts an hour) and take the address bar back */
 (function gdCatch(){ try{ const h=location.hash||""; if(!/access_token=|error=/.test(h)) return; const p=new URLSearchParams(h.slice(1)); const s=JSON.parse(sessionStorage.getItem("gdState")||"null");
     history.replaceState(null,"",location.pathname+location.search); if(!s||s.st!==p.get("state")) return;
-    if(p.get("access_token")) sessionStorage.setItem("gdTok",JSON.stringify({tok:p.get("access_token"),exp:Date.now()+(+p.get("expires_in")||3600)*1000}));
+    if(p.get("access_token")) sessionStorage.setItem("gdTok",JSON.stringify({tok:p.get("access_token"),exp:Date.now()+(+p.get("expires_in")||3600)*1000,scope:p.get("scope")||""}));
     sessionStorage.setItem("gdResume",JSON.stringify({to:s.resume||"form",form:s.form,err:p.get("error")||""})); }catch(e){} })();
 function tbWhenVisible(){ return document.visibilityState!=="hidden"?Promise.resolve():new Promise(r=>{ const f=()=>{ if(document.visibilityState!=="hidden"){ document.removeEventListener("visibilitychange",f); r(); } }; document.addEventListener("visibilitychange",f); }); }
 function tbTimeout(ms){ try{ return AbortSignal.timeout(ms); }catch(e){ return undefined; } }
@@ -4545,20 +4547,20 @@ function vgLock(id){ const st=document.createElement("style");
     catch(e){ b.disabled=false; b.textContent="เปิดดูทริป"; $e("#vgE").textContent=e.bad?"รหัสไม่ถูกต้อง ลองใหม่อีกครั้งนะ":e.gone?"เจ้าของทริปหยุดแชร์ลิงก์นี้แล้ว":"โหลดไม่ได้ตอนนี้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"; if(e.bad){ const f=$e("form"); f.classList.remove("sh"); void f.offsetWidth; f.classList.add("sh"); } } };
   setTimeout(()=>{ try{ $e("#vgP").focus(); }catch(e){} },300); }
 const VG_HIDE=["ph-addmenu","ph-pick","ph-pick-files","ph-add","ph-addstop","tb-open","backup","addstop","srt-open","ph-resort","ph-undo","dup-open","phx-open","cs-edit","rec-add","rec-hide","ex-add","reorder","dshift","dstop","bk-restore","bk-import","act-apply","act-open","gk-open","cs-recplus"];
-const VG_BLOCK=/^(addstop|visit|reorder|dshift|dstop|rec-add|rec-hide|ex-add|ph-pick|ph-pick-files|ph-add|ph-addmenu|ph-addstop|ph-gmv|ph-undo|ph-resort|ph-strip|ph-justno|ph-galsel|ph-galundo|ph-gpick|ph-gname|srt-.*|cs-(edit|save|reset|del|ins|time|qt.*|leg.*|mv|moveday|promote|pick.*|noplace|here|fradd|recplus|atclear)|backup|bk-.*|tb-open|pool-.*|gk-.*|act-apply|act-all|dup-.*|phx-.*|vs-.*)$/;
+const VG_BLOCK=/^(addstop|visit|reorder|dshift|dstop|rec-add|rec-hide|ex-add|ph-pick|ph-pick-files|ph-add|ph-addmenu|ph-addstop|ph-gmv|ph-undo|ph-resort|ph-strip|ph-justno|ph-galsel|ph-galundo|ph-gpick|ph-gname|srt-.*|cs-(edit|save|reset|del|ins|time|qt.*|leg.*|mv|moveday|promote|pick.*|noplace|here|fradd|recplus|atclear)|backup|bk-.*|tb-open|pool-.*|gp-.*|gk-.*|act-apply|act-all|dup-.*|phx-.*|vs-.*)$/;
 function vgToast(t){ let el=$("#vgToast"); if(!el){ el=document.createElement("div"); el.id="vgToast"; document.body.appendChild(el); } el.textContent=t; el.classList.add("on"); clearTimeout(vgToast.t); vgToast.t=setTimeout(()=>el.classList.remove("on"),1800); }
 function vgBarPaint(){ const b=$("#vgBar"); if(!b) return; const c=VIEW.c, d=new Date(c.at||0), today=d.toDateString()===new Date().toDateString();
   const t=c.at?(today?"":d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})+" ")+d.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}):"";
-  b.innerHTML=`<span>👀 <b>ดูอย่างเดียว</b> · อัปเดต ${esc(t)}</span>${vgBar.newer?`<button data-vg="reload" class="on">มีของใหม่ · แตะเพื่อดู</button>`:`<button data-vg="check">${vgBar.busy?"กำลังดู…":"↻ ดูของใหม่"}</button>`}`; }
+  const alb=store.get("gpAlbum",""); b.innerHTML=`<span>👀 <b>ดูอย่างเดียว</b> · อัปเดต ${esc(t)}</span>${gpAlbumOk(alb)?`<a class="vg-alb" href="${esc(alb)}" target="_blank" rel="noopener">📷 อัลบั้ม</a>`:""}${vgBar.newer?`<button data-vg="reload" class="on">มีของใหม่ · แตะเพื่อดู</button>`:`<button data-vg="check">${vgBar.busy?"กำลังดู…":"↻ ดูของใหม่"}</button>`}`; }
 var vgBar={busy:false,newer:false,timer:null};
 async function vgRefresh(manual){ if(vgBar.busy||document.hidden&&!manual) return; vgBar.busy=true; if(manual) vgBarPaint();
   try{ const got=await vgLoad(VIEW.id,VIEW.c.pass,VIEW.c); if(got){ const open=$("#lbRoot .lb")||$(".sheet:not([hidden])")||$("#ph-root"); if(!open||manual) return location.reload(); vgBar.newer=true; } else if(manual) vgToast("ล่าสุดแล้ว"); }
   catch(e){ if(e.bad){ localStorage.removeItem("view:"+VIEW.id); return location.reload(); } if(e.gone){ localStorage.removeItem("view:"+VIEW.id); return location.reload(); } if(manual) vgToast("ดูของใหม่ไม่ได้ตอนนี้ ลองอีกครั้ง"); }
   finally{ vgBar.busy=false; vgBarPaint(); } }
 function vgBoot(){ const st=document.createElement("style"); document.body.classList.add("vg-view");
-  st.textContent=`body.vg-view :is(${VG_HIDE.map(n=>`[data-act="${n}"]`).join(",")}),body.vg-view #pool,body.vg-view .ph-tools,body.vg-view .dh-ph-warn,body.vg-view .dh-ph-prog,body.vg-view .lb-acts,body.vg-view .lb-move,body.vg-view .tb-cta,body.vg-view #vsBox{display:none!important}
+  st.textContent=`body.vg-view :is(${VG_HIDE.map(n=>`[data-act="${n}"]`).join(",")}),body.vg-view #pool,body.vg-view #gpBox,body.vg-view .ph-tools,body.vg-view .dh-ph-warn,body.vg-view .dh-ph-prog,body.vg-view .lb-acts,body.vg-view .lb-move,body.vg-view .tb-cta,body.vg-view #vsBox{display:none!important}
 #vgBar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 2px;padding:7px 8px 7px 12px;border-radius:12px;background:#E8F0FB;color:#1D3D6E;font-size:13px;line-height:1.35}
-#vgBar button{flex:none;border:1px solid #B9CDEB;background:#fff;color:#1D4E9E;border-radius:999px;padding:5px 10px;font:600 12.5px inherit;cursor:pointer}#vgBar button.on{background:#1D4E9E;color:#fff;border-color:#1D4E9E}
+#vgBar .vg-alb{flex:none;margin-left:auto;color:#1D4E9E;font-weight:600;text-decoration:none;font-size:12.5px;padding:5px 4px}#vgBar button{flex:none;border:1px solid #B9CDEB;background:#fff;color:#1D4E9E;border-radius:999px;padding:5px 10px;font:600 12.5px inherit;cursor:pointer}#vgBar button.on{background:#1D4E9E;color:#fff;border-color:#1D4E9E}
 #vgToast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);background:rgba(20,28,36,.92);color:#fff;padding:9px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:9999}#vgToast.on{opacity:1;transform:translate(-50%,0)}
 .vg-vid{width:100%;height:100%;min-height:60vh;border:0;background:#000}`;
   document.head.appendChild(st);
@@ -4569,6 +4571,71 @@ function vgBoot(){ const st=document.createElement("style"); document.body.class
   vgBar.timer=setInterval(()=>vgRefresh(false),180000); setTimeout(()=>vgRefresh(false),4000);
   if(VIEW.c.pub&&VIEW.c.pub.title) document.title=VIEW.c.pub.title+" · ดูทริป"; }
 if(VIEW) setTimeout(vgBoot,0);
+
+/* ===================== Google Photos =====================
+   1. pick photos and videos from the Google Photos library (Google's own picker; Google removes the place, so they go in by the time taken)
+   2. the link of a shared album, shown to viewers and in the Tripbook */
+const GP="https://photospicker.googleapis.com/v1", GP_SCOPE="https://www.googleapis.com/auth/photospicker.mediaitems.readonly";
+var gpS={busy:false,step:"",msg:"",i:0,n:0,err:"",sid:"",uri:"",poll:null,got:0,albEdit:false};
+function gpTokOK(){ try{ const t=JSON.parse(sessionStorage.getItem("gdTok")||"null"); return !!(gdToken()&&t&&/photospicker/.test(t.scope||"")); }catch(e){ return false; } }
+function gpAlbumOk(u){ return /^https:\/\/(photos\.app\.goo\.gl|photos\.google\.com|goo\.gl\/photos)\/\S+$/.test(u||""); }
+function gpErr(e){ const m=e&&e.message||String(e);
+  if(/not been used|disabled|SERVICE_DISABLED|has not been enabled/i.test(m)) return "ยังไม่ได้เปิด Google Photos Picker API ในโปรเจกต์ Google Cloud — เปิดที่ลิงก์ด้านล่างครั้งเดียว แล้วลองใหม่";
+  if(/insufficient|scope|PERMISSION_DENIED/i.test(m)) return "Google ยังไม่ได้ให้สิทธิ์ดูรูปที่เลือก ลองกดใหม่แล้วอนุญาต";
+  return m; }
+function gpHtml(){ const s=gpS, alb=store.get("gpAlbum","");
+  let h=`<div class="pool gp" id="gpBox"><div class="pool-h">🖼️ <b>Google Photos</b></div>`;
+  if(s.step==="open") h+=`<p><b>① แตะ “เปิด Google Photos” แล้วเลือกรูปและวิดีโอของทริป</b><br>② เลือกเสร็จกด Done แล้วกลับมาที่แอปนี้ แอปจะดึงรูปเข้ามาเอง</p>
+    <div class="c-actions"><a class="btn small primary" href="${esc(s.uri)}" target="_blank" rel="noopener" data-gp="opened">เปิด Google Photos</a><button class="btn small" data-act="gp-cancel">ยกเลิก</button></div><p class="tb-note">${s.msg?esc(s.msg):"รอเลือกรูปอยู่…"}</p>`;
+  else if(s.busy) h+=`<p><b>${esc(s.msg)}${s.n?` ${s.i.toLocaleString()} / ${s.n.toLocaleString()}`:""}</b></p>${s.n?`<div class="tb-pbar"><i style="width:${Math.max(3,Math.round(s.i/s.n*100))}%"></i></div>`:""}<p class="tb-note">Google ตัดตำแหน่งที่ถ่ายออก แอปจะจัดรูปเข้าจุดตามเวลาที่ถ่าย</p>`;
+  else if(s.got) h+=`<p>ดึงจาก Google Photos แล้ว ${s.got.toLocaleString()} ไฟล์ ✓</p>`;
+  if(s.err) h+=`<p class="tb-err">${esc(s.err)}</p>${/Picker API/.test(s.err)?`<p class="tiny"><a href="https://console.cloud.google.com/apis/library/photospicker.googleapis.com" target="_blank" rel="noopener">เปิด Google Photos Picker API ›</a></p>`:""}`;
+  if(!s.busy&&s.step!=="open"&&!s.got) h+=`<p>ดึงรูปจากคลัง Google Photos เข้าแอปได้เลย ไม่ต้องโหลดลงมือถือก่อน · แตะ “เพิ่มรูป/วิดีโอ” → “จาก Google Photos”</p>`;
+  if(alb&&!s.albEdit) h+=`<p>📷 อัลบั้มที่แชร์: <a href="${esc(alb)}" target="_blank" rel="noopener">เปิดอัลบั้ม</a> · <button class="lnk" data-act="gp-albedit">เปลี่ยน</button><br><span class="tiny">คนที่ได้ลิงก์ดูทริปและ Tripbook จะมีปุ่มเปิดอัลบั้มนี้</span></p>`;
+  else h+=`<p class="tiny" style="margin-top:8px">ลิงก์อัลบั้มที่แชร์ใน Google Photos (ไม่บังคับ) — คนที่ได้ลิงก์ดูทริปและ Tripbook จะมีปุ่มเปิดอัลบั้มนี้</p><div class="pool-row"><input class="inp" id="gpAlb" inputmode="url" placeholder="https://photos.app.goo.gl/…" value="${esc(alb)}"><button class="btn small" data-act="gp-albsave">บันทึก</button></div>${alb?`<button class="lnk" data-act="gp-albdel">เอาลิงก์ออก</button>`:""}`;
+  return h+`</div>`; }
+function gpPaint(){ const el=$("#gpBox"); if(el) el.outerHTML=gpHtml(); }
+async function gpStart(){ const s=gpS; s.err=""; s.got=0;
+  if(!gdClientId()){ s.err="ตั้งค่า Google ก่อน: เปิด Tripbook → แชร์ลิงก์ → Google Drive ของฉัน (ทำครั้งเดียว)"; return gpPaint(); }
+  if(!gpTokOK()) return gdSignIn("gp",true);
+  s.busy=true; s.msg="กำลังเปิดตัวเลือกรูป…"; s.n=0; gpPaint();
+  try{ const j=await gdReq(`${GP}/sessions`,{method:"POST",json:{}}); s.sid=j.id; s.uri=(j.pickerUri||"")+(/autoclose$/.test(j.pickerUri||"")?"":"/autoclose"); s.step="open"; s.busy=false; s.msg="";
+    const iv=Math.max(1000,(parseFloat((j.pollingConfig||{}).pollInterval)||5)*1000); gpPollLoop(iv,Date.now()+(parseFloat((j.pollingConfig||{}).timeoutIn)||1800)*1000); }
+  catch(e){ s.busy=false; s.step=""; s.err=e.code==="auth"?"การเข้าสู่ระบบ Google หมดเวลา แตะ “จาก Google Photos” อีกครั้ง":gpErr(e); }
+  gpPaint(); if(!$("#gpBox")) photoSheetPaint(true); }
+function gpPollLoop(iv,until){ clearTimeout(gpS.poll); const s=gpS;
+  gpS.poll=setTimeout(async()=>{ if(s.step!=="open") return; if(Date.now()>until){ s.step=""; s.err="หมดเวลาเลือกรูป แตะ “จาก Google Photos” ใหม่อีกครั้ง"; return gpPaint(); }
+    if(document.visibilityState==="hidden"){ await tbWhenVisible(); }
+    try{ const j=await gdReq(`${GP}/sessions/${s.sid}`); if(j.mediaItemsSet){ s.step=""; return gpFetch(); } }
+    catch(e){ if(e.code==="auth"){ s.step=""; s.err="การเข้าสู่ระบบ Google หมดเวลา แตะ “จาก Google Photos” อีกครั้ง"; return gpPaint(); } }
+    gpPollLoop(iv,until); },iv); }
+async function gpFetch(){ const s=gpS; s.busy=true; s.msg="กำลังดูว่าเลือกอะไรมา…"; s.i=s.n=0; gpPaint();
+  try{ const items=[]; let pt="";
+    do{ const j=await gdReq(`${GP}/mediaItems?sessionId=${enc(s.sid)}&pageSize=100${pt?"&pageToken="+enc(pt):""}`); (j.mediaItems||[]).forEach(x=>items.push(x)); pt=j.nextPageToken||""; } while(pt);
+    s.n=items.length; s.msg="กำลังดึงจาก Google Photos"; gpPaint(); let k=0, ok=0, cors=0;
+    /* in batches, so a big pick never sits in memory all at once */
+    for(let b=0;b<items.length;b+=30){ const got=[];
+      await tbPool(items.slice(b,b+30),4,async it=>{ const f=it.mediaFile||{}, vid=it.type==="VIDEO"||/^video\//.test(f.mimeType||"");
+        try{ const r=await fetch(f.baseUrl+(vid?"=dv":"=d"),{headers:{Authorization:"Bearer "+gdToken()}}); if(!r.ok) throw new Error("http "+r.status);
+          const bl=await r.blob(); const name=f.filename||((vid?"video_":"photo_")+it.id.slice(0,8)+(vid?".mp4":".jpg"));
+          got.push(new File([bl],name,{type:bl.type||f.mimeType||(vid?"video/mp4":"image/jpeg"),lastModified:Date.parse(it.createTime)||0})); ok++; }
+        catch(e){ if(e instanceof TypeError) cors++; }
+        s.i=++k; if(k%3===0) gpPaint(); });
+      if(got.length){ s.msg="กำลังจัดรูปเข้าแผน"; gpPaint(); await importPhotos(got,null); s.msg="กำลังดึงจาก Google Photos"; } }
+    s.got=ok; if(!ok&&items.length) s.err=cors?"เบราว์เซอร์นี้ดึงไฟล์จาก Google Photos ไม่ได้ ลองเปิดแอปใน Chrome หรือดาวน์โหลดรูปจาก Google Photos แล้วเลือกจากรูปในมือถือแทน":"ดึงไฟล์จาก Google Photos ไม่ได้ ลองใหม่อีกครั้ง";
+    else if(ok<items.length) s.err=`ดึงไม่ได้ ${(items.length-ok).toLocaleString()} ไฟล์ (วิดีโอที่ Google ยังประมวลผลไม่เสร็จจะดึงไม่ได้ ลองใหม่ภายหลัง)`;
+    try{ await gdReq(`${GP}/sessions/${s.sid}`,{method:"DELETE"}); }catch(e){} }
+  catch(e){ s.err=e.code==="auth"?"การเข้าสู่ระบบ Google หมดเวลา แตะ “จาก Google Photos” อีกครั้ง":gpErr(e); }
+  finally{ s.busy=false; s.sid=""; gpPaint(); if($("#ph-root")) photoSheetPaint(); renderPlan(); } }
+async function gpAct(a){ const s=gpS;
+  if(a==="gp-pick"){ phAddOpen=false; photoSheetPaint(true); return gpStart(); }
+  if(a==="gp-cancel"){ clearTimeout(s.poll); const sid=s.sid; s.step=""; s.sid=""; gpPaint(); if(sid) try{ await gdReq(`${GP}/sessions/${sid}`,{method:"DELETE"}); }catch(e){} return; }
+  if(a==="gp-albedit"){ s.albEdit=true; return gpPaint(); }
+  if(a==="gp-albdel"){ store.set("gpAlbum",""); s.albEdit=false; return gpPaint(); }
+  if(a==="gp-albsave"){ const u=(($("#gpAlb")||{}).value||"").trim(); if(u&&!gpAlbumOk(u)){ s.err="ลิงก์อัลบั้มต้องเป็นลิงก์แชร์ของ Google Photos เช่น https://photos.app.goo.gl/…"; return gpPaint(); } s.err=""; store.set("gpAlbum",u); s.albEdit=false; return gpPaint(); } }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='gp-']"); if(!b) return; ev.stopPropagation(); gpAct(b.dataset.act); },true);
+document.addEventListener("click",ev=>{ const a=ev.target.closest("[data-gp='opened']"); if(a){ gpS.msg="รอเลือกรูปอยู่… เลือกเสร็จกด Done แล้วกลับมาที่นี่"; setTimeout(gpPaint,50); } });
+function tbAlbumHtml(){ const u=store.get("gpAlbum",""); return gpAlbumOk(u)?`<p class="tb-album"><a href="${esc(u)}" target="_blank" rel="noopener">📷 ดูรูปและวิดีโอทั้งหมดในอัลบั้ม Google Photos ›</a></p>`:""; }
 
 var tbWake=null;
 async function tbWakeOn(){ try{ if("wakeLock" in navigator&&!tbWake&&document.visibilityState==="visible"){ tbWake=await navigator.wakeLock.request("screen"); tbWake.addEventListener("release",()=>{ tbWake=null; }); } }catch(e){} }
@@ -4583,6 +4650,7 @@ async function tbsPendingKick(soft){ if(tbShareBusy) return; const st=await tbCa
   return tbsAction("sh-go"); }
 async function gdResumeKick(){ let r=null; try{ r=JSON.parse(sessionStorage.getItem("gdResume")||"null"); sessionStorage.removeItem("gdResume"); }catch(e){}
   if(!r){ let j=null; try{ j=sessionStorage.getItem("poolJoin"); sessionStorage.removeItem("poolJoin"); }catch(e){} if(j){ photoSheetPaint(true); return; } if(poolGet()&&gdToken()) setTimeout(()=>poolSync({quiet:true}),2500); return tbsPendingKick(); }
+  if(r.to==="gp"){ photoSheetPaint(true); await tbSleep(200); if(r.err||!gdToken()){ gpS.err="เข้าสู่ระบบ Google ไม่สำเร็จ"+(r.err?" ("+r.err+")":""); return gpPaint(); } return gpStart(); }
   if(r.to&&r.to.indexOf("pool")===0){ photoSheetPaint(true); await tbSleep(200); if(r.err||!gdToken()){ poolS.err="เข้าสู่ระบบ Google ไม่สำเร็จ"+(r.err?" ("+r.err+")":""); return poolPaint(); }
     if(r.to==="pool-pick"){ photoSheetPaint(true); return poolAct("pool-start"); } return poolSync(); }
   if(!document.body.classList.contains("tb-open")) await openTripbook(); await tbSleep(300);
