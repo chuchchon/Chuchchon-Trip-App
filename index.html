@@ -3965,14 +3965,14 @@ async function gdReq(url,opt){ opt=opt||{}; const tok=gdToken(); if(!tok) throw 
 async function gdFolders(parent){ const q=`'${parent}' in parents and mimeType='${GD_FOLDER}' and trashed=false`; return ((await gdReq(`${GD}/files?q=${enc(q)}&fields=files(id,name)&orderBy=name&pageSize=300`)).files)||[]; }
 async function gdMkdir(name,parent){ return gdReq(`${GD}/files?fields=id,name`,{method:"POST",json:{name,mimeType:GD_FOLDER,parents:[parent]}}); }
 async function gdChildren(parent){ const out=new Map(); let pt="";
-  do{ const q=`'${parent}' in parents and trashed=false`; const j=await gdReq(`${GD}/files?q=${enc(q)}&fields=nextPageToken,files(id,name)&pageSize=1000${pt?"&pageToken="+enc(pt):""}`); (j.files||[]).forEach(f=>out.set(f.id,f.name)); pt=j.nextPageToken||""; } while(pt);
+  do{ const q=`'${parent}' in parents and trashed=false`; const j=await gdReq(`${GD}/files?q=${enc(q)}&fields=nextPageToken,files(id,name,appProperties)&pageSize=1000${pt?"&pageToken="+enc(pt):""}`); (j.files||[]).forEach(f=>out.set(f.id,{name:f.name,tb:f.appProperties&&f.appProperties.tb||""})); pt=j.nextPageToken||""; } while(pt);
   return out; }
 async function gdAlive(id){ const j=await gdReq(`${GD}/files/${id}?fields=id,trashed`,{ok404:true}); return !!(j&&!j.trashed); }
-async function gdUpload(blob,name,parent,mime,onp){
+async function gdUpload(blob,name,parent,mime,onp,tag){ const meta=Object.assign({name,parents:[parent]},tag?{appProperties:{tb:tag}}:{});
   if(blob.size<5*1048576){ const b="tb"+tbsNewId();
-    const body=new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({name,parents:[parent]})}\r\n--${b}\r\nContent-Type: ${mime}\r\n\r\n`,blob,`\r\n--${b}--`]);
+    const body=new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: ${mime}\r\n\r\n`,blob,`\r\n--${b}--`]);
     const j=await gdReq(`${GDU}/files?uploadType=multipart&fields=id`,{method:"POST",headers:{"Content-Type":"multipart/related; boundary="+b},body}); onp&&onp(blob.size); return j; }
-  const r=await gdReq(`${GDU}/files?uploadType=resumable&fields=id`,{method:"POST",json:{name,parents:[parent]},headers:{"X-Upload-Content-Type":mime,"X-Upload-Content-Length":String(blob.size)},raw:true});
+  const r=await gdReq(`${GDU}/files?uploadType=resumable&fields=id`,{method:"POST",json:meta,headers:{"X-Upload-Content-Type":mime,"X-Upload-Content-Length":String(blob.size)},raw:true});
   const loc=r.headers.get("Location"); if(!loc) throw new Error("Google Drive ไม่ให้ที่อัปโหลดไฟล์ใหญ่");
   const CH=8*1048576; let off=0;
   while(off<blob.size){ const end=Math.min(blob.size,off+CH); let rr=null;
@@ -4034,7 +4034,7 @@ async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) th
   if(!D.sub||D.subParent!==D.folder.id){ say("กำลังสร้างโฟลเดอร์ใน Drive…"); const f=await gdMkdir(tbsFileName("Tripbook "+tbsTitle()),D.folder.id); D.sub=f.id; D.subParent=D.folder.id; D.files={}; D.extra=null;
     await gdReq(`${GD}/files/${f.id}/permissions?fields=id`,{method:"POST",json:{role:"reader",type:"anyone"}}); await tbCachePut(st); }
   let ids=new Map();
-  if(D.sub&&D.subParent===D.folder.id){ say("กำลังเช็คไฟล์ใน Drive…"); ids=await gdChildren(D.sub); if(D.extra&&ids.has(D.extra)) (await gdChildren(D.extra)).forEach((n,id)=>ids.set(id,n)); else D.extra=null;
+  if(D.sub&&D.subParent===D.folder.id){ say("กำลังเช็คไฟล์ใน Drive…"); ids=await gdChildren(D.sub); if(D.extra&&ids.has(D.extra)) (await gdChildren(D.extra)).forEach((v,id)=>ids.set(id,v)); else D.extra=null;
     Object.keys(D.files||{}).forEach(k=>{ if(!ids.has(D.files[k])) delete D.files[k]; }); }
   D.files=D.files||{}; if(!D.extra){ D.extra=(await gdMkdir("_ประกอบเล่ม (แผนที่และภาพย่อ)",D.sub)).id; }
   /* what goes up: each photo once (full size), each video as the original file, maps and the small pictures in a side folder */
@@ -4049,12 +4049,13 @@ async function tbsDriveMedia(reg,st,say){ const D=st.drive; if(!D||!D.folder) th
     refs[i]={key,w}; }
   const vidKeys={}; for(const id of tbExpVidUsed){ const m=phMeta.find(x=>x.id===id); if(!m) continue; const key="v:"+id; vidKeys[id]=key; if(!assets.has(key)) assets.set(key,{key,m,video:true,name:named(m,((m.ext||"mp4")+"").toLowerCase()),parent:D.sub,mime:m.mime||"video/mp4"}); }
   /* a file that reached Drive just as the app was closed is taken as it is, not sent a second time */
-  { const byName=new Map(), used=new Set(Object.values(D.files)); ids.forEach((n,id)=>{ if(!used.has(id)&&!byName.has(n)) byName.set(n,id); });
-    assets.forEach(a=>{ if(!D.files[a.key]){ const id=byName.get(a.name); if(id){ D.files[a.key]=id; byName.delete(a.name); } } }); }
+  { const byTag=new Map(), byName=new Map(), used=new Set(Object.values(D.files));
+    ids.forEach((v,id)=>{ if(used.has(id)) return; if(v.tb){ if(!byTag.has(v.tb)) byTag.set(v.tb,id); } else if(!byName.has(v.name)) byName.set(v.name,id); });
+    assets.forEach(a=>{ if(D.files[a.key]) return; const id=byTag.get(a.key)||byName.get(a.name); if(id){ D.files[a.key]=id; byTag.delete(a.key); byName.delete(a.name); } }); }
   const todo=[...assets.values()].filter(a=>!D.files[a.key]); let done=0, bytes=0, last=0;
   say("กำลังอัปโหลดไป Google Drive",0,todo.length);
   const one=async a=>{ let blob=a.blob; if(!blob){ const b=await PDB.getBlob(a.m.id); blob=b&&b.full; } if(!blob){ done++; return; } if(a.photo) blob=await tbPhotoForDrive(a.m,blob);
-    const f=await gdUpload(blob,a.name,a.parent,a.mime,n=>{ bytes+=n; const now=Date.now(); if(now-last>300){ last=now; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); } });
+    const f=await gdUpload(blob,a.name,a.parent,a.mime,n=>{ bytes+=n; const now=Date.now(); if(now-last>300){ last=now; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); } },a.key);
     D.files[a.key]=f.id; done++; say("กำลังอัปโหลดไป Google Drive",done,todo.length,false,bytes); await tbCachePut(st); };
   try{ const small=todo.filter(a=>!a.video), big=todo.filter(a=>a.video); await tbPool(small,5,one); for(const a of big) await one(a); }
   finally{ await tbCachePut(st); }
