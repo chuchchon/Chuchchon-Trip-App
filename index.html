@@ -663,6 +663,12 @@ body.is-dragging{cursor:grabbing}
 .pool .inp{width:100%;box-sizing:border-box;margin:6px 0}
 .pool-row{display:flex;gap:6px;align-items:center}.pool-row .inp{flex:1;margin:0}
 .pool-inv{margin-top:8px;padding-top:8px;border-top:1px dashed #CBD5D0}
+.pool-v{margin-top:8px;padding-top:8px;border-top:1px dashed #CBD5D0}
+.pool-vl{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:4px;margin:6px 0}
+.pool-vl label{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid #DDE3E0;border-radius:10px;font-size:13px}
+.pool-vl label span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pool-vl label em{font-style:normal;color:#6B7A73;font-size:12px;white-space:nowrap}
+.pool-vl input{width:18px;height:18px;flex:none}
 .tb-lk{margin:6px 0;padding:9px 10px;background:#fff;border:1px solid #DDE3E0;border-radius:10px;word-break:break-all;font-weight:600}
 .tb-lk a{color:#2F6FB3}
 .tb-lkm{list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:3px;font-size:13px}
@@ -4004,7 +4010,7 @@ async function gdChildren(parent){ const out=new Map(); let pt="";
   do{ const q=`'${parent}' in parents and trashed=false`; const j=await gdReq(`${GD}/files?q=${enc(q)}&fields=nextPageToken,files(id,name,appProperties)&pageSize=1000${pt?"&pageToken="+enc(pt):""}`); (j.files||[]).forEach(f=>out.set(f.id,{name:f.name,tb:f.appProperties&&f.appProperties.tb||""})); pt=j.nextPageToken||""; } while(pt);
   return out; }
 async function gdAlive(id){ const j=await gdReq(`${GD}/files/${id}?fields=id,trashed`,{ok404:true}); return !!(j&&!j.trashed); }
-async function gdUpload(blob,name,parent,mime,onp,tag){ const meta=Object.assign({name,parents:[parent]},tag?{appProperties:{tb:tag}}:{});
+async function gdUpload(blob,name,parent,mime,onp,tag){ const meta=Object.assign({name,parents:[parent]},tag?{appProperties:typeof tag==="string"?{tb:tag}:tag}:{});
   if(blob.size<5*1048576){ const b="tb"+tbsNewId();
     const body=new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: ${mime}\r\n\r\n`,blob,`\r\n--${b}--`]);
     const j=await gdReq(`${GDU}/files?uploadType=multipart&fields=id`,{method:"POST",headers:{"Content-Type":"multipart/related; boundary="+b},body}); onp&&onp(blob.size); return j; }
@@ -4285,11 +4291,21 @@ function tbDrvLine(m){ const id=tbDrv&&tbDrv.map[m.id]||m.gd; if(!id) return "";
 async function tbsBtn(){ const b=$('#tbRoot [data-tb="share"]'); if(!b) return; const st=await tbCacheGet("tb~share"); b.textContent=st&&st.link&&!st.stopped?"ลิงก์ที่แชร์ ✓":"แชร์ลิงก์"; }
 /* ===================== Shared photos: everyone on the trip puts their photos into one Google Drive folder,
    and every phone brings in the photos the others added (step 1 of working together) ===================== */
-var poolS={busy:false,msg:"",i:0,n:0,err:"",path:null,list:null,pick:false,inv:false,last:null};
+var poolS={busy:false,msg:"",i:0,n:0,err:"",path:null,list:null,pick:false,inv:false,last:null,vids:[],vpick:false,vsel:new Set(),free:null};
+function poolTripName(){ try{ if(typeof TRIP!=="undefined"&&TRIP&&TRIP.trip&&TRIP.trip.trip_name) return TRIP.trip.trip_name; }catch(e){} return $("#tbBody .tb-cover h1")?tbsTitle():"ฮอกไกโด ใบไม้แดง 2026"; }
+function poolMB(b){ const m=(+b||0)/1048576; if(!m) return "0 MB"; return m>=1024?(m/1024).toFixed(1)+" GB":Math.max(1,Math.round(m)).toLocaleString()+" MB"; }
+function poolVidHtml(){ const s=poolS, V=s.vids||[]; if(!V.length||s.busy) return "";
+  const tot=V.reduce((a,f)=>a+(+f.size||0),0);
+  if(!s.vpick) return `<div class="pool-v"><p>🎬 วิดีโอจากเพื่อน ${V.length.toLocaleString()} คลิป · รวม ${poolMB(tot)} <span class="tb-note">(ยังอยู่ใน Drive ไม่ได้ดึงลงเครื่อง)</span></p><div class="c-actions"><button class="btn small" data-act="pool-vpick">เลือกวิดีโอที่จะดึง</button></div></div>`;
+  const sel=V.filter(f=>s.vsel.has(f.id)), sb=sel.reduce((a,f)=>a+(+f.size||0),0);
+  return `<div class="pool-v"><p><b>เลือกวิดีโอที่จะดึงเข้าเครื่องนี้</b>${s.free!=null?` <span class="tb-note">· แอปใช้พื้นที่ได้อีกราว ${poolMB(s.free)}</span>`:""}</p>
+    <div class="pool-vl">${V.map(f=>{ const by=f.owners&&f.owners[0]&&f.owners[0].displayName||""; return `<label><input type="checkbox" name="poolv" value="${esc(f.id)}"${s.vsel.has(f.id)?" checked":""}><span>${esc(f.name)}</span><em>${poolMB(f.size)}${by?" · "+esc(by):""}</em></label>`; }).join("")}</div>
+    ${s.free!=null&&sb>s.free*0.9?`<p class="tb-err">ที่เลือกไว้ใหญ่เกินพื้นที่ที่เหลือ เลือกให้น้อยลงก่อน</p>`:""}
+    <div class="c-actions"><button class="btn small primary" data-act="pool-vget"${sel.length&&!(s.free!=null&&sb>s.free*0.9)?"":" disabled"}>ดึง ${sel.length.toLocaleString()} คลิป (${poolMB(sb)})</button><button class="btn small" data-act="pool-vall">${sel.length===V.length?"ไม่เลือกเลย":"เลือกทั้งหมด"}</button><button class="btn small" data-act="pool-vclose">ปิด</button></div></div>`; }
 function poolGet(){ return store.get("gdPool",null); }
 /* a friend's invite link: #join=<folder>~<client id> */
 (function poolJoin(){ try{ const m=(location.hash||"").match(/join=([A-Za-z0-9_-]{3,})~([0-9]+-[A-Za-z0-9_]+\.apps\.googleusercontent\.com)/); if(!m) return;
-    store.set("gdPool",{id:m[1],name:"",joined:Date.now()}); if(!store.get("gcid","")) store.set("gcid",m[2]); history.replaceState(null,"",location.pathname+location.search); sessionStorage.setItem("poolJoin","1"); }catch(e){} })();
+    const cur=store.get("gdPool",null); if(cur&&cur.id&&cur.id!==m[1]) sessionStorage.setItem("poolJoinNew",m[1]); else store.set("gdPool",{id:m[1],name:"",joined:Date.now()}); if(!store.get("gcid","")) store.set("gcid",m[2]); history.replaceState(null,"",location.pathname+location.search); sessionStorage.setItem("poolJoin","1"); }catch(e){} })();
 function poolInvite(){ const p=poolGet(); return p?`${gdRedirect()}#join=${p.id}~${gdClientId()}`:""; }
 function poolHtml(){ const p=poolGet(), s=poolS, tok=!!gdToken();
   let h=`<div class="pool" id="pool"><div class="pool-h">👥 <b>รูปรวมกับเพื่อนร่วมทริป</b></div>`;
@@ -4298,16 +4314,21 @@ function poolHtml(){ const p=poolGet(), s=poolS, tok=!!gdToken();
   else {
     const mine=phMeta.filter(m=>!m.gd).length, theirs=phMeta.filter(m=>m.gd).length;
     h+=`<p>📁 ${esc(p.name||"โฟลเดอร์รวมรูป")} · รูปของเรา ${mine.toLocaleString()} · จากเพื่อน ${theirs.toLocaleString()}${s.last?` · ซิงก์ล่าสุด ${new Date(s.last).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})}`:""}</p>`;
+    let jn=""; try{ jn=sessionStorage.getItem("poolJoinNew")||""; }catch(e){}
+    if(jn&&!s.busy) h+=`<p><b>ลิงก์ชวนที่เปิดมาเป็นโฟลเดอร์รวมรูปอีกอัน</b> จะใช้โฟลเดอร์นั้นกับทริปนี้แทน “${esc(p.name||"โฟลเดอร์เดิม")}” ไหม</p><div class="c-actions"><button class="btn small primary" data-act="pool-joinyes">ใช้โฟลเดอร์จากลิงก์ชวน</button><button class="btn small" data-act="pool-joinno">ใช้โฟลเดอร์เดิม</button></div>`;
     if(s.busy) h+=`<p><b>${esc(s.msg)}${s.n?` ${s.i.toLocaleString()} / ${s.n.toLocaleString()}`:""}</b></p>${s.n?`<div class="tb-pbar"><i style="width:${Math.max(3,Math.round(s.i/s.n*100))}%"></i></div>`:""}`;
     else if(s.ask) h+=`<p><b>มีรูปจากเพื่อน ${s.ask.n.toLocaleString()} รูป (ราว ${s.ask.mb.toLocaleString()} MB)</b> จะดึงเข้ามาในเครื่องนี้ไหม</p><div class="c-actions"><button class="btn small primary" data-act="pool-get">ดึงรูปเข้ามา</button><button class="btn small" data-act="pool-later">ไว้ก่อน</button></div>`;
-    else h+=`<div class="c-actions"><button class="btn small primary" data-act="pool-sync">${tok?"ซิงก์ตอนนี้":"เข้าสู่ระบบ Google แล้วซิงก์"}</button><button class="btn small" data-act="pool-inv">ชวนเพื่อน</button></div>`;
+    else h+=`<div class="c-actions"><button class="btn small primary" data-act="pool-sync">${tok?"ซิงก์ตอนนี้":"เข้าสู่ระบบ Google แล้วซิงก์"}</button><button class="btn small" data-act="pool-inv">ชวนเพื่อน</button><button class="btn small" data-act="pool-change">เปลี่ยนโฟลเดอร์</button></div>`;
+    h+=poolVidHtml();
     if(s.inv&&!s.busy) h+=poolInviteHtml(); }
   if(s.err) h+=`<p class="tb-err">${esc(s.err)}</p>`;
   return h+`</div>`; }
 function poolPickerHtml(){ const s=poolS, path=s.path||[{id:"root",name:"ไดรฟ์ของฉัน"}];
-  return `<p class="tb-crumb">${path.map((x,i)=>i<path.length-1?`<button class="tb-link2" data-act="pool-up" data-i="${i}">${esc(x.name)}</button>`:`<b>${esc(x.name)}</b>`).join(" › ")}</p>
+  return `<p class="tb-note">เลือกโฟลเดอร์สำหรับรูปของทริปนี้ (แต่ละทริปใช้โฟลเดอร์ของตัวเอง ทริปใหม่จะถามใหม่ทุกครั้ง)</p>
+    ${s.tbf?`<div class="c-actions"><button class="btn small" data-act="pool-usetb">📘 ใช้โฟลเดอร์ Tripbook ของทริปนี้: ${esc(s.tbf.name||"Tripbook")}</button></div>`:""}
+    <p class="tb-crumb">${path.map((x,i)=>i<path.length-1?`<button class="tb-link2" data-act="pool-up" data-i="${i}">${esc(x.name)}</button>`:`<b>${esc(x.name)}</b>`).join(" › ")}</p>
     ${s.list?`<div class="tb-fl">${s.list.map(f=>`<button data-act="pool-open" data-id="${esc(f.id)}" data-name="${esc(f.name)}">📁 ${esc(f.name)}</button>`).join("")||`<p class="tb-note">ไม่มีโฟลเดอร์ย่อย</p>`}</div>`:`<p class="tb-note">กำลังโหลด…</p>`}
-    <input class="inp" id="poolNew" placeholder="หรือตั้งชื่อโฟลเดอร์ใหม่ เช่น รูปรวมทริปฮอกไกโด">
+    <input class="inp" id="poolNew" placeholder="หรือตั้งชื่อโฟลเดอร์ใหม่" value="${esc(s.newName||"")}">
     <div class="c-actions"><button class="btn small primary" data-act="pool-use">ใช้โฟลเดอร์ “${esc(path[path.length-1].name)}”</button><button class="btn small" data-act="pool-new">สร้างโฟลเดอร์ใหม่</button><button class="btn small" data-act="pool-cancel">ยกเลิก</button></div>`; }
 function poolInviteHtml(){ const link=poolInvite();
   return `<div class="pool-inv"><p><b>ชวนเพื่อนมาใส่รูปด้วยกัน</b></p>
@@ -4334,20 +4355,23 @@ async function poolSync(opts){ opts=opts||{}; const p=poolGet(); if(!p||poolS.bu
     /* 1. ours that are not there yet */
     const up=phMeta.filter(m=>!m.gd&&!tags.has((m.kind==="video"?"v:":"ph2:")+m.id)); let k=0; poolS.msg="กำลังส่งรูปของเราขึ้นไป"; poolS.n=up.length;
     await tbPool(up,4,async m=>{ const b=await PDB.getBlob(m.id); let blob=b&&b.full; if(blob){ if(m.kind!=="video") blob=await tbPhotoForDrive(m,blob);
-        await gdUpload(blob,poolName(m,m.kind==="video"?((m.ext||"mp4")+"").toLowerCase():"jpg"),p.id,m.kind==="video"?(m.mime||"video/mp4"):"image/jpeg",null,(m.kind==="video"?"v:":"ph2:")+m.id); }
+        const ap={tb:(m.kind==="video"?"v:":"ph2:")+m.id}; if(m.takenAt) ap.t=String(m.takenAt);
+        await gdUpload(blob,poolName(m,m.kind==="video"?((m.ext||"mp4")+"").toLowerCase():"jpg"),p.id,m.kind==="video"?(m.mime||"video/mp4"):"image/jpeg",null,ap); }
       poolS.i=++k; if(k%3===0) poolPaint(); });
     /* 2. theirs that we do not have: photos come in; videos stay in Drive */
     const mineTags=new Set(phMeta.map(m=>(m.kind==="video"?"v:":"ph2:")+m.id));
     const down=files.filter(f=>/^image\//.test(f.mimeType||"")&&!have.has(f.id)&&!(f.appProperties&&mineTags.has(f.appProperties.tb)));
+    poolS.vids=files.filter(f=>/^video\//.test(f.mimeType||"")&&!have.has(f.id)&&!(f.appProperties&&mineTags.has(f.appProperties.tb)));
+    poolS.vsel=new Set([...poolS.vsel].filter(id=>poolS.vids.some(f=>f.id===id)));
     poolS.last=Date.now();
     if(down.length&&!opts.get){ poolS.ask={n:down.length,mb:Math.max(1,Math.round(down.reduce((a,f)=>a+(+f.size||0),0)/1048576)),files:down}; return; }
     if(down.length) await poolDownload(down); }
   catch(e){ if(e.code==="auth"){ poolS.err="การเข้าสู่ระบบ Google หมดเวลา กดซิงก์อีกครั้ง"; } else poolS.err=e.message||String(e); }
   finally{ poolS.busy=false; poolPaint(); } }
-async function poolDownload(files){ poolS.busy=true; poolS.ask=null; poolS.msg="กำลังดึงรูปจากเพื่อน"; poolS.n=files.length; poolS.i=0; poolPaint();
+async function poolDownload(files,vid){ poolS.busy=true; poolS.ask=null; poolS.msg=vid?"กำลังดึงวิดีโอจากเพื่อน":"กำลังดึงรูปจากเพื่อน"; poolS.n=files.length; poolS.i=0; poolPaint();
   const got=[], by={}; let k=0;
-  await tbPool(files,4,async f=>{ try{ const r=await gdReq(`${GD}/files/${f.id}?alt=media`,{raw:true}); const blob=await r.blob();
-      got.push(new File([blob],`gd_${f.id}__${f.name}`,{type:f.mimeType||"image/jpeg",lastModified:0})); by[f.id]=(f.owners&&f.owners[0]&&f.owners[0].displayName)||""; }catch(e){ if(e.code==="auth") throw e; }
+  await tbPool(files,vid?2:4,async f=>{ try{ const r=await gdReq(`${GD}/files/${f.id}?alt=media`,{raw:true}); const blob=await r.blob();
+      const t=+(f.appProperties&&f.appProperties.t)||0; got.push(new File([blob],`gd_${f.id}__${f.name}`,{type:f.mimeType||"image/jpeg",lastModified:t})); by[f.id]=(f.owners&&f.owners[0]&&f.owners[0].displayName)||""; }catch(e){ if(e.code==="auth") throw e; }
     poolS.i=++k; if(k%3===0) poolPaint(); });
   if(!got.length) return;
   poolS.msg="กำลังจัดรูปเข้าแผน"; poolS.n=0; poolPaint();
@@ -4355,9 +4379,17 @@ async function poolDownload(files){ poolS.busy=true; poolS.ask=null; poolS.msg="
   for(const m of phMeta){ const x=(m.name||"").match(/^gd_([A-Za-z0-9_-]+)__(.*)$/); if(!x||m.gd) continue; m.gd=x[1]; m.name=x[2]; if(by[x[1]]) m.by=by[x[1]]; try{ await PDB.putMeta(m); }catch(e){} }
   if($("#ph-root")) photoSheetPaint(); renderPlan(); }
 async function poolAct(a,b){ const s=poolS;
-  if(a==="pool-start"){ s.err=""; const st=await tbCacheGet("tb~share"); if(st&&st.drive&&st.drive.sub&&st.mode==="drive"){ store.set("gdPool",{id:st.drive.sub,name:st.drive.subName||""}); return poolSync(); }
+  if(a==="pool-start"){ s.err=""; let st=null; try{ st=await tbCacheGet("tb~share"); }catch(e){} s.tbf=st&&st.drive&&st.drive.sub&&st.mode==="drive"?{id:st.drive.sub,name:st.drive.subName||""}:null; s.newName=tbsFileName("รูปรวม "+poolTripName());
     if(!gdClientId()){ s.err="ตั้งค่า Google ก่อน: เปิด Tripbook → แชร์ลิงก์ → Google Drive ของฉัน → เลือกโฟลเดอร์ (ทำครั้งเดียว)"; return poolPaint(); }
     if(!gdToken()) return gdSignIn("pool-pick"); s.pick=true; s.path=[{id:"root",name:"ไดรฟ์ของฉัน"}]; return poolList(); }
+  if(a==="pool-vpick"){ s.vpick=true; s.free=null; poolPaint(); try{ const e=await navigator.storage.estimate(); if(e&&e.quota) s.free=Math.max(0,e.quota-(e.usage||0)); }catch(e){} return poolPaint(); }
+  if(a==="pool-vclose"){ s.vpick=false; return poolPaint(); }
+  if(a==="pool-vall"){ const all=s.vids.every(f=>s.vsel.has(f.id)); s.vsel=new Set(all?[]:s.vids.map(f=>f.id)); return poolPaint(); }
+  if(a==="pool-vget"){ const f=s.vids.filter(x=>s.vsel.has(x.id)); if(!f.length) return; s.vpick=false; try{ await poolDownload(f,true); s.vids=s.vids.filter(x=>!s.vsel.has(x.id)); s.vsel=new Set(); }catch(e){ s.err=e.code==="auth"?"การเข้าสู่ระบบ Google หมดเวลา กดซิงก์อีกครั้ง":e.message; } finally{ s.busy=false; poolPaint(); } return; }
+  if(a==="pool-usetb"&&s.tbf){ store.set("gdPool",{id:s.tbf.id,name:s.tbf.name}); s.pick=false; return poolSync(); }
+  if(a==="pool-change"){ if(!confirm("เปลี่ยนโฟลเดอร์รูปรวมของทริปนี้? รูปที่อยู่ใน Drive และในเครื่องยังอยู่ครบ")) return; store.set("gdPool",null); s.ask=null; s.inv=false; s.last=0; s.vids=[]; s.vsel=new Set(); s.vpick=false; return poolAct("pool-start"); }
+  if(a==="pool-joinyes"){ let id=""; try{ id=sessionStorage.getItem("poolJoinNew")||""; sessionStorage.removeItem("poolJoinNew"); }catch(e){} if(id){ store.set("gdPool",{id,name:"",joined:Date.now()}); s.ask=null; s.last=0; } return poolSync(); }
+  if(a==="pool-joinno"){ try{ sessionStorage.removeItem("poolJoinNew"); }catch(e){} return poolPaint(); }
   if(a==="pool-open"){ s.path.push({id:b.dataset.id,name:b.dataset.name}); return poolList(); }
   if(a==="pool-up"){ s.path=s.path.slice(0,+b.dataset.i+1); return poolList(); }
   if(a==="pool-cancel"){ s.pick=false; return poolPaint(); }
@@ -4375,6 +4407,7 @@ async function poolAct(a,b){ const s=poolS;
     if(a==="pool-share"&&navigator.share){ try{ await navigator.share({text:t}); }catch(e){} return; }
     try{ await navigator.clipboard.writeText(t); s.err=""; alertless("คัดลอกแล้ว"); }catch(e){ const ta=$("#poolMsg"); if(ta){ ta.select(); try{ document.execCommand("copy"); }catch(x){} } } return; } }
 function alertless(t){ const el=$("#pool .pool-h"); if(!el) return; const sp=document.createElement("span"); sp.className="tb-ok"; sp.textContent=t; el.appendChild(sp); setTimeout(()=>sp.remove(),2500); }
+document.addEventListener("change",ev=>{ const c=ev.target; if(!c||c.name!=="poolv") return; if(c.checked) poolS.vsel.add(c.value); else poolS.vsel.delete(c.value); poolPaint(); });
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='pool-']"); if(!b) return; ev.stopPropagation(); poolAct(b.dataset.act,b); },true);
 /* quietly bring in new photos when the app opens and every 10 minutes, while signed in */
 setInterval(()=>{ if(poolGet()&&gdToken()&&document.visibilityState==="visible") poolSync({quiet:true}); },600000);
@@ -4392,7 +4425,7 @@ async function tbsPendingKick(soft){ if(tbShareBusy) return; const st=await tbCa
 async function gdResumeKick(){ let r=null; try{ r=JSON.parse(sessionStorage.getItem("gdResume")||"null"); sessionStorage.removeItem("gdResume"); }catch(e){}
   if(!r){ let j=null; try{ j=sessionStorage.getItem("poolJoin"); sessionStorage.removeItem("poolJoin"); }catch(e){} if(j){ photoSheetPaint(true); return; } if(poolGet()&&gdToken()) setTimeout(()=>poolSync({quiet:true}),2500); return tbsPendingKick(); }
   if(r.to&&r.to.indexOf("pool")===0){ photoSheetPaint(true); await tbSleep(200); if(r.err||!gdToken()){ poolS.err="เข้าสู่ระบบ Google ไม่สำเร็จ"+(r.err?" ("+r.err+")":""); return poolPaint(); }
-    if(r.to==="pool-pick"){ poolS.pick=true; poolS.path=[{id:"root",name:"ไดรฟ์ของฉัน"}]; return poolList(); } return poolSync(); }
+    if(r.to==="pool-pick"){ photoSheetPaint(true); return poolAct("pool-start"); } return poolSync(); }
   if(!document.body.classList.contains("tb-open")) await openTripbook(); await tbSleep(300);
   if(r.err||!gdToken()){ await tbsOpen(true,r.form||{mode:"drive"}); tbShare.err="เข้าสู่ระบบ Google ไม่สำเร็จ"+(r.err?" ("+r.err+")":""); return tbsPaint(); }
   if(r.to==="go"){ await tbsOpen(true,r.form||{mode:"drive"}); return tbsAction("sh-go"); }
