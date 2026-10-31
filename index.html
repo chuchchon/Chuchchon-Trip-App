@@ -3834,7 +3834,7 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
   r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">สร้าง PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button><div id="tbProg" class="tb-prog" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); tbProgPaint(); try{ history.pushState({tb:1},""); }catch(e){}
-  tbSel=null; tbDel=false; $("#tbBody").innerHTML=await tripbookHtml("app"); tbWire(r); tbBarPaint(); setTimeout(()=>tbShotsKick(),300);
+  tbSel=null; tbDel=false; await tbShotsFromCache(); $("#tbBody").innerHTML=await tripbookHtml("app"); tbWire(r); tbBarPaint(); setTimeout(()=>tbShotsKick(),300);
   r.onclick=async ev=>{ const b=ev.target.closest("[data-tb]"); if(!b) return; const a=b.dataset.tb;
     if(a.startsWith("s-")){ tbSelAction(a); return; }
     if(a==="more"){ tbMore.add(b.dataset.g); await tbRender(); tbMark(); return; }
@@ -3890,7 +3890,18 @@ var tbShots=null, tbShotBusy=null, tbShotProg="", tbShotErr="", tbShotAbort=fals
 const H2I_URL="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js", SHOT_W=412, SHOT_PX="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 function loadH2I(){ if(window.htmlToImage) return Promise.resolve(window.htmlToImage);
   return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=H2I_URL; s.onload=()=>window.htmlToImage?res(window.htmlToImage):rej(new Error("lib")); s.onerror=()=>{ s.remove(); rej(new Error("โหลดตัวทำภาพหน้าจอไม่ได้ ต้องต่อเน็ตก่อน")); }; document.head.appendChild(s); setTimeout(()=>rej(new Error("โหลดตัวทำภาพหน้าจอไม่ทัน ลองอีกครั้ง")),25000); }); }
-function tbShotSig(){ const s=JSON.stringify([edits,visited,DAYS.length,phMeta.map(m=>m.id+"|"+m.day+"|"+m.key+"|"+(m.tbHide?1:0))]); let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return s.length+":"+h; }
+/* the Tripbook remembers what it made, in the photo store: the maps and stories until the plan or the photos change,
+   and the last PDF until anything in the book changes */
+const TB_CACHE_V="c1";
+function tbHash(s){ let a=0x811c9dc5, b=5381; for(let i=0;i<s.length;i++){ const c=s.charCodeAt(i); a=Math.imul(a^c,16777619); b=((b<<5)+b+c)|0; } return s.length.toString(36)+"."+(a>>>0).toString(36)+"."+(b>>>0).toString(36); }
+async function tbCacheGet(k){ try{ return (await PDB.getBlob(k))||null; }catch(e){ return null; } }
+async function tbCachePut(rec){ try{ await PDB.putBlob(rec); }catch(e){} }
+function tbShotSig(){ let plan=[]; try{ plan=DAYS.map((d,di)=>{ const L=dayLine(di)||[]; let a=0; L.forEach(q=>{ a+=q[0]*7+q[1]*3; });
+    return [d.date,L.length,Math.round(a*1e3),planItems(di).map(it=>[it._i,it.p||"",it.t||"",it.k,it.p&&P[it.p]?(+P[it.p][1]).toFixed(5)+","+(+P[it.p][2]).toFixed(5):""])]; }); }catch(e){}
+  return tbHash(JSON.stringify([TB_CACHE_V,edits,visited,plan,phMeta.map(m=>m.id+"|"+m.day+"|"+m.key+"|"+(m.tbHide?1:0)+"|"+(m.cover?1:0)+"|"+(m.lat!=null?(+m.lat).toFixed(4)+","+(+m.lng).toFixed(4):""))])); }
+async function tbShotsFromCache(){ if(tbShots||tbShotBusy) return false; const c=await tbCacheGet("tb~maps"); if(!c||c.v!==TB_CACHE_V||c.sig!==tbShotSig()||!c.days||c.days.length!==DAYS.length) return false;
+  tbShots={sig:c.sig,at:c.at,trip:c.trip||null,days:c.days.map(b=>({map:b||null})),stories:c.stories==null?null:c.stories,missing:0,cached:true}; tbDoneAt=Date.now(); setTimeout(tbProgPaint,2600); return true; }
+function tbShotsSave(s){ if(!s||s.missing) return; tbCachePut({id:"tb~maps",v:TB_CACHE_V,sig:s.sig,at:s.at,trip:s.trip,days:s.days.map(d=>d.map||null),stories:s.stories}); }
 const tbSleep=ms=>new Promise(r=>setTimeout(r,ms));
 /* a page lent to an off-screen stage under the Tripbook, at phone width, then put back exactly where it was */
 function shotStage(){ let s=$("#shotStage"); if(!s){ s=document.createElement("div"); s.id="shotStage"; s.setAttribute("aria-hidden","true"); s.style.cssText=`position:fixed;left:0;top:0;width:${SHOT_W}px;height:100%;overflow-y:auto;z-index:0;background:var(--bg);pointer-events:none`; document.body.appendChild(s); } return s; }
@@ -4005,7 +4016,7 @@ function tbMapSwap(key,blob){ if(!blob) return; let u=tbShotURL.get(blob); if(!u
   const el=document.querySelector(trip?"#tbOv .tb-mapwait.tall":`#tbBody .tb-mapwait[data-di="${key}"]`); if(el) el.outerHTML=`<img class="${cls}" data-map="${key}" src="${u}" alt="${esc(alt)}">`; }
 var tbStoryBusy=null, tbStoryV={i:0,n:0};
 function tbStoriesKick(s){ if(!s||s.stories!=null) return Promise.resolve(); if(tbStoryBusy) return tbStoryBusy; tbStoryV={i:0,n:0};
-  tbStoryBusy=(async()=>{ try{ const st=await Promise.race([tbStoriesFetch((i,n)=>{ tbStoryV={i,n}; tbProgPaint(); }),tbSleep(40000).then(()=>null)]); s.stories=st||[]; }catch(e){ s.stories=[]; }
+  tbStoryBusy=(async()=>{ try{ const st=await Promise.race([tbStoriesFetch((i,n)=>{ tbStoryV={i,n}; tbProgPaint(); }),tbSleep(40000).then(()=>null)]); s.stories=st||[]; if(tbShots===s) tbShotsSave(s); }catch(e){ s.stories=[]; }
     tbStoryBusy=null; if(tbShots===s&&document.body.classList.contains("tb-open")){ const x=$("#tbBody .tb-x"); if(x){ const h=await tbExtras("app"); const x2=$("#tbBody .tb-x"); if(x2) x2.outerHTML=h; } } tbProgPaint(); })();
   tbProgPaint(); return tbStoryBusy; }
 var tbNet={st:"",ms:0,at:0}, tbProgV={i:0,n:0,msg:""}, tbExp={busy:false,i:0,n:0,t:0}, tbDoneAt=0;
@@ -4023,7 +4034,7 @@ function tbProgPaint(){ const el=$("#tbProg"); if(!el) return; const st=tbNet.st
   else if(tbSaving&&tbVidPrep&&tbVidPrep.stage==="pack"){ msg=`กำลังใส่วิดีโอลงไฟล์ ${tbVidPrep.i} / ${tbVidPrep.n}`; pct=Math.round(tbVidPrep.i/Math.max(1,tbVidPrep.n)*100); }
   else if(tbSaving&&tbVidPrep&&!tbExp.busy){ msg=`กำลังย่อวิดีโอ ${tbVidPrep.i} / ${tbVidPrep.n}${tbVidPrep.p?` · ${Math.round(tbVidPrep.p*100)}%`:""}`; pct=Math.round(((tbVidPrep.i-1)+(tbVidPrep.p||0))/Math.max(1,tbVidPrep.n)*100); }
   else if(tbPdfBusy){ msg=tbPdfV.n?`กำลังสร้าง PDF หน้า ${tbPdfV.i} / ${tbPdfV.n}`:"PDF · "+(tbPdfV.msg||"กำลังเตรียม…"); pct=tbPdfV.n?Math.round(tbPdfV.i/tbPdfV.n*100):-1; }
-  else if(tbPdfOut&&Date.now()-tbPdfOut.at<6000&&(tbPdfOut.err||tbPdfOut.res)){ msg=tbPdfOut.err?tbPdfOut.err:tbPdfOut.res==="ok"?`บันทึก PDF แล้ว ✓ ${tbPdfOut.pages} หน้า · ${tbPdfOut.mb.toFixed(1)} MB`:tbPdfOut.res==="declined"?"ยกเลิกการบันทึก PDF":"บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; pct=tbPdfOut.err?-1:100; }
+  else if(tbPdfOut&&Date.now()-tbPdfOut.at<6000&&(tbPdfOut.err||tbPdfOut.res)){ msg=tbPdfOut.err?tbPdfOut.err:tbPdfOut.res==="ok"?`บันทึก PDF แล้ว ✓ ${tbPdfOut.pages} หน้า · ${tbPdfOut.mb.toFixed(1)} MB${tbPdfOut.cached?" · ไม่มีอะไรเปลี่ยน ใช้ไฟล์เดิม":""}`:tbPdfOut.res==="declined"?"ยกเลิกการบันทึก PDF":"บันทึกไม่ได้ในหน้านี้ ลองเปิดจากลิงก์ GitHub"; pct=tbPdfOut.err?-1:100; }
   else if(tbSaveOut&&!tbSaving&&Date.now()-tbSaveOut.at<7000){ msg=`บันทึกไฟล์แล้ว ✓ ${tbSaveOut.mb.toFixed(1)} MB${tbSaveOut.n?` · วิดีโอ ${tbSaveOut.n} คลิป`:""}${tbSaveOut.skip?` · ${tbSaveOut.skip} คลิปใส่ไม่ได้ (ดูได้ในแอป)`:""}`; pct=100; }
   else if(tbExp.busy){ msg=tbExp.n?`กำลังรวมรูปลงไฟล์ ${Math.min(tbExp.i,tbExp.n).toLocaleString()} / ${tbExp.n.toLocaleString()}`:"กำลังเตรียมไฟล์…"; pct=tbExp.n?Math.min(100,Math.round(tbExp.i/tbExp.n*100)):-1; }
   else if(tbShotBusy){ const m=tbProgV.msg||"", web=/^(หา|ใส่)/.test(m); msg=tbProgV.n?`กำลัง${web?"":"วาด"}${m} · ${tbProgV.i}/${tbProgV.n}`:(m?"กำลัง"+m+"…":"กำลังเตรียม…"); pct=tbProgV.n?Math.round((web?tbProgV.i:tbProgV.i-1)/tbProgV.n*100):0; }
@@ -4031,16 +4042,16 @@ function tbProgPaint(){ const el=$("#tbProg"); if(!el) return; const st=tbNet.st
   else if(vpRep.busy){ msg=`กำลังทำภาพตัวอย่างวิดีโอ ${vpRep.i}/${vpRep.n}`; pct=Math.round(vpRep.i/Math.max(1,vpRep.n)*100); }
   else if(tbShotErr){ msg=tbShotErr; extra=`<p>${st==="off"||st==="bad"?"แผนที่ในเล่มจะเป็นเส้นแบบเรียบไปก่อน พอเน็ตกลับมาแอปจะวาดให้เอง":"ลองอีกครั้ง หรือเปลี่ยนไปใช้ Wi-Fi"}</p><button class="btn small" data-tb="ov-retry">ลองอีกครั้ง</button>`; }
   else if(tbShots&&tbShots.missing){ msg=`แผนที่ ${tbShots.missing} ภาพโหลดพื้นแผนที่ไม่ครบ (เน็ตช้าหรือหลุดระหว่างวาด)`; extra=`<button class="btn small" data-tb="ov-retry">วาดใหม่</button>`; }
-  else if(tbDoneAt&&Date.now()-tbDoneAt<2500){ msg="แผนที่พร้อมแล้ว ✓"; pct=100; }
+  else if(tbDoneAt&&Date.now()-tbDoneAt<2500){ msg=tbShots&&tbShots.cached?"แผนที่พร้อมแล้ว ✓ ใช้ของครั้งก่อน (แผนและรูปไม่ได้เปลี่ยน)":"แผนที่พร้อมแล้ว ✓"; pct=100; }
   if(!msg){ el.hidden=true; el.innerHTML=""; }
   else { el.hidden=false; el.innerHTML=`<div class="tb-prog-top"><b>${esc(msg)}</b><span class="tb-net ${NET[0]}">${esc(NET[1])}</span></div>${pct>=0?`<div class="tb-pbar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.max(3,pct)}%"></i></div>`:""}${extra}`; }
   const r=$("#tbRoot"), bar=$("#tbRoot .tb-bar"); if(r&&bar) r.style.setProperty("--tbbar",bar.offsetHeight+"px"); }
-function tbShotsKick(force){ if(tbShotBusy) return tbShotBusy; if(!force&&tbShots&&tbShots.sig===tbShotSig()&&!tbShots.missing) return Promise.resolve(tbShots);
+function tbShotsKick(force){ if(tbShotBusy) return tbShotBusy; if(!force&&tbShots&&tbShots.sig===tbShotSig()&&!tbShots.missing){ tbStoriesKick(tbShots); if(!tbNet.st) netCheck(); tbProgPaint(); return Promise.resolve(tbShots); }
   tbShotAbort=false; tbShotErr=""; tbProgV={i:0,n:0,msg:"กำลังเช็คสัญญาณอินเทอร์เน็ต…"};
   tbShotBusy=(async()=>{ try{ tbProgPaint(); const n=await netCheck();
       if(n.st==="off"||n.st==="bad"){ tbShotErr=n.st==="off"?"ไม่มีอินเทอร์เน็ต ยังวาดแผนที่ไม่ได้":"ต่อเซิร์ฟเวอร์แผนที่ไม่ได้ ยังวาดแผนที่ไม่ได้"; return tbShots; }
       const s=await makeTbShots((i,n,m)=>tbProgSet(i,n,m));
-      const keep=new Set([s.trip,...s.days.map(d=>d.map)]); [...tbShotURL].forEach(([b,u])=>{ if(!keep.has(b)){ URL.revokeObjectURL(u); tbShotURL.delete(b); } }); tbShots=s; tbDoneAt=Date.now(); setTimeout(tbProgPaint,2600); }
+      const keep=new Set([s.trip,...s.days.map(d=>d.map)]); [...tbShotURL].forEach(([b,u])=>{ if(!keep.has(b)){ URL.revokeObjectURL(u); tbShotURL.delete(b); } }); tbShots=s; tbShotsSave(s); tbDoneAt=Date.now(); setTimeout(tbProgPaint,2600); }
     catch(e){ if(!tbShotAbort) tbShotErr="วาดแผนที่ไม่สำเร็จ: "+(e&&e.message||e); }
     finally{ tbShotBusy=null; tbProgV={i:0,n:0,msg:""}; if(document.body.classList.contains("tb-open")){ if(tbShots) await tbRender(); else tbOvPaint(); } tbProgPaint(); } tbStoriesKick(tbShots); return tbShots; })();
   tbProgPaint(); return tbShotBusy; }
@@ -4276,9 +4287,12 @@ async function tbMakePdf(btn){ if(tbPdfBusy) return; tbPdfBusy=true; tbPdfOut=nu
   try{ if(tbShotBusy||tbStoryBusy){ tbPdfV.msg=tbShotBusy?"รอแผนที่ให้เสร็จก่อน…":"รอเรื่องเล่าท้ายเล่ม…"; tbProgPaint(); try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} }
     if(vpRep.busy){ tbPdfV.msg="รอภาพตัวอย่างวิดีโอ…"; tbProgPaint(); try{ await vpRep.busy; }catch(e){} }
     btn.textContent="กำลังสร้าง…"; await tbRender(); tbPdfV.msg="กำลังจัดหน้า…"; tbProgPaint(); await tbpFonts(); await tbSleep(30);
+    const key=tbHash(["p1",TB_CACHE_V,$("#tbBody").innerHTML.replace(/(src|poster)="blob:[^"]*"/g,'$1=""'),JSON.stringify(phMeta),tbShots?tbShots.at:0].join("\n"));
+    const old=await tbCacheGet("tb~pdf"); if(old&&old.key===key&&old.blob){ tbPdfV={i:0,n:0,msg:"ไม่มีอะไรเปลี่ยน ใช้ไฟล์เดิม…"}; tbProgPaint(); const res=await tbDeliver(old.blob,tbPdfName()); tbPdfOut={pages:old.pages,mb:old.blob.size/1048576,res,at:Date.now(),cached:true}; return; }
     const doc=tbpBuild($("#tbBody")); let last=0;
     const r=await tbpRender(doc,(i,n)=>{ tbPdfV={i,n,msg:""}; const now=Date.now(); if(now-last>200||i===n){ last=now; tbProgPaint(); } });
     tbPdfV={i:0,n:0,msg:"กำลังรวมเป็นไฟล์…"}; tbProgPaint(); const pdf=tbpPdf(r);
+    tbCachePut({id:"tb~pdf",key,blob:pdf,pages:r.jpgs.length,at:Date.now()});
     const res=await tbDeliver(pdf,tbPdfName()); tbPdfOut={pages:r.jpgs.length,mb:pdf.size/1048576,res,at:Date.now()}; }
   catch(e){ tbPdfOut={err:e&&e.message==="closed"?"":"สร้าง PDF ไม่สำเร็จ: "+(e&&e.message||e),at:Date.now()}; }
   finally{ tbPdfBusy=false; btn.textContent=t0; tbProgPaint(); setTimeout(tbProgPaint,6100); } }
