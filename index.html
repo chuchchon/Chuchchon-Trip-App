@@ -2594,11 +2594,13 @@ function openAddStop(afterKey){
 function applyDraft(ed,dr){
   if(dr.mode==="add"){ const n={key:dr.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note,dur:dr.dur,at:dr.at||"",pre:0}; if(dr.q) n.q=dr.q; regCustom(n);
     const i=dr.atStart?-1:ed.list.findIndex(x=>x.key===dr.afterKey); ed.list.splice(i<0&&!dr.atStart?ed.list.length:i+1,0,n); }
-  else { const n=ed.list.find(x=>x.key===dr.key); if(!n) return; n.dur=dr.dur; n.at=dr.at||""; if(n.kind==="custom"){ n.name=dr.name||n.name; n.lat=dr.lat; n.lng=dr.lng; n.note=dr.note; regCustom(n); }
+  else { const n=ed.list.find(x=>x.key===dr.key); if(!n) return;
+    if(dr.reloc&&n.kind==="base"){ const c={key:n.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note||"",dur:dr.dur,at:dr.at||"",pre:0}; if(dr.q) c.q=dr.q; regCustom(c); ed.list[ed.list.indexOf(n)]=c; return; }
+    n.dur=dr.dur; n.at=dr.at||""; if(n.kind==="custom"){ n.name=dr.name||n.name; n.lat=dr.lat; n.lng=dr.lng; n.note=dr.note; regCustom(n); }
     else if(dr.name!=null){ const base=(DAYS[dr.day].items[n.src]||{}).n||""; if(dr.name&&dr.name!==base) n.label=dr.name; else delete n.label; } if(dr.promote!=null) n.promote=dr.promote; }
 }
 function renderAddStop(){
-  const c=draft, di=c.day, isCustom=c.mode==="add"||c.kind==="custom";
+  const c=draft, di=c.day, isCustom=c.mode==="add"||c.kind==="custom"||!!c.reloc;
   const sim=simulate(di,ed=>applyDraft(ed,c));
   const title=c.mode==="add"?"เพิ่มจุดแวะ":"ปรับรายการนี้";
   const afterName=c.mode==="add"?(c.atStart?"ต้นวัน":((planItems(di).find(x=>x._i===c.afterKey)||{}).n||"ท้ายวัน")):"";
@@ -2609,7 +2611,7 @@ function renderAddStop(){
   <div class="c-actions" style="margin:8px 0 4px"><button class="btn small" data-act="cs-here">📍 ตำแหน่งปัจจุบัน</button><button class="btn small" data-act="cs-pick">🗺 แตะเลือกบนแผนที่</button>${c.lat!=null?`<button class="btn small" data-act="cs-noplace">ไม่ระบุสถานที่ (แค่รอ)</button>`:""}</div>
   ${c.mode==="add"?xpBlockHtml():""}
   <div class="cs-picked">${c.lat!=null?`<b>📌 ${esc(c.name||"จุดที่เลือก")}</b><span class="tiny mono">${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}</span>`:`<span class="tiny">ยังไม่ได้เลือกสถานที่ · ถ้าแค่ฝนตก/รถติด ไม่ต้องเลือก ใส่เวลารอได้เลย</span>`}</div>
-  <label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.name)}" placeholder="${c.lat!=null?"ชื่อสถานที่":"เช่น ฝนตก รอที่โรงแรม"}">`:`<label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.title||"")}" placeholder="${esc(c.baseName||"")}">${c.baseName&&c.title!==c.baseName?`<div class="tiny" style="margin-top:3px">ชื่อเดิม: ${esc(c.baseName)} · ลบให้ว่างเพื่อใช้ชื่อเดิม</div>`:""}`}
+  <label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.name)}" placeholder="${c.lat!=null?"ชื่อสถานที่":"เช่น ฝนตก รอที่โรงแรม"}">`:`<label class="fl" for="cs-name">ชื่อที่จะแสดง</label><input id="cs-name" class="inp" value="${esc(c.title||"")}" placeholder="${esc(c.baseName||"")}">${c.canReloc?`<div class="c-actions" style="margin:8px 0 2px"><button class="btn small" data-act="cs-reloc">🔎 เปลี่ยนสถานที่ · ค้นหาที่ใหม่</button></div>`:""}${c.baseName&&c.title!==c.baseName?`<div class="tiny" style="margin-top:3px">ชื่อเดิม: ${esc(c.baseName)} · ลบให้ว่างเพื่อใช้ชื่อเดิม</div>`:""}`}
   <div class="grid2"><div><label class="fl" for="cs-dur">อยู่นาน</label><select id="cs-dur" class="inp">${durOpts(c.dur)}</select>${c.durNote?`<div class="tiny" style="margin-top:3px">${esc(c.durNote)}</div>`:""}</div>
   <div><label class="fl" for="cs-at">เริ่มเวลา <span class="tiny">(ว่าง = ต่อจากรายการก่อน)</span></label><div style="display:flex;gap:6px"><input type="time" id="cs-at" class="inp" step="300" value="${esc(c.at||"")}" style="flex:1;min-width:0">${c.at?`<button class="btn small" data-act="cs-atclear" aria-label="ล้างเวลา">✕</button>`:""}</div></div></div>
   ${isCustom?`<label class="fl" for="cs-note">โน้ต</label><input id="cs-note" class="inp" value="${esc(c.note||"")}" placeholder="ไม่ใส่ก็ได้">`:""}
@@ -2637,7 +2639,7 @@ async function moveStopToDay(dr,to){ const from=dr.day; const edF=materialize(fr
 function openEditItem(key){
   const di=curDay; const ed=materialize(di); const n=ed.list.find(x=>x.key===key); if(!n) return;
   const it=planItems(di).find(x=>x._i===key)||{};
-  draft={mode:"edit",day:di,key,kind:n.kind,name:n.name||"",lat:n.lat??null,lng:n.lng??null,note:n.note||"",dur:n.dur!=null?n.dur:origDur(it),at:n.at||"",title:it.n,baseName:n.kind==="base"?(DAYS[di].items[n.src]||{}).n:"",isOpt:n.kind==="base"&&DAYS[di].items[n.src].k==="opt",promote:n.promote};
+  draft={mode:"edit",day:di,key,kind:n.kind,name:n.name||"",lat:n.lat??null,lng:n.lng??null,note:n.note||"",dur:n.dur!=null?n.dur:origDur(it),at:n.at||"",title:it.n,baseName:n.kind==="base"?(DAYS[di].items[n.src]||{}).n:"",canReloc:n.kind==="base"&&!/^(train|drive|flight)$/.test(it.k||"")&&!it.from,baseP:n.kind==="base"?it.p||null:null,isOpt:n.kind==="base"&&DAYS[di].items[n.src].k==="opt",promote:n.promote};
   renderAddStop();
 }
 function readDraft(){ const g=id=>$("#"+id); if(!g("cs-dur")) return; draft.dur=+g("cs-dur").value; draft.at=g("cs-at").value; if(g("cs-name")) draft.name=g("cs-name").value.trim(); if(g("cs-note")) draft.note=g("cs-note").value.trim(); }
@@ -2784,6 +2786,7 @@ document.addEventListener("click",ev=>{
   if(a==="cs-leg"){ openSheet(legSheet(b.dataset.from,b.dataset.to,+b.dataset.min)); return; }
   if(a==="cs-legsave"||a==="cs-legclear"){ const ed=materialize(curDay); ed.legs=ed.legs||{}; const k=b.dataset.from+">"+b.dataset.to; if(a==="cs-legsave") ed.legs[k]=+$("#leg-min").value; else delete ed.legs[k]; saveEdits(); closeSheet(); renderPlan(); return; }
   if(a==="cs-explore"){ openAddStop(b.dataset.key||undefined); if(draft){ xp.cat="view"; xp.cats=["view"]; exLocate(xp); } return; }
+  if(a==="cs-reloc"){ readDraft(); const pp=draft.baseP&&P[draft.baseP]; Object.assign(draft,{reloc:true,name:draft.name||draft.title||draft.baseName||"",lat:pp?pp[1]:null,lng:pp?pp[2]:null}); renderAddStop(); setTimeout(()=>{ const q=$("#cs-q"); if(q) q.focus(); },60); return; }
   if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng,q:r.q||null}); if(r.needName) reverseName([r.lat,r.lng]).then(n=>{ if(n&&draft&&draft.lat===r.lat&&draft.name==="ตำแหน่งที่วาง"){ draft.name=n; renderAddStop(); } }); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
   if(a==="cs-atclear"){ readDraft(); draft.at=""; renderAddStop(); return; }
   if(a==="cs-noplace"){ readDraft(); Object.assign(draft,{lat:null,lng:null}); renderAddStop(); return; }
@@ -4562,7 +4565,7 @@ function vgLock(id){ const st=document.createElement("style");
     catch(e){ b.disabled=false; b.textContent="เปิดดูทริป"; $e("#vgE").textContent=e.bad?"รหัสไม่ถูกต้อง ลองใหม่อีกครั้งนะ":e.gone?"เจ้าของทริปหยุดแชร์ลิงก์นี้แล้ว":"โหลดไม่ได้ตอนนี้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"; if(e.bad){ const f=$e("form"); f.classList.remove("sh"); void f.offsetWidth; f.classList.add("sh"); } } };
   setTimeout(()=>{ try{ $e("#vgP").focus(); }catch(e){} },300); }
 const VG_HIDE=["ph-addmenu","ph-pick","ph-pick-files","ph-add","ph-addstop","tb-open","backup","addstop","srt-open","ph-resort","ph-undo","dup-open","phx-open","cs-edit","rec-add","rec-hide","ex-add","reorder","dshift","dstop","bk-restore","bk-import","act-apply","act-open","gk-open","cs-recplus"];
-const VG_BLOCK=/^(addstop|visit|reorder|dshift|dstop|rec-add|rec-hide|ex-add|ph-pick|ph-pick-files|ph-add|ph-addmenu|ph-addstop|ph-gmv|ph-undo|ph-resort|ph-strip|ph-justno|ph-galsel|ph-galundo|ph-gpick|ph-gname|srt-.*|cs-(edit|save|reset|del|ins|time|qt.*|leg.*|mv|moveday|promote|pick.*|noplace|here|fradd|recplus|atclear)|backup|bk-.*|tb-open|pool-.*|gp-.*|gk-.*|act-apply|act-all|dup-.*|phx-.*|vs-.*)$/;
+const VG_BLOCK=/^(addstop|visit|reorder|dshift|dstop|rec-add|rec-hide|ex-add|ph-pick|ph-pick-files|ph-add|ph-addmenu|ph-addstop|ph-gmv|ph-undo|ph-resort|ph-strip|ph-justno|ph-galsel|ph-galundo|ph-gpick|ph-gname|srt-.*|cs-(edit|save|reset|del|ins|time|qt.*|leg.*|mv|moveday|promote|pick.*|noplace|here|fradd|recplus|atclear|reloc|hit)|backup|bk-.*|tb-open|pool-.*|gp-.*|gk-.*|act-apply|act-all|dup-.*|phx-.*|vs-.*)$/;
 function vgToast(t){ let el=$("#vgToast"); if(!el){ el=document.createElement("div"); el.id="vgToast"; document.body.appendChild(el); } el.textContent=t; el.classList.add("on"); clearTimeout(vgToast.t); vgToast.t=setTimeout(()=>el.classList.remove("on"),1800); }
 function vgBarPaint(){ const b=$("#vgBar"); if(!b) return; const c=VIEW.c, d=new Date(c.at||0), today=d.toDateString()===new Date().toDateString();
   const t=c.at?(today?"":d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})+" ")+d.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}):"";
