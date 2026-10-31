@@ -637,6 +637,17 @@ body.is-dragging{cursor:grabbing}
 .tb-bar b{flex:1 1 auto;font-size:16px}
 .tb-bar{flex-wrap:wrap}
 .tb-prog{flex:1 1 100%;margin-top:4px;padding:8px 10px;border-radius:10px;background:#F3F6F4;font-size:13.5px}
+.tb-share p{margin:6px 0;line-height:1.5}
+.tb-steps{margin:6px 0 8px;padding-left:20px;line-height:1.55}
+.tb-steps a{color:var(--accent,#2F6FB3)}
+.tb-f{display:block;margin:8px 0;font-weight:600;font-size:13px}
+.tb-f input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1px solid #CBD5D0;border-radius:9px;font:500 15px/1.3 inherit;background:#fff;color:#1C2228}
+#tbsPass{font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.tb-chk{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:13.5px}
+.tb-note{color:#69737D;font-size:12.5px}
+.tb-err{color:#B3261E;font-weight:600}
+.tb-msg{display:block;width:100%;box-sizing:border-box;margin:8px 0 2px;padding:10px;border:1px solid #CBD5D0;border-radius:10px;font:14px/1.5 inherit;background:#fff;color:#1C2228;resize:vertical}
+.tb-link{background:none;border:0;padding:0;color:#B3261E;font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer}
 .tb-prog[hidden]{display:none}
 .tb-prog-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .tb-prog-top b{font-size:13.5px;flex:1 1 auto;font-weight:600}
@@ -3724,23 +3735,23 @@ function tripStats(){ let kmT=0; DAYS.forEach((d,i)=>{ const ln=dayLine(i)||[]; 
   let vis=0; DAYS.forEach((d,i)=>dayStops(i).forEach(s=>{ if(tbVisited(i,s._i)) vis++; })); return {km:Math.round(kmT/10)*10,vis,photos:phMeta.length}; }
 async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → images embedded */
   const app=mode!=="export"; const shown=m=>!m.tbHide||(app&&tbShowHid); if(app) tbGrids={};
-  const src=async(m,big)=>{ if(mode!=="export") return await phThumbURL(m.id,big)||""; tbExpTick(); const b=await PDB.getBlob(m.id); if(!b) return ""; const blob=big?b.full:b.thumb; return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); };
+  const src=async(m,big)=>{ if(mode!=="export") return await phThumbURL(m.id,big)||""; tbExpTick(); const b=await PDB.getBlob(m.id); if(!b) return ""; const blob=big?b.full:b.thumb; if(tbShareReg) return tbRegAdd(blob); return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); };
   const fa=m=>app?` data-tbid="${m.id}" class="${m.kind==="video"?"v":""}${m.tbHide?" hid":""}${tbSel&&tbSel.has(m.id)?" sel":""}${m.cover?" cov":""}"`:(m.kind==="video"?` class="v"`:"");
   const fig=async(m,big)=>{ if(m.kind!=="video") return `<figure${fa(m)}><img src="${await src(m,big)}" alt="" loading="lazy" draggable="false"></figure>`;
-    const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); }):"")):await phThumbURL(m.id,false);
+    const po=mode==="export"?(await PDB.getBlob(m.id).then(b=>b&&b.thumb?(tbShareReg?tbRegAdd(b.thumb):new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b.thumb); })):"")):await phThumbURL(m.id,false);
     if(mode==="export"){ const inV=tbExpVids&&tbExpVids.has(m.id); if(inV) tbExpVidUsed.add(m.id);
-      return `<figure class="v"${inV?` data-v="${m.id}"`:""}>${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}${tbExpVids&&!inV?" · ดูได้ในแอป":""}</i></figure>`; }
+      return `<figure class="v"${inV?` data-v="${m.id}"`:""}>${po?`<img src="${po}" alt="">`:""}<i>▶ วิดีโอ ${fmtDur(m.dur)}${tbExpVids&&!inV&&!tbShareReg?" · ดูได้ในแอป":""}</i></figure>`; }
     return `<figure${fa(m).replace('class="','class="'+(po?"":"nop "))}><video src="${await phThumbURL(m.id,true)}${po?"":"#t=0.5"}" ${po?`poster="${po}"`:""} playsinline preload="${po?"none":"metadata"}"></video><i>▶ ${fmtDur(m.dur)}</i></figure>`; };
-  const grid=async(list,bigN,gk)=>{ list=tbSort(list.filter(shown)); if(!list.length) return ""; if(app) tbGrids[gk]=list.map(m=>m.id);
+  const grid=async(list,bigN,gk)=>{ list=tbSort(list.filter(shown)); if(!list.length) return ""; tbRegGroup="g|"+gk; if(app) tbGrids[gk]=list.map(m=>m.id);
     const lim=app&&tbMore.has(gk)?list.length:24, show=list.slice(0,lim);
     return `<div class="tb-grid n${Math.min(show.length,5)}"${app?` data-tbg="${esc(gk)}"`:""}>${(await Promise.all(show.map((m,j)=>fig(m,j<bigN)))).join("")}</div>${app&&list.length>lim?`<button class="btn small tb-more" data-tb="more" data-g="${esc(gk)}">ดูอีก ${list.length-lim} รูปของจุดนี้</button>`:""}`; };
   const st=tripStats(); const pics=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide); const vids=phMeta.filter(m=>m.kind==="video"&&!m.tbHide).length; const cover=pics.find(m=>m.cover)||pics.find(m=>m.key&&m.lat!=null)||pics[0];
   let h=`<section class="tb-cover">${cover?`<img src="${await src(cover,true)}" alt="">`:""}<div class="tb-cv"><p>18–24 ตุลาคม 2026</p><h1>ฮอกไกโด<br>ใบไม้แดง</h1><p>${DAYS.length} วัน (ขับรถ ${CARFREE_DAY} วันแรก) · 3 คน · ทะเลสาบโทยะ นิเซโกะ โจซังเค โอตารุ ซัปโปโร</p><ul><li><b>${st.vis}</b>จุดที่ไป</li><li><b>${pics.length}</b>รูป</li>${vids?`<li><b>${vids}</b>วิดีโอ</li>`:""}<li><b>~${st.km.toLocaleString()}</b>กม.</li></ul></div></section>`;
-  h+=await tbOverview(mode);
+  tbRegGroup="ov"; h+=await tbOverview(mode);
   for(let i=0;i<DAYS.length;i++){ const d=DAYS[i]; const seq=stopSeq(i).filter(x=>x.num); const dayPh=phMeta.filter(m=>m.day===i&&shown(m));
     if(!dayPh.length&&!seq.some(x=>isVisited(i,x.it._i))) continue;   /* a day we haven't reached yet */
     const di=i, w=tbWxDay(di), ht=tbHotel(di), dkm=tbDayKm(di); const rows=[];
-    rows.push(`<header class="tb-dh"><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม</p><h2>${esc(d.title)}</h2></div></header>${await tbDayMap(di,mode)}<ul class="tb-facts">${w?`<li>${esc(tbWxText(w))}</li>`:""}${dkm?`<li>${carFreeAt(di)?"🚇":"🚗"} ~${dkm} กม.</li>`:""}${ht?`<li>🛏 ${esc(ht)}</li>`:""}<li>📷 ${dayPh.length} ${dayPh.some(m=>m.kind==="video")?"รูปและวิดีโอ":"รูป"}</li></ul>`);
+    tbRegGroup="map|"+i; rows.push(`<header class="tb-dh"><span class="tb-dn">${d.n}</span><div><p>${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม</p><h2>${esc(d.title)}</h2></div></header>${await tbDayMap(di,mode)}<ul class="tb-facts">${w?`<li>${esc(tbWxText(w))}</li>`:""}${dkm?`<li>${carFreeAt(di)?"🚇":"🚗"} ~${dkm} กม.</li>`:""}${ht?`<li>🛏 ${esc(ht)}</li>`:""}<li>📷 ${dayPh.length} ${dayPh.some(m=>m.kind==="video")?"รูปและวิดีโอ":"รูป"}</li></ul>`);
     for(const x of seq){ const k=x.it._i; const ps=dayPh.filter(m=>m.key===k); const vis=tbVisited(i,k);
       if(!ps.length&&!vis) continue;
       const wxs=tbWxStop(i,x.it);
@@ -3752,7 +3763,7 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
     const loose=dayPh.filter(m=>!m.key&&!m.place); if(loose.length) rows.push(`<article class="tb-stop"><h3>อื่น ๆ ในวันนี้</h3>${await grid(loose,0,i+"|loose")}</article>`);
     const run=`<div class="tb-run"><span>D${d.n} · ${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม · ${esc(d.title)}</span>${w?`<span>${esc(w.e)} ${w.tmin}–${w.tmax}°C${ht?` · 🛏 ${esc(ht)}`:""}</span>`:ht?`<span>🛏 ${esc(ht)}</span>`:""}</div>`;
     h+=`<section class="tb-day" style="--dc:${cssVar(`--d${d.n}`)}"><table class="tb-dt"><thead><tr><td>${run}</td></tr></thead><tbody>${rows.map(r=>`<tr><td>${r}</td></tr>`).join("")}</tbody></table></section>`; }
-  h+=await tbExtras(mode);
+  tbRegGroup="x"; h+=await tbExtras(mode);
   h+=`<footer class="tb-end"><p>ฮอกไกโด ตุลาคม 2026</p></footer>`;
   return h; }
 const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,sans-serif}
@@ -3832,10 +3843,12 @@ const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,
 @media screen{ .tb-dt thead td{position:sticky;top:var(--tbbar,46px);z-index:2} }
 @media print{ .tb-ov-note,.tb-ov-wait,.tb-more,[data-tb="ov-retry"]{display:none!important} .tb-cover{min-height:auto;height:100vh} .tb-ov,.tb-day,.tb-x{page-break-before:always} .tb-ov{padding-top:0} .tb-tripmap{max-height:86vh;width:auto;max-width:100%;margin-left:auto;margin-right:auto;break-after:page} .tb-ovt td{padding:5px 0} .tb-daymap{max-height:52vh;object-fit:cover} .tb-dh,.tb-daymap{break-after:avoid} .tb-ovt tr,.tb-nums li{break-inside:avoid} .tb-stories{columns:2} .tb-drinks{grid-template-columns:1fr 1fr} .tb-x .tb-xt{break-after:avoid} }`;
 async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElement("div"); r.id="tbRoot"; document.body.appendChild(r); }
-  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">สร้าง PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button><div id="tbProg" class="tb-prog" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
+  r.innerHTML=`<div class="tb-bar"><button class="btn small" data-tb="close">‹ กลับ</button><b>Tripbook</b><button class="btn small" id="tbHidBtn" data-tb="hid" style="display:none"></button><button class="btn small" data-tb="print">สร้าง PDF</button><button class="btn small primary" data-tb="save">บันทึกเป็นไฟล์</button><button class="btn small" data-tb="share">แชร์ลิงก์</button><div id="tbProg" class="tb-prog" hidden></div><div id="tbShareBox" class="tb-prog tb-share" hidden></div></div><div class="tb" id="tbBody"><p style="padding:20px">กำลังจัดหน้า…</p></div><style>${TB_CSS}</style>`;
   r.hidden=false; document.body.classList.add("tb-open"); tbProgPaint(); try{ history.pushState({tb:1},""); }catch(e){}
   tbSel=null; tbDel=false; await tbShotsFromCache(); $("#tbBody").innerHTML=await tripbookHtml("app"); tbWire(r); tbBarPaint(); setTimeout(()=>tbShotsKick(),300);
   r.onclick=async ev=>{ const b=ev.target.closest("[data-tb]"); if(!b) return; const a=b.dataset.tb;
+    if(a==="share"){ tbsOpen(); return; }
+    if(a.startsWith("sh-")){ tbsAction(a,b); return; }
     if(a.startsWith("s-")){ tbSelAction(a); return; }
     if(a==="more"){ tbMore.add(b.dataset.g); await tbRender(); tbMark(); return; }
     if(a==="hid"){ tbShowHid=!tbShowHid; await tbRender(); tbMark(); return; }
@@ -3882,6 +3895,155 @@ const TB_PLAYER=`<script>document.addEventListener("click",function(e){var f=e.t
 var t=s.textContent.replace(/\\s+/g,""),P=[],C=4194304;for(var i=0;i<t.length;i+=C){var b=atob(t.slice(i,i+C)),u=new Uint8Array(b.length);for(var j=0;j<b.length;j++)u[j]=b.charCodeAt(j);P.push(u);}
 var v=document.createElement("video");v.src=URL.createObjectURL(new Blob(P,{type:s.getAttribute("data-mime")||"video/mp4"}));v.controls=true;v.autoplay=true;v.playsInline=true;v.setAttribute("playsinline","");
 v.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000";f.appendChild(v);var p=v.play&&v.play();if(p&&p.catch)p.catch(function(){});});<\/script>`;
+/* ===================== Tripbook as a link: the book is locked with a passcode (AES, key from the passcode),
+   kept on a "tripbooks" branch of the app's own GitHub repo, and opened by the book/ page on GitHub Pages ===================== */
+const TBS_BRANCH="tripbooks", TBS_IT=250000, TBS_PACK=4*1048576;
+var tbShareReg=null, tbRegGroup="", tbShare=null, tbShareBusy=false, tbShareTick=null;
+function tbRegAdd(blob){ if(!blob||!tbShareReg) return ""; tbShareReg.push({blob,g:tbRegGroup}); return "tbr:"+(tbShareReg.length-1); }
+function tbsRepo(){ const s=store.get("ghRepo",""); if(s) return s; const h=location.hostname; if(/\.github\.io$/.test(h)){ const seg=location.pathname.split("/").filter(Boolean)[0]; if(seg) return h.split(".")[0]+"/"+seg; } return ""; }
+function tbsPagesUrl(repo){ const [o,r]=repo.split("/"); return `https://${o.toLowerCase()}.github.io/${r}/book/`; }
+function tbsNewPass(){ const A="23456789ABCDEFGHJKMNPQRSTUVWXYZ", u=crypto.getRandomValues(new Uint8Array(8)); let s=""; u.forEach((x,i)=>{ s+=A[x%A.length]; if(i===3) s+="-"; }); return s; }
+function tbsNewId(){ const A="abcdefghijkmnpqrstuvwxyz23456789", u=crypto.getRandomValues(new Uint8Array(12)); let s=""; u.forEach(x=>{ s+=A[x%A.length]; }); return s; }
+function tbsNorm(p){ return String(p||"").toUpperCase().replace(/[\s-]/g,""); }
+function tbsB64(u8){ let s=""; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000)); return btoa(s); }
+function tbsU8(b64){ const b=atob(b64), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+async function tbsKey(pass,salt,it){ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(tbsNorm(pass)),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:it,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt"]); }
+async function tbsSeal(key,data){ const iv=crypto.getRandomValues(new Uint8Array(12)), ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,data)), out=new Uint8Array(12+ct.length); out.set(iv); out.set(ct,12); return out; }
+async function tbsSha(buf){ const h=new Uint8Array(await crypto.subtle.digest("SHA-256",buf)); let s=""; h.forEach(x=>{ s+=x.toString(16).padStart(2,"0"); }); return s; }
+/* the GitHub API, with waits when it asks us to slow down */
+async function tbsGh(path,opt){ opt=opt||{}; const tok=opt.tok||store.get("ghTok","");
+  for(let a=0;a<6;a++){ let r;
+    try{ r=await fetch("https://api.github.com"+path,{method:opt.method||"GET",cache:"no-store",headers:Object.assign({Authorization:"Bearer "+tok,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opt.body?{"Content-Type":"application/json"}:{}),body:opt.body?JSON.stringify(opt.body):undefined}); }
+    catch(e){ if(a===5) throw new Error("ต่อ GitHub ไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่"); await tbSleep(1500*(a+1)); continue; }
+    if(r.ok) return r.status===204?null:await r.json();
+    if(opt.ok404&&r.status===404) return null;
+    const ra=r.headers.get("retry-after"), left=r.headers.get("x-ratelimit-remaining");
+    if((r.status===403||r.status===429)&&(ra||left==="0")){ await tbSleep(Math.min(90,+(ra||60))*1000); continue; }
+    if(r.status>=500){ await tbSleep(2000*(a+1)); continue; }
+    let m=""; try{ m=(await r.json()).message||""; }catch(e){}
+    if(r.status===401) throw new Error("GitHub token ไม่ถูกต้องหรือหมดอายุ กด “ตั้งค่า GitHub” แล้วใส่ token ใหม่");
+    if(r.status===403||r.status===404) throw new Error(`token นี้เขียนลง repo นี้ไม่ได้ ตรวจว่าเลือก repo นี้ และให้สิทธิ์ Contents: Read and write (${r.status}${m?" · "+m:""})`);
+    throw new Error(`GitHub ตอบว่า ${r.status}${m?" · "+m:""}`); }
+  throw new Error("GitHub ไม่ตอบ ลองใหม่อีกครั้ง"); }
+/* has anything in the book changed since the link was made */
+function tbsKey0(withV,pass){ return tbHash(["s1",TB_CACHE_V,$("#tbBody").innerHTML.replace(/(src|poster)="blob:[^"]*"/g,'$1=""'),JSON.stringify(phMeta),tbShots?tbShots.at:0,withV?1:0,tbsNorm(pass),tbsRepo()].join("\n")); }
+function tbsEstimate(withV){ const ph=phMeta.filter(m=>m.kind!=="video"&&!m.tbHide&&m.day!=null).length, v=withV?tbBookVideos().reduce((a,m)=>a+(m.dur||30),0):0; return Math.max(1,Math.round(ph*0.07+v*0.12+3)); }
+function tbsMessage(st){ const c=$("#tbBody .tb-cover"), h1=c&&c.querySelector("h1"), p=c&&c.querySelector(".tb-cv p");
+  const title=h1?tbpOwn(h1).replace(/\s*\n\s*/g," ").trim():"Tripbook", dates=p?p.innerText.trim():"";
+  const stats=c?[...c.querySelectorAll(".tb-cv li")].map(li=>{ const b=li.querySelector("b"); return ((b?b.innerText.trim():"")+" "+tbpOwn(li,[b])).trim(); }).join(" · "):"";
+  return `📖 Tripbook: ${title}\n${[dates,stats].filter(Boolean).join("\n")}\n\nเปิดดูได้ที่ 👉 ${st.link}\n🔑 รหัสเปิด: ${st.pass}`; }
+async function tbsUpload(withV,pass,say){ const repo=tbsRepo(), RP="/repos/"+repo;
+  let st=await tbCacheGet("tb~share"); if(!st||st.repo!==repo||st.stopped) st={id:"tb~share",repo,bookId:tbsNewId()};
+  if(!st.salt||tbsNorm(st.pass)!==tbsNorm(pass)){ st.salt=tbsB64(crypto.getRandomValues(new Uint8Array(16))); st.it=TBS_IT; }
+  st.pass=pass; const key=await tbsKey(pass,tbsU8(st.salt),st.it);
+  /* 1. the book, every picture a numbered reference */
+  say("กำลังเตรียมหน้า…");
+  if(withV) await tbPrepVideos(); else { tbExpVids=null; tbExpVidUsed=new Set(); }
+  tbShareReg=[]; tbRegGroup="cover"; let body="", reg;
+  try{ body=await tripbookHtml("export"); } finally{ reg=tbShareReg; tbShareReg=null; }
+  /* 2. pictures by section, each in a pack named after what is inside, so an unchanged section is not sent again */
+  const ents=[]; for(let i=0;i<reg.length;i++){ const buf=await reg[i].blob.arrayBuffer(); ents.push({h:await tbsSha(buf),size:buf.byteLength,type:reg[i].blob.type||"image/jpeg",g:reg[i].g}); if(i%25===0) say("กำลังเตรียมรูป",i,reg.length); }
+  const groups=new Map(); ents.forEach((e,i)=>{ if(!groups.has(e.g)) groups.set(e.g,[]); groups.get(e.g).push(i); });
+  const packs=[], refs=new Array(ents.length), at=new Map();
+  for(const idx of groups.values()){ const first=new Map(); idx.forEach(i=>{ if(!at.has(ents[i].h)&&!first.has(ents[i].h)) first.set(ents[i].h,i); });
+    const items=[...first.values()].sort((a,b)=>ents[a].h<ents[b].h?-1:1); let cur=null;
+    items.forEach(i=>{ const e=ents[i]; if(!cur||(cur.size+e.size>TBS_PACK&&cur.items.length)){ cur={items:[],size:0}; packs.push(cur); } at.set(e.h,[packs.length-1,cur.size,e.size,e.type]); cur.items.push(i); cur.size+=e.size; });
+    idx.forEach(i=>{ refs[i]=at.get(ents[i].h); }); }
+  for(const p of packs){ p.path="p/"+(await tbsSha(new TextEncoder().encode(st.salt+"|"+p.items.map(i=>ents[i].h).join(",")))).slice(0,24)+".bin"; }
+  const vids={}, vfiles=[];
+  if(tbExpVids) for(const vid of tbExpVidUsed){ const vb=tbExpVids.get(vid); if(!vb) continue; const h=await tbsSha(await vb.arrayBuffer()); const path="v/"+(await tbsSha(new TextEncoder().encode(st.salt+"|v|"+h))).slice(0,24)+".bin"; vids[vid]=[path,vb.type||"video/mp4",vb.size]; vfiles.push({path,blob:vb}); }
+  /* 3. what is up there already */
+  say("กำลังเช็ค GitHub…"); await tbsGh(RP);
+  const ref=await tbsGh(`${RP}/git/ref/heads/${TBS_BRANCH}`,{ok404:true}); let baseTree=null; const have=new Map();
+  if(ref&&ref.object){ const c=await tbsGh(`${RP}/git/commits/${ref.object.sha}`); baseTree=c.tree.sha; const t=await tbsGh(`${RP}/git/trees/${baseTree}?recursive=1`);
+    (t.tree||[]).forEach(x=>{ if(x.type==="blob"&&x.path.startsWith(st.bookId+"/")) have.set(x.path.slice(st.bookId.length+1),x.sha); }); }
+  /* 4. send what is new, locked */
+  const need=[]; packs.forEach(p=>{ if(!have.has(p.path)) need.push({path:p.path,pack:p}); }); vfiles.forEach(v=>{ if(!have.has(v.path)&&!need.some(n=>n.path===v.path)) need.push(v); });
+  const total=need.reduce((a,n)=>a+(n.pack?n.pack.size:n.blob.size),0); let sent=0; const tree=[];
+  say("กำลังอัปโหลด",0,total,true);
+  for(const n of need){ let data;
+    if(n.pack){ data=new Uint8Array(n.pack.size); let o=0; for(const i of n.pack.items){ const u=new Uint8Array(await reg[i].blob.arrayBuffer()); data.set(u,o); o+=u.length; } }
+    else data=new Uint8Array(await n.blob.arrayBuffer());
+    const b=await tbsGh(`${RP}/git/blobs`,{method:"POST",body:{content:tbsB64(await tbsSeal(key,data)),encoding:"base64"}});
+    tree.push({path:`${st.bookId}/${n.path}`,mode:"100644",type:"blob",sha:b.sha}); sent+=data.length; say("กำลังอัปโหลด",sent,total,true); }
+  /* 5. the contents page, locked too */
+  const c=$("#tbBody .tb-cover h1"), title="Tripbook"+(c?" · "+tbpOwn(c).replace(/\s*\n\s*/g," ").trim():"");
+  const M={v:1,title,at:Date.now(),css:TB_CSS,html:body,refs,packs:packs.map(p=>p.path),vids};
+  const mf=JSON.stringify({v:1,salt:st.salt,it:st.it,d:tbsB64(await tbsSeal(key,new TextEncoder().encode(JSON.stringify(M))))});
+  const mb=await tbsGh(`${RP}/git/blobs`,{method:"POST",body:{content:mf,encoding:"utf-8"}}); tree.push({path:`${st.bookId}/m.json`,mode:"100644",type:"blob",sha:mb.sha});
+  /* 6. pieces of the old version that are no longer used go; one commit, no history kept */
+  const keep=new Set(["m.json",...packs.map(p=>p.path),...vfiles.map(v=>v.path)]);
+  have.forEach((sha,p)=>{ if(!keep.has(p)) tree.push({path:`${st.bookId}/${p}`,mode:"100644",type:"blob",sha:null}); });
+  say("กำลังบันทึกลง GitHub…");
+  const nt=await tbsGh(`${RP}/git/trees`,{method:"POST",body:baseTree?{base_tree:baseTree,tree}:{tree:tree.filter(x=>x.sha)}});
+  const cm=await tbsGh(`${RP}/git/commits`,{method:"POST",body:{message:"Tripbook "+st.bookId,tree:nt.sha,parents:[]}});
+  if(ref&&ref.object) await tbsGh(`${RP}/git/refs/heads/${TBS_BRANCH}`,{method:"PATCH",body:{sha:cm.sha,force:true}});
+  else await tbsGh(`${RP}/git/refs`,{method:"POST",body:{ref:"refs/heads/"+TBS_BRANCH,sha:cm.sha}});
+  st.link=tbsPagesUrl(repo)+"#"+st.bookId; st.at=Date.now(); st.stopped=0;
+  return {st,sent,files:need.length}; }
+async function tbsStop(){ const st=await tbCacheGet("tb~share"); if(!st||!st.link) return; const RP="/repos/"+st.repo;
+  const ref=await tbsGh(`${RP}/git/ref/heads/${TBS_BRANCH}`,{ok404:true});
+  if(ref&&ref.object){ const c=await tbsGh(`${RP}/git/commits/${ref.object.sha}`), t=await tbsGh(`${RP}/git/trees/${c.tree.sha}?recursive=1`);
+    const del=(t.tree||[]).filter(x=>x.type==="blob"&&x.path.startsWith(st.bookId+"/")).map(x=>({path:x.path,mode:"100644",type:"blob",sha:null}));
+    if(del.length){ const nt=await tbsGh(`${RP}/git/trees`,{method:"POST",body:{base_tree:c.tree.sha,tree:del}}); const cm=await tbsGh(`${RP}/git/commits`,{method:"POST",body:{message:"Stop sharing "+st.bookId,tree:nt.sha,parents:[]}});
+      await tbsGh(`${RP}/git/refs/heads/${TBS_BRANCH}`,{method:"PATCH",body:{sha:cm.sha,force:true}}); } }
+  await tbCachePut({id:"tb~share",repo:st.repo,stopped:Date.now()}); }
+/* the share panel under the Tripbook bar */
+function tbsPaint(){ const el=$("#tbShareBox"); if(!el) return; const s=tbShare; if(!s){ el.hidden=true; el.innerHTML=""; return; } el.hidden=false;
+  const E=s.err?`<p class="tb-err">${esc(s.err)}</p>`:"";
+  if(s.step==="setup") el.innerHTML=`<div class="tb-prog-top"><b>แชร์ Tripbook เป็นลิงก์ · ตั้งค่าครั้งแรก</b></div>
+    <p>แอปจะล็อก Tripbook ด้วยรหัสเปิด แล้วเก็บไว้ใน GitHub repo ของแอปนี้ (ฟรี) คนที่ไม่มีรหัสเปิดดูไม่ได้ ครั้งแรกต้องให้แอปเขียนลง repo ได้ก่อน:</p>
+    <ol class="tb-steps"><li>เปิด <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → สร้าง token ใหม่</a> (Fine-grained)</li><li>Repository access → <b>Only select repositories</b> → เลือก repo ของแอปนี้</li><li>Permissions → Repository permissions → <b>Contents: Read and write</b></li><li>กด Generate token แล้วคัดลอกมาวางตรงนี้</li></ol>
+    <label class="tb-f">GitHub token<input id="tbsTok" type="password" autocomplete="off" spellcheck="false" placeholder="${store.get("ghTok","")?"ใช้ token เดิม (วางใหม่ถ้าจะเปลี่ยน)":"github_pat_…"}"></label>
+    <label class="tb-f">Repo (ชื่อผู้ใช้/ชื่อ repo)<input id="tbsRepo" type="text" autocomplete="off" spellcheck="false" value="${esc(tbsRepo())}"></label>
+    <p class="tb-note">token เก็บไว้ในเครื่องนี้เท่านั้น ไม่อยู่ในไฟล์สำรองหรือ Tripbook</p>${E}
+    <div class="tb-ask"><button class="btn small primary" data-tb="sh-save"${s.wait?" disabled":""}>${s.wait?"กำลังตรวจ…":"บันทึก"}</button><button class="btn small" data-tb="sh-x">ยกเลิก</button></div>`;
+  else if(s.step==="form") el.innerHTML=`<div class="tb-prog-top"><b>${s.had?"อัปเดต Tripbook ที่แชร์ไว้ (ลิงก์เดิม)":"แชร์ Tripbook เป็นลิงก์"}</b></div>
+    <label class="tb-f">รหัสเปิด (ส่งไปพร้อมลิงก์)<input id="tbsPass" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" value="${esc(s.pass)}"></label>
+    ${s.nv?`<label class="tb-chk"><input id="tbsV" type="checkbox"${s.withV?" checked":""}> ใส่วิดีโอ ${s.nv} คลิป (กดเล่นได้ในลิงก์)</label>`:""}
+    <p class="tb-note">${s.had?"ส่งเฉพาะส่วนที่เปลี่ยน คนที่มีลิงก์จะเห็นฉบับใหม่":"อัปโหลดครั้งแรกราว "+s.mb.toLocaleString()+" MB ควรใช้ Wi-Fi · ครั้งต่อไปส่งเฉพาะส่วนที่เปลี่ยน"} · เปลี่ยนรหัสเปิด = ต้องส่งใหม่ทั้งเล่ม</p>${E}
+    <div class="tb-ask"><button class="btn small primary" data-tb="sh-go">${s.had?"อัปเดตลิงก์":"อัปโหลดและสร้างลิงก์"}</button><button class="btn small" data-tb="sh-x">ยกเลิก</button><button class="btn small" data-tb="sh-setup">ตั้งค่า GitHub</button></div>`;
+  else if(s.step==="busy"){ const vp=s.video&&tbVidPrep&&tbVidPrep.stage!=="pack"?tbVidPrep:null;
+    const msg=vp?`กำลังย่อวิดีโอ ${vp.i} / ${vp.n}${vp.p?` · ${Math.round(vp.p*100)}%`:""}`:s.msg+(s.n?(s.bytes?` ${(s.i/1048576).toFixed(1)} / ${(s.n/1048576).toFixed(1)} MB`:` ${s.i} / ${s.n}`):"");
+    const pct=vp?Math.round(((vp.i-1)+(vp.p||0))/Math.max(1,vp.n)*100):s.n?Math.round(s.i/s.n*100):-1;
+    el.innerHTML=`<div class="tb-prog-top"><b>${esc(msg)}</b></div>${pct>=0?`<div class="tb-pbar"><i style="width:${Math.max(3,pct)}%"></i></div>`:""}<p class="tb-note">อย่าปิดหน้านี้จนกว่าจะเสร็จ</p>`; }
+  else if(s.step==="done") el.innerHTML=`<div class="tb-prog-top"><b>ลิงก์พร้อมส่ง ✓${s.same?" · เล่มไม่ได้เปลี่ยน ใช้ลิงก์เดิม":s.sent!=null?` · ส่งไป ${(s.sent/1048576).toFixed(1)} MB`:""}</b></div>
+    <textarea class="tb-msg" id="tbsMsg" readonly rows="7">${esc(s.text)}</textarea>
+    ${E}<div class="tb-ask"><button class="btn small primary" data-tb="sh-share">แชร์</button><button class="btn small" data-tb="sh-copy">${s.copied?"คัดลอกแล้ว ✓":"คัดลอกข้อความ"}</button><button class="btn small" data-tb="sh-edit">เปลี่ยนรหัส / อัปเดต</button><button class="btn small" data-tb="sh-x">ปิด</button></div>
+    <p class="tb-note"><button class="tb-link" data-tb="sh-stop">${s.arm?"กดอีกครั้งเพื่อยืนยัน: ลบ Tripbook ออกจาก GitHub ลิงก์นี้จะเปิดไม่ได้":"หยุดแชร์ลิงก์นี้"}</button></p>`;
+  else if(s.step==="stopped") el.innerHTML=`<div class="tb-prog-top"><b>หยุดแชร์แล้ว · ลิงก์เดิมเปิดไม่ได้</b></div><div class="tb-ask"><button class="btn small" data-tb="sh-x">ปิด</button></div>`;
+  const r=$("#tbRoot"), bar=$("#tbRoot .tb-bar"); if(r&&bar) r.style.setProperty("--tbbar",bar.offsetHeight+"px"); }
+async function tbsOpen(force){ if(tbShareBusy) return; const nv=tbBookVideos().length;
+  if(!store.get("ghTok","")||!tbsRepo()){ tbShare={step:"setup"}; return tbsPaint(); }
+  const st=await tbCacheGet("tb~share"), live=st&&st.link&&!st.stopped&&st.repo===tbsRepo();
+  const pass=live?st.pass:tbsNewPass(), withV=live&&st.withV!=null?st.withV:true;
+  if(live&&!force&&!tbShotBusy&&st.key0===tbsKey0(withV,pass)){ tbShare={step:"done",same:true,text:tbsMessage(st)}; return tbsPaint(); }
+  tbShare={step:"form",pass,withV,nv,had:!!live,mb:tbsEstimate(withV)}; tbsPaint(); }
+async function tbsAction(a,btn){ const s=tbShare||{};
+  if(a==="sh-x"){ tbShare=null; return tbsPaint(); }
+  if(a==="sh-setup"){ tbShare={step:"setup"}; return tbsPaint(); }
+  if(a==="sh-edit") return tbsOpen(true);
+  if(a==="sh-save"){ const tok=($("#tbsTok")||{}).value.trim()||store.get("ghTok",""), repo=($("#tbsRepo")||{}).value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/\/+$/,"");
+    if(!tok){ s.err="วาง GitHub token ก่อน"; return tbsPaint(); } if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){ s.err="ใส่ repo แบบ ชื่อผู้ใช้/ชื่อrepo"; return tbsPaint(); }
+    s.wait=true; s.err=""; tbsPaint();
+    try{ const j=await tbsGh("/repos/"+repo,{tok}); if(j&&j.permissions&&j.permissions.push===false) throw new Error("token นี้ไม่มีสิทธิ์เขียนลง repo นี้");
+      store.set("ghTok",tok); store.set("ghRepo",repo); tbShare=null; return tbsOpen(); }
+    catch(e){ s.wait=false; s.err=e.message||String(e); return tbsPaint(); } }
+  if(a==="sh-go"){ const pass=($("#tbsPass")||{}).value.trim(), vb=$("#tbsV"), withV=vb?vb.checked:false;
+    if(tbsNorm(pass).length<6){ s.err="รหัสเปิดสั้นเกินไป ใช้อย่างน้อย 6 ตัว (ยิ่งยาวยิ่งปลอดภัย)"; return tbsPaint(); }
+    tbShareBusy=true; tbShare={step:"busy",msg:"กำลังเตรียม…",video:withV}; tbsPaint(); tbShareTick=setInterval(tbsPaint,400);
+    try{ if(tbShotBusy||tbStoryBusy){ tbShare.msg="รอแผนที่ให้เสร็จก่อน…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} }
+      await tbRender(); const k0=tbsKey0(withV,pass);
+      const r=await tbsUpload(withV,pass,(msg,i,n,bytes)=>{ tbShare.msg=msg; tbShare.i=i||0; tbShare.n=n||0; tbShare.bytes=!!bytes; if(msg!=="กำลังเตรียมหน้า…") tbShare.video=false; });
+      r.st.key0=k0; r.st.withV=withV; await tbCachePut(r.st); tbShare={step:"done",text:tbsMessage(r.st),sent:r.sent}; }
+    catch(e){ tbShare={step:"form",pass,withV,nv:tbBookVideos().length,mb:tbsEstimate(withV),err:e.message||String(e)}; }
+    finally{ clearInterval(tbShareTick); tbShareBusy=false; tbExpVids=null; tbVidPrep=null; tbShareReg=null; tbsPaint(); } return; }
+  if(a==="sh-copy"){ const t=s.text||""; let ok=false; try{ await navigator.clipboard.writeText(t); ok=true; }catch(e){}
+    if(!ok){ const ta=$("#tbsMsg"); if(ta){ ta.select(); try{ ok=document.execCommand("copy"); }catch(e){} } } s.copied=ok; return tbsPaint(); }
+  if(a==="sh-share"){ if(navigator.share){ try{ await navigator.share({title:"Tripbook",text:s.text}); }catch(e){} return; } return tbsAction("sh-copy"); }
+  if(a==="sh-stop"){ if(!s.arm){ s.arm=true; return tbsPaint(); } tbShareBusy=true; tbShare={step:"busy",msg:"กำลังลบออกจาก GitHub…"}; tbsPaint();
+    try{ await tbsStop(); tbShare={step:"stopped"}; }catch(e){ tbShare={step:"done",text:s.text,err:e.message}; } finally{ tbShareBusy=false; tbsPaint(); } return; } }
 function closeTripbook(){ tbShotAbort=true; const r=$("#tbRoot"); if(r){ r.hidden=true; r.innerHTML=""; } document.body.classList.remove("tb-open","tb-selecting","tb-dragging"); tbSel=null; tbPress=null; }
 var tbReturn=false;
 function tbReopen(){ if(tbReturn){ tbReturn=false; photoSheetPaint(true); } }   /* opened from "รูปของเรา": go back there */
@@ -4057,7 +4219,7 @@ function tbShotsKick(force){ if(tbShotBusy) return tbShotBusy; if(!force&&tbShot
   tbProgPaint(); return tbShotBusy; }
 addEventListener("online",()=>{ if(!document.body.classList.contains("tb-open")) return; netCheck().then(n=>{ if((n.st==="good"||n.st==="slow")&&!tbShotBusy&&(tbShotErr||!tbShots||tbShots.missing)) tbShotsKick(true); }); });
 addEventListener("offline",()=>{ tbNet={st:"off",ms:0,at:Date.now()}; tbProgPaint(); });
-async function tbImgSrc(b,mode){ if(mode!=="export"){ let u=tbShotURL.get(b); if(!u){ u=URL.createObjectURL(b); tbShotURL.set(b,u); } return u; } return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); }
+async function tbImgSrc(b,mode){ if(mode==="export"&&tbShareReg) return tbRegAdd(b); if(mode!=="export"){ let u=tbShotURL.get(b); if(!u){ u=URL.createObjectURL(b); tbShotURL.set(b,u); } return u; } return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); }); }
 async function tbDayMap(di,mode){ const b=tbShots&&tbShots.days[di]&&tbShots.days[di].map; if(!b) return mode!=="export"&&(tbShotBusy||!tbShots)?`<div class="tb-mapwait" data-di="${di}">กำลังวาดแผนที่ของวันนี้…</div>`:"";
   return `<img class="tb-daymap" data-map="${di}" src="${await tbImgSrc(b,mode)}" alt="แผนที่วันที่ ${DAYS[di].n}">`; }
 async function tbImgsReady(){ const until=Date.now()+8000; while(Date.now()<until){ const L=[...document.querySelectorAll("#tbBody img")]; if(L.every(i=>i.complete)) break; await tbSleep(200); } }

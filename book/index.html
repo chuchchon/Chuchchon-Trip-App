@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Tripbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap">
+<style>
+:root{--ink:#1C2228;--mute:#69737D;--line:#DDE3E0;--acc:#2F6FB3;--err:#B3261E}
+html,body{margin:0;background:#fff;color:var(--ink);font-family:"Anuphan",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+#lock{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px 16px;box-sizing:border-box;background:radial-gradient(120% 90% at 20% 0%,#36556B 0%,#1C2228 70%)}
+.card{width:100%;max-width:360px;background:#fff;border-radius:20px;padding:28px 22px 22px;box-sizing:border-box;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.card .k{margin:0 0 6px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.card h1{margin:0 0 6px;font-size:26px;line-height:1.2}
+.card p{margin:0 0 18px;color:var(--mute);font-size:14px;line-height:1.55}
+.card input[type=text]{width:100%;box-sizing:border-box;font:600 22px/1.2 "Anuphan",ui-monospace,monospace;letter-spacing:.14em;text-align:center;text-transform:uppercase;padding:13px 10px;border:1.5px solid var(--line);border-radius:12px;outline:none;color:var(--ink);background:#fff}
+.card input[type=text]:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(47,111,179,.15)}
+.card button{width:100%;margin-top:14px;font:600 16px "Anuphan",system-ui,sans-serif;padding:13px;border:0;border-radius:12px;background:var(--acc);color:#fff;cursor:pointer}
+.card button:disabled{opacity:.6}
+.card label{display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13.5px;color:var(--mute)}
+.err{color:var(--err);font-size:14px;min-height:20px;margin-top:12px;line-height:1.45}
+#bar{position:fixed;left:0;top:0;height:3px;width:100%;background:var(--acc);transform-origin:left;transform:scaleX(0);transition:transform .25s,opacity .4s;z-index:50;opacity:0}
+#book img[data-r]{background:#EEF1F3}
+</style>
+</head>
+<body>
+<div id="bar" aria-hidden="true"></div>
+<main id="lock">
+  <form class="card" id="f" autocomplete="off">
+    <p class="k">Tripbook</p>
+    <h1>🔒 ใส่รหัสเพื่อเปิด</h1>
+    <p id="msg">รหัสส่งมาพร้อมกับลิงก์นี้</p>
+    <input type="text" id="pw" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX" aria-label="รหัสเปิด Tripbook">
+    <label><input type="checkbox" id="rem" checked> จำรหัสไว้ในเครื่องนี้</label>
+    <button id="go" type="submit">เปิด Tripbook</button>
+    <div class="err" id="err" role="alert"></div>
+  </form>
+</main>
+<div id="book" hidden></div>
+<script>
+(function(){
+  "use strict";
+  var $=function(s){ return document.querySelector(s); };
+  var id=(location.hash||"").replace(/^#/,"").replace(/[^A-Za-z0-9_-]/g,"");
+  var q=new URLSearchParams(location.search), host=location.hostname;
+  var owner=q.get("o")||(/\.github\.io$/.test(host)?host.split(".")[0]:""), repo=q.get("r")||(location.pathname.split("/").filter(Boolean)[0]||""), BR=q.get("b")||"tripbooks";
+  var PX="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+  var enc=new TextEncoder(), dec=new TextDecoder(), base="", MF=null, KEY=null, M=null, packs={}, urls={}, busy=0, done=0;
+  function b64(s){ var b=atob(s), u=new Uint8Array(b.length); for(var i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+  function norm(p){ return String(p||"").toUpperCase().replace(/[\s-]/g,""); }
+  function err(t){ $("#err").textContent=t||""; }
+  function bar(){ var b=$("#bar"), n=busy+done; if(!busy){ b.style.opacity="0"; return; } b.style.opacity="1"; b.style.transform="scaleX("+Math.max(.05,done/Math.max(1,n))+")"; }
+  async function deriveKey(pass,salt,it){ var k=await crypto.subtle.importKey("raw",enc.encode(norm(pass)),"PBKDF2",false,["deriveKey"]); return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:it,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["decrypt"]); }
+  async function unseal(key,u){ return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:u.subarray(0,12)},key,u.subarray(12))); }
+  async function headRef(){ try{ var r=await fetch("https://api.github.com/repos/"+owner+"/"+repo+"/git/ref/heads/"+BR,{cache:"no-store"}); if(r.ok){ var j=await r.json(); if(j&&j.object&&j.object.sha) return j.object.sha; } }catch(e){} return BR; }
+  async function bin(path){ var r=await fetch(base+path); if(!r.ok) throw new Error("net"); return new Uint8Array(await r.arrayBuffer()); }
+  async function unlock(pass){
+    if(!id||!owner||!repo) throw new Error("link");
+    if(!window.crypto||!crypto.subtle) throw new Error("old");
+    if(!MF){ base="https://raw.githubusercontent.com/"+owner+"/"+repo+"/"+(await headRef())+"/"+id+"/"; var r; try{ r=await fetch(base+"m.json",{cache:"no-store"}); }catch(e){ throw new Error("net"); } if(r.status===404) throw new Error("gone"); if(!r.ok) throw new Error("net"); MF=await r.json(); }
+    var key=await deriveKey(pass,b64(MF.salt),MF.it), pt;
+    try{ pt=await unseal(key,b64(MF.d)); }catch(e){ throw new Error("bad"); }
+    KEY=key; M=JSON.parse(dec.decode(pt)); }
+  function pack(i){ if(!packs[i]) packs[i]=bin(M.packs[i]).then(function(u){ return unseal(KEY,u); }).catch(function(e){ delete packs[i]; throw e; }); return packs[i]; }
+  async function load(im){ var r=M.refs[+im.getAttribute("data-r")]; if(!r) return; busy++; bar();
+    try{ var k=r.join(","); if(!urls[k]){ var p=await pack(r[0]); urls[k]=URL.createObjectURL(new Blob([p.subarray(r[1],r[1]+r[2])],{type:r[3]||"image/jpeg"})); } im.src=urls[k]; }
+    catch(e){ im.removeAttribute("data-busy"); setTimeout(function(){ io.observe(im); },4000); }
+    busy--; done++; bar(); }
+  var io=null;
+  function render(){
+    document.title=M.title||"Tripbook";
+    var st=document.createElement("style"); st.textContent=(M.css||"")+"\nbody{margin:0}"; document.head.appendChild(st);
+    var b=$("#book"); b.innerHTML='<div class="tb">'+String(M.html||"").replace(/src="tbr:(\d+)"/g,'src="'+PX+'" data-r="$1"')+'</div>';
+    $("#lock").hidden=true; b.hidden=false; window.scrollTo(0,0);
+    io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); load(e.target); } }); },{rootMargin:"1600px 0px"});
+    b.querySelectorAll("img[data-r]").forEach(function(im){ io.observe(im); });
+    b.addEventListener("click",play); }
+  async function play(e){ var f=e.target.closest("figure[data-v]"); if(!f||f.getAttribute("data-on")) return; var v=M.vids&&M.vids[f.getAttribute("data-v")]; if(!v) return;
+    f.setAttribute("data-on","1"); var lab=f.querySelector("i"), t0=lab?lab.textContent:""; if(lab) lab.textContent="กำลังโหลดวิดีโอ…";
+    try{ var u=await unseal(KEY,await bin(v[0])), el=document.createElement("video"); el.src=URL.createObjectURL(new Blob([u],{type:v[1]||"video/mp4"})); el.controls=true; el.autoplay=true; el.playsInline=true; el.setAttribute("playsinline","");
+      el.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:2"; f.appendChild(el); if(lab) lab.textContent=t0; var pr=el.play(); if(pr&&pr.catch) pr.catch(function(){}); }
+    catch(x){ f.removeAttribute("data-on"); if(lab) lab.textContent="โหลดวิดีโอไม่ได้ แตะเพื่อลองอีกครั้ง"; } }
+  var MSG={bad:"รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง",gone:"ไม่พบ Tripbook นี้ อาจถูกหยุดแชร์แล้ว",link:"ลิงก์ไม่ครบ ขอลิงก์ใหม่จากคนที่ส่งมา",old:"เบราว์เซอร์นี้เก่าเกินไป ลองเปิดด้วย Chrome หรือ Safari รุ่นใหม่",net:"เปิดไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่"};
+  async function submit(ev){ if(ev) ev.preventDefault(); var pw=$("#pw").value, go=$("#go"); if(!norm(pw)){ err("ใส่รหัสก่อน"); return; } err(""); go.disabled=true; go.textContent="กำลังเปิด…";
+    try{ await unlock(pw); try{ if($("#rem").checked) localStorage.setItem("tbk:"+id,pw); else localStorage.removeItem("tbk:"+id); }catch(x){} render(); }
+    catch(x){ err(MSG[x&&x.message]||MSG.net); if(x&&x.message==="bad") try{ localStorage.removeItem("tbk:"+id); }catch(y){} }
+    go.disabled=false; go.textContent="เปิด Tripbook"; }
+  $("#f").addEventListener("submit",submit);
+  if(!id){ $("#msg").textContent=MSG.link; }
+  else { var sv=null; try{ sv=localStorage.getItem("tbk:"+id); }catch(x){} if(sv){ $("#pw").value=sv; submit(); } else $("#pw").focus(); }
+})();
+</script>
+</body>
+</html>
