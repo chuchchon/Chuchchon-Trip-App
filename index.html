@@ -3400,6 +3400,11 @@ function fmtDur(s){ if(!s||!isFinite(s)) return ""; s=Math.round(s); return Math
 function phBadge(m){ return m.kind==="video"?`<i class="vb">▶${m.dur?" "+fmtDur(m.dur):""}</i>`:""; }
 function mediaWord(list){ const v=list.filter(m=>m.kind==="video").length, p=list.length-v; return [p?p+" รูป":"",v?v+" วิดีโอ":""].filter(Boolean).join(" · ")||"0 รูป"; }
 /* --- photos taken somewhere that is not a stop in the plan --- */
+function isAirportName(n){ n=String(n||""); return /สนามบิน|airport|letiště|letiste|flughafen|aéroport|aeroporto|aeropuerto|lotnisko|repülőtér/i.test(n)&&!/bus|stop|express|shuttle|station|hotel|\binn\b|parking|ihg|hilton|ibis|lounge|ป้าย|รถบัส|โรงแรม/i.test(n); }
+/* how far around a planned stop its photos may be: a terminal, a park, a castle are big; a café or a bus stop is not */
+function stopReach(it){ const n=(P[it.p]&&P[it.p][0]||"")+" "+(it.n||""); if(isAirportName(n)) return 2.0;
+  if(/castle|hrad|zámek|schloss|palace|park|garden|zoo|old town|staré město|altstadt|ปราสาท|สวน|อุทยาน|ทะเลสาบ|lake|island|beach|valley|national/i.test(n)) return 0.7;
+  if(/station|nádraží|bahnhof|square|náměstí|platz|market|ตลาด|สถานี|จัตุรัส|bridge|most|mall|center|centre/i.test(n)) return 0.45; return 0.25; }
 function nearKnown(lat,lng){ let best=null,bd=0.12; FOOD.forEach(f=>{ if(f[4]==null) return; const d=km([f[4],f[5]],[lat,lng]); if(d<bd){ bd=d; best={name:f[2],lat:f[4],lng:f[5],fid:f[0]}; } });
   if(best) return best; bd=0.2; Object.entries(P).forEach(([k,p])=>{ if(p[1]==null||/^cs_/.test(k)) return; const d=km([p[1],p[2]],[lat,lng]); if(d<bd){ bd=d; best={name:p[0],lat:p[1],lng:p[2],pk:k}; } }); return best; }
 function placeGroups(){ const g={}; phMeta.forEach(m=>{ if(m.day==null||m.key||!m.place) return; const id=m.day+"|"+(m.place.fid!=null?"f"+m.place.fid:m.place.pk?"p"+m.place.pk:(+m.place.lat).toFixed(3)+","+(+m.place.lng).toFixed(3));
@@ -3578,7 +3583,7 @@ function matchPhoto(m){
     const dS=near.length?near[0].d:99;
     if(dS>0.12){ const wl=its.filter(x=>x.walk&&x.from&&x.to&&P[x.from]&&P[x.to]).map(l=>{ const g=legLine(l); return {l,d:g?distToLine([m.lat,m.lng],g.line):99,ok:t>=toMin(l.t)-25&&t<=toMin(l.t)+(l.min||0)+25}; }).filter(o=>o.ok&&o.d<=0.08).sort((a,b)=>a.d-b.d)[0];
       if(wl) return {day:di,key:"leg:"+wl.l._i}; }
-    const here=near.filter(o=>o.d<=(/สนามบิน|airport/i.test(P[o.s.p][0])?2.5:0.5));   /* an airport spans km of terminals and gates */   /* same place as a planned stop: plans move, so the clock only picks between stops at that place */
+    const here=near.filter(o=>o.d<=(isAirportName(P[o.s.p][0])?2.5:0.5));   /* an airport spans km of terminals and gates */   /* same place as a planned stop: plans move, so the clock only picks between stops at that place */
     if(here.length){ here.sort((a,b)=>gap(a)-gap(b)||a.d-b.d); return {day:di,key:here[0].s._i}; }
     const big=near.find(o=>gap(o)<=60); if(big) return {day:di,key:big.s._i};   /* large sites (old town, park, dam area) */
     const kn=nearKnown(m.lat,m.lng); if(kn) return {day:di,key:null,place:Object.assign({},kn,{guess:false})};
@@ -5803,7 +5808,7 @@ const hhmm=m=>pad(Math.floor(((m%1440)+1440)%1440/60))+":"+pad(((m%60)+60)%60);
 /* per stop: the main run of photo times (a stray shot hours away does not stretch the stay) */
 function actualTimes(di){ const out=[]; planItems(di).forEach(it=>{ if(it.k==="drive"||it.k==="train"||it.k==="opt"||it.k==="hotel") return;
     const T=phMeta.filter(m=>m.day===di&&m.key===it._i&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&jstDate(m.takenAt)===DAYS[di].date).map(m=>jstMin(m.takenAt)).sort((a,b)=>a-b);
-    if(!T.length) return; const runs=[[T[0]]]; for(let i=1;i<T.length;i++){ if(T[i]-T[i-1]>60) runs.push([]); runs[runs.length-1].push(T[i]); }
+    if(!T.length) return; const runs=[[T[0]]]; for(let i=1;i<T.length;i++){ if(T[i]-T[i-1]>90) runs.push([]); runs[runs.length-1].push(T[i]); }
     const main=runs.sort((a,b)=>b.length-a.length)[0]; const a=r5d(main[0]-5), b=r5u(main[main.length-1]+10);
     const x={it,n:T.length,a,dur:Math.max(15,b-a),pa:toMin(it._t0||it.t),pe:(it._e0||it.e)?toMin(it._e0||it.e):null,k:di+"|"+it._i};
     const late=x.a-x.pa; x.warn=Math.abs(late)>120?`ต่างจากแผน ${Math.round(Math.abs(late)/60*10)/10} ชม. รูปอาจอยู่ผิดจุด`:x.n<3?`มีรูปแค่ ${x.n} รูป เวลาอาจสั้นเกินจริง`:""; out.push(x); });
@@ -5835,11 +5840,63 @@ function actSqueeze(di){ const ed=materialize(di); ed.legs=ed.legs||{};
       else if(x.from&&x.to){ const k=x.from+">"+x.to; ed.lsq0=ed.lsq0||{}; if(!(k in ed.lsq0)) ed.lsq0[k]=ed.legs[k]!=null?ed.legs[k]:null; ed.legs[k]=x.min-cut; } else continue;
       over-=cut; did=true; }
     if(!did){ its[i]._n.at=its[i].t; return; } } }
+/* a past day from its photos. Photos taken close together in time and place are one visit. Each visit belongs to the planned stop it is at
+   (within that stop's reach); a stop keeps one stay (visits with nothing else between them join up), a second stay elsewhere in the day
+   becomes a suggestion at its own time, and so does a long visit at no planned stop. Short ones on the way go to the travel between stops. */
+function phVisits(L){ const V=[]; let v=null;
+  for(const m of L){ if(m.lat==null) continue;
+    if(v){ const gap=(m.takenAt-v.t1)/6e4, d=km(v.c,[m.lat,m.lng]); if(gap<=25&&d<=0.35){ v.ph.push(m); v.t1=m.takenAt; const n=v.ph.length; v.c=[v.c[0]+(m.lat-v.c[0])/n,v.c[1]+(m.lng-v.c[1])/n]; continue; } }
+    v={ph:[m],t0:m.takenAt,t1:m.takenAt,c:[m.lat,m.lng]}; V.push(v); }
+  return V; }
+function visitPlan(di){ const day=DAYS[di]; const its=planItems(di);
+  const stops=its.filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x.p&&P[x.p]);
+  const L=phMeta.filter(m=>m.day===di&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&jstDate(m.takenAt)===day.date).sort((a,b)=>a.takenAt-b.takenAt);
+  if(!L.length||!stops.length) return null;
+  const V=phVisits(L);
+  V.forEach(v=>{ let best=null,bd=1e9; stops.forEach(s=>{ const d=km(v.c,[P[s.p][1],P[s.p][2]]); if(d<=stopReach(s)&&d<bd){ bd=d; best=s; } }); v.s=best; });
+  const byStop=new Map(); V.forEach((v,i)=>{ if(!v.s) return; if(!byStop.has(v.s._i)) byStop.set(v.s._i,[]); byStop.get(v.s._i).push(i); });
+  byStop.forEach((idx,key)=>{ const s=stops.find(x=>x._i===key); if(!s||s.k==="hotel"||s.k==="night"||idx.length<2) return;
+    const groups=[[idx[0]]];
+    for(let k=1;k<idx.length;k++){ const a=idx[k-1], b=idx[k]; const other=V.slice(a+1,b).some(w=>w.s&&w.s._i!==key&&w.ph.length>=2), gap=(V[b].t0-V[a].t1)/6e4;
+      if(!other&&gap<=90) groups[groups.length-1].push(b); else groups.push([b]); }
+    if(groups.length<2) return; const size=g=>g.reduce((n,i)=>n+V[i].ph.length,0); groups.sort((x,y)=>size(y)-size(x));
+    groups.slice(1).forEach(g=>g.forEach(i=>{ V[i].away=V[i].s; V[i].s=null; })); });
+  V.forEach(v=>{ if(v.s) return; const span=(v.t1-v.t0)/6e4; v.big=v.away||v.ph.length>=5||span>=15; });
+  return {L,V}; }
+async function visitAssign(di){ const vp=visitPlan(di); if(!vp) return {n:0,loose:[]}; const {L,V}=vp; let n=0; const loose=[], put=[];
+  const set=(m,key,place,byTime)=>{ if(m.auto===false) return; const pk=place?JSON.stringify(place):""; if(m.key===key&&(m.place?JSON.stringify(m.place):"")===pk) return; m.key=key; m.place=place||null; m.byTime=!!byTime; m.bySess=false; put.push(m); };
+  V.forEach(v=>{ if(v.s){ v.ph.forEach(m=>set(m,v.s._i,null)); return; }
+    if(v.big){ const named=v.ph.find(m=>m.place&&(m.place.fid!=null||m.place.pk||m.place.picked)); let pl;
+      if(v.away){ const nm=(P[v.away.p]||[])[0]||v.away.n; pl={name:nm,lat:+v.c[0].toFixed(5),lng:+v.c[1].toFixed(5),out:v.away.n||nm}; }
+      else if(named) pl=Object.assign({},named.place); else pl={name:"",lat:+v.c[0].toFixed(5),lng:+v.c[1].toFixed(5),guess:true};
+      v.ph.forEach(m=>set(m,null,pl)); return; }
+    v.ph.forEach(m=>{ if(m.auto!==false){ m.key=null; loose.push(m); } }); });
+  /* photos without a place go with the visit of their moment, else by the clock later */
+  L.filter(m=>m.lat==null&&m.auto!==false).forEach(m=>{ const v=V.find(w=>w.s&&m.takenAt>=w.t0-10*6e4&&m.takenAt<=w.t1+10*6e4); if(v) set(m,v.s._i,null,true); else { m.key=null; loose.push(m); } });
+  for(const m of put){ await PDB.putMeta(m); n++; }
+  return {n,loose,V}; }
+/* stops follow the order their photos were taken in; a stop without photos keeps the time the plan gave it, or stays after the stop it followed */
+function actReorder(di){ const ed=materialize(di), its=planItems(di); const anc=new Map(actualTimes(di).map(x=>[x.it._i,x.a]));
+  let last=-1e6; const K=ed.list.map((n,i)=>{ const it=its.find(x=>x._i===n.key)||{}; let k;
+    if(it.k==="night") k=1e7+i; else if(anc.has(n.key)) k=anc.get(n.key);
+    else if(n.kind==="base"&&it._t0&&!(it.k==="hotel"&&i===0)) k=toMin(it._t0)+0.0005;   /* no photos: where the plan had it in the day */
+    else if(n.kind!=="base"&&n.at&&!n.act) k=toMin(n.at)+0.0005; else k=last+0.001;
+    last=k; return {n,k,i}; });
+  const S=K.slice().sort((a,b)=>a.k-b.k||a.i-b.i); if(S.every((x,i)=>x.n===ed.list[i])) return false; ed.list=S.map(x=>x.n); return true; }
+/* the rest by the clock: inside a stop's time, that stop; otherwise the travel going on then */
+async function looseByTime(di,loose){ if(!loose.length) return 0; const its=planItems(di); let n=0;
+  for(const m of loose){ const t=jstMin(m.takenAt); let key=null;
+    const st=its.find(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&t>=toMin(x.t)-5&&t<=toMin(x.e||x.t)+5); if(st) key=st._i;
+    else { const lg=its.find(x=>(x.k==="drive"||x.k==="train")&&x.to&&t>=toMin(x.t)-15&&t<=toMin(x.t)+(x.min||0)+15); if(lg) key="leg:"+lg._i; }
+    if(!key){ let best=null,bd=1e9; its.forEach(x=>{ if(x.k==="drive"||x.k==="train"||x.k==="opt") return; const a=toMin(x.t), b=toMin(x.e||x.t), d=t<a?a-t:t>b?t-b:0; if(d<bd){ bd=d; best=x; } }); if(best) key=best._i; }
+    m.key=key; m.place=null; m.byTime=true; await PDB.putMeta(m); n++; }
+  return n; }
 async function actAutoRun(){ if(actAutoBusy||!phReady||VIEW||!tripOver()||store.get("actAuto",true)===false) return; actAutoBusy=true;
-  try{ const before=JSON.stringify(edits); let moved=0; for(let di=0;di<DAYS.length;di++) moved+=await splitOutliers(di);
+  try{ const before=JSON.stringify(edits); let moved=0; const loose={}; for(let di=0;di<DAYS.length;di++){ const r=await visitAssign(di); moved+=r.n; loose[di]=r.loose||[]; }
     if(!store.get("actAutoSnap",0)){ try{ snapEdits("ก่อนตั้งเวลาตามรูปอัตโนมัติ"); }catch(e){} store.set("actAutoSnap",Date.now()); }   /* the plan as it was, once, in the edit history */
     const keep=actSel; actSel=null; for(let di=0;di<DAYS.length;di++){ const ed=edits[di]; if(ed&&ed.list) ed.list.forEach(n=>{ if("sq0" in n){ if(n.sq0==null) delete n.dur; else n.dur=n.sq0; delete n.sq0; } }); if(ed&&ed.lsq0){ for(const [k,v] of Object.entries(ed.lsq0)){ if(v==null) delete ed.legs[k]; else ed.legs[k]=v; } delete ed.lsq0; }
-      if(phMeta.some(m=>m.day===di&&m.takenAt)){ applyActual(di); actSqueeze(di); } } actSel=keep;
+      if(phMeta.some(m=>m.day===di&&m.takenAt)){ actReorder(di); applyActual(di); actSqueeze(di); } } actSel=keep;
+    for(let di=0;di<DAYS.length;di++) moved+=await looseByTime(di,loose[di]);
     if(JSON.stringify(edits)!==before){ saveEdits(); } if(JSON.stringify(edits)!==before||moved){ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); drawCustoms&&drawCustoms(); } }
   catch(e){} finally{ actAutoBusy=false; } }
 var actMoved=null;
