@@ -5425,15 +5425,21 @@ async function splitOutliers(di){ let n=0; for(const it of planItems(di)){ if(it
       const nm=(P[it.p]||[])[0]||it.n||"จุดที่ถ่ายรูป"; for(const m of g){ m.key=null; m.place={name:nm,lat:g[0].lat,lng:g[0].lng,out:it.n||nm}; m.auto=false; m.outlier=true; await PDB.putMeta(m); n++; } } }
   return n; }
 /* a stop with photos starts when its photos say; stops before it without photos give up time (never under 10 minutes) so it can */
-function actSqueeze(di){ for(let pass=0;pass<30;pass++){ const its=planItems(di); const i=its.findIndex(x=>x._n&&x._n.act&&x._n.at&&toMin(x.t)>toMin(x._n.at)); if(i<0) return;
-    let over=toMin(its[i].t)-toMin(its[i]._n.at), did=false;
-    for(let j=i-1;j>=0&&over>0;j--){ const x=its[j]; if(x._n&&x._n.act) break; if(x.k==="drive"||x.k==="train"||x.k==="opt"||x.k==="night"||x.fix||!x._n) continue;
+function actSqueeze(di){ const ed=materialize(di); ed.legs=ed.legs||{};
+  for(let pass=0;pass<40;pass++){ const its=planItems(di); const i=its.findIndex(x=>x._n&&x._n.act&&x._n.at&&toMin(x.t)>toMin(x._n.at)); if(i<0) return;
+    let over=toMin(its[i].t)-toMin(its[i]._n.at), did=false; const back=[]; for(let j=i-1;j>=0;j--){ const x=its[j]; if(x._n&&x._n.act) break; back.push(x); }
+    /* first the stops without photos (never under 10 minutes), then the travel before it (never under 5): the photos say we were already there */
+    for(const x of back){ if(over<=0) break; if(x.k==="drive"||x.k==="train"||x.k==="opt"||x.k==="night"||x.fix||!x._n) continue;
       const n=x._n, d=n.dur!=null?n.dur:origDur(x), cut=Math.min(over,d-10); if(cut<=0) continue; if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=d-cut; over-=cut; did=true; }
-    if(!did) { const n=its[i]._n; n.at=its[i].t; return; } } }
+    for(const x of back){ if(over<=0) break; if(!(x.k==="drive"||x.k==="train")||!x.min) continue; const cut=Math.min(over,x.min-5); if(cut<=0) continue;
+      if(x._n){ const n=x._n; if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=x.min-cut; }
+      else if(x.from&&x.to){ const k=x.from+">"+x.to; ed.lsq0=ed.lsq0||{}; if(!(k in ed.lsq0)) ed.lsq0[k]=ed.legs[k]!=null?ed.legs[k]:null; ed.legs[k]=x.min-cut; } else continue;
+      over-=cut; did=true; }
+    if(!did){ its[i]._n.at=its[i].t; return; } } }
 async function actAutoRun(){ if(actAutoBusy||!phReady||VIEW||!tripOver()||store.get("actAuto",true)===false) return; actAutoBusy=true;
   try{ const before=JSON.stringify(edits); let moved=0; for(let di=0;di<DAYS.length;di++) moved+=await splitOutliers(di);
     if(!store.get("actAutoSnap",0)){ try{ snapEdits("ก่อนตั้งเวลาตามรูปอัตโนมัติ"); }catch(e){} store.set("actAutoSnap",Date.now()); }   /* the plan as it was, once, in the edit history */
-    const keep=actSel; actSel=null; for(let di=0;di<DAYS.length;di++){ const ed=edits[di]; if(ed&&ed.list) ed.list.forEach(n=>{ if("sq0" in n){ if(n.sq0==null) delete n.dur; else n.dur=n.sq0; delete n.sq0; } });
+    const keep=actSel; actSel=null; for(let di=0;di<DAYS.length;di++){ const ed=edits[di]; if(ed&&ed.list) ed.list.forEach(n=>{ if("sq0" in n){ if(n.sq0==null) delete n.dur; else n.dur=n.sq0; delete n.sq0; } }); if(ed&&ed.lsq0){ for(const [k,v] of Object.entries(ed.lsq0)){ if(v==null) delete ed.legs[k]; else ed.legs[k]=v; } delete ed.lsq0; }
       if(phMeta.some(m=>m.day===di&&m.takenAt)){ applyActual(di); actSqueeze(di); } } actSel=keep;
     if(JSON.stringify(edits)!==before){ saveEdits(); } if(JSON.stringify(edits)!==before||moved){ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); drawCustoms&&drawCustoms(); } }
   catch(e){} finally{ actAutoBusy=false; } }
@@ -5495,7 +5501,8 @@ function tpSubline(){ const tr=TRIP.trip; const nd=DAYS.filter(d=>!d.empty).leng
   const cs=[...new Set(DAYS.flatMap(d=>String(d.country||"").split(/\s*[\/,·→]\s*/)).filter(Boolean))];
   return [nd?tpRange():"",nd?`${nd} วัน`+(drv&&drv<nd?` (ขับรถ ${drv} วัน)`:drv===nd&&nd?" (ขับรถ)":""):"",cs.length>1?cs.join(" · "):"",tr.travelers?`${tr.travelers} คน`:""].filter(Boolean).join(" · "); }
 /* the header */
-function tickClock(){ const j=jst(); $("#clk").textContent=pad(j.h)+":"+pad(j.mi); const th=new Date(Date.now()+7*3600e3); $("#clkTh").textContent="ไทย "+pad(th.getUTCHours())+":"+pad(th.getUTCMinutes());
+/* the clock shows the time now where the chosen day is (its own time zone), next to Thai time */
+function tickClock(){ const dd=DAYS[curDay]||DAYS[0], now=Date.now(); const lt=new Date(now+(dd&&dd.tz?tzOffAt(dd.tz,now):tzo(now))); $("#clk").textContent=pad(lt.getUTCHours())+":"+pad(lt.getUTCMinutes()); const th=new Date(Date.now()+7*3600e3); $("#clkTh").textContent="ไทย "+pad(th.getUTCHours())+":"+pad(th.getUTCMinutes());
   const l=$("#clkLabel"); if(l){ const d=DAYS[curDay]||DAYS[0]; l.textContent="เวลา"+(d&&d.city?" "+d.city:"ท้องถิ่น"); } }
 function renderDays(){ const ti=todayIndex();
   $("#days").innerHTML=DAYS.map((d,i)=>`<button class="day-chip" style="--dc:var(--d${d.n})" data-day="${i}" aria-pressed="${i===curDay}"><span class="dn">D${d.n}${i===ti?'<span class="today-dot" title="วันนี้"></span>':''}</span><span class="dd">${d.dow} ${Number(d.date.slice(8))} ${MON(d.date)}</span></button>`).join("");
