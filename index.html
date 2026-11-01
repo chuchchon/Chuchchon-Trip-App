@@ -710,7 +710,7 @@ body.tb-open{overflow:hidden}
 .my-ph-c,.ph-cell{position:relative}
 .my-ph-c:has(.vb),.ph-cell:has(.vb){background:#1C2228}
 .ph-tm{position:absolute;right:4px;bottom:4px;font-style:normal;font-size:10.5px;font-weight:600;color:#fff;background:rgba(0,0,0,.55);padding:1px 5px;border-radius:6px;pointer-events:none;font-variant-numeric:tabular-nums}
-.ph-tm.other{background:#C0392B}
+.ph-tm.other{background:#C0392B}.ph-tm.stray{background:#B26A00}
 .gal-sort{margin-top:-2px}.gal-tr{font-variant-numeric:tabular-nums;color:var(--route-blue);margin-right:4px}
 .vb{position:absolute;left:4px;bottom:4px;font-style:normal;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.6);padding:1px 6px;border-radius:999px;pointer-events:none}
 .lb.my video{max-width:100%;max-height:62vh;border-radius:10px;background:#000}
@@ -2096,7 +2096,7 @@ function planItems(di){
     else node={k:"custom",_i:n.key,_n:n,_c:n,n:n.name||"รอ / เลื่อนเวลา",x:n.note||"",p:n.lat!=null?n.key:null,_t0:null};
     if(node.k==="opt"){ out.push(node); return; }
     const startLoc=node.k==="train"?node.from:node.p;
-    if(startLoc&&prevLoc&&startLoc!==prevLoc&&P[startLoc]&&P[prevLoc]){
+    if(startLoc&&prevLoc&&startLoc!==prevLoc&&P[startLoc]&&P[prevLoc]&&km([P[startLoc][1],P[startLoc][2]],[P[prevLoc][1],P[prevLoc][2]])>0.03){
       let dv=carGone?null:findDrive(di,prevLoc,startLoc);
       if(!dv&&carGone) dv=footLeg(prevLoc,startLoc,"s"+prevLoc+">"+startLoc);
       if(!dv){ const rt=routeFor(prevLoc,startLoc); const m=rt?rt.min:roadMin([P[prevLoc][1],P[prevLoc][2]],[P[startLoc][1],P[startLoc][2]]);
@@ -3448,7 +3448,7 @@ function pgPickHtml(g){ const c=g.place.cands||[]; return `<div class="pg-pick">
 /* the time a photo was taken, on its corner; a photo from another day says which day, so it stands out */
 function phTmBadge(m,di){ const d=jstDate(m.takenAt), t=fmtMin(jstMin(m.takenAt));
   if(DAYS[di]&&d!==DAYS[di].date){ const j=DAYS.findIndex(x=>x.date===d); return `<i class="ph-tm other">${j>=0?"D"+DAYS[j].n:Number(d.slice(8))+"/"+Number(d.slice(5,7))} ${t}</i>`; }
-  return `<i class="ph-tm">${t}</i>`; }
+  return `<i class="ph-tm${m.stray&&m.auto!==false?" stray":""}"${m.stray&&m.auto!==false?' title="ถ่ายที่นี่แต่คนละช่วงเวลา ไม่นับเป็นเวลาของจุดนี้"':""}>${t}</i>`; }
 /* how long we were there, from the first and last photo, with a little before and after */
 function phSpanDur(t0,t1){ if(!t0) return 30; return Math.max(15,Math.ceil(((t1-t0)/60000+10)/5)*5); }
 /* a stop added at the time its photos were taken: the stop before it ends in time (shorter, never under 10 minutes),
@@ -5807,9 +5807,9 @@ const r5d=m=>Math.floor(m/5)*5, r5u=m=>Math.ceil(m/5)*5;
 const hhmm=m=>pad(Math.floor(((m%1440)+1440)%1440/60))+":"+pad(((m%60)+60)%60);
 /* per stop: the main run of photo times (a stray shot hours away does not stretch the stay) */
 function actualTimes(di){ const out=[]; planItems(di).forEach(it=>{ if(it.k==="drive"||it.k==="train"||it.k==="opt"||it.k==="hotel") return;
-    const T=phMeta.filter(m=>m.day===di&&m.key===it._i&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&jstDate(m.takenAt)===DAYS[di].date).map(m=>jstMin(m.takenAt)).sort((a,b)=>a-b);
-    if(!T.length) return; const runs=[[T[0]]]; for(let i=1;i<T.length;i++){ if(T[i]-T[i-1]>90) runs.push([]); runs[runs.length-1].push(T[i]); }
-    const main=runs.sort((a,b)=>b.length-a.length)[0]; const a=r5d(main[0]-5), b=r5u(main[main.length-1]+10);
+    const T=phMeta.filter(m=>m.day===di&&m.key===it._i&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&jstDate(m.takenAt)===DAYS[di].date&&!(m.stray&&m.auto!==false)).map(m=>jstMin(m.takenAt)).sort((a,b)=>a-b);
+    if(!T.length) return; const gapMax=isAirportName((P[it.p]||[])[0]||it.n)?300:90; const runs=[[T[0]]]; for(let i=1;i<T.length;i++){ if(T[i]-T[i-1]>gapMax) runs.push([]); runs[runs.length-1].push(T[i]); }
+    const main=runs.sort((a,b)=>(b[b.length-1]-b[0]+b.length)-(a[a.length-1]-a[0]+a.length))[0]; const a=r5d(main[0]-5), b=r5u(main[main.length-1]+10);
     const x={it,n:T.length,a,dur:Math.max(15,b-a),pa:toMin(it._t0||it.t),pe:(it._e0||it.e)?toMin(it._e0||it.e):null,k:di+"|"+it._i};
     const late=x.a-x.pa; x.warn=Math.abs(late)>120?`ต่างจากแผน ${Math.round(Math.abs(late)/60*10)/10} ชม. รูปอาจอยู่ผิดจุด`:x.n<3?`มีรูปแค่ ${x.n} รูป เวลาอาจสั้นเกินจริง`:""; out.push(x); });
   return out; }
@@ -5831,7 +5831,7 @@ async function splitOutliers(di){ let n=0; for(const it of planItems(di)){ if(it
 /* a stop with photos starts when its photos say; stops before it without photos give up time (never under 10 minutes) so it can */
 function actSqueeze(di){ const ed=materialize(di); ed.legs=ed.legs||{};
   for(let pass=0;pass<40;pass++){ const its=planItems(di); const i=its.findIndex(x=>x._n&&x._n.act&&x._n.at&&toMin(x.t)>toMin(x._n.at)); if(i<0) return;
-    let over=toMin(its[i].t)-toMin(its[i]._n.at), did=false; const back=[]; for(let j=i-1;j>=0;j--){ const x=its[j]; if(x._n&&x._n.act) break; back.push(x); }
+    let over=toMin(its[i].t)-toMin(its[i]._n.at), did=false; const back=[]; let prevA=null; for(let j=i-1;j>=0;j--){ const x=its[j]; if(x._n&&x._n.act){ prevA=x; break; } back.push(x); }
     /* first the stops without photos (never under 10 minutes), then the travel before it (never under 5): the photos say we were already there */
     for(const x of back){ if(over<=0) break; if(x.k==="drive"||x.k==="train"||x.k==="opt"||x.k==="night"||x.fix||!x._n) continue;
       const n=x._n, d=n.dur!=null?n.dur:origDur(x), cut=Math.min(over,d-10); if(cut<=0) continue; if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=d-cut; over-=cut; did=true; }
@@ -5839,7 +5839,8 @@ function actSqueeze(di){ const ed=materialize(di); ed.legs=ed.legs||{};
       if(x._n){ const n=x._n; if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=x.min-cut; }
       else if(x.from&&x.to){ const k=x.from+">"+x.to; ed.lsq0=ed.lsq0||{}; if(!(k in ed.lsq0)) ed.lsq0[k]=ed.legs[k]!=null?ed.legs[k]:null; ed.legs[k]=x.min-cut; } else continue;
       over-=cut; did=true; }
-    if(!did){ its[i]._n.at=its[i].t; return; } } }
+    if(over>0&&prevA){ const n=prevA._n, d=n.dur!=null?n.dur:origDur(prevA), cut=Math.min(over,d-10); if(cut>0){ if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=d-cut; over-=cut; did=true; } }   /* the stay before ends when this one's photos begin */
+    if(!did) its[i]._n.at=its[i].t; } }   /* nothing left to give: it starts when it can, and the next late stop is looked at */
 /* a past day from its photos. Photos taken close together in time and place are one visit. Each visit belongs to the planned stop it is at
    (within that stop's reach); a stop keeps one stay (visits with nothing else between them join up), a second stay elsewhere in the day
    becomes a suggestion at its own time, and so does a long visit at no planned stop. Short ones on the way go to the travel between stops. */
@@ -5858,14 +5859,16 @@ function visitPlan(di){ const day=DAYS[di]; const its=planItems(di);
   byStop.forEach((idx,key)=>{ const s=stops.find(x=>x._i===key); if(!s||s.k==="hotel"||s.k==="night"||idx.length<2) return;
     const groups=[[idx[0]]];
     for(let k=1;k<idx.length;k++){ const a=idx[k-1], b=idx[k]; const other=V.slice(a+1,b).some(w=>w.s&&w.s._i!==key&&w.ph.length>=2), gap=(V[b].t0-V[a].t1)/6e4;
-      if(!other&&gap<=90) groups[groups.length-1].push(b); else groups.push([b]); }
-    if(groups.length<2) return; const size=g=>g.reduce((n,i)=>n+V[i].ph.length,0); groups.sort((x,y)=>size(y)-size(x));
+      if(!other&&gap<=(isAirportName((P[s.p]||[])[0]||s.n)?300:90)) groups[groups.length-1].push(b); else groups.push([b]); }
+    if(groups.length<2) return; const size=g=>(V[g[g.length-1]].t1-V[g[0]].t0)/6e4+g.reduce((n,i)=>n+V[i].ph.length,0); groups.sort((x,y)=>size(y)-size(x));
     groups.slice(1).forEach(g=>g.forEach(i=>{ V[i].away=V[i].s; V[i].s=null; })); });
-  V.forEach(v=>{ if(v.s) return; const span=(v.t1-v.t0)/6e4; v.big=v.away||v.ph.length>=5||span>=15; });
+  V.forEach(v=>{ if(v.s||v.away) return; const span=(v.t1-v.t0)/6e4; v.big=v.ph.length>=5||span>=15; });
   return {L,V}; }
 async function visitAssign(di){ const vp=visitPlan(di); if(!vp) return {n:0,loose:[]}; const {L,V}=vp; let n=0; const loose=[], put=[];
-  const set=(m,key,place,byTime)=>{ if(m.auto===false) return; const pk=place?JSON.stringify(place):""; if(m.key===key&&(m.place?JSON.stringify(m.place):"")===pk) return; m.key=key; m.place=place||null; m.byTime=!!byTime; m.bySess=false; put.push(m); };
+  const set=(m,key,place,byTime,stray)=>{ if(m.auto===false) return; const pk=place?JSON.stringify(place):""; if(m.key===key&&(m.place?JSON.stringify(m.place):"")===pk&&!!m.stray===!!stray) return; m.key=key; m.place=place||null; m.byTime=!!byTime; m.bySess=false; if(stray) m.stray=true; else delete m.stray; put.push(m); };
   V.forEach(v=>{ if(v.s){ v.ph.forEach(m=>set(m,v.s._i,null)); return; }
+    /* the same place again at another time: those photos stay with that stop (no second copy of it), they just don't set its time */
+    if(v.away){ v.ph.forEach(m=>set(m,v.away._i,null,false,true)); return; }
     if(v.big){ const named=v.ph.find(m=>m.place&&(m.place.fid!=null||m.place.pk||m.place.picked)); let pl;
       if(v.away){ const nm=(P[v.away.p]||[])[0]||v.away.n; pl={name:nm,lat:+v.c[0].toFixed(5),lng:+v.c[1].toFixed(5),out:v.away.n||nm}; }
       else if(named) pl=Object.assign({},named.place); else pl={name:"",lat:+v.c[0].toFixed(5),lng:+v.c[1].toFixed(5),guess:true};
@@ -5898,7 +5901,7 @@ async function actAutoRun(){ if(actAutoBusy||!phReady||VIEW||!tripOver()||store.
       if(phMeta.some(m=>m.day===di&&m.takenAt)){ actReorder(di); applyActual(di); actSqueeze(di); } } actSel=keep;
     for(let di=0;di<DAYS.length;di++) moved+=await looseByTime(di,loose[di]);
     if(JSON.stringify(edits)!==before){ saveEdits(); } if(JSON.stringify(edits)!==before||moved){ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); drawCustoms&&drawCustoms(); } }
-  catch(e){} finally{ actAutoBusy=false; } }
+  catch(e){ try{ console.warn("actAuto",e&&e.message,e&&e.stack); }catch(_){} } finally{ actAutoBusy=false; } }
 var actMoved=null;
 function actualHtml(busy){ if(busy) return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2><div class="ph-prog"><div class="ph-bar"><i style="width:60%"></i></div><p><b>กำลังจัดรูปใหม่ตามสถานที่ในแผนล่าสุด…</b></p></div>`;
   const rows=DAYS.map((d,di)=>({d,di,L:actualTimes(di)})); const any=rows.some(r=>r.L.length);
