@@ -1519,7 +1519,7 @@ if(HK_HOME==="go") return;
 const VMEM=VIEW?Object.assign({},VIEW.c.s.ls||{}):null;
 const store = {
   get(k,d){ if(VMEM&&!VG_UI.has(k)){ const v=VMEM[k]; try{ return v==null?d:JSON.parse(v); }catch(e){ return d; } } try{ const v=localStorage.getItem("hkd26:"+k); return v==null?d:JSON.parse(v);}catch(e){ return d; } },
-  set(k,v){ if(VMEM&&!VG_UI.has(k)){ VMEM[k]=JSON.stringify(v); return; } try{ localStorage.setItem("hkd26:"+k,JSON.stringify(v)); }catch(e){} vsDirtyKey(k); }
+  set(k,v){ if(VMEM&&!VG_UI.has(k)){ VMEM[k]=JSON.stringify(v); return; } try{ localStorage.setItem("hkd26:"+k,JSON.stringify(v)); }catch(e){ lsFull(()=>localStorage.setItem("hkd26:"+k,JSON.stringify(v)),k); } vsDirtyKey(k); }
 };
 const HAD_DATA=VIEW?true:(()=>{ try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith("hkd26:")) return true; } }catch(e){} return false; })();
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -3532,6 +3532,19 @@ const PDB={db:null,
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
 if(VIEW){ PDB.all=()=>vgGet(VIEW.id+":p").then(p=>((p&&p.ph)||[]).map(m=>Object.assign({},m))); PDB.putMeta=()=>Promise.resolve(); PDB.putBlob=()=>Promise.resolve(); PDB.getBlob=()=>Promise.resolve(null); PDB.del=()=>Promise.resolve(); }
 PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); setTimeout(actAutoKick,1500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
+/* the phone's storage for this site is full (every trip and the Hokkaido app share it): drop caches that can be fetched again, then try once more.
+   If even that fails for the plan itself, say so — a change that silently is not kept comes back as the old one after a refresh */
+const LS_CACHE=new RegExp("^(hkd"+"26:|tp:[^:]+:)(photos|routes|autoRecs|gpl|wikiImg|plSug|phUndo|gnophoto|wx|rates)$");   /* every trip on this phone, and the Hokkaido app */
+function lsFree(){ let n=0; try{ const del=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&LS_CACHE.test(k)) del.push(k); }
+    del.forEach(k=>{ n+=(localStorage.getItem(k)||"").length; localStorage.removeItem(k); });
+    for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||!/editsHist$/.test(k)) continue; try{ const h=JSON.parse(localStorage.getItem(k)||"[]"); if(h.length>6){ n+=1; localStorage.setItem(k,JSON.stringify(h.slice(0,6))); } }catch(e){} } }catch(e){}
+  return n; }
+function lsFull(write,k){ const cache=LS_CACHE.test("tp:x:"+k); if(cache) return;   /* a cache that does not fit is simply not kept */
+  lsFree(); try{ write(); return; }catch(e){}
+  try{ console.warn("store full",k); let el=document.getElementById("lsFullMsg"); if(!el){ el=document.createElement("div"); el.id="lsFullMsg"; el.setAttribute("role","alert");
+      el.style.cssText="position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:9999;background:#B3261E;color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.25)";
+      el.addEventListener("click",()=>el.remove()); document.body.appendChild(el); }
+    el.textContent="บันทึกการแก้ไขไม่ได้ เพราะพื้นที่เก็บข้อมูลของแอปในเครื่องเต็ม ถ้ารีเฟรชตอนนี้สิ่งที่แก้จะหายไป · ลองสำรองทริปแล้วลบทริปที่ไม่ใช้ (แตะเพื่อปิด)"; }catch(e){} }
 /* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
    so this copy never writes an old plan back (that is how a removed stop could come back) */
 var TAB_ID=Math.random().toString(36).slice(2), phRevSeen=(store.get("phRev",null)||{}).t||0, phSyncT=null;
