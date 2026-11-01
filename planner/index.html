@@ -1221,7 +1221,7 @@ function recTilesHtml(di,list){
     if(r.kind==="food"){ const c=CAT[r.f[1]]||{e:"🍴",n:"ร้านอาหาร"}; const ip=INPLAN[r.f[0]];
       return `<div class="tile food"><button class="tile-ph emo" data-gpic="${esc(JSON.stringify(foodPicObj(r.f)))}" data-act="rec-open" data-k="${k}" aria-label="${esc(r.name)} · ดูรายละเอียด"><span class="tile-emo">${c.e}</span>${ip?`<em>ในแผน</em>`:""}</button><button class="tile-b" data-act="rec-open" data-k="${k}"><b>${esc(r.name)}</b><span>${esc(c.n)}</span><span>${meta}</span></button><button class="tile-add" data-act="cs-recplus" data-k="${k}" aria-label="ใส่ในแผน">${I.plus}</button></div>`; }
     return `<div class="tile"><button class="tile-ph thumb" ${thumbAttr(r)} data-act="rec-open" data-k="${k}" aria-label="${esc(r.name)} · ดูรายละเอียด"><span class="tile-emo">📍</span></button><button class="tile-b" data-act="rec-open" data-k="${k}"><b>${esc(r.name)}</b><span>${esc(r.src==="rec"?"ที่เที่ยว":r.kindTh)}</span><span>${meta}</span></button><button class="tile-add" data-act="cs-recplus" data-k="${k}" aria-label="ใส่ในแผน">${I.plus}</button></div>`; }).join("")}</div></div></li>`; }
-function renderPlan(){
+function renderPlan(soft){
   if(typeof drag!=="undefined"&&drag){ drag.pend=true; return; }   /* never redraw under a finger that is pressing or dragging a card (the touch would lose its card); redraw when it lets go */
   const d=DAYS[curDay]; const el=$("#p-plan"); el.style.setProperty("--dc",`var(--d${d.n})`);
   const nowK=nowItemIndex(d); const isToday=curDay===todayIndex();
@@ -1270,7 +1270,9 @@ function renderPlan(){
   h+=`</ol>`;
   if(curDay===DAYS.length-1) h+=`<section class="tb-cta"><div><b>จบทริปแล้ว ทำ Tripbook กัน</b><span>รวมรูปของเราทุกวัน เรียงตามเส้นทาง พร้อมบันทึกเป็นไฟล์หรือ PDF</span></div><button class="btn small primary" data-act="tb-open">${I.book}เปิด Tripbook</button></section>`;
   if(false) h+=`<p class="day-foot">วันนี้ขับขึ้นเขาสูง ถ้าเช้ามีน้ำแข็งบนถนน ขับช้าและเว้นระยะ พระอาทิตย์ตกราว 16:50 ควรถึงโจซังเคก่อนมืด</p>`;
-  navMode="driving"; el.innerHTML=h; hydratePhotos(el); hydrateThumbs(el); hydrateMyPhotos(el); if(map&&curTab==="map") drawMap(false);
+  navMode="driving";
+  if(soft&&el._h===h&&el._f&&el._f===el.firstElementChild) return;   /* a background refresh with nothing new: leave the cards (and their pictures) alone */
+  el.innerHTML=h; el._h=h; el._f=el.firstElementChild; hydratePhotos(el); hydrateThumbs(el); hydrateMyPhotos(el); if(map&&curTab==="map") drawMap(false);
 }
 
 /* ---------- sheet ---------- */
@@ -1576,7 +1578,7 @@ function snapEdits(why){ try{ const h=store.get("editsHist",[]); const js=JSON.s
   h.unshift({ts:Date.now(),why:why||"auto",js}); while(h.length>25) h.pop(); store.set("editsHist",h); }catch(e){} }
 let lastSnap=0;
 var orphT=null;
-function saveEdits(){ store.set("edits",edits); clearTimeout(orphT); orphT=setTimeout(()=>{ if(typeof phReady!=="undefined"&&phReady) fixOrphans().then(n=>{ if(n){ renderPlan(); if($("#ph-root")) photoSheetPaint(); } }); },600); if(Date.now()-lastSnap>3*60*1000){ lastSnap=Date.now(); snapEdits("auto"); } else { try{ const h=store.get("editsHist",[]); if(h[0]&&h[0].why==="auto"){ h[0].js=JSON.stringify(edits); h[0].ts=Date.now(); store.set("editsHist",h); } }catch(e){} } }
+function saveEdits(){ store.set("edits",edits); clearTimeout(orphT); orphT=setTimeout(()=>{ if(typeof phReady!=="undefined"&&phReady) fixOrphans().then(n=>{ if(n){ renderPlan(true); if($("#ph-root")) photoSheetPaint(); } }); },600); if(Date.now()-lastSnap>3*60*1000){ lastSnap=Date.now(); snapEdits("auto"); } else { try{ const h=store.get("editsHist",[]); if(h[0]&&h[0].why==="auto"){ h[0].js=JSON.stringify(edits); h[0].ts=Date.now(); store.set("editsHist",h); } }catch(e){} } }
 function markGone(di,ed,node){ if(!node||node.kind!=="base") return; const it=DAYS[di].items[node.src]; if(!it) return; (ed.gone=ed.gone||[]).push({k:it.k,p:it.p||"",n:it.n||""}); }
 function reconcileDay(di){
   const ed=edits[di]; if(!ed||!ed.list) return false; const cur=daySig(di);
@@ -1656,7 +1658,7 @@ function routeFor(a,b,mode){ mode=mode||"car"; const k=a+">"+b+(mode==="car"?"":
   if(!routeQ.has(k)){ routeQ.add(k); fetchRoute(a,b,k,s,mode); } return null; }
 async function fetchRoute(a,b,k,s,mode){ const A=P[a],B=P[b]; const rt=await osrmRoute([A[1],A[2]],[B[1],B[2]],mode); if(!rt) return;
   routeCache[k]=Object.assign({s},rt); try{ const ks=Object.keys(routeCache); if(ks.length>300) delete routeCache[ks[0]]; }catch(e){}
-  store.set("routes",routeCache); clearTimeout(routeT); routeT=setTimeout(()=>{ try{ renderPlan(); }catch(e){} },400); }
+  store.set("routes",routeCache); clearTimeout(routeT); routeT=setTimeout(()=>{ try{ renderPlan(true); }catch(e){} },400); }
 function legOverride(di,a,b){ const ed=edits[di]; return ed&&ed.legs?ed.legs[a+">"+b]:undefined; }
 const CARFREE_DAY=4; /* D5 onward: no car (returned D4 ~17:00) */
 function carFreeAt(di,node){ if(carFreeDay(di)) return true; return false; }
@@ -2108,9 +2110,13 @@ function recDetailHtml(r){
 function openRec(k){ const r=recIdx[k]; if(!r) return; if(r.kind==="food"){ openSheet(foodHtml(r.f[0],k)); return; }
   openSheet(recDetailHtml(r)); if(r.wp||r.wd) wikiSummary(r.wp,r.wd).then(w=>{ const el=$("#rd-wiki"); if(el) el.innerHTML=w?wikiHtml(w):""; }); }
 let thObs=null;
-function hydrateThumbs(root){ try{ hydrateGPics(root); }catch(e){} const els=$$(".thumb:not([data-done])",root||document);
-  const go=async el=>{ el.dataset.done=1; if(el.dataset.img){ const im=new Image(); im.onload=()=>{ el.style.backgroundImage=`url("${el.dataset.img}")`; el.classList.add("ok"); }; im.onerror=()=>{ el.removeAttribute("data-img"); delete el.dataset.done; go(el); }; im.src=el.dataset.img; return; }
-    const ll=el.dataset.ll?el.dataset.ll.split(",").map(Number):null; const list=await commonsPhotos(el.dataset.q,5,el.dataset.en,ll); if(list&&list[0]){ el.style.backgroundImage=`url("${list[0].src}")`; el.classList.add("ok"); } };
+var thMemo=new Map();
+function thKey(el){ return el.dataset.gpic?"g:"+el.dataset.gpic:el.dataset.img?"i:"+el.dataset.img:"q:"+(el.dataset.q||"")+"|"+(el.dataset.en||"")+"|"+(el.dataset.ll||""); }
+function thSet(el,u){ el.style.backgroundImage=`url("${u}")`; el.classList.add("ok"); try{ thMemo.set(thKey(el),u); }catch(e){} }
+function thReuse(els){ return els.filter(el=>{ const u=thMemo.get(thKey(el)); if(!u) return true; el.dataset.done=1; el.style.backgroundImage=`url("${u}")`; el.classList.add("ok"); return false; }); }
+function hydrateThumbs(root){ try{ hydrateGPics(root); }catch(e){} const els=thReuse($$(".thumb:not([data-done])",root||document));
+  const go=async el=>{ el.dataset.done=1; if(el.dataset.img){ const im=new Image(); im.onload=()=>{ thSet(el,el.dataset.img); }; im.onerror=()=>{ el.removeAttribute("data-img"); delete el.dataset.done; go(el); }; im.src=el.dataset.img; return; }
+    const ll=el.dataset.ll?el.dataset.ll.split(",").map(Number):null; const list=await commonsPhotos(el.dataset.q,5,el.dataset.en,ll); if(list&&list[0]){ thSet(el,list[0].src); } };
   if(!("IntersectionObserver" in window)){ els.forEach(go); return; }
   if(!thObs) thObs=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ thObs.unobserve(e.target); go(e.target); } }),{rootMargin:"250px"});
   els.forEach(el=>thObs.observe(el)); }
@@ -2612,7 +2618,7 @@ async function refreshWx(force){
     const j=await r.json(); const arr=Array.isArray(j)?j:[j]; const data={};
     arr.forEach((loc,i)=>{ if(loc&&loc.hourly) data[pts[i]]={time:loc.hourly.time,t:loc.hourly.temperature_2m,pp:loc.hourly.precipitation_probability||loc.hourly.time.map(()=>null),pr:loc.hourly.precipitation,wc:loc.hourly.weather_code,ws:loc.hourly.wind_speed_10m}; });
     wxErr=Object.keys(data).length?"":((j&&j.reason)||("HTTP "+r.status));
-    if(Object.keys(data).length){ wxRemember(data); wx={at:Date.now(),data,range:wxRange()}; store.set("wx",wx); if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); }
+    if(Object.keys(data).length){ wxRemember(data); wx={at:Date.now(),data,range:wxRange()}; store.set("wx",wx); if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(true); }
   }catch(e){ wxErr=navigator.onLine?"ดึงข้อมูลไม่สำเร็จ":"ออฟไลน์"; }
   wxBusy=false;
 }
@@ -5398,8 +5404,8 @@ async function placePics(o){ const g=await gPlace(o); if(g&&g.pics.length) retur
   photoCache[key]=out; return out; }
 function foodPicObj(f){ return {pid:f[6]||null,name:f[2],q:(latinName(f[2])||f[2])+" "+cityOf(f[3]),lat:f[4],lng:f[5]}; }
 let gpObs=null;
-function hydrateGPics(root){ const els=$$("[data-gpic]:not([data-done])",root||document); const go=async el=>{ el.dataset.done=1; let o; try{ o=JSON.parse(el.dataset.gpic); }catch(e){ return; }
-    const L=await placePics(o); if(L&&L[0]){ const im=new Image(); im.onload=()=>{ el.style.backgroundImage=`url("${L[0].src}")`; el.classList.add("ok"); }; im.src=L[0].src; } };
+function hydrateGPics(root){ const els=thReuse($$("[data-gpic]:not([data-done])",root||document)); const go=async el=>{ el.dataset.done=1; let o; try{ o=JSON.parse(el.dataset.gpic); }catch(e){ return; }
+    const L=await placePics(o); if(L&&L[0]){ const im=new Image(); im.onload=()=>{ thSet(el,L[0].src); }; im.src=L[0].src; } };
   if(!("IntersectionObserver" in window)){ els.forEach(go); return; }
   if(!gpObs) gpObs=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ gpObs.unobserve(e.target); go(e.target); } }),{rootMargin:"250px"});
   els.forEach(el=>gpObs.observe(el)); }
@@ -5509,7 +5515,7 @@ async function actAutoRun(){ if(actAutoBusy||!phReady||VIEW||!tripOver()||store.
     const keep=actSel; actSel=null; for(let di=0;di<DAYS.length;di++){ const ed=edits[di]; if(ed&&ed.list) ed.list.forEach(n=>{ if("sq0" in n){ if(n.sq0==null) delete n.dur; else n.dur=n.sq0; delete n.sq0; } }); if(ed&&ed.lsq0){ for(const [k,v] of Object.entries(ed.lsq0)){ if(v==null) delete ed.legs[k]; else ed.legs[k]=v; } delete ed.lsq0; }
       if(phMeta.some(m=>m.day===di&&m.takenAt)){ if(!(ed&&ed.mord)) actReorder(di); applyActual(di); actSqueeze(di); } } actSel=keep;
     for(let di=0;di<DAYS.length;di++) moved+=await looseByTime(di,loose[di]);
-    if(JSON.stringify(edits)!==before){ saveEdits(); } if(JSON.stringify(edits)!==before||moved){ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); drawCustoms&&drawCustoms(); } }
+    if(JSON.stringify(edits)!==before){ saveEdits(); } if(JSON.stringify(edits)!==before||moved){ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(true); drawCustoms&&drawCustoms(); } }
   catch(e){ try{ console.warn("actAuto",e&&e.message,e&&e.stack); }catch(_){} } finally{ actAutoBusy=false; } }
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-reord']"); if(!b) return; ev.stopPropagation(); const ed=edits[curDay]; if(ed) delete ed.mord; saveEdits(); actAutoRun().then(()=>renderPlan()); },true);
 var actMoved=null;
@@ -5539,7 +5545,7 @@ document.addEventListener("change",ev=>{ const k=ev.target.dataset&&ev.target.da
 mapDay=curDay;
 renderDays(); renderPlan(); renderStories(); renderFood(); renderDrinks(); renderInfo(); tickClock(); setTimeout(()=>refreshWx(false),400); setTimeout(()=>refreshRate(false),1500);
 setInterval(()=>{ tickClock(); },15000);
-setInterval(()=>{ if(curTab==="plan"&&!$("#sheetRoot").innerHTML&&!drag&&!document.body.classList.contains("tb-open")) renderPlan(); },120000);
+setInterval(()=>{ if(curTab==="plan"&&!$("#sheetRoot").innerHTML&&!drag&&!document.body.classList.contains("tb-open")) renderPlan(true); },120000);
 showTab(curTab);
 if(!store.get("tourDone",0)) setTimeout(()=>{ if(!document.body.classList.contains("tp-home-on")) startTour(); },500);
 if(drive){ if(driveItem()&&Date.now()-drive.start<6*3600e3){ startGps(); renderDrive(); runDrive(); } else stopDrive(); }
