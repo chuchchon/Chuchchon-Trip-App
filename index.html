@@ -1620,6 +1620,7 @@ function recTilesHtml(di,list){
       return `<div class="tile food"><button class="tile-ph emo" data-gpic="${esc(JSON.stringify(foodPicObj(r.f)))}" data-act="rec-open" data-k="${k}" aria-label="${esc(r.name)} · ดูรายละเอียด"><span class="tile-emo">${c.e}</span>${ip?`<em>ในแผน</em>`:""}</button><button class="tile-b" data-act="rec-open" data-k="${k}"><b>${esc(r.name)}</b><span>${esc(c.n)}</span><span>${meta}</span></button><button class="tile-add" data-act="cs-recplus" data-k="${k}" aria-label="ใส่ในแผน">${I.plus}</button></div>`; }
     return `<div class="tile"><button class="tile-ph thumb" ${thumbAttr(r)} data-act="rec-open" data-k="${k}" aria-label="${esc(r.name)} · ดูรายละเอียด"><span class="tile-emo">📍</span></button><button class="tile-b" data-act="rec-open" data-k="${k}"><b>${esc(r.name)}</b><span>${esc(r.src==="rec"?"ที่เที่ยว":r.kindTh)}</span><span>${meta}</span></button><button class="tile-add" data-act="cs-recplus" data-k="${k}" aria-label="ใส่ในแผน">${I.plus}</button></div>`; }).join("")}</div></div></li>`; }
 function renderPlan(){
+  if(typeof drag!=="undefined"&&drag){ drag.pend=true; return; }   /* never redraw under a finger that is pressing or dragging a card (the touch would lose its card); redraw when it lets go */
   const d=DAYS[curDay]; const el=$("#p-plan"); el.style.setProperty("--dc",`var(--d${d.n})`);
   const nowK=nowItemIndex(d); const isToday=curDay===todayIndex();
   let h=`<header class="dh"><div class="dh-date">${esc(DOW_FULL[d.dow]||d.dow)} ${Number(d.date.slice(8))} ตุลาคม${isToday?`<span class="dh-today">วันนี้</span>`:""}</div><h2 class="dh-title">${esc(d.title)}</h2>${wxDayLine(curDay)}`;
@@ -1630,7 +1631,7 @@ function renderPlan(){
   { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}<em class="dh-ph-prog">${phImport?impShort(phImport):""}</em></span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
-  if(actAutoOn()) h+=`<p class="dh-edited dh-act">🕘 ทริปจบแล้ว เวลาของจุดที่มีรูปตั้งตามเวลาถ่ายจริงให้อัตโนมัติ · รูปที่เวลาห่างจากรูปส่วนใหญ่ของจุดจะแยกเป็นจุดแนะนำ <button class="lnk" data-act="act-autooff">ปิด</button></p>`;
+  if(actAutoOn()) h+=`<p class="dh-edited dh-act">🕘 ทริปจบแล้ว เวลาของจุดที่มีรูปตั้งตามเวลาถ่ายจริงให้อัตโนมัติ · รูปที่เวลาห่างจากรูปส่วนใหญ่ของจุดจะแยกเป็นจุดแนะนำ <button class="lnk" data-act="act-autooff">ปิด</button>${edits[curDay]&&edits[curDay].mord?`<br>ลำดับจุดวันนี้คุณจัดเอง แอปจะไม่เรียงใหม่ <button class="lnk" data-act="act-reord">เรียงตามเวลารูปอีกครั้ง</button>`:""}</p>`;
   else if(actAutoOff()) h+=`<p class="dh-edited dh-act">🕘 ปิดการตั้งเวลาตามรูปอัตโนมัติอยู่ <button class="lnk" data-act="act-autoon">เปิด</button></p>`;
   h+=`</header><ol class="tl">`+(typeof sugByStop==="function"?(sugByStop(curDay)._top||[]).map(sugRowHtml).join(""):"");
   let carGoneR=curDay>=CARFREE_DAY; let prevKeyR=null; const SUG=sugByStop(curDay); const RECS=dayRecs(curDay), NUMS=stopNumMap(curDay);
@@ -2693,7 +2694,7 @@ function readDraft(){ const g=id=>$("#"+id); if(!g("cs-dur")) return; draft.dur=
 function moveItem(key,dir){
   const di=curDay; const ed=materialize(di); const i=ed.list.findIndex(x=>x.key===key); if(i<0) return;
   let j=i+dir; if(j<0||j>=ed.list.length) return;
-  const t=ed.list[i]; ed.list[i]=ed.list[j]; ed.list[j]=t; ed.list[i].pre=0; ed.list[j].pre=0; saveEdits(); renderPlan(); drawCustoms();
+  const t=ed.list[i]; ed.list[i]=ed.list[j]; ed.list[j]=t; ed.list[i].pre=0; ed.list[j].pre=0; if(actAutoOn()) ed.mord=1; saveEdits(); renderPlan(); drawCustoms();
   const el=$(`[data-key-row="${CSS.escape(key)}"]`); el&&el.scrollIntoView({block:"center",behavior:"smooth"});
 }
 function guessDur(k,v,name){
@@ -5368,18 +5369,21 @@ function dragRowFrom(t){ if(!t||!t.closest) return null; if(document.body.classL
   if(t.closest("input,select,textarea,.my-ph,.recs-row,.leg-steps,.ins-row,.mv")) return null;
   const row=t.closest("#p-plan .tl > li[data-key-row]"); if(!row) return null; if(!t.closest(".sc,.leg-body,.tm,.pin")) return null; return row; }
 function dragArm(row,x,y){ dragCancelArm(); drag={row,key:row.dataset.keyRow,x0:x,y0:y,x,y,on:false,before:undefined,timer:setTimeout(dragStart,420)}; row.classList.add("press"); }
-function dragCancelArm(){ if(drag&&!drag.on){ clearTimeout(drag.timer); drag.row.classList.remove("press"); drag=null; } }
-function dragStart(){ const d=drag; if(!d) return; d.on=true; dragSwallow=true; d.row.classList.remove("press");
+function dragCancelArm(){ if(drag&&!drag.on){ const p=drag.pend; clearTimeout(drag.timer); drag.row.classList.remove("press"); drag=null; if(p) renderPlan(); } }
+function dragRowLive(d){ if(d.row&&d.row.isConnected) return d.row; const r=$(`#p-plan .tl > li[data-key-row="${CSS.escape(d.key)}"]`); if(r) d.row=r; return r; }
+function dragStart(){ const d=drag; if(!d) return; if(!dragRowLive(d)){ drag=null; if(d.pend) renderPlan(); return; }   /* the list was redrawn during the long-press: use the new card */
+  d.on=true; dragSwallow=true; d.row.classList.remove("press");
   try{ navigator.vibrate&&navigator.vibrate(15); }catch(e){}
   const panel=$("#p-plan"); d.panel=panel; const card=d.row.querySelector(".sc")||d.row.querySelector(".leg-body")||d.row;
-  const cr=card.getBoundingClientRect(); const g=card.cloneNode(true); g.classList.add("drag-ghost"); g.removeAttribute("data-key-row");
+  let cr=card.getBoundingClientRect(); if(cr.width<60){ const pr=panel.getBoundingClientRect(); cr={left:pr.left+16,top:d.y-40,width:Math.max(200,pr.width-32)}; }
+  const g=card.cloneNode(true); g.classList.add("drag-ghost"); g.removeAttribute("data-key-row");
   g.style.width=cr.width+"px"; g.style.left=cr.left+"px"; d.gOff=Math.min(d.y-cr.top,60); d.gl=cr.left; d.gw=cr.width; document.body.appendChild(g); d.ghost=g;
   const before=d.row.getBoundingClientRect().top; document.body.classList.add("is-dragging"); d.row.classList.add("dragging");
   const after=d.row.getBoundingClientRect().top; panel.scrollTop+=after-before;   /* keep the card under the finger when the list folds up */
   const line=document.createElement("div"); line.className="drop-line"; document.body.appendChild(line); d.line=line;
   dragMove(); d.raf=requestAnimationFrame(dragAuto); }
 function dragMove(){ const d=drag; if(!d||!d.on) return; d.ghost.style.top=(d.y-d.gOff)+"px";
-  const rows=$$("#p-plan .tl > li[data-key-row]").filter(r=>r!==d.row); let tgt=null;
+  const rows=$$("#p-plan .tl > li[data-key-row]").filter(r=>r!==d.row&&r.dataset.keyRow!==d.key); let tgt=null;
   for(const r of rows){ const b=r.getBoundingClientRect(); if(d.y<b.top+b.height/2){ tgt=r; break; } }
   d.before=tgt?tgt.dataset.keyRow:null;
   let y; if(tgt){ y=tgt.getBoundingClientRect().top-6; } else { const last=rows[rows.length-1]; y=last?last.getBoundingClientRect().bottom+4:0; }
@@ -5390,16 +5394,17 @@ function dragAuto(){ const d=drag; if(!d||!d.on) return; const pr=d.panel.getBou
 function dragEnd(commit){ const d=drag; drag=null; if(!d) return; clearTimeout(d.timer); cancelAnimationFrame(d.raf);
   d.ghost&&d.ghost.remove(); d.line&&d.line.remove(); d.row.classList.remove("dragging","press"); document.body.classList.remove("is-dragging");
   setTimeout(()=>{ dragSwallow=false; },350);
-  if(!commit||d.before===undefined) return;
-  const ed=materialize(curDay); const old=ed.list.map(n=>n.key).join(","); const i=ed.list.findIndex(n=>n.key===d.key); if(i<0) return;
+  if(!commit||d.before===undefined||d.before===d.key){ if(d.pend) renderPlan(); return; }
+  const ed=materialize(curDay); const old=ed.list.map(n=>n.key).join(","); const i=ed.list.findIndex(n=>n.key===d.key); if(i<0){ if(d.pend) renderPlan(); return; }
   const oldNext=ed.list[i+1]; const node=ed.list.splice(i,1)[0];
   let j=d.before?ed.list.findIndex(n=>n.key===d.before):-1; if(j<0) j=ed.list.length;
-  ed.list.splice(j,0,node); if(ed.list.map(n=>n.key).join(",")===old) return;
-  node.pre=0; if(ed.list[j+1]) ed.list[j+1].pre=0; if(oldNext) oldNext.pre=0;
+  ed.list.splice(j,0,node); if(ed.list.map(n=>n.key).join(",")===old){ if(d.pend) renderPlan(); return; }
+  node.pre=0; if(ed.list[j+1]) ed.list[j+1].pre=0; if(oldNext) oldNext.pre=0; if(actAutoOn()) ed.mord=1;   /* the order was set by hand: auto mode keeps it */
   saveEdits(); renderPlan(); drawCustoms();
   const el=$(`#p-plan [data-key-row="${CSS.escape(d.key)}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); } }
 (()=>{ const pp=$("#p-plan");
-  pp.addEventListener("touchstart",e=>{ if(e.touches.length!==1){ if(drag&&drag.on) dragEnd(false); else dragCancelArm(); return; } const row=dragRowFrom(e.target); if(!row) return; const t=e.touches[0]; dragArm(row,t.clientX,t.clientY); },{passive:true});
+  pp.addEventListener("touchstart",e=>{ if(drag&&drag.on&&e.touches.length===1) dragEnd(false);   /* a drag that never got its touchend */
+    if(e.touches.length!==1){ if(drag&&drag.on) dragEnd(false); else dragCancelArm(); return; } const row=dragRowFrom(e.target); if(!row) return; const t=e.touches[0]; dragArm(row,t.clientX,t.clientY); },{passive:true});
   pp.addEventListener("touchmove",e=>{ if(!drag) return; const t=e.touches[0]; if(!drag.on){ if(Math.hypot(t.clientX-drag.x0,t.clientY-drag.y0)>8) dragCancelArm(); return; } e.preventDefault(); drag.x=t.clientX; drag.y=t.clientY; dragMove(); },{passive:false});
   pp.addEventListener("touchend",e=>{ if(!drag) return; if(drag.on){ e.preventDefault(); dragEnd(true); } else dragCancelArm(); },{passive:false});
   pp.addEventListener("touchcancel",()=>{ if(!drag) return; if(drag.on) dragEnd(false); else dragCancelArm(); });
@@ -5898,10 +5903,11 @@ async function actAutoRun(){ if(actAutoBusy||!phReady||VIEW||!tripOver()||store.
   try{ const before=JSON.stringify(edits); let moved=0; const loose={}; for(let di=0;di<DAYS.length;di++){ const r=await visitAssign(di); moved+=r.n; loose[di]=r.loose||[]; }
     if(!store.get("actAutoSnap",0)){ try{ snapEdits("ก่อนตั้งเวลาตามรูปอัตโนมัติ"); }catch(e){} store.set("actAutoSnap",Date.now()); }   /* the plan as it was, once, in the edit history */
     const keep=actSel; actSel=null; for(let di=0;di<DAYS.length;di++){ const ed=edits[di]; if(ed&&ed.list) ed.list.forEach(n=>{ if("sq0" in n){ if(n.sq0==null) delete n.dur; else n.dur=n.sq0; delete n.sq0; } }); if(ed&&ed.lsq0){ for(const [k,v] of Object.entries(ed.lsq0)){ if(v==null) delete ed.legs[k]; else ed.legs[k]=v; } delete ed.lsq0; }
-      if(phMeta.some(m=>m.day===di&&m.takenAt)){ actReorder(di); applyActual(di); actSqueeze(di); } } actSel=keep;
+      if(phMeta.some(m=>m.day===di&&m.takenAt)){ if(!(ed&&ed.mord)) actReorder(di); applyActual(di); actSqueeze(di); } } actSel=keep;
     for(let di=0;di<DAYS.length;di++) moved+=await looseByTime(di,loose[di]);
     if(JSON.stringify(edits)!==before){ saveEdits(); } if(JSON.stringify(edits)!==before||moved){ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); drawCustoms&&drawCustoms(); } }
   catch(e){ try{ console.warn("actAuto",e&&e.message,e&&e.stack); }catch(_){} } finally{ actAutoBusy=false; } }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-reord']"); if(!b) return; ev.stopPropagation(); const ed=edits[curDay]; if(ed) delete ed.mord; saveEdits(); actAutoRun().then(()=>renderPlan()); },true);
 var actMoved=null;
 function actualHtml(busy){ if(busy) return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2><div class="ph-prog"><div class="ph-bar"><i style="width:60%"></i></div><p><b>กำลังจัดรูปใหม่ตามสถานที่ในแผนล่าสุด…</b></p></div>`;
   const rows=DAYS.map((d,di)=>({d,di,L:actualTimes(di)})); const any=rows.some(r=>r.L.length);
