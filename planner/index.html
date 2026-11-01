@@ -2546,20 +2546,25 @@ function wxPoints(){
   DAYS.forEach((d,di)=>planItems(di).forEach(it=>{ const k=it.k==="drive"||it.k==="train"?it.to:it.p; if(k&&P[k]) add(P[k][1],P[k][2]); }));
   return Object.keys(m);
 }
+/* a trip long over (forecasts only reach about 3 months back): the weather that was, from the archive, any year since 1940 */
+function wxOld(){ const today=jst().date, b=TRIP_DATES[TRIP_DATES.length-1]; return today>b&&Math.round((Date.parse(today)-Date.parse(b))/864e5)>85; }
 function wxRange(){ const today=jst().date, a=TRIP_DATES[0], b=TRIP_DATES[TRIP_DATES.length-1];
   const days=(x,y)=>Math.round((Date.parse(y)-Date.parse(x))/864e5);
+  if(wxOld()) return `start_date=${a}&end_date=${b}&old=1`;
   if(today>b&&days(b,today)<=90) return `start_date=${a}&end_date=${b}`;            /* trip over: the days of the trip */
   if(today>=a) return `past_days=${Math.min(92,Math.max(1,days(a,today)))}&forecast_days=7`;   /* during the trip: the days so far + ahead */
   return "past_days=1&forecast_days=7"; }
 async function refreshWx(force){
-  if(wxBusy) return; if(!force&&wx&&wx.range===wxRange()&&Date.now()-wx.at<WX_STALE) return;   /* a cache made for other dates is stale whatever its age */
+  if(wxBusy) return; if(!force&&wx&&wx.range===wxRange()&&(wxOld()||Date.now()-wx.at<WX_STALE)) return;   /* the past does not change */   /* a cache made for other dates is stale whatever its age */
   const pts=wxPoints(); if(!pts.length) return; wxBusy=true;
   try{
     const lat=pts.map(p=>p.split(",")[0]).join(","), lon=pts.map(p=>p.split(",")[1]).join(",");
-    const base=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m&wind_speed_unit=ms&timezone=auto&`; let r=await fetch(base+wxRange());
-    if(!r.ok){ const back=Math.min(92,Math.max(1,Math.round((Date.parse(jst().date)-Date.parse(TRIP_DATES[0]))/864e5))); r=await fetch(base+`past_days=${back}&forecast_days=7`); }   /* in case dates are refused */
+    const old=wxOld();
+    const base=old?`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,weather_code,wind_speed_10m&wind_speed_unit=ms&timezone=auto&`
+      :`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m&wind_speed_unit=ms&timezone=auto&`; let r=await fetch(base+wxRange().replace("&old=1",""));
+    if(!r.ok&&!old){ const back=Math.min(92,Math.max(1,Math.round((Date.parse(jst().date)-Date.parse(TRIP_DATES[0]))/864e5))); r=await fetch(base+`past_days=${back}&forecast_days=7`); }   /* in case dates are refused */
     const j=await r.json(); const arr=Array.isArray(j)?j:[j]; const data={};
-    arr.forEach((loc,i)=>{ if(loc&&loc.hourly) data[pts[i]]={time:loc.hourly.time,t:loc.hourly.temperature_2m,pp:loc.hourly.precipitation_probability,pr:loc.hourly.precipitation,wc:loc.hourly.weather_code,ws:loc.hourly.wind_speed_10m}; });
+    arr.forEach((loc,i)=>{ if(loc&&loc.hourly) data[pts[i]]={time:loc.hourly.time,t:loc.hourly.temperature_2m,pp:loc.hourly.precipitation_probability||loc.hourly.time.map(()=>null),pr:loc.hourly.precipitation,wc:loc.hourly.weather_code,ws:loc.hourly.wind_speed_10m}; });
     wxErr=Object.keys(data).length?"":((j&&j.reason)||("HTTP "+r.status));
     if(Object.keys(data).length){ wxRemember(data); wx={at:Date.now(),data,range:wxRange()}; store.set("wx",wx); if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); }
   }catch(e){ wxErr=navigator.onLine?"ดึงข้อมูลไม่สำเร็จ":"ออฟไลน์"; }
