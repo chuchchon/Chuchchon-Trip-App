@@ -857,6 +857,16 @@ body.tb-dragging{overflow:hidden}
 .act-list{list-style:none;padding:0;margin:6px 0 0}.act-list li{display:flex;flex-direction:column;padding:6px 0;border-top:1px solid var(--line,#E3E7EB)}
 .act-tg{display:flex;gap:8px;align-items:flex-start}.act-tg input{width:18px;height:18px;margin-top:3px;flex:0 0 auto}
 .act-list li.warn{background:color-mix(in srgb,#B9820F 8%,transparent);margin:0 -10px;padding:6px 10px}.act-warn{font-size:12px;color:#8A4B00;font-weight:600}
+.mv-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font:600 15px inherit;text-align:left;cursor:pointer}.mv-btn span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-pop{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.mv-sheet{width:100%;max-width:560px;max-height:82vh;display:flex;flex-direction:column;background:var(--surface,#fff);color:var(--ink,#1C2228);border-radius:20px 20px 0 0;padding:14px 14px calc(10px + env(safe-area-inset-bottom,0px))}
+.mv-h{flex:none;display:flex;align-items:center;justify-content:space-between;font-size:17px;margin:0 2px 8px}.mv-x{border:0;background:var(--bg,#EEF2F0);width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;color:inherit}
+.mv-days{flex:none;display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:none}.mv-days button{flex:none;border:1px solid var(--line,#DDE3E0);background:var(--surface,#fff);color:inherit;border-radius:999px;padding:6px 12px;font:600 13px inherit;cursor:pointer}.mv-days button.on{background:var(--route-blue,#1F5FA8);border-color:var(--route-blue,#1F5FA8);color:#fff}
+.mv-list{overflow-y:auto;overscroll-behavior:contain;margin:0 -4px;padding:0 4px}
+.mv-g p{margin:12px 2px 4px;font-size:12.5px;font-weight:700;color:var(--muted,#69737D)}
+.mv-row{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line,#E3E8E5);background:none;color:inherit;padding:12px 6px;font:500 15px inherit;cursor:pointer}
+.mv-row.leg{padding:8px 6px 8px 26px;font-size:13.5px;color:var(--muted,#5A6670)}.mv-row.rec{font-size:14px}
+.mv-row.on{background:rgba(31,95,168,.08);font-weight:700}.mv-row i{flex:none;font-style:normal;font-size:12px;color:var(--route-blue,#1F5FA8)}
 .lb-move{margin-top:8px}.lb-move .c-actions{margin-top:6px}.lb-hid{display:block;margin-top:4px;font-size:12px;color:#F5C26B}
 .lb-cap .lb-up{display:block;margin-top:4px;font-size:12.5px;color:#8FE0A8}
 .leg-modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0 8px}.leg-m{display:flex;align-items:center;gap:8px;padding:10px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:14px;cursor:pointer}.leg-m input{margin:0;accent-color:var(--route-blue)}.leg-m:has(input:checked){border-color:var(--route-blue);box-shadow:0 0 0 1px var(--route-blue) inset}
@@ -3365,6 +3375,21 @@ function dayOrder(di){ const its=planItems(di); const pos={}; its.forEach((x,i)=
   const at=m=>{ if(m.key&&m.key.startsWith("leg:")) return pos[m.key.slice(4)]??999; if(m.key) return pos[m.key]??999;
     if(m.place){ const t=m.takenAt?jstMin(m.takenAt):null; let k=-1; if(t!=null) its.forEach((x,i)=>{ if(x.k!=="opt"&&toMin(x.t)<=t) k=i; }); return k+0.5; } return 9999; };
   return phMeta.filter(m=>m.day===di).map(m=>[m,at(m)]).sort((a,b)=>a[1]-b[1]||tbOrd(a[0])-tbOrd(b[0])).map(x=>x[0]); }
+/* our own chooser for where a photo goes: the day's stops and the travel between them in order, one tap each (the phone's own list is long and hides the headings) */
+function mvLabel(m){ const sel=$("#ph-move"); const o=sel&&sel.selectedOptions[0]; if(o&&o.value) return o.textContent; return m.day!=null?keyLabel(m.day,m.key):"เลือกที่จะย้ายไป…"; }
+function mvPopup(){ const sel=$("#ph-move"); if(!sel) return; const old=$("#mvPop"); if(old) old.remove(); const cur=sel.value; const groups=[], loose=[];
+  [...sel.children].forEach(n=>{ if(n.tagName==="OPTGROUP") groups.push({label:n.label,opts:[...n.children].map(o=>({v:o.value,t:o.textContent}))}); else if(n.value) loose.push({v:n.value,t:n.textContent}); });
+  const dayOf=l=>{ const x=l.match(/D(\d+)/); return x?x[1]:""; };
+  const row=o=>{ const leg=/↳/.test(o.t), rec=/^r\|/.test(o.v); const t=o.t.replace(/^D\d+ · /,"").replace(/^↳ /,"");
+    return `<button class="mv-row${leg?" leg":""}${rec?" rec":""}${o.v===cur?" on":""}" data-mp="mvpick" data-v="${esc(o.v)}">${esc(t)}${o.v===cur?`<i>✓ ตอนนี้</i>`:""}</button>`; };
+  const days=[...new Set(groups.map(g=>dayOf(g.label)).filter(Boolean))];
+  const curDay=(groups.find(g=>g.opts.some(o=>o.v===cur))||{}).label;
+  const h=`<div class="mv-pop" id="mvPop"><div class="mv-sheet"><div class="mv-h"><b>ย้ายรูปไปที่ไหน</b><button class="mv-x" data-mp="mvclose" aria-label="ปิด">✕</button></div>
+    ${days.length>1?`<div class="mv-days">${days.map(d=>`<button data-mp="mvday" data-g="g${d}"${curDay&&dayOf(curDay)===d?' class="on"':""}>D${d}</button>`).join("")}</div>`:""}
+    <div class="mv-list">${groups.map((g,i)=>{ const d=dayOf(g.label), first=groups.findIndex(x=>dayOf(x.label)===d)===i; return `<div class="mv-g"${first?` data-g="g${d}"`:""}><p>${esc(g.label)}</p>${g.opts.map(row).join("")}</div>`; }).join("")}
+    ${loose.length?`<div class="mv-g"><p>อื่นๆ</p>${loose.map(row).join("")}</div>`:""}</div></div></div>`;
+  $("#lbRoot .lb").insertAdjacentHTML("beforeend",h);
+  const on=$("#mvPop .mv-row.on"); if(on) on.scrollIntoView({block:"center"}); }
 function legEmoji(it){ return it.k==="drive"||it.mode==="car"?"🚗":it.walk?"🚶":it.mode==="flight"?"✈️":it.mode==="ferry"?"⛴️":it.bus||it.mode==="bus"?"🚌":it.mode==="train"?"🚆":"🚇"; }
 function fmtLegOpt(x){ return `${x.t||""} ระหว่างทาง ${P[x.from]?P[x.from][0]+" → ":""}${P[x.to][0]}`; }
 function placeLabel(p){ return p&&p.name?p.name:"จุดแวะที่ยังไม่มีชื่อ"; }
@@ -3398,7 +3423,7 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
   const when=m.takenAt?new Date(m.takenAt+tzo(m.takenAt)).toISOString().replace("T"," ").slice(0,16):"ไม่ทราบเวลาที่ถ่าย";
   const grp=phMeta.filter(x=>x.day===m.day&&x.key===m.key&&(x.place&&m.place?x.place.name===m.place.name:true)&&x.takenAt&&m.takenAt&&Math.abs(x.takenAt-m.takenAt)<=45*60e3);
   const how=m.place?" · ถ่ายที่ที่ไม่อยู่ในแผน":m.auto===false?" · คุณจัดเอง":m.key?(m.bySess?" · จัดตามรูปที่ถ่ายต่อเนื่องกัน":m.byTime||m.lat==null?" · จัดตามเวลาในแผน":" · จัดตามตำแหน่ง"):"";
-  const mv=v.move?`<div class="lb-move"><select class="inp" id="ph-move">${moveOptsHtml(m)}</select>${m.lat!=null?`<p class="lb-mvhint">ไม่แน่ใจว่าที่ไหน? <a href="${esc(gmPin(m.lat,m.lng))}" target="_blank" rel="noopener">ดูตำแหน่งรูปนี้ใน Google Maps</a> แล้วกลับมาเลือก · ถ้าเป็นที่ที่ไม่อยู่ในแผน <button class="lnk" data-mp="newstop">เพิ่มเป็นจุดใหม่ (ค้นหา/ตั้งชื่อเอง)</button></p>`:""}
+  const mv=v.move?`<div class="lb-move"><select class="inp" id="ph-move" hidden>${moveOptsHtml(m)}</select><button class="mv-btn" data-mp="mvopen"><span id="mvLbl">${esc(mvLabel(m))}</span><b>▾</b></button>${m.lat!=null?`<p class="lb-mvhint">ไม่แน่ใจว่าที่ไหน? <a href="${esc(gmPin(m.lat,m.lng))}" target="_blank" rel="noopener">ดูตำแหน่งรูปนี้ใน Google Maps</a> แล้วกลับมาเลือก · ถ้าเป็นที่ที่ไม่อยู่ในแผน <button class="lnk" data-mp="newstop">เพิ่มเป็นจุดใหม่ (ค้นหา/ตั้งชื่อเอง)</button></p>`:""}
     ${grp.length>1?`<label class="lb-grp"><input type="checkbox" id="ph-grp"> ย้ายรูปอื่นที่ถ่ายช่วงเดียวกัน (±45 นาที) ไปด้วย อีก ${grp.length-1} ไฟล์</label>`:""}
     <div class="c-actions"><button class="btn small primary" data-mp="domove">ย้าย</button><button class="btn small" data-mp="move">ยกเลิก</button></div></div>`:"";
   $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button><div class="lb-stage">${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}</div>
@@ -3411,6 +3436,10 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
   const root=$("#lbRoot"); root.onclick=async ev=>{ const b=ev.target.closest("[data-mp]"); if(!b) return; ev.stopPropagation(); const a=b.dataset.mp; if(VIEW&&!["close","prev","next"].includes(a)) return vgToast("โหมดดูอย่างเดียว · แก้ไขไม่ได้");
     if(a==="close"){ phView=null; closeLightbox(false); return; } if(a==="prev"&&v.i>0){ v.i--; v.confirm=false; v.move=false; drawMyPhoto(); } if(a==="next"&&v.i<v.list.length-1){ v.i++; v.confirm=false; v.move=false; drawMyPhoto(); }
     if(a==="move"){ v.move=!v.move; v.confirm=false; drawMyPhoto(); }
+    if(a==="mvopen"){ mvPopup(); return; }
+    if(a==="mvclose"){ const p=$("#mvPop"); if(p) p.remove(); return; }
+    if(a==="mvpick"){ const sel=$("#ph-move"); if(sel){ sel.value=b.dataset.v; const o=sel.selectedOptions[0]; const l=$("#mvLbl"); if(l&&o) l.textContent=o.textContent; } const p=$("#mvPop"); if(p) p.remove(); return; }
+    if(a==="mvday"){ const g=$(`#mvPop [data-g="${b.dataset.g}"]`); if(g) g.scrollIntoView({block:"start",behavior:"smooth"}); $$("#mvPop .mv-days button").forEach(x=>x.classList.toggle("on",x===b)); return; }
     if(a==="tbshow"){ m.tbHide=false; await PDB.putMeta(m); drawMyPhoto(); refreshPhotoViews(); }
     if(a==="cover"){ for(const o of phMeta){ if(o.cover&&o.id!==id){ o.cover=false; await PDB.putMeta(o); } } m.cover=!m.cover; await PDB.putMeta(m); drawMyPhoto(); refreshPhotoViews(); }
     if(a==="del"){ if(!v.confirm){ v.confirm=true; drawMyPhoto(); return; } await PDB.del(id); phMeta=phMeta.filter(x=>x.id!==id); v.list.splice(v.i,1); v.confirm=false; if(!v.list.length){ phView=null; closeLightbox(false); } else { v.i=Math.min(v.i,v.list.length-1); drawMyPhoto(); } refreshPhotoViews(); }
