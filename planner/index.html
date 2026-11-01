@@ -855,6 +855,8 @@ body.tb-dragging{overflow:hidden}
 .act-list li.warn{background:color-mix(in srgb,#B9820F 8%,transparent);margin:0 -10px;padding:6px 10px}.act-warn{font-size:12px;color:#8A4B00;font-weight:600}
 .lb-move{margin-top:8px}.lb-move .c-actions{margin-top:6px}.lb-hid{display:block;margin-top:4px;font-size:12px;color:#F5C26B}
 .lb-cap .lb-up{display:block;margin-top:4px;font-size:12.5px;color:#8FE0A8}
+.lb-cap .lb-gm{display:block;margin-top:4px;font-size:13px}.lb-gm a{color:#9CC8FF;text-decoration:underline}
+.lb-mvhint{margin:8px 0 2px;font-size:13px;line-height:1.5;color:#E8EEF3}.lb-mvhint a{color:#9CC8FF;text-decoration:underline}.lb-mvhint .lnk{color:#9CC8FF;text-decoration:underline;font-size:13px}
 .lb-up a{color:#fff;text-decoration:underline}
 body.tb-open .lb{z-index:1450}
 .dup-kbtn{display:block;width:100%;margin-top:4px;min-height:34px;border-radius:8px;border:1px solid var(--line,#D3D8DE);background:var(--surface,#fff);font:600 13px inherit;color:#B3261E;cursor:pointer}
@@ -2405,7 +2407,9 @@ document.addEventListener("click",ev=>{
   if(a==="cs-qtsave"){ const ed=materialize(qt.di); applyTime(ed,qt.di,qt.key,qt.s,qt.e); saveEdits(); qt=null; closeSheet(); renderPlan(); drawCustoms(); return; }
   if(a==="cs-qtauto"){ const ed=materialize(qt.di); const n=ed.list.find(x=>x.key===qt.key); if(n){ n.at=""; delete n.fixAt; } saveEdits(); qt=null; closeSheet(); renderPlan(); return; }
   if(a==="cs-promote"){ readDraft(); draft.promote=!draft.promote; renderAddStop(); return; }
-  if(a==="cs-save"){ readDraft(); const ed=materialize(draft.day); applyDraft(ed,draft); saveEdits(); draft=null; closeSheet(); renderPlan(); drawCustoms(); return; }
+  if(a==="cs-save"){ readDraft(); const ed=materialize(draft.day); applyDraft(ed,draft); saveEdits(); const mv=draft.movePh, dd=draft.day, kk=draft.key; draft=null; closeSheet();
+    if(mv&&mv.length){ (async()=>{ for(const id of mv){ const x=phMeta.find(p=>p.id===id); if(!x) continue; x.day=dd; x.key=kk; x.place=null; x.auto=false; x.byTime=false; x.bySess=false; await PDB.putMeta(x); } refreshPhotoViews(); renderPlan(); })(); }
+    renderPlan(); drawCustoms(); return; }
   if(a==="cs-del"){ const nPh=photosFor(draft.day,draft.key).length; if(nPh&&!draft.delOk){ draft.delOk=true; b.classList.add("danger"); b.textContent=`แตะอีกครั้งเพื่อ${b.textContent.trim()} (รูป ${nPh} รูปไม่หาย)`; return; }
     const di0=draft.day, k0=draft.key; const ed=materialize(di0); markGone(di0,ed,ed.list.find(x=>x.key===k0)); ed.list=ed.list.filter(x=>x.key!==k0); saveEdits(); draft=null; closeSheet(); fixOrphans().then(()=>{ renderPlan(); drawCustoms(); }); renderPlan(); drawCustoms(); return; }
   if(a==="cs-moveday"){ readDraft(); const to=+($("#cs-day")||{}).value; if(isNaN(to)||to===draft.day) return; moveStopToDay(draft,to); return; }
@@ -2977,6 +2981,16 @@ function sugRowHtml(g){ const t=g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenA
     ${pgJustHtml(g)}${pgOpen===g.id?pgPickHtml(g):""}${pgMove===g.id?pgMoveHtml(g):""}</article></li>`; }
 function pgPickHtml(g){ const c=g.place.cands||[]; return `<div class="pg-pick">${c.length?`<p class="tiny">สถานที่ใกล้ตำแหน่งที่ถ่าย</p>${c.map((x,i)=>`<button class="pg-c${x.name===g.place.name?" on":""}" data-act="ph-gpick" data-g="${esc(g.id)}" data-i="${i}"><b>${esc(x.name)}</b><span>${esc([x.kind,x.src].filter(Boolean).join(" · "))}</span></button>`).join("")}`:`<p class="tiny">ยังหาชื่อที่ใกล้ ๆ ไม่ได้${navigator.onLine?"":" (ออฟไลน์)"}</p>`}
   <div class="pg-own"><input class="inp" id="pg-in" placeholder="หรือพิมพ์ชื่อเอง" value=""><button class="btn small" data-act="ph-gname" data-g="${esc(g.id)}">ใช้ชื่อนี้</button></div></div>`; }
+function gmPin(lat,lng){ return `https://www.google.com/maps/search/?api=1&query=${(+lat).toFixed(6)},${(+lng).toFixed(6)}`; }
+/* a new stop where a photo was taken: the add sheet opens on that spot, the name can be typed or searched, and the photos go into it on save */
+function openAddStopForPhotos(m,ids){ const ps=phMeta.filter(x=>ids.includes(x.id)); const ts=ps.map(x=>x.takenAt).filter(Boolean); const t0=ts.length?Math.min(...ts):null, t1=ts.length?Math.max(...ts):null;
+  let di=m.day; if(di==null&&t0){ const dt=new Date(t0+(typeof tzo==="function"?tzo(t0):9*3600e3)).toISOString().slice(0,10); di=DAYS.findIndex(d=>d.date===dt); } if(di==null||di<0) di=curDay;
+  if(curDay!==di) selectDay(di);
+  const tm=t0?jstMin(t0):null, ed=materialize(di), its=planItems(di);
+  const before=tm==null?null:its.filter(x=>x.k!=="drive"&&x.k!=="train"&&toMin(x.t)<=tm&&ed.list.some(n=>n.key===x._i)).pop();
+  openAddStop(before?before._i:null);
+  Object.assign(draft,{atStart:!before,afterKey:before?before._i:null,name:(m.place&&m.place.name)||"",lat:m.lat,lng:m.lng,note:"เพิ่มจากรูปของเรา",dur:t0?Math.max(30,Math.round((t1-t0)/60000)+20):45,at:tm!=null?fmtMin(tm):"",movePh:ids});
+  renderAddStop(); if(!draft.name){ const d0=draft; reverseName([m.lat,m.lng]).then(n=>{ if(draft===d0&&!draft.name){ draft.name=n||"จุดที่ถ่ายรูป"; const i=$("#cs-name"); if(i&&!i.value) i.value=draft.name; const pk=$(".cs-picked b"); if(pk) pk.textContent="📌 "+draft.name; } }); } }
 async function addStopFromPhotos(di,ids,place){ const ps=phMeta.filter(m=>ids.includes(m.id)); if(!ps.length||!place) return null;
   const ts=ps.map(m=>m.takenAt).filter(Boolean); const t0=ts.length?Math.min(...ts):null, t1=ts.length?Math.max(...ts):null;
   let name=place.name; if(!name) name=(await reverseName([place.lat,place.lng]))||"จุดที่ถ่ายรูป";
@@ -3336,12 +3350,12 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
   const when=m.takenAt?new Date(m.takenAt+tzo(m.takenAt)).toISOString().replace("T"," ").slice(0,16):"ไม่ทราบเวลาที่ถ่าย";
   const grp=phMeta.filter(x=>x.day===m.day&&x.key===m.key&&(x.place&&m.place?x.place.name===m.place.name:true)&&x.takenAt&&m.takenAt&&Math.abs(x.takenAt-m.takenAt)<=45*60e3);
   const how=m.place?" · ถ่ายที่ที่ไม่อยู่ในแผน":m.auto===false?" · คุณจัดเอง":m.key?(m.bySess?" · จัดตามรูปที่ถ่ายต่อเนื่องกัน":m.byTime||m.lat==null?" · จัดตามเวลาในแผน":" · จัดตามตำแหน่ง"):"";
-  const mv=v.move?`<div class="lb-move"><select class="inp" id="ph-move">${moveOptsHtml(m)}</select>
+  const mv=v.move?`<div class="lb-move"><select class="inp" id="ph-move">${moveOptsHtml(m)}</select>${m.lat!=null?`<p class="lb-mvhint">ไม่แน่ใจว่าที่ไหน? <a href="${esc(gmPin(m.lat,m.lng))}" target="_blank" rel="noopener">ดูตำแหน่งรูปนี้ใน Google Maps</a> แล้วกลับมาเลือก · ถ้าเป็นที่ที่ไม่อยู่ในแผน <button class="lnk" data-mp="newstop">เพิ่มเป็นจุดใหม่ (ค้นหา/ตั้งชื่อเอง)</button></p>`:""}
     ${grp.length>1?`<label class="lb-grp"><input type="checkbox" id="ph-grp"> ย้ายรูปอื่นที่ถ่ายช่วงเดียวกัน (±45 นาที) ไปด้วย อีก ${grp.length-1} ไฟล์</label>`:""}
     <div class="c-actions"><button class="btn small primary" data-mp="domove">ย้าย</button><button class="btn small" data-mp="move">ยกเลิก</button></div></div>`:"";
   $("#lbRoot").innerHTML=`<div class="lb my"><button class="lb-x" data-mp="close" aria-label="ปิด">✕</button><div class="lb-stage">${m.kind==="video"?`<video data-vid="${id}" controls playsinline autoplay></video>`:`<img data-phid="${id}" data-full="1" alt="">`}</div>
-  <div class="lb-cap"><b>${esc(photoWhere(m))}</b><span>${esc(when)}${m.tsrc==="file"?" (วันที่ของไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?" · มีตำแหน่ง":" · ไม่มีตำแหน่ง"}${how}${m.by?" · 📷 จาก "+esc(m.by):""}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>
-  ${v.flash?`<span class="lb-flash" role="status">${esc(v.flash)}</span>`:""}${m.tbHide?`<span class="lb-hid">เอาออกจาก Tripbook อยู่ · <button class="lnk" data-mp="tbshow">เอากลับเข้า Tripbook</button></span>`:""}${tbDrvLine(m)}${mv}</div>
+  <div class="lb-cap"><b>${esc(photoWhere(m))}</b><span>${esc(when)}${m.tsrc==="file"?" (วันที่ของไฟล์ ไม่ใช่เวลาถ่าย)":""}${m.lat!=null?"":" · ไม่มีตำแหน่ง"}${how}${m.by?" · 📷 จาก "+esc(m.by):""}${m.kind==="video"&&m.size?" · "+(m.size/1048576).toFixed(0)+" MB":""}</span>
+  ${v.flash?`<span class="lb-flash" role="status">${esc(v.flash)}</span>`:""}${m.tbHide?`<span class="lb-hid">เอาออกจาก Tripbook อยู่ · <button class="lnk" data-mp="tbshow">เอากลับเข้า Tripbook</button></span>`:""}${m.lat!=null?`<span class="lb-gm"><a href="${esc(gmPin(m.lat,m.lng))}" target="_blank" rel="noopener">📍 ดูตำแหน่งที่ถ่ายใน Google Maps ›</a></span>`:""}${tbDrvLine(m)}${mv}</div>
   <div class="lb-nav"><button class="btn lb-arr" data-mp="prev" ${v.i===0?"disabled":""} aria-label="รูปก่อนหน้า">‹</button><span class="lb-pos" aria-live="polite"><b>${v.i+1} / ${v.list.length}</b><small>${galState&&$("#gal-root")?(galState.all?`ทั้งวัน D${DAYS[galState.day].n}`:"จุดนี้"):m.day!=null?`ทั้งวัน D${DAYS[m.day].n}`:"ยังไม่ได้จัด"}</small></span><button class="btn lb-arr" data-mp="next" ${v.i>=v.list.length-1?"disabled":""} aria-label="รูปถัดไป">›</button></div>
   <div class="lb-acts"><button class="btn small${v.move?" on":""}" data-mp="move">ย้ายไปจุดอื่น</button>${m.kind!=="video"?`<button class="btn small" data-mp="cover">${m.cover?"★ ปก Tripbook":"ตั้งเป็นปก Tripbook"}</button>`:""}<button class="btn small lb-del${v.confirm?" danger":""}" data-mp="del">${v.confirm?"แตะอีกครั้ง: ลบออกจากแอปถาวร":"ลบรูปนี้"}</button></div></div>`;
   if(VIEW&&m.kind==="video"){ const sg=$("#lbRoot .lb-stage"); if(sg) sg.innerHTML=m.vd?`<iframe class="vg-vid" src="https://drive.google.com/file/d/${esc(m.vd)}/preview" allow="autoplay; fullscreen" allowfullscreen></iframe>`:""; }
@@ -3352,6 +3366,7 @@ function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; con
     if(a==="tbshow"){ m.tbHide=false; await PDB.putMeta(m); drawMyPhoto(); refreshPhotoViews(); }
     if(a==="cover"){ for(const o of phMeta){ if(o.cover&&o.id!==id){ o.cover=false; await PDB.putMeta(o); } } m.cover=!m.cover; await PDB.putMeta(m); drawMyPhoto(); refreshPhotoViews(); }
     if(a==="del"){ if(!v.confirm){ v.confirm=true; drawMyPhoto(); return; } await PDB.del(id); phMeta=phMeta.filter(x=>x.id!==id); v.list.splice(v.i,1); v.confirm=false; if(!v.list.length){ phView=null; closeLightbox(false); } else { v.i=Math.min(v.i,v.list.length-1); drawMyPhoto(); } refreshPhotoViews(); }
+    if(a==="newstop"){ const all=($("#ph-grp")||{}).checked?grp:[m]; phView=null; closeLightbox(false); setTimeout(()=>openAddStopForPhotos(m,all.map(x=>x.id)),350); return; }
     if(a==="domove"){ const val=($("#ph-move")||{}).value; if(!val) return; const all=($("#ph-grp")||{}).checked?grp:[m]; b.disabled=true;
       if(val.startsWith("r|")){ const [,dd,rid]=val.split("|"); const r=recIdx[dd+"|"+rid]||Object.values(dayRecs(+dd,true)||{}).flat().find(x=>x.id===rid); if(r) await addStopFromPhotos(+dd,all.map(x=>x.id),{name:r.name,lat:r.lat,lng:r.lng}); }
       else if(val==="here|"){ await addStopFromPhotos(m.day,all.map(x=>x.id),m.place); }
