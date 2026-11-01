@@ -1630,6 +1630,8 @@ function renderPlan(){
   { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}<em class="dh-ph-prog">${phImport?impShort(phImport):""}</em></span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
+  if(actAutoOn()) h+=`<p class="dh-edited dh-act">🕘 ทริปจบแล้ว เวลาของจุดที่มีรูปตั้งตามเวลาถ่ายจริงให้อัตโนมัติ · รูปที่เวลาห่างจากรูปส่วนใหญ่ของจุดจะแยกเป็นจุดแนะนำ <button class="lnk" data-act="act-autooff">ปิด</button></p>`;
+  else if(actAutoOff()) h+=`<p class="dh-edited dh-act">🕘 ปิดการตั้งเวลาตามรูปอัตโนมัติอยู่ <button class="lnk" data-act="act-autoon">เปิด</button></p>`;
   h+=`</header><ol class="tl">`+(typeof sugByStop==="function"?(sugByStop(curDay)._top||[]).map(sugRowHtml).join(""):"");
   let carGoneR=curDay>=CARFREE_DAY; let prevKeyR=null; const SUG=sugByStop(curDay); const RECS=dayRecs(curDay), NUMS=stopNumMap(curDay);
   const tmHtml=(it,k,tAct)=>`<div class="tm${tAct?" tm-ed":""}" ${tAct} ${tAct?'role="button" aria-label="แก้เวลา"':""}><span class="t1">${esc(it.t)}</span>${it.e&&it.e!==it.t?`<small>${esc(it.e)}</small>`:""}${it._sh?`<s class="t0">${esc(it._t0)}</s>`:""}</div>`;
@@ -3431,7 +3433,7 @@ async function renameGroup(g,c){ for(const m of g.list){ m.place=Object.assign({
 function sugByStop(di){ const its=planItems(di).filter(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"); const out={}; placeGroups().filter(g=>g.day===di).forEach(g=>{ const t=g.list[0].takenAt?jstMin(g.list[0].takenAt):null; let after="_top"; if(t!=null) its.forEach(x=>{ if(toMin(x.t)<=t) after=x._i; }); (out[after]=out[after]||[]).push(g); }); return out; }
 function placeNameState(p){ if(p.name) return ""; if(p.noName) return "ไม่พบชื่อจากตำแหน่งที่ถ่าย · กด \"ไม่ใช่ที่นี่? เลือกชื่อ\" เพื่อตั้งชื่อเอง"; return navigator.onLine?"กำลังหาชื่อจากตำแหน่งที่ถ่าย…":"ต่อเน็ตเพื่อหาชื่อ หรือกด \"ไม่ใช่ที่นี่? เลือกชื่อ\" เพื่อตั้งเอง"; }
 function sugRowHtml(g){ const t=g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""; const nm=placeLabel(g.place);
-  const why=g.place.fid!=null?"ร้านในลิสต์ของฉัน":g.place.pk?"จุดในทริปนี้ (วันอื่น)":g.place.picked?"ชื่อที่คุณเลือก":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย":"";
+  const why=g.place.out?`เวลาไม่ตรงกับรูปส่วนใหญ่ของ “${g.place.out}”`:g.place.fid!=null?"ร้านในลิสต์ของฉัน":g.place.pk?"จุดในทริปนี้ (วันอื่น)":g.place.picked?"ชื่อที่คุณเลือก":g.place.guess?"แนะนำจากตำแหน่งที่ถ่าย":"";
   return `<li class="ti k-sug${isJust(g)?" just":""}" data-sug="${esc(g.id)}" data-pgm="${esc(grpOf(g).join(","))}"><div class="tm"><span class="t1">${esc(t)}</span></div><div class="pin sug">?</div><article class="sc"><div class="sc-kind"><span class="sug-tag">แนะนำจากรูปของเรา</span><span>${esc(why)}</span></div><h3 class="sc-name">${esc(nm)}</h3><p class="sc-note">${placeNameState(g.place)?esc(placeNameState(g.place))+" · ":""}ถ่ายที่นี่ ${esc(mediaWord(g.list))} · ไม่ตรงกับจุดไหนในแผน</p>
     <div class="my-ph">${g.list.slice(0,6).map(m=>`<button class="my-ph-c" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`).join("")}</div>
     <div class="sc-act"><button class="btn small primary" data-act="ph-addstop" data-g="${esc(g.id)}">เพิ่มเข้าแผน</button><button class="lnk" data-act="ph-gopen" data-g="${esc(g.id)}">${pgOpen===g.id?"ปิด":"ไม่ใช่ที่นี่? เลือกชื่อ"}</button><button class="lnk" data-act="ph-gmv" data-g="${esc(g.id)}">${pgMove===g.id?"ปิด":"ย้ายไปจุดในแผน"}</button><button class="lnk" data-act="ph-gleg" data-g="${esc(g.id)}">ย้ายไประหว่างทาง</button></div>
@@ -3514,11 +3516,11 @@ const PDB={db:null,
   del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id+"~s")),this.tx("blob","readwrite",s=>s.delete(id+"~p"))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
 if(VIEW){ PDB.all=()=>vgGet(VIEW.id+":p").then(p=>((p&&p.ph)||[]).map(m=>Object.assign({},m))); PDB.putMeta=()=>Promise.resolve(); PDB.putBlob=()=>Promise.resolve(); PDB.getBlob=()=>Promise.resolve(null); PDB.del=()=>Promise.resolve(); }
-PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
+PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); setTimeout(actAutoKick,1500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
 /* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
    so this copy never writes an old plan back (that is how a removed stop could come back) */
 var TAB_ID=Math.random().toString(36).slice(2), phRevSeen=(store.get("phRev",null)||{}).t||0, phSyncT=null;
-function phChanged(){ vsDirty(); clearTimeout(phSyncT); phSyncT=setTimeout(()=>{ const r={t:Date.now(),by:TAB_ID}; phRevSeen=r.t; store.set("phRev",r); },600); }
+function phChanged(){ vsDirty(); actAutoKick(); clearTimeout(phSyncT); phSyncT=setTimeout(()=>{ const r={t:Date.now(),by:TAB_ID}; phRevSeen=r.t; store.set("phRev",r); },600); }
 async function reloadPhotos(){ const r=store.get("phRev",null); if(!r||r.by===TAB_ID||r.t<=phRevSeen||!phReady||(phImport&&!phImport.end)) return; phRevSeen=r.t;
   try{ const l=await PDB.all(); phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); refreshPhotoViews(); if(map&&curTab==="map") drawMap(false); }catch(e){} }
 function reloadStored(){ let ch=false; const e=store.get("edits",{}); if(JSON.stringify(e)!==JSON.stringify(edits)){ edits=e; ch=true; } const v=store.get("visited",{}); if(JSON.stringify(v)!==JSON.stringify(visited)){ visited=v; ch=true; }
@@ -5807,6 +5809,33 @@ function actualTimes(di){ const out=[]; planItems(di).forEach(it=>{ if(it.k==="d
     const late=x.a-x.pa; x.warn=Math.abs(late)>120?`ต่างจากแผน ${Math.round(Math.abs(late)/60*10)/10} ชม. รูปอาจอยู่ผิดจุด`:x.n<3?`มีรูปแค่ ${x.n} รูป เวลาอาจสั้นเกินจริง`:""; out.push(x); });
   return out; }
 var actSel=null, actSnapped=false;
+/* a trip that is over: the plan follows the photos. Each stop with photos takes its time from them (the main run only);
+   a run of photos hours away from the rest at that stop is lifted out and shown as a suggestion at its own time */
+var actAutoT=null, actAutoBusy=false;
+function tripOver(){ try{ return jst().date>DAYS[DAYS.length-1].date; }catch(e){ return false; } }
+function actAutoOff(){ return tripOver()&&store.get("actAuto",true)===false; }
+function actAutoOn(){ return !VIEW&&tripOver()&&store.get("actAuto",true)!==false&&phMeta.some(m=>m.takenAt&&m.key); }
+function actAutoKick(){ if(VIEW||!tripOver()||store.get("actAuto",true)===false) return; clearTimeout(actAutoT); actAutoT=setTimeout(actAutoRun,900); }
+async function splitOutliers(di){ let n=0; for(const it of planItems(di)){ if(it.k==="drive"||it.k==="train"||it.k==="opt"||it.k==="hotel"||it.k==="night") continue;
+    const L=phMeta.filter(m=>m.day===di&&m.key===it._i&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&jstDate(m.takenAt)===DAYS[di].date).sort((a,b)=>a.takenAt-b.takenAt);
+    if(L.length<2) continue; const runs=[[L[0]]]; for(let i=1;i<L.length;i++){ if((L[i].takenAt-L[i-1].takenAt)/6e4>60) runs.push([]); runs[runs.length-1].push(L[i]); }
+    if(runs.length<2) continue; const main=runs.slice().sort((a,b)=>b.length-a.length)[0];
+    for(const r of runs){ if(r===main||r.length>=main.length) continue; const g=r.filter(m=>m.auto!==false&&m.lat!=null); if(!g.length) continue;
+      const nm=(P[it.p]||[])[0]||it.n||"จุดที่ถ่ายรูป"; for(const m of g){ m.key=null; m.place={name:nm,lat:g[0].lat,lng:g[0].lng,out:it.n||nm}; m.auto=false; m.outlier=true; await PDB.putMeta(m); n++; } } }
+  return n; }
+/* a stop with photos starts when its photos say; stops before it without photos give up time (never under 10 minutes) so it can */
+function actSqueeze(di){ for(let pass=0;pass<30;pass++){ const its=planItems(di); const i=its.findIndex(x=>x._n&&x._n.act&&x._n.at&&toMin(x.t)>toMin(x._n.at)); if(i<0) return;
+    let over=toMin(its[i].t)-toMin(its[i]._n.at), did=false;
+    for(let j=i-1;j>=0&&over>0;j--){ const x=its[j]; if(x._n&&x._n.act) break; if(x.k==="drive"||x.k==="train"||x.k==="opt"||x.k==="night"||x.fix||!x._n) continue;
+      const n=x._n, d=n.dur!=null?n.dur:origDur(x), cut=Math.min(over,d-10); if(cut<=0) continue; if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=d-cut; over-=cut; did=true; }
+    if(!did) { const n=its[i]._n; n.at=its[i].t; return; } } }
+async function actAutoRun(){ if(actAutoBusy||!phReady||VIEW||!tripOver()||store.get("actAuto",true)===false) return; actAutoBusy=true;
+  try{ const before=JSON.stringify(edits); let moved=0; for(let di=0;di<DAYS.length;di++) moved+=await splitOutliers(di);
+    if(!store.get("actAutoSnap",0)){ try{ snapEdits("ก่อนตั้งเวลาตามรูปอัตโนมัติ"); }catch(e){} store.set("actAutoSnap",Date.now()); }   /* the plan as it was, once, in the edit history */
+    const keep=actSel; actSel=null; for(let di=0;di<DAYS.length;di++){ const ed=edits[di]; if(ed&&ed.list) ed.list.forEach(n=>{ if("sq0" in n){ if(n.sq0==null) delete n.dur; else n.dur=n.sq0; delete n.sq0; } });
+      if(phMeta.some(m=>m.day===di&&m.takenAt)){ applyActual(di); actSqueeze(di); } } actSel=keep;
+    if(JSON.stringify(edits)!==before){ saveEdits(); } if(JSON.stringify(edits)!==before||moved){ if(curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(); drawCustoms&&drawCustoms(); } }
+  catch(e){} finally{ actAutoBusy=false; } }
 var actMoved=null;
 function actualHtml(busy){ if(busy) return `<div class="sk">แผนรายวัน</div><h2>ปรับเวลาแผนตามเวลาจริงในรูป</h2><div class="ph-prog"><div class="ph-bar"><i style="width:60%"></i></div><p><b>กำลังจัดรูปใหม่ตามสถานที่ในแผนล่าสุด…</b></p></div>`;
   const rows=DAYS.map((d,di)=>({d,di,L:actualTimes(di)})); const any=rows.some(r=>r.L.length);
@@ -5819,6 +5848,8 @@ function actualHtml(busy){ if(busy) return `<div class="sk">แผนราย�
 function applyActual(di){ const L=actualTimes(di).filter(x=>!actSel||actSel.has(x.k)); const ed=edits[di]; if(!L.length&&!(ed&&ed.list.some(n=>n.act))) return 0; const e2=materialize(di); const its=planItems(di);
   e2.list.forEach(n=>{ if(n.act&&!L.some(x=>x.it._i===n.key)){ const it=its.find(x=>x._i===n.key); delete n.at; n.at=""; if(it&&n.kind==="base") n.dur=origDur(Object.assign({},it,{t:it._t0||it.t,e:it._e0||it.e})); delete n.act; } });   /* a stop whose photos moved away goes back to flowing with the plan */
   L.forEach(x=>{ const n=e2.list.find(y=>y.key===x.it._i); if(!n) return; n.at=hhmm(x.a); n.dur=x.dur; n.pre=0; n.act=true; }); return L.length; }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-autooff'],[data-act='act-autoon']"); if(!b) return; ev.stopPropagation();
+  if(b.dataset.act==="act-autooff"){ store.set("actAuto",false); renderPlan(); } else { store.set("actAuto",true); actAutoRun().then(()=>renderPlan()); } },true);
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-open'],[data-act='act-apply'],[data-act='act-all']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="act-open"){ actSel=new Set(); openSheet(actualHtml(true)); (async()=>{ phSnap("ปรับเวลาตามรูป"); actMoved=await resortPhotos(true,true); if($("#sheetRoot .sheet")) renderSheet(actualHtml()); })(); return; }
   (async()=>{ snapEdits("ก่อนปรับเวลาตามรูป"); let n=0, days=[]; b.disabled=true; b.textContent="กำลังปรับ…";
