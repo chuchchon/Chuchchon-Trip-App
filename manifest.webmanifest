@@ -1,1 +1,1 @@
-{"name":"Hokkaido Momiji Drive","short_name":"Hokkaido","start_url":"./","display":"standalone","background_color":"#EEF2F0","theme_color":"#EEF2F0","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml"}]}
+{"id": "/Chuchchon-Trip-App/", "name": "Trip Planner", "short_name": "Trips", "start_url": "./planner/", "scope": "./", "display": "standalone", "background_color": "#EEF2F0", "theme_color": "#EEF2F0", "icons": [{"src": "planner/icon.svg", "sizes": "any", "type": "image/svg+xml"}]}

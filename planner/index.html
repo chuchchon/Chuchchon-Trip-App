@@ -105,6 +105,8 @@
 .tpph-gp{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:14px}
 .tpph-gp p{margin:6px 0}.tpph-gp .fl{margin-top:12px;font-weight:600}.tpph-gp ol{margin:4px 0 6px;padding-left:20px}.tpph-gp li{margin:3px 0}
 
+.tp-home-hk{margin:18px 0 4px;font-size:14px}.tp-home-hk a{color:var(--route-blue);font-weight:600;text-decoration:none}
+
 
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -855,6 +857,7 @@ body.tb-dragging{overflow:hidden}
 .act-list li.warn{background:color-mix(in srgb,#B9820F 8%,transparent);margin:0 -10px;padding:6px 10px}.act-warn{font-size:12px;color:#8A4B00;font-weight:600}
 .lb-move{margin-top:8px}.lb-move .c-actions{margin-top:6px}.lb-hid{display:block;margin-top:4px;font-size:12px;color:#F5C26B}
 .lb-cap .lb-up{display:block;margin-top:4px;font-size:12.5px;color:#8FE0A8}
+.hk-back{display:block;font-family:var(--font-body);font-weight:600;font-size:12.5px;color:var(--route-blue,#2F6FB3);text-decoration:none;margin-bottom:1px}
 .lb-cap .lb-gm{display:block;margin-top:4px;font-size:13px}.lb-gm a{color:#9CC8FF;text-decoration:underline}
 .lb-mvhint{margin:8px 0 2px;font-size:13px;line-height:1.5;color:#E8EEF3}.lb-mvhint a{color:#9CC8FF;text-decoration:underline}.lb-mvhint .lnk{color:#9CC8FF;text-decoration:underline;font-size:13px}
 .lb-up a{color:#fff;text-decoration:underline}
@@ -1083,6 +1086,13 @@ const APP_SNAP=(()=>{ try{ return "<!DOCTYPE html>\n"+document.documentElement.o
 const VG_UI=new Set(["tab","day","mapFlags2","theme","tourDone","glite","gvia","gkey","drinkCat","tpCur"]);
 const VIEW=(()=>{ const m=(location.hash||"").match(/view=([a-z0-9]{8,24})/); if(!m) return null; let c=null; try{ c=JSON.parse(localStorage.getItem("view:"+m[1])||"null"); }catch(e){} return {id:m[1],c}; })();
 if(VIEW&&!(VIEW.c&&VIEW.c.s)){ vgLock(VIEW.id); return; }
+/* the installed app starts at the trip list (planner/). Opened from the home-screen icon, the Hokkaido page hands over to it;
+   opened from the trip list it stays, with a link back */
+const HK_HOME=(()=>{ try{ if(typeof TP_PFX!=="undefined"||VIEW||!/\.github\.io$/.test(location.hostname)) return false;
+  const sa=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  if(sa&&!document.referrer&&!sessionStorage.getItem("hkHere")&&!location.hash&&!location.search){ location.replace("planner/"); return "go"; }
+  sessionStorage.setItem("hkHere","1"); return true; }catch(e){ return false; } })();
+if(HK_HOME==="go") return;
 const VMEM=VIEW?Object.assign({},VIEW.c.s.ls||{}):null;
 const store = {
   get(k,d){ if(VMEM&&!VG_UI.has(k)){ const v=VMEM[k]; try{ return v==null?d:JSON.parse(v); }catch(e){ return d; } } try{ const v=localStorage.getItem(tpKey(k)); return v==null?d:JSON.parse(v);}catch(e){ return d; } },
@@ -4201,6 +4211,7 @@ function vgBoot(){ const st=document.createElement("style"); document.body.class
   vgBar.timer=setInterval(()=>vgRefresh(false),180000); setTimeout(()=>vgRefresh(false),4000);
   if(VIEW.c.pub&&VIEW.c.pub.title) document.title=VIEW.c.pub.title+" · ดูทริป"; }
 if(VIEW) setTimeout(vgBoot,0);
+if(HK_HOME===true){ const h=$(".brand"); if(h&&!$(".hk-back")){ const a=document.createElement("a"); a.className="hk-back"; a.href="planner/"; a.textContent="‹ ทริปทั้งหมด"; h.prepend(a); } }
 
 /* ===================== Google Photos =====================
    1. pick photos and videos from the Google Photos library (Google's own picker; Google removes the place, so they go in by the time taken)
@@ -6047,6 +6058,7 @@ function tpHomeHtml(){ const L=tpTripsList(); const t=tpToday();
   ${live.length?`<h2 class="tp-home-sec">กำลังจะไป</h2><ul class="tp-cards">${live.map(x=>tpCard(x)).join("")}</ul>`:""}
   ${past.length?`<h2 class="tp-home-sec">ไปมาแล้ว</h2><ul class="tp-cards">${past.map(x=>tpCard(x)).join("")}</ul>`:""}
   <h2 class="tp-home-sec">ตัวอย่าง</h2><ul class="tp-cards">${tpCard(ex,true)}</ul>
+  ${/\.github\.io$/.test(location.hostname)?`<p class="tp-home-hk"><a href="../">🍁 แอปฮอกไกโดตัวเดิม (รูป Tripbook และลิงก์ที่แชร์ไว้) ›</a></p>`:""}
   <p class="tiny tp-home-note">ทริปและรูปเก็บในเบราว์เซอร์ของเครื่องนี้ · ย้ายเครื่องหรือเก็บไว้: เปิดทริป → แท็บ จำเป็น → สำรอง / กู้คืน</p></div>`; }
 function tpHomePaint(){ let r=$("#tpHome"); if(!r){ r=document.createElement("div"); r.id="tpHome"; r.className="tp-home"; document.body.appendChild(r); } const top=r.scrollTop; r.innerHTML=tpHomeHtml(); r.scrollTop=top; tpCovers(); tpHkOffer(); }
 function tpHomeShow(){ try{ closeSheet(); }catch(e){} tpDelArm=""; tpHomePaint(); document.body.classList.add("tp-home-on"); }
