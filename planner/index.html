@@ -774,6 +774,9 @@ body.tb-open{overflow:hidden}
 /* ---- video & off-plan places ---- */
 .my-ph-c,.ph-cell{position:relative}
 .my-ph-c:has(.vb),.ph-cell:has(.vb){background:#1C2228}
+.ph-tm{position:absolute;right:4px;bottom:4px;font-style:normal;font-size:10.5px;font-weight:600;color:#fff;background:rgba(0,0,0,.55);padding:1px 5px;border-radius:6px;pointer-events:none;font-variant-numeric:tabular-nums}
+.ph-tm.other{background:#C0392B}
+.gal-sort{margin-top:-2px}.gal-tr{font-variant-numeric:tabular-nums;color:var(--route-blue);margin-right:4px}
 .vb{position:absolute;left:4px;bottom:4px;font-style:normal;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.6);padding:1px 6px;border-radius:999px;pointer-events:none}
 .lb.my video{max-width:100%;max-height:62vh;border-radius:10px;background:#000}
 .lb-grp{display:flex;gap:6px;align-items:center;font-size:13px;color:#ddd;margin-top:6px;justify-content:center}
@@ -2457,7 +2460,7 @@ document.addEventListener("click",ev=>{
   if(a==="cs-qtsave"){ const ed=materialize(qt.di); applyTime(ed,qt.di,qt.key,qt.s,qt.e); saveEdits(); qt=null; closeSheet(); renderPlan(); drawCustoms(); return; }
   if(a==="cs-qtauto"){ const ed=materialize(qt.di); const n=ed.list.find(x=>x.key===qt.key); if(n){ n.at=""; delete n.fixAt; } saveEdits(); qt=null; closeSheet(); renderPlan(); return; }
   if(a==="cs-promote"){ readDraft(); draft.promote=!draft.promote; renderAddStop(); return; }
-  if(a==="cs-save"){ readDraft(); const ed=materialize(draft.day); applyDraft(ed,draft); saveEdits(); const mv=draft.movePh, dd=draft.day, kk=draft.key; draft=null; closeSheet();
+  if(a==="cs-save"){ readDraft(); const pre={}; if(draft.movePh) planItems(draft.day).forEach(x=>{ pre[x._i]=x.t; }); const ed=materialize(draft.day); applyDraft(ed,draft); saveEdits(); const mv=draft.movePh, dd=draft.day, kk=draft.key; if(mv&&draft.mode==="add") fitNewStop(dd,kk,pre); draft=null; closeSheet();
     if(mv&&mv.length){ (async()=>{ for(const id of mv){ const x=phMeta.find(p=>p.id===id); if(!x) continue; x.day=dd; x.key=kk; x.place=null; x.auto=false; x.byTime=false; x.bySess=false; await PDB.putMeta(x); } refreshPhotoViews(); renderPlan(); })(); }
     renderPlan(); drawCustoms(); return; }
   if(a==="cs-del"){ const nPh=photosFor(draft.day,draft.key).length; if(nPh&&!draft.delOk){ draft.delOk=true; b.classList.add("danger"); b.textContent=`แตะอีกครั้งเพื่อ${b.textContent.trim()} (รูป ${nPh} รูปไม่หาย)`; return; }
@@ -3036,23 +3039,42 @@ function sugRowHtml(g){ const t=g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenA
     ${pgJustHtml(g)}${pgOpen===g.id?pgPickHtml(g):""}${pgMove===g.id?pgMoveHtml(g):""}</article></li>`; }
 function pgPickHtml(g){ const c=g.place.cands||[]; return `<div class="pg-pick">${c.length?`<p class="tiny">สถานที่ใกล้ตำแหน่งที่ถ่าย</p>${c.map((x,i)=>`<button class="pg-c${x.name===g.place.name?" on":""}" data-act="ph-gpick" data-g="${esc(g.id)}" data-i="${i}"><b>${esc(x.name)}</b><span>${esc([x.kind,x.src].filter(Boolean).join(" · "))}</span></button>`).join("")}`:`<p class="tiny">ยังหาชื่อที่ใกล้ ๆ ไม่ได้${navigator.onLine?"":" (ออฟไลน์)"}</p>`}
   <div class="pg-own"><input class="inp" id="pg-in" placeholder="หรือพิมพ์ชื่อเอง" value=""><button class="btn small" data-act="ph-gname" data-g="${esc(g.id)}">ใช้ชื่อนี้</button></div></div>`; }
+/* the time a photo was taken, on its corner; a photo from another day says which day, so it stands out */
+function phTmBadge(m,di){ const d=jstDate(m.takenAt), t=fmtMin(jstMin(m.takenAt));
+  if(DAYS[di]&&d!==DAYS[di].date){ const j=DAYS.findIndex(x=>x.date===d); return `<i class="ph-tm other">${j>=0?"D"+DAYS[j].n:Number(d.slice(8))+"/"+Number(d.slice(5,7))} ${t}</i>`; }
+  return `<i class="ph-tm">${t}</i>`; }
+/* how long we were there, from the first and last photo, with a little before and after */
+function phSpanDur(t0,t1){ if(!t0) return 30; return Math.max(15,Math.ceil(((t1-t0)/60000+10)/5)*5); }
+/* a stop added at the time its photos were taken: the stop before it ends in time (shorter, never under 10 minutes),
+   and it ends before the next stop has to start, so the day's timeline stays where it was */
+function fitNewStop(di,key,pre){ try{ const ed=materialize(di); const nd=ed.list.find(x=>x.key===key); if(!nd||!nd.at) return;
+  let its=planItems(di), i=its.findIndex(x=>x._i===key); if(i<0) return;
+  const want=toMin(nd.at), got=toMin(its[i].t);
+  if(got>want){ const prev=its.slice(0,i).reverse().find(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"&&x._n);
+    if(prev&&prev.k!=="night"&&!prev.fix){ const pn=prev._n, pd=pn.dur!=null?pn.dur:origDur(prev); pn.dur=Math.max(10,pd-(got-want)); } }
+  its=planItems(di); i=its.findIndex(x=>x._i===key);
+  const next=its.slice(i+1).find(x=>x.k!=="drive"&&x.k!=="train"&&x.k!=="opt");
+  /* the next stop keeps the time it had: this stop ends just before it (shorter if it would push it, longer to fill what the stop before gave up) */
+  if(next&&pre&&pre[next._i]){ const over=toMin(next.t)-toMin(pre[next._i]); if(over) nd.dur=Math.max(10,(nd.dur||30)-over); }
+  saveEdits(); }catch(e){} }
 function gmPin(lat,lng){ return `https://www.google.com/maps/search/?api=1&query=${(+lat).toFixed(6)},${(+lng).toFixed(6)}`; }
 /* a new stop where a photo was taken: the add sheet opens on that spot, the name can be typed or searched, and the photos go into it on save */
 function openAddStopForPhotos(m,ids){ const ps=phMeta.filter(x=>ids.includes(x.id)); const ts=ps.map(x=>x.takenAt).filter(Boolean); const t0=ts.length?Math.min(...ts):null, t1=ts.length?Math.max(...ts):null;
-  let di=m.day; if(di==null&&t0){ const dt=new Date(t0+(typeof tzo==="function"?tzo(t0):9*3600e3)).toISOString().slice(0,10); di=DAYS.findIndex(d=>d.date===dt); } if(di==null||di<0) di=curDay;
+  let di=m.day; if(di==null&&t0){ const dt=jstDate(t0); di=DAYS.findIndex(d=>d.date===dt); } if(di==null||di<0) di=curDay;
   if(curDay!==di) selectDay(di);
   const tm=t0?jstMin(t0):null, ed=materialize(di), its=planItems(di);
   const before=tm==null?null:its.filter(x=>x.k!=="drive"&&x.k!=="train"&&toMin(x.t)<=tm&&ed.list.some(n=>n.key===x._i)).pop();
   openAddStop(before?before._i:null);
-  Object.assign(draft,{atStart:!before,afterKey:before?before._i:null,name:(m.place&&m.place.name)||"",lat:m.lat,lng:m.lng,note:"เพิ่มจากรูปของเรา",dur:t0?Math.max(30,Math.round((t1-t0)/60000)+20):45,at:tm!=null?fmtMin(tm):"",movePh:ids});
+  Object.assign(draft,{atStart:!before,afterKey:before?before._i:null,name:(m.place&&m.place.name)||"",lat:m.lat,lng:m.lng,note:"เพิ่มจากรูปของเรา",dur:phSpanDur(t0,t1),at:tm!=null?fmtMin(Math.floor((tm-5)/5)*5):"",movePh:ids});
   renderAddStop(); if(!draft.name){ const d0=draft; reverseName([m.lat,m.lng]).then(n=>{ if(draft===d0&&!draft.name){ draft.name=n||"จุดที่ถ่ายรูป"; const i=$("#cs-name"); if(i&&!i.value) i.value=draft.name; const pk=$(".cs-picked b"); if(pk) pk.textContent="📌 "+draft.name; } }); } }
 async function addStopFromPhotos(di,ids,place){ const ps=phMeta.filter(m=>ids.includes(m.id)); if(!ps.length||!place) return null;
   const ts=ps.map(m=>m.takenAt).filter(Boolean); const t0=ts.length?Math.min(...ts):null, t1=ts.length?Math.max(...ts):null;
   let name=place.name; if(!name) name=(await reverseName([place.lat,place.lng]))||"จุดที่ถ่ายรูป";
   const ed=materialize(di); const tm=t0?jstMin(t0):null; const its=planItems(di);
   const before=tm==null?null:its.filter(x=>x.k!=="drive"&&x.k!=="train"&&toMin(x.t)<=tm&&ed.list.some(n=>n.key===x._i)).pop();
-  const n={key:"cs_"+Date.now().toString(36),kind:"custom",name,lat:place.lat,lng:place.lng,note:"เพิ่มจากรูปของเรา",dur:t0?Math.max(30,Math.round((t1-t0)/60000)+20):45,at:tm!=null?fmtMin(tm):"",pre:0}; regCustom(n);
-  const i=before?ed.list.findIndex(x=>x.key===before._i):-1; ed.list.splice(i+1,0,n); saveEdits();
+  const pre={}; its.forEach(x=>{ pre[x._i]=x.t; });
+  const n={key:"cs_"+Date.now().toString(36),kind:"custom",name,lat:place.lat,lng:place.lng,note:"เพิ่มจากรูปของเรา",dur:phSpanDur(t0,t1),at:tm!=null?fmtMin(Math.floor((tm-5)/5)*5):"",pre:0}; regCustom(n);
+  const i=before?ed.list.findIndex(x=>x.key===before._i):-1; ed.list.splice(i+1,0,n); saveEdits(); fitNewStop(di,n.key,pre);
   for(const m of ps){ m.day=di; m.key=n.key; m.place=null; m.auto=false; await PDB.putMeta(m); }
   renderPlan(); drawCustoms(); return n; }
 /* --- backup as a plain ZIP (stored, no compression): data.json + the original media, no base64 --- */
@@ -3354,14 +3376,20 @@ function galTargetsHtml(){ const g=galState, di=g.pickDay??g.day; const its=plan
 function galLists(){ const g=galState; const stop=photosFor(g.day,g.key), day=dayOrder(g.day); return {stop,day,list:g.all?day:stop}; }
 function galleryHtml(){ const g=galState, d=DAYS[g.day]; const {stop,day,list}=galLists();
   const sel=g.sel||(g.sel=new Set()), on=galSelOn();
-  const cell=m=>`<button class="ph-cell${sel.has(m.id)?" sel":""}" data-act="ph-galopen" data-id="${m.id}" aria-pressed="${sel.has(m.id)}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`;
+  const cell=m=>`<button class="ph-cell${sel.has(m.id)?" sel":""}" data-act="ph-galopen" data-id="${m.id}" aria-pressed="${sel.has(m.id)}"><img data-phid="${m.id}" alt="">${phBadge(m)}${m.takenAt?phTmBadge(m,g.day):""}</button>`;
   let body="";
   if(g.all){ const gk=m=>m.key||("pl:"+(m.place?m.place.name||"":"")); const lab=m=>m.key||!m.place?keyLabel(g.day,m.key).replace(/^D\d+ · /,""):placeLabel(m.place);
     let ck=null, buf=[]; const flush=()=>{ if(buf.length) body+=`<h3 class="gal-h">${esc(lab(buf[0]))} <span class="muted">${buf.length}</span>${on?`<button class="lnk" data-act="ph-galgrp" data-ids="${buf.map(m=>m.id).join(",")}">${buf.every(m=>sel.has(m.id))?"ไม่เลือกกลุ่มนี้":"เลือกทั้งกลุ่ม"}</button>`:""}</h3><div class="ph-grid gal-grid">${buf.map(cell).join("")}</div>`; buf=[]; };
-    list.forEach(m=>{ if(gk(m)!==ck){ flush(); ck=gk(m); } buf.push(m); }); flush(); }
+    if(g.byTime){ /* the day as it happened: in the order taken, a heading each time the place changes, so one in the wrong place stands out */
+      const L=list.slice().sort((a,b)=>(a.takenAt||9e15)-(b.takenAt||9e15)); let cur=null, run=[];
+      const tm=m=>m.takenAt?fmtMin(jstMin(m.takenAt)):"";
+      const out=()=>{ if(!run.length) return; const a=tm(run[0]), z=tm(run[run.length-1]); body+=`<h3 class="gal-h"><span class="gal-tr">${esc(a)}${z&&z!==a?"–"+esc(z):""}</span> ${esc(lab(run[0]))} <span class="muted">${run.length}</span>${on?`<button class="lnk" data-act="ph-galgrp" data-ids="${run.map(m=>m.id).join(",")}">${run.every(m=>sel.has(m.id))?"ไม่เลือกกลุ่มนี้":"เลือกทั้งกลุ่ม"}</button>`:""}</h3><div class="ph-grid gal-grid">${run.map(cell).join("")}</div>`; run=[]; };
+      L.forEach(m=>{ if(gk(m)!==cur){ out(); cur=gk(m); } run.push(m); }); out(); }
+    else { list.forEach(m=>{ if(gk(m)!==ck){ flush(); ck=gk(m); } buf.push(m); }); flush(); } }
   else body=`<div class="ph-grid gal-grid">${list.map(cell).join("")}</div>`;
   return `<div id="gal-root"><div class="sk">D${d.n} · ${esc(d.dow)} ${Number(d.date.slice(8))} ${MON(d.date)}</div><h2>${esc(keyLabel(g.day,g.key).replace(/^D\d+ · /,""))}</h2>
   <div class="gal-tabs" role="group" aria-label="แสดงรูปของ"><button class="chip${g.all?"":" on"}" data-act="ph-galscope" data-all="0" aria-pressed="${!g.all}">จุดนี้ · ${mediaWord(stop)}</button><button class="chip${g.all?" on":""}" data-act="ph-galscope" data-all="1" aria-pressed="${!!g.all}">ทั้งวัน D${d.n} · ${mediaWord(day)}</button></div>
+  ${g.all?`<div class="gal-tabs gal-sort" role="group" aria-label="เรียง"><button class="chip${g.byTime?"":" on"}" data-act="ph-galsort" data-t="0">ตามจุดในแผน</button><button class="chip${g.byTime?" on":""}" data-act="ph-galsort" data-t="1">🕘 ตามเวลาที่ถ่าย</button></div>`:""}
   ${g.flash?`<div class="gal-flash" role="status">${esc(g.flash)} <button class="lnk" data-act="ph-galundo">ย้อน</button></div>`:""}
   <div class="gal-hint">${on?`<span class="tiny">แตะรูปเพื่อเลือก/ไม่เลือก</span>`:`<span class="tiny">แตะรูปเพื่อดูใหญ่ · กดค้างเพื่อเลือก</span>`}<button class="btn small" data-act="ph-galsel">${on?"เสร็จ":"เลือกหลายรูป"}</button></div>
   ${body||`<p class="tiny">ไม่มีรูปแล้ว</p>`}
@@ -4800,6 +4828,7 @@ document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-a
   if(a==="ph-gmove"){ const g=placeGroups().find(x=>x.id===b.dataset.g); if(g){ openMyPhoto(g.list[0].id); phView.move=true; drawMyPhoto(); } return; }
   if(a==="ph-open"){ openMyPhoto(b.dataset.id,b.dataset.list?b.dataset.list.split(","):null); return; }
   if(a==="ph-strip"){ const d=+b.dataset.d, k=b.dataset.k; if(photosFor(d,k).length>=GAL_MIN){ galState={day:d,key:k,all:false,sel:new Set()}; galPaint(true); } else openMyPhoto(b.dataset.id); return; }
+  if(a==="ph-galsort"){ if(galState){ galState.byTime=b.dataset.t==="1"; galPaint(); } return; }
   if(a==="ph-galscope"){ if(galState){ galState.all=b.dataset.all==="1"; galState.flash=""; galPaint(); } return; }
   if(a==="ph-galopen"){ if(!galState) return; if(galState.swallow){ galState.swallow=false; return; }
     if(galSelOn()){ const s2=galState.sel, id=b.dataset.id; s2.has(id)?s2.delete(id):s2.add(id); if(!s2.size) galState.picking=false; galPaint(); return; }
