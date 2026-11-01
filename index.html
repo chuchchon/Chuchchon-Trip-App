@@ -794,6 +794,7 @@ body.tb-dragging{overflow:hidden}
 .act-list li.warn{background:color-mix(in srgb,#B9820F 8%,transparent);margin:0 -10px;padding:6px 10px}.act-warn{font-size:12px;color:#8A4B00;font-weight:600}
 .lb-move{margin-top:8px}.lb-move .c-actions{margin-top:6px}.lb-hid{display:block;margin-top:4px;font-size:12px;color:#F5C26B}
 .lb-cap .lb-up{display:block;margin-top:4px;font-size:12.5px;color:#8FE0A8}
+.leg-modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0 8px}.leg-m{display:flex;align-items:center;gap:8px;padding:10px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:14px;cursor:pointer}.leg-m input{margin:0;accent-color:var(--route-blue)}.leg-m:has(input:checked){border-color:var(--route-blue);box-shadow:0 0 0 1px var(--route-blue) inset}
 .hk-back{display:block;font-family:var(--font-body);font-weight:600;font-size:12.5px;color:var(--route-blue,#2F6FB3);text-decoration:none;margin-bottom:1px}
 .lb-cap .lb-gm{display:block;margin-top:4px;font-size:13px}.lb-gm a{color:#9CC8FF;text-decoration:underline}
 .lb-mvhint{margin:8px 0 2px;font-size:13px;line-height:1.5;color:#E8EEF3}.lb-mvhint a{color:#9CC8FF;text-decoration:underline}.lb-mvhint .lnk{color:#9CC8FF;text-decoration:underline;font-size:13px}
@@ -1593,11 +1594,11 @@ function nowItemIndex(day){
   return best;
 }
 const DOW_FULL={"อา":"อาทิตย์","จ":"จันทร์","อ":"อังคาร","พ":"พุธ","พฤ":"พฤหัสบดี","ศ":"ศุกร์","ส":"เสาร์"};
-function legIcon(it){ if(it.k==="drive") return I.car; if(it.walk) return I.walk; if(it.bus) return I.bus; return I.train; }
+function legIcon(it){ if(it.k==="drive"||it.mode==="car") return I.car; if(it.walk) return I.walk; if(it.bus||it.mode==="bus") return I.bus; return I.train; }
 function legUrl(it){ const o=pointTarget(it.from), d=pointTarget(it.to); const mode=it.k==="drive"?"driving":it.walk?"walking":"transit";
   let u="https://www.google.com/maps/dir/?api=1&travelmode="+mode+"&origin="+enc(o.q||(o.lat+","+o.lng)); if(o.pid) u+="&origin_place_id="+o.pid;
   u+="&destination="+enc(d.q||(d.lat+","+d.lng)); if(d.pid) u+="&destination_place_id="+d.pid; return u; }
-function legLabel(it){ return it.k==="drive"?"ขับรถ":it.bus?"รถบัส":it.walk?"เดิน":it.transit?"รถไฟใต้ดิน / รถบัส":"รถไฟ"; }
+function legLabel(it){ return it.k==="drive"?"ขับรถ":it.mode==="car"?"รถยนต์ / แท็กซี่":it.mode==="flight"?"เครื่องบิน":it.mode==="ferry"?"เรือ":it.bus||it.mode==="bus"?"รถบัส":it.walk?"เดิน":it.mode==="train"?"รถไฟ":it.transit?"รถไฟใต้ดิน / รถบัส":"รถไฟ"; }
 function recTilesHtml(di,list){
   if(!list||!list.length) return ""; const places=list.filter(r=>r.kind==="place"), food=list.filter(r=>r.kind==="food"); const all=places.concat(food);
   return `<li class="recs-row"><div class="recs"><div class="recs-h">แนะนำแถวนี้ <span>${all.length}</span></div><div class="tiles">${all.map(r=>{
@@ -1623,12 +1624,12 @@ function renderPlan(){
   planItems(curDay).forEach(it=>{ const pkR=prevKeyR; if(it.k!=="drive"&&it.k!=="opt"&&it.k!=="train") prevKeyR=it._i;
     const k=it._i; navMode=carGoneR?(it.walk?"walking":"transit"):"driving";
     if(it.k==="drive"||it.k==="train"){
-      const tAct=it.k==="drive"?`data-act="cs-leg" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-min="${it.min}"`:"";
+      const legA=`data-act="cs-leg" data-from="${esc(it.from||"")}" data-to="${esc(it.to||"")}" data-min="${it.min}" data-m="${legCurMode(it)}"${it._n?` data-key="${esc(k)}"`:""}`, tAct=it.from&&it.to&&P[it.from]&&P[it.to]?legA:"";
       const roads=(it.rd||[]).map(roadBadge).join("");
       const sc=(it.sc||[]).map(s=>`<li><i class="thumb sc-th" ${s.img?`data-q="${esc(s.img)}" data-en="" ${s.ll?`data-ll="${s.ll[0]},${s.ll[1]}"`:""}`:""}></i><div><b><span class="tnum">${esc(fmtMin(toMin(it.t)+s.m))}</span> ${esc(s.t)}</b><span>${esc(s.x||"")}</span>${s.story?`<button class="lnk" data-act="story" data-id="${s.story}">เรื่องน่ารู้</button>`:""}</div></li>`).join("");
       h+=`<li class="leg k-${it.k}${it.syn?" syn":""}">${tmHtml(it,k,tAct)}<div class="leg-rail"></div><div class="leg-body"><div class="leg-main"><span class="leg-ic">${legIcon(it)}</span><b>${it.min} นาที</b><span class="leg-to">${legLabel(it)}ไป ${esc(P[it.to][0])}</span>${roads}</div>${it.x?`<p class="leg-note">${esc(it.x)}</p>`:""}
         ${it.steps?`<ol class="leg-steps">${it.steps.map(([m,t])=>`<li><span class="st-ic">${I[m]||I.walk}</span><span>${esc(t)}</span></li>`).join("")}</ol>`:(it.transit&&!it.walk?`<p class="leg-note">กด "วิธีไป" แล้ว Google Maps จะบอกตัวเลือก เช่น เดินไปขึ้นรถไฟใต้ดินหรือรถบัสสายไหน ลงป้ายไหน</p>`:"")}
-        ${myPhotoStrip(curDay,"leg:"+k)}<div class="leg-act">${it.k==="drive"?`<button class="lnk strong" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button><a class="lnk" href="${esc(dirUrl(pointTarget(it.to),"driving"))}" target="_blank" rel="noopener">นำทางจากตรงนี้</a><a class="lnk" href="${esc(legUrl(it))}" target="_blank" rel="noopener">ดูเส้นทางช่วงนี้</a><button class="lnk" data-act="cs-explore" data-key="${esc(pkR||"")}">แวะอะไรดีระหว่างทาง</button>${P[it.from]&&P[it.to]&&km([P[it.from][1],P[it.from][2]],[P[it.to][1],P[it.to][2]])<=2?`<button class="lnk" data-act="cs-lmode" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-m="walk">🚶 ช่วงนี้เดินไป</button>`:""}`:`<a class="lnk" href="${esc(legUrl(it))}" target="_blank" rel="noopener">${I.route}วิธีไปใน Google Maps</a><a class="lnk" href="${esc(dirUrl(pointTarget(it.to),it.walk?"walking":"transit"))}" target="_blank" rel="noopener">นำทางจากตรงนี้</a>${it.carDay?`<button class="lnk" data-act="cs-lmode" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-m="drive">🚗 ช่วงนี้ขับรถไป</button>`:""}`}</div>${sc?`<ul class="leg-sc">${sc}</ul>`:""}</div></li>`;
+        ${myPhotoStrip(curDay,"leg:"+k)}<div class="leg-act">${it.k==="drive"?`<button class="lnk strong" data-act="drive" data-k="${esc(k)}">${I.play}โหมดขับรถ</button><a class="lnk" href="${esc(dirUrl(pointTarget(it.to),"driving"))}" target="_blank" rel="noopener">นำทางจากตรงนี้</a><a class="lnk" href="${esc(legUrl(it))}" target="_blank" rel="noopener">ดูเส้นทางช่วงนี้</a><button class="lnk" data-act="cs-explore" data-key="${esc(pkR||"")}">แวะอะไรดีระหว่างทาง</button>${tAct?`<button class="lnk" ${tAct}>✏️ เปลี่ยนวิธีเดินทาง</button>`:""}${P[it.from]&&P[it.to]&&km([P[it.from][1],P[it.from][2]],[P[it.to][1],P[it.to][2]])<=2?`<button class="lnk" data-act="cs-lmode" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-m="walk">🚶 ช่วงนี้เดินไป</button>`:""}`:`<a class="lnk" href="${esc(legUrl(it))}" target="_blank" rel="noopener">${I.route}วิธีไปใน Google Maps</a><a class="lnk" href="${esc(dirUrl(pointTarget(it.to),it.walk?"walking":"transit"))}" target="_blank" rel="noopener">นำทางจากตรงนี้</a>${it.carDay&&!it.lm?`<button class="lnk" data-act="cs-lmode" data-from="${esc(it.from)}" data-to="${esc(it.to)}" data-m="drive">🚗 ช่วงนี้ขับรถไป</button>`:""}${tAct?`<button class="lnk" ${tAct}>✏️ เปลี่ยนวิธีเดินทาง</button>`:""}`}</div>${sc?`<ul class="leg-sc">${sc}</ul>`:""}</div></li>`;
       return;
     }
     const tAct=`data-act="cs-time" data-key="${esc(k)}"`;
@@ -2054,6 +2055,18 @@ function footLeg(prev,next,_i){
   if(k<=1.6) return walkLeg(prev,next,_i);
   return {k:"train",transit:true,from:prev,to:next,min:Math.max(10,Math.round((k*1.3/22*60+10)/5)*5),x:"รถไฟใต้ดิน/รถราง/รถบัส หรือแท็กซี่ · เวลาโดยประมาณ เช็คเส้นทางจริงในปุ่มนำทาง",syn:true,_i};
 }
+/* a leg by the way the traveller says they went; times are rough, from the distance, until set by hand */
+const LEG_MODES=[["walk","🚶","เดิน"],["transit","🚇","รถไฟใต้ดิน / รถบัสในเมือง"],["train","🚆","รถไฟ"],["bus","🚌","รถบัส"],["drive","🚗","รถยนต์ / แท็กซี่"],["flight","✈️","เครื่องบิน"],["ferry","⛴️","เรือ"]];
+function modeLeg(md,a,b,_i){ const A=[P[a][1],P[a][2]],B=[P[b][1],P[b][2]], k=km(A,B), L={from:a,to:b,_i,syn:true,k:"train",transit:true,mode:md,lm:md};
+  if(md==="walk") return Object.assign(walkLeg(a,b,_i),{lm:md});
+  if(md==="drive"){ const rt=routeFor(a,b); return Object.assign(L,{mode:"car",min:rt?rt.min:roadMin(A,B),x:rt?`รถยนต์ / แท็กซี่ ${rt.km} กม. ตามถนนจริง`:"รถยนต์ / แท็กซี่ · เวลาโดยประมาณจากระยะทาง"}); }
+  if(md==="transit") return Object.assign(L,{mode:undefined,min:Math.max(10,Math.round((k*1.3/22*60+10)/5)*5),x:"รถไฟใต้ดิน / รถราง / รถบัสในเมือง · เวลาโดยประมาณ"});
+  if(md==="train") return Object.assign(L,{min:Math.max(15,Math.round((k*1.2/75*60+25)/5)*5),x:`รถไฟ ~${Math.round(k)} กม. · เวลาโดยประมาณ`});
+  if(md==="bus") return Object.assign(L,{bus:true,min:Math.max(15,Math.round((k*1.3/55*60+15)/5)*5),x:`รถบัส ~${Math.round(k)} กม. · เวลาโดยประมาณ`});
+  if(md==="flight") return Object.assign(L,{min:Math.round((k/750*60+150)/5)*5,x:`เครื่องบิน ~${Math.round(k)} กม. · รวมเวลาไปสนามบินและรอขึ้นเครื่องโดยประมาณ`});
+  if(md==="ferry") return Object.assign(L,{min:Math.max(15,Math.round((k*1.1/25*60+20)/5)*5),x:`เรือ ~${Math.round(k)} กม. · เวลาโดยประมาณ`});
+  return Object.assign(L,{min:30}); }
+function legCurMode(it){ return it.k==="drive"||it.mode==="car"?"drive":it.walk?"walk":it.mode==="flight"||it.mode==="ferry"||it.mode==="train"?it.mode:it.bus||it.mode==="bus"||it.mode==="transfer"?"bus":it.transit?"transit":"train"; }
 function roadMin(a,b){ const d=km(a,b)*1.35; const v=d>25?45:d>8?35:25; return Math.max(5,Math.round(d/v*60/5)*5); }
 function planItems(di){
   const d=DAYS[di], ed=edits[di]||(di>=CARFREE_DAY?buildEd(di):null);
@@ -2062,7 +2075,9 @@ function planItems(di){
   let legStart=null;
   ed.list.forEach((n,idx)=>{
     let node;
-    if(n.kind==="base"){ const it=d.items[n.src]; if(!it) return; node=Object.assign({},it,{_i:n.key,_n:n,_t0:it.t,_e0:it.e}); if(n.promote&&node.k==="opt") node.k="stop"; if(n.label) node.n=n.label; }
+    if(n.kind==="base"){ const it=d.items[n.src]; if(!it) return; node=Object.assign({},it,{_i:n.key,_n:n,_t0:it.t,_e0:it.e}); if(n.promote&&node.k==="opt") node.k="stop"; if(n.label) node.n=n.label;
+      if(node.k==="train"&&n.dur!=null) node.min=n.dur;
+      if(node.k==="train"&&n.lm) Object.assign(node,{mode:n.lm==="drive"?"car":n.lm==="transit"||n.lm==="walk"?undefined:n.lm,walk:n.lm==="walk",bus:n.lm==="bus",transit:n.lm==="transit"||n.lm==="walk"||node.transit}); }
     else node={k:"custom",_i:n.key,_n:n,_c:n,n:n.name||"รอ / เลื่อนเวลา",x:n.note||"",p:n.lat!=null?n.key:null,_t0:null};
     if(node.k==="opt"){ out.push(node); return; }
     const startLoc=node.k==="train"?node.from:node.p;
@@ -2071,8 +2086,10 @@ function planItems(di){
       if(!dv&&carGone) dv=footLeg(prevLoc,startLoc,"s"+prevLoc+">"+startLoc);
       if(!dv){ const rt=routeFor(prevLoc,startLoc); const m=rt?rt.min:roadMin([P[prevLoc][1],P[prevLoc][2]],[P[startLoc][1],P[startLoc][2]]);
         dv={k:"drive",from:prevLoc,to:startLoc,min:m,rd:[],sc:[],syn:true,x:rt?`ตามเส้นทางถนนจริง ${rt.km} กม. (ประมาณการ เผื่อถนนญี่ปุ่นช้าแล้ว)`:"เวลาโดยประมาณจากระยะทาง · กำลังคำนวณเส้นทางจริงเมื่อมีเน็ต",_i:"s"+prevLoc+">"+startLoc}; }
-      if(!carGone&&dv.k==="drive"){ const md=legMode(di,dv.from,dv.to); if(md==="walk"||(md==null&&!(di===3&&dv.to==="station")&&km([P[dv.from][1],P[dv.from][2]],[P[dv.to][1],P[dv.to][2]])<=WALK_KM)) dv=Object.assign(walkLeg(dv.from,dv.to,dv._i),{carDay:true}); }
-      if(dv.k==="drive"){ const ov=legOverride(di,dv.from,dv.to); if(ov!=null){ dv=Object.assign({},dv,{min:ov,_ov:1,x:"เวลาขับที่ตั้งเอง (เช่น จาก Google Maps)"}); } }
+      const md=legMode(di,dv.from,dv.to);
+      if(!carGone&&dv.k==="drive"){ if(md==="walk"||(md==null&&!(di===3&&dv.to==="station")&&km([P[dv.from][1],P[dv.from][2]],[P[dv.to][1],P[dv.to][2]])<=WALK_KM)) dv=Object.assign(walkLeg(dv.from,dv.to,dv._i),{carDay:true}); }
+      if(md&&!(md==="walk"&&!carGone)&&!(md==="drive"&&!carGone)) dv=Object.assign(modeLeg(md,dv.from,dv.to,dv._i),{carDay:!carGone});
+      { const ov=legOverride(di,dv.from,dv.to); if(ov!=null){ dv=Object.assign({},dv,{min:ov,_ov:1,x:dv.k==="drive"?"เวลาขับที่ตั้งเอง (เช่น จาก Google Maps)":"เวลาเดินทางที่ตั้งเอง"}); } }
       dv.t=fmtMin(cur); dv._t0=null; out.push(dv); if(dv.walk||dv.transit) legStart=cur; cur+=dv.min;
     }
     const dur=n.dur!=null?n.dur:origDur(node);
@@ -2093,15 +2110,20 @@ function simulate(di,fn){ const keep=JSON.stringify(edits[di]||null); materializ
 function previewList(items,fromKey){
   let on=!fromKey; const rows=[];
   items.forEach(it=>{ if(it._i===fromKey) on=true; if(!on||it.k==="opt") return; if(rows.length<7) rows.push(it); });
-  return `<ul class="cs-list">${rows.map(it=>`<li><span class="mono">${esc(it.t)}</span>${it._sh?`<s class="tiny mono">${esc(it._t0)}</s>`:""}<span class="nm">${it.k==="drive"||it.k==="train"?(it.k==="drive"?"🚗":it.walk?"🚶":it.bus?"🚌":"🚇")+" → "+esc(P[it.to][0])+" ("+it.min+" น.)":esc(it.n)}</span>${limWarn(it)}${it._clash?`<span class="c-warn tiny">⚠ เวลาตายตัว ชนแล้ว</span>`:""}</li>`).join("")}</ul>`;
+  return `<ul class="cs-list">${rows.map(it=>`<li><span class="mono">${esc(it.t)}</span>${it._sh?`<s class="tiny mono">${esc(it._t0)}</s>`:""}<span class="nm">${it.k==="drive"||it.k==="train"?(it.k==="drive"||it.mode==="car"?"🚗":it.walk?"🚶":it.mode==="flight"?"✈️":it.mode==="ferry"?"⛴️":it.bus||it.mode==="bus"?"🚌":it.mode==="train"?"🚆":"🚇")+" → "+esc(P[it.to][0])+" ("+it.min+" น.)":esc(it.n)}</span>${limWarn(it)}${it._clash?`<span class="c-warn tiny">⚠ เวลาตายตัว ชนแล้ว</span>`:""}</li>`).join("")}</ul>`;
 }
 function limWarn(it){ return it.lim&&toMin(it.t)>toMin(it.lim)?`<span class="c-warn tiny">⚠ เกิน ${esc(it.lim)}</span>`:""; }
 /* ----- drive time override ----- */
-function legSheet(from,to,min){ const opts=[];for(let m=5;m<=240;m+=5) opts.push(m); const cur=legOverride(curDay,from,to);
-  return `<div class="sk">เวลาขับ</div><h2>${esc(P[from][0])} → ${esc(P[to][0])}</h2><p>ตอนนี้ใช้ <b>${min} นาที</b>${cur!=null?" (ตั้งเอง)":""} · กด "นำทาง" ดูเวลาใน Google Maps แล้วเลือกเวลาที่นี่ แผนทั้งวันจะคำนวณใหม่</p>
-  <div class="c-actions" style="margin:6px 0 10px">${aBtn(dirUrl(pointTarget(to)),"ดูใน Google Maps",I.nav)}</div>
-  <label class="fl" for="leg-min">เวลาขับ</label><select id="leg-min" class="inp">${opts.map(m=>`<option value="${m}"${m===min?" selected":""}>${m<60?m+" นาที":Math.floor(m/60)+" ชม. "+(m%60?m%60+" นาที":"")}</option>`).join("")}</select>
-  <div class="c-actions" style="margin-top:12px">${cur!=null?`<button class="btn small" data-act="cs-legclear" data-from="${esc(from)}" data-to="${esc(to)}">ใช้ค่าประมาณเดิม</button>`:""}<button class="btn small primary" data-act="cs-legsave" data-from="${esc(from)}" data-to="${esc(to)}">บันทึก</button></div>`; }
+function legSheet(from,to,min,key,mode){ const di=curDay, base=!!key; let nd=null; if(base){ const ed=materialize(di); nd=ed.list.find(x=>x.key===key); }
+  const cur=base?(nd&&nd.dur!=null?nd.dur:null):legOverride(di,from,to), md=base?(nd&&nd.lm)||null:legMode(di,from,to);
+  const opts=[]; for(let m=5;m<=240;m+=5) opts.push(m); for(let m=270;m<=1440;m+=30) opts.push(m); if(!opts.includes(min)) opts.push(min); opts.sort((a,b)=>a-b);
+  const fm=m=>m<60?m+" นาที":Math.floor(m/60)+" ชม."+(m%60?" "+m%60+" นาที":"");
+  return `<div class="sk">วิธีเดินทาง</div><h2>${esc(P[from]?P[from][0]:"")} → ${esc(P[to]?P[to][0]:"")}</h2><p>ตอนนี้: <b>${esc((LEG_MODES.find(x=>x[0]===mode)||["","",""])[2])} · ${fm(min)}</b>${cur!=null?" (ตั้งเอง)":""}</p>
+  <label class="fl">ไปด้วย</label><div class="leg-modes" role="radiogroup">${LEG_MODES.map(([v,ic,n])=>`<label class="leg-m"><input type="radio" name="leg-m" value="${v}"${v===mode?" checked":""}><span>${ic} ${esc(n)}</span></label>`).join("")}</div>
+  <label class="fl" for="leg-min">ใช้เวลา</label><select id="leg-min" class="inp"><option value="">ประมาณให้ตามวิธีเดินทางและระยะทาง</option>${opts.map(m=>`<option value="${m}"${cur!=null&&m===cur?" selected":""}>${fm(m)}</option>`).join("")}</select>
+  <p class="tiny" style="margin:6px 0 0">ดูเวลาจริงได้จาก Google Maps แล้วเลือกที่นี่ แผนทั้งวันจะเลื่อนตาม</p>
+  <div class="c-actions" style="margin:8px 0 0">${P[to]?aBtn(dirUrl(pointTarget(to),mode==="walk"?"walking":mode==="drive"?"driving":"transit"),"ดูใน Google Maps",I.nav):""}</div>
+  <div class="c-actions" style="margin-top:12px">${md||cur!=null?`<button class="btn small" data-act="cs-legclear" data-from="${esc(from)}" data-to="${esc(to)}"${base?` data-key="${esc(key)}"`:""}>กลับไปใช้ค่าเดิม</button>`:""}<button class="btn small primary" data-act="cs-legsave" data-from="${esc(from)}" data-to="${esc(to)}" data-min="${min}" data-m="${esc(mode||"")}"${base?` data-key="${esc(key)}"`:""}>บันทึก</button></div>`; }
 /* ----- explore places by category (OpenStreetMap + Wikipedia) ----- */
 const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.private.coffee/api/interpreter","https://maps.mail.ru/osm/tools/overpass/api/interpreter"];
 
@@ -2793,8 +2815,14 @@ document.addEventListener("click",ev=>{
   if(a==="cs-edit"){ openEditItem(b.dataset.key); return; }
   if(a==="cs-reset"){ delete edits[curDay]; saveEdits(); renderPlan(); drawCustoms(); return; }
   if(a==="cs-lmode"){ const ed=materialize(curDay); ed.lmode=ed.lmode||{}; ed.lmode[b.dataset.from+">"+b.dataset.to]=b.dataset.m; saveEdits(); renderPlan(); if(map&&curTab==="map") drawMap(false); return; }
-  if(a==="cs-leg"){ openSheet(legSheet(b.dataset.from,b.dataset.to,+b.dataset.min)); return; }
-  if(a==="cs-legsave"||a==="cs-legclear"){ const ed=materialize(curDay); ed.legs=ed.legs||{}; const k=b.dataset.from+">"+b.dataset.to; if(a==="cs-legsave") ed.legs[k]=+$("#leg-min").value; else delete ed.legs[k]; saveEdits(); closeSheet(); renderPlan(); return; }
+  if(a==="cs-leg"){ openSheet(legSheet(b.dataset.from,b.dataset.to,+b.dataset.min,b.dataset.key||"",b.dataset.m||"")); return; }
+  if(a==="cs-legsave"||a==="cs-legclear"){ const ed=materialize(curDay); const k=b.dataset.from+">"+b.dataset.to, save=a==="cs-legsave";
+    const r=$("input[name=leg-m]:checked"), m=save&&r?r.value:"", v=save?($("#leg-min")||{}).value:"", changed=m&&m!==b.dataset.m;
+    if(b.dataset.key){ const nd=ed.list.find(x=>x.key===b.dataset.key); if(nd){ if(!save){ delete nd.lm; delete nd.dur; } else { if(m) nd.lm=m; if(v) nd.dur=+v; } } }   /* a planned journey keeps its own time unless a new one is chosen */
+    else { ed.legs=ed.legs||{}; ed.lmode=ed.lmode||{};
+      if(!save){ delete ed.legs[k]; delete ed.lmode[k]; }
+      else { if(changed) ed.lmode[k]=m; if(v) ed.legs[k]=+v; else delete ed.legs[k]; } }
+    saveEdits(); closeSheet(); renderPlan(); if(map&&curTab==="map") drawMap(false); return; }
   if(a==="cs-explore"){ openAddStop(b.dataset.key||undefined); if(draft){ xp.cat="view"; xp.cats=["view"]; exLocate(xp); } return; }
   if(a==="cs-reloc"){ readDraft(); const pp=draft.baseP&&P[draft.baseP]; Object.assign(draft,{reloc:true,name:draft.name||draft.title||draft.baseName||"",lat:pp?pp[1]:null,lng:pp?pp[2]:null}); renderAddStop(); setTimeout(()=>{ const q=$("#cs-q"); if(q) q.focus(); },60); return; }
   if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng,q:r.q||null}); if(r.needName) reverseName([r.lat,r.lng]).then(n=>{ if(n&&draft&&draft.lat===r.lat&&draft.name==="ตำแหน่งที่วาง"){ draft.name=n; renderAddStop(); } }); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
