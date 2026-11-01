@@ -3764,6 +3764,7 @@ function dayOrder(di){ const its=planItems(di); const pos={}; its.forEach((x,i)=
   const at=m=>{ if(m.key&&m.key.startsWith("leg:")) return pos[m.key.slice(4)]??999; if(m.key) return pos[m.key]??999;
     if(m.place){ const t=m.takenAt?jstMin(m.takenAt):null; let k=-1; if(t!=null) its.forEach((x,i)=>{ if(x.k!=="opt"&&toMin(x.t)<=t) k=i; }); return k+0.5; } return 9999; };
   return phMeta.filter(m=>m.day===di).map(m=>[m,at(m)]).sort((a,b)=>a[1]-b[1]||tbOrd(a[0])-tbOrd(b[0])).map(x=>x[0]); }
+function legEmoji(it){ return it.k==="drive"||it.mode==="car"?"🚗":it.walk?"🚶":it.mode==="flight"?"✈️":it.mode==="ferry"?"⛴️":it.bus||it.mode==="bus"?"🚌":it.mode==="train"?"🚆":"🚇"; }
 function fmtLegOpt(x){ return `${x.t||""} ระหว่างทาง ${P[x.from]?P[x.from][0]+" → ":""}${P[x.to][0]}`; }
 function placeLabel(p){ return p&&p.name?p.name:"จุดแวะที่ยังไม่มีชื่อ"; }
 function photoWhere(m){ if(m.day==null) return "ยังไม่ได้จัด"; if(!m.key&&m.place) return `D${DAYS[m.day].n} · ${placeLabel(m.place)} (นอกแผน)`; return keyLabel(m.day,m.key); }
@@ -3778,8 +3779,11 @@ function openMyPhoto(id,list){ const m=phMeta.find(x=>x.id===id); if(!m) return;
 /* places a photo can be moved to: stops in the plan as it is now. Not: drives, alternatives, empty wait blocks, stops you marked as not visited */
 function isPhTarget(di,x){ if(x.k==="drive"||x.k==="train"||x.k==="opt") return false; if(x.k==="custom"&&x._c&&!x._c.name&&x._c.lat==null) return false; return !(visited[di]&&visited[di][x._i]===false); }
 function moveOptsHtml(m){ const cur=m.day+"|"+m.key; const others=DAYS.map((d,i)=>i).filter(i=>i!==m.day);
-  const dayGroup=i=>{ const d=DAYS[i], nums=stopNumMap(i); const L=planItems(i).filter(x=>isPhTarget(i,x)||(i+"|"+x._i)===cur); if(!L.length) return "";
-    return `<optgroup label="${i===m.day?"วันเดียวกัน · ":""}D${d.n} · ${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค.">${L.map(x=>{ const v2=i+"|"+x._i; return `<option value="${esc(v2)}"${v2===cur?" selected":""}>${esc(`D${d.n} · ${nums[x._i]?nums[x._i]+". ":""}${x.n}`)}</option>`; }).join("")}</optgroup>`; };
+  /* stops and the travel between them, in the order of the day, so a photo from the road goes where it happened */
+  const isLeg=x=>(x.k==="drive"||x.k==="train")&&x.to&&P[x.to];
+  const dayGroup=i=>{ const d=DAYS[i], nums=stopNumMap(i); const L=planItems(i).filter(x=>isPhTarget(i,x)||(i+"|"+x._i)===cur||isLeg(x)); if(!L.filter(x=>!isLeg(x)).length) return "";
+    return `<optgroup label="${i===m.day?"วันเดียวกัน · ":""}D${d.n} · ${esc(d.dow)} ${Number(d.date.slice(8))} ต.ค.">${L.map(x=>{ if(isLeg(x)){ const v2=i+"|leg:"+x._i; return `<option value="${esc(v2)}"${v2===cur?" selected":""}>${esc(`D${d.n} · ↳ ${legEmoji(x)} ระหว่างทางไป ${P[x.to][0]}${x.t?" ("+x.t+")":""}`)}</option>`; }
+      const v2=i+"|"+x._i; return `<option value="${esc(v2)}"${v2===cur?" selected":""}>${esc(`D${d.n} · ${nums[x._i]?nums[x._i]+". ":""}${x.n}`)}</option>`; }).join("")}</optgroup>`; };
   const recs=[]; if(m.day!=null){ const seen=new Set(); const RC=dayRecs(m.day,true)||{}; const t=m.takenAt?jstMin(m.takenAt):null;
     const order=planItems(m.day).filter(x=>RC[x._i]).sort((a,b)=>t==null?0:Math.abs(toMin(a.t)-t)-Math.abs(toMin(b.t)-t)).map(x=>x._i); const have=dayStops(m.day).map(x=>P[x.p]).filter(Boolean);
     order.concat(Object.keys(RC)).forEach(k=>(RC[k]||[]).forEach(r=>{ if(r.lat==null||seen.has(r.id)||have.some(p=>km([p[1],p[2]],[r.lat,r.lng])<0.08)) return; seen.add(r.id); recs.push(r); }));
@@ -3787,7 +3791,6 @@ function moveOptsHtml(m){ const cur=m.day+"|"+m.key; const others=DAYS.map((d,i)
     if(m.lat!=null){ const near=recs.map(r=>[r,km([m.lat,m.lng],[r.lat,r.lng])]).filter(([,d])=>d<=1.5).sort((a,b)=>a[1]-b[1]).map(([r])=>r); recs.length=0; recs.push(...near); }
     recs.splice(8); }
   return `<option value="">เลือกที่จะย้ายไป…</option>${m.day!=null?dayGroup(m.day):""}
-    ${m.day!=null?`<optgroup label="ระหว่างทาง D${DAYS[m.day].n}">${planItems(m.day).filter(x=>(x.k==="drive"||x.k==="train")&&x.to&&P[x.to]).map(x=>`<option value="${esc(m.day+"|leg:"+x._i)}"${m.key==="leg:"+x._i?" selected":""}>${esc(fmtLegOpt(x))}</option>`).join("")}</optgroup>`:""}
     ${recs.length?`<optgroup label="เพิ่มเป็นจุดใหม่ใน D${DAYS[m.day].n} (ร้าน/ที่แนะนำ)">${recs.map(r=>`<option value="${esc("r|"+m.day+"|"+r.id)}">${r.kind==="food"?"🍴 ":"📍 "}${esc(r.name)}</option>`).join("")}</optgroup>`:""}
     ${m.place&&m.day!=null?`<option value="here|">📍 สร้างจุดใหม่ตรงที่ถ่ายรูปนี้</option>`:""}${others.map(dayGroup).join("")}<option value="-|">ยังไม่ได้จัด</option>`; }
 function drawMyPhoto(){ const v=phView; if(!v) return; const id=v.list[v.i]; const m=phMeta.find(x=>x.id===id); if(!m){ v.list.splice(v.i,1); if(!v.list.length){ phView=null; closeLightbox(false); return; } v.i=Math.min(v.i,v.list.length-1); return drawMyPhoto(); }
