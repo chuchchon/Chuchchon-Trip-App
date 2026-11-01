@@ -10,7 +10,7 @@
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}</style>
 </head>
 <body>
-<title>Trip Planner</title>
+<title>Momiji</title>
 <meta name="color-scheme" content="light">
 <script>document.documentElement.setAttribute("data-theme","light")</script>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -106,6 +106,8 @@
 .tpph-gp p{margin:6px 0}.tpph-gp .fl{margin-top:12px;font-weight:600}.tpph-gp ol{margin:4px 0 6px;padding-left:20px}.tpph-gp li{margin:3px 0}
 
 .tp-home-hk{margin:18px 0 4px;font-size:14px}.tp-home-hk a{color:var(--route-blue);font-weight:600;text-decoration:none}
+
+.tp-home-momiji{margin:22px 0 2px;font-size:13px;color:var(--muted,#6B7A73)}.tp-home-momiji b{color:#B42F1E}
 
 
 html,body{height:100%}
@@ -6059,6 +6061,7 @@ function tpHomeHtml(){ const L=tpTripsList(); const t=tpToday();
   ${past.length?`<h2 class="tp-home-sec">ไปมาแล้ว</h2><ul class="tp-cards">${past.map(x=>tpCard(x)).join("")}</ul>`:""}
   <h2 class="tp-home-sec">ตัวอย่าง</h2><ul class="tp-cards">${tpCard(ex,true)}</ul>
   ${/\.github\.io$/.test(location.hostname)?`<p class="tp-home-hk"><a href="../">🍁 แอปฮอกไกโดตัวเดิม (รูป Tripbook และลิงก์ที่แชร์ไว้) ›</a></p>`:""}
+  <p class="tp-home-momiji">🍁 <b>Momiji</b> · เริ่มต้นจากทริปดูใบไม้เปลี่ยนสีที่ฮอกไกโด ตุลาคม 2026</p>
   <p class="tiny tp-home-note">ทริปและรูปเก็บในเบราว์เซอร์ของเครื่องนี้ · ย้ายเครื่องหรือเก็บไว้: เปิดทริป → แท็บ จำเป็น → สำรอง / กู้คืน</p></div>`; }
 function tpHomePaint(){ let r=$("#tpHome"); if(!r){ r=document.createElement("div"); r.id="tpHome"; r.className="tp-home"; document.body.appendChild(r); } const top=r.scrollTop; r.innerHTML=tpHomeHtml(); r.scrollTop=top; tpCovers(); tpHkOffer(); }
 function tpHomeShow(){ try{ closeSheet(); }catch(e){} tpDelArm=""; tpHomePaint(); document.body.classList.add("tp-home-on"); }
