@@ -1617,7 +1617,7 @@ function reconcileAll(){ let ch=false; Object.keys(edits).forEach(di=>{ if(DAYS[
 snapEdits("open");
 if(reconcileAll()){ store.set("edits",edits); }
 let pickMode=null, draft=null, searchT=null, lastRes=[];
-function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.q||n.name||"",null,n.q||null]; }
+function regCustom(n){ if(n.kind==="custom"&&n.lat!=null) P[n.key]=[n.name||"จุดแวะ",n.lat,n.lng,null,n.q||n.pn||n.name||"",null,n.q||null,n.pn||null]; }   /* [7] = the place's own name; [0] is what the card shows */
 Object.values(edits).forEach(ed=>(ed.list||[]).forEach(regCustom));
 function origDur(it){ if(it.k==="train") return it.min||0; if(it.e) return Math.max(0,toMin(it.e)-toMin(it.t)); return it.k==="hotel"?20:30; }
 function buildEd(di){
@@ -2241,11 +2241,11 @@ function openAddStop(afterKey){
   renderAddStop();
 }
 function applyDraft(ed,dr){
-  if(dr.mode==="add"){ const n={key:dr.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note,dur:dr.dur,at:dr.at||"",pre:0}; if(dr.q) n.q=dr.q; regCustom(n);
+  if(dr.mode==="add"){ const n={key:dr.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note,dur:dr.dur,at:dr.at||"",pre:0}; if(dr.q) n.q=dr.q; if(dr.pn) n.pn=dr.pn; regCustom(n);
     const i=dr.atStart?-1:ed.list.findIndex(x=>x.key===dr.afterKey); ed.list.splice(i<0&&!dr.atStart?ed.list.length:i+1,0,n); }
   else { const n=ed.list.find(x=>x.key===dr.key); if(!n) return;
-    if(dr.reloc&&n.kind==="base"){ const c={key:n.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note||"",dur:dr.dur,at:dr.at||"",pre:0}; if(dr.q) c.q=dr.q; regCustom(c); ed.list[ed.list.indexOf(n)]=c; return; }
-    n.dur=dr.dur; n.at=dr.at||""; if(n.kind==="custom"){ n.name=dr.name||n.name; n.lat=dr.lat; n.lng=dr.lng; n.note=dr.note; regCustom(n); }
+    if(dr.reloc&&n.kind==="base"){ const c={key:n.key,kind:"custom",name:dr.name||(dr.lat!=null?"จุดแวะ":"รอ / เลื่อนเวลา"),lat:dr.lat,lng:dr.lng,note:dr.note||"",dur:dr.dur,at:dr.at||"",pre:0}; if(dr.q) c.q=dr.q; if(dr.pn) c.pn=dr.pn; regCustom(c); ed.list[ed.list.indexOf(n)]=c; return; }
+    n.dur=dr.dur; n.at=dr.at||""; if(n.kind==="custom"){ n.name=dr.name||n.name; if(dr.lat!==n.lat||dr.lng!==n.lng){ if(dr.pn) n.pn=dr.pn; else delete n.pn; if(dr.q!==undefined){ if(dr.q) n.q=dr.q; else delete n.q; } } n.lat=dr.lat; n.lng=dr.lng; n.note=dr.note; regCustom(n); }
     else if(dr.name!=null){ const base=(DAYS[dr.day].items[n.src]||{}).n||""; if(dr.name&&dr.name!==base) n.label=dr.name; else delete n.label; } if(dr.promote!=null) n.promote=dr.promote; }
 }
 function renderAddStop(){
@@ -2314,7 +2314,9 @@ async function geoSearch(q){
   if(GKEY){ web=await gSearch(q,{ll:bias,r:30000,n:8}); if(web) geoSrc="google"; }
   if(!web){ web=await osmSearch(q,bias); if(web) geoSrc="osm"; }
   if(web==null&&!loc.length) return null;
-  const near=(a,b)=>km([a.lat,a.lng],[b.lat,b.lng])<0.08; return loc.concat((web||[]).filter(w=>!loc.some(x=>near(x,w))));
+  const near=(a,b)=>km([a.lat,a.lng],[b.lat,b.lng])<0.08;
+  loc.forEach(x=>{ if(x.src!=="plan"||x.pn) return; const w=(web||[]).find(w=>near(x,w)); if(w){ x.sub=`จุดที่อยู่ในทริปนี้ · การ์ด “${x.card||x.name}”`; x.name=w.name; x.pn=w.name; x.q=w.q||null; } else x.pn=null; });   /* a card renamed by hand: show the place's real name, so a new card starts from it */
+  return loc.concat((web||[]).filter(w=>!loc.some(x=>near(x,w))));
 }
 var geoSrc="";
 async function osmSearch(q,bias){ let answered=false;
@@ -2442,7 +2444,7 @@ document.addEventListener("click",ev=>{
     saveEdits(); closeSheet(); renderPlan(); if(map&&curTab==="map") drawMap(false); return; }
   if(a==="cs-explore"){ openAddStop(b.dataset.key||undefined); if(draft){ xp.cat="view"; xp.cats=["view"]; exLocate(xp); } return; }
   if(a==="cs-reloc"){ readDraft(); const pp=draft.baseP&&P[draft.baseP]; Object.assign(draft,{reloc:true,name:draft.name||draft.title||draft.baseName||"",lat:pp?pp[1]:null,lng:pp?pp[2]:null}); renderAddStop(); setTimeout(()=>{ const q=$("#cs-q"); if(q) q.focus(); },60); return; }
-  if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,lat:r.lat,lng:r.lng,q:r.q||null}); if(r.needName) reverseName([r.lat,r.lng]).then(n=>{ if(n&&draft&&draft.lat===r.lat&&draft.name==="ตำแหน่งที่วาง"){ draft.name=n; renderAddStop(); } }); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
+  if(a==="cs-hit"){ readDraft(); const r=lastRes[+b.dataset.i]; Object.assign(draft,{name:r.name,pn:r.needName?null:r.src==="plan"?(r.pn||null):(r.pn||r.name),lat:r.lat,lng:r.lng,q:r.q||null}); if(r.needName) reverseName([r.lat,r.lng]).then(n=>{ if(n&&draft&&draft.lat===r.lat&&draft.name==="ตำแหน่งที่วาง"){ draft.name=n; draft.pn=n; renderAddStop(); } }); if(r.dur){ draft.dur=r.dur; draft.durNote=(r.lab?r.lab+" · ":"")+"ตั้งเวลาอยู่ให้อัตโนมัติ "+r.dur+" นาที ปรับได้"; } renderAddStop(); return; }
   if(a==="cs-atclear"){ readDraft(); draft.at=""; renderAddStop(); return; }
   if(a==="cs-noplace"){ readDraft(); Object.assign(draft,{lat:null,lng:null}); renderAddStop(); return; }
   if(a==="cs-here"){ readDraft(); const use=p=>{ Object.assign(draft,{lat:p[0],lng:p[1]}); reverseName(p).then(n=>{ if(!draft.name) draft.name=n||"ตำแหน่งปัจจุบัน"; renderAddStop(); }); };
@@ -2905,8 +2907,9 @@ function normQ(s){ return String(s||"").toLowerCase().normalize("NFKC").replace(
 function localSearch(q){ const n=normQ(q); if(n.length<2) return []; const out=[], seen=new Set();
   FOOD.forEach(f=>{ if(f[4]==null) return; if(!normQ(f[2]).includes(n)) return; const c=CAT[f[1]]||{n:"ร้านอาหาร"}; seen.add(f[4].toFixed(4)+f[5].toFixed(4));
     out.push({name:f[2],sub:`★ ร้านในลิสต์ของฉัน · ${c.n} · ${f[3]}`,lat:f[4],lng:f[5],dur:f[1]===0?30:60,lab:f[1]===0?"อาหารเช้า/ของว่าง":"มื้ออาหาร",q:(latinName(f[2])||f[2])+" "+cityOf(f[3]),src:"mine"}); });
-  Object.entries(P).forEach(([k,p])=>{ if(p[1]==null) return; if(![p[0],p[4],p[6]].some(x=>x&&normQ(x).includes(n))) return; const kk=(+p[1]).toFixed(4)+(+p[2]).toFixed(4); if(seen.has(kk)) return; seen.add(kk);
-    out.push({name:p[0],sub:"จุดที่อยู่ในทริปนี้",lat:p[1],lng:p[2],q:p[4]||p[0],src:"plan"}); });
+  Object.entries(P).forEach(([k,p])=>{ if(p[1]==null) return; if(![p[0],p[4],p[6],p[7]].some(x=>x&&normQ(x).includes(n))) return; const kk=(+p[1]).toFixed(4)+(+p[2]).toFixed(4); if(seen.has(kk)) return; seen.add(kk);
+    const pn=p[7]||null, card=String(k).startsWith("cs_")?p[0]:null;
+    out.push({name:pn||p[0],pn:pn||(card?null:p[0]),card:card&&card!==pn?card:null,sub:card&&card!==pn&&pn?`จุดที่อยู่ในทริปนี้ · การ์ด “${card}”`:"จุดที่อยู่ในทริปนี้",lat:p[1],lng:p[2],q:p[6]||null,src:"plan"}); });
   return out.slice(0,6); }
 /* a Google Maps link or coordinates pasted into the search box */
 function parseLL(q){ const s=decodeURIComponent(String(q||""));
