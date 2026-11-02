@@ -881,6 +881,9 @@ body.tb-open .lb{z-index:1450}
 .ph-stores{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
 .ph-stores li{border:1px solid var(--line,#e2e4e8);border-radius:12px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
 .ph-stores li.cur{border-color:var(--accent,#C2361F)}.ph-stores li span{font-size:13px;color:var(--muted,#667)}.ph-stores li .btn{align-self:flex-start;margin-top:4px}
+
+/* the time on each photo in a card: top-right, clear of the video length at the bottom-left */
+.my-ph-c .ph-tm{top:3px;right:3px;bottom:auto;font-size:9.5px;padding:0 4px;border-radius:5px;line-height:1.45}
 </style>
 
 <div class="app">
@@ -3878,7 +3881,7 @@ function photoSheetPaint(first){ const fresh=first||!$("#ph-root"); const old=$(
   if(fresh) openSheet(photoSheetHtml()); else renderSheet(photoSheetHtml());
   if(top){ const s=$("#sheetRoot .sheet"); if(s) s.scrollTop=top; } setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
 function myPhotoStrip(di,key){ const l=photosFor(di,key); if(!l.length) return ""; const show=l.slice(0,8);
-  return `<div class="my-ph">${show.map((m,i)=>`<button class="my-ph-c" data-act="ph-strip" data-d="${di}" data-k="${esc(key)}" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}${i===7&&l.length>8?`<span>+${l.length-8}</span>`:""}</button>`).join("")}</div>`; }
+  return `<div class="my-ph">${show.map((m,i)=>`<button class="my-ph-c" data-act="ph-strip" data-d="${di}" data-k="${esc(key)}" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}${m.takenAt?phTmBadge(m,di):""}${i===7&&l.length>8?`<span>+${l.length-8}</span>`:""}</button>`).join("")}</div>`; }
 /* gallery: all photos of a stop (or the whole day) as a grid; tap one to view, ✕ or Back returns here */
 var galState=null, GAL_MIN=5;
 function galSelOn(){ return !!(galState&&(galState.selMode||(galState.sel&&galState.sel.size))); }
