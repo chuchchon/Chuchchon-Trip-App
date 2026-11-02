@@ -949,6 +949,8 @@ body.tb-open .lb{z-index:1450}
 
 /* the time on each photo in a card: top-right, clear of the video length at the bottom-left */
 .my-ph-c .ph-tm{top:3px;right:3px;bottom:auto;font-size:9.5px;padding:0 4px;border-radius:5px;line-height:1.45}
+
+.leg-pg{background:var(--surface-2,#f4f5f7);border-radius:10px;padding:8px 10px;font-size:13.5px;line-height:1.5;margin:6px 0 4px}
 </style>
 
 <div class="app">
@@ -1727,7 +1729,8 @@ function planItems(di){
       const md=legMode(di,dv.from,dv.to);
       if(!carGone&&dv.k==="drive"){ if(md==="walk"||(md==null&&!(di===3&&dv.to==="station")&&km([P[dv.from][1],P[dv.from][2]],[P[dv.to][1],P[dv.to][2]])<=WALK_KM)) dv=Object.assign(walkLeg(dv.from,dv.to,dv._i),{carDay:true}); }
       if(md&&!(md==="walk"&&!carGone)&&!(md==="drive"&&!carGone)) dv=Object.assign(modeLeg(md,dv.from,dv.to,dv._i),{carDay:!carGone});
-      { const ov=legOverride(di,dv.from,dv.to); if(ov!=null){ dv=Object.assign({},dv,{min:ov,_ov:1,x:dv.k==="drive"?"เวลาขับที่ตั้งเอง (เช่น จาก Google Maps)":"เวลาเดินทางที่ตั้งเอง"}); } }
+      { const ov=legOverride(di,dv.from,dv.to); if(ov!=null){ const lk=dv.from+">"+dv.to, L0=edits[di]&&edits[di].lsq0, sq=!!(L0&&lk in L0), est=sq&&L0[lk]!=null?L0[lk]:dv.min;
+          dv=Object.assign({},dv,{min:ov,_ov:1,_sq:sq,_est:est,x:sq?`ตามเวลาระหว่างรูป · ปกติประมาณ ${est} นาที`:dv.k==="drive"?"เวลาขับที่ตั้งเอง (เช่น จาก Google Maps)":"เวลาเดินทางที่ตั้งเอง"}); } }
       dv.t=fmtMin(cur); dv._t0=null; out.push(dv); if(dv.walk||dv.transit) legStart=cur; cur+=dv.min;
     }
     const dur=n.dur!=null?n.dur:origDur(node);
@@ -1752,11 +1755,18 @@ function previewList(items,fromKey){
 }
 function limWarn(it){ return it.lim&&toMin(it.t)>toMin(it.lim)?`<span class="c-warn tiny">⚠ เกิน ${esc(it.lim)}</span>`:""; }
 /* ----- drive time override ----- */
+/* the time the photos leave for this travel: the last photo at the stop before it and the first at the stop after it */
+function legPhotoGap(di,from,to){ const its=planItems(di); const i=its.findIndex(x=>(x.k==="drive"||x.k==="train")&&x.from===from&&x.to===to); if(i<0) return null;
+  let a=null,b=null; for(let j=i-1;j>=0;j--){ const x=its[j]; if(x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"){ a=x; break; } } for(let j=i+1;j<its.length;j++){ const x=its[j]; if(x.k!=="drive"&&x.k!=="train"&&x.k!=="opt"){ b=x; break; } }
+  if(!a||!b) return null; const real=m=>m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&!(m.stray&&m.auto!==false); const pa=photosFor(di,a._i).filter(real), pb=photosFor(di,b._i).filter(real); if(!pa.length||!pb.length) return null;
+  const t1=Math.max(...pa.map(m=>m.takenAt)), t2=Math.min(...pb.map(m=>m.takenAt)); return {a:a.n,b:b.n,t1:jstMin(t1),t2:jstMin(t2),gap:Math.round((t2-t1)/6e4),leg:its[i]}; }
 function legSheet(from,to,min,key,mode){ const di=curDay, base=!!key; let nd=null; if(base){ const ed=materialize(di); nd=ed.list.find(x=>x.key===key); }
-  const cur=base?(nd&&nd.dur!=null?nd.dur:null):legOverride(di,from,to), md=base?(nd&&nd.lm)||null:legMode(di,from,to);
+  const lk=from+">"+to, L0=!base&&edits[di]&&edits[di].lsq0, sq=!!(L0&&lk in L0), pg=legPhotoGap(di,from,to);
+  const cur=base?(nd&&nd.dur!=null?nd.dur:null):sq&&L0[lk]==null?null:sq?L0[lk]:legOverride(di,from,to), md=base?(nd&&nd.lm)||null:legMode(di,from,to);
   const opts=[]; for(let m=5;m<=240;m+=5) opts.push(m); for(let m=270;m<=1440;m+=30) opts.push(m); if(!opts.includes(min)) opts.push(min); opts.sort((a,b)=>a-b);
   const fm=m=>m<60?m+" นาที":Math.floor(m/60)+" ชม."+(m%60?" "+m%60+" นาที":"");
-  return `<div class="sk">วิธีเดินทาง</div><h2>${esc(P[from]?P[from][0]:"")} → ${esc(P[to]?P[to][0]:"")}</h2><p>ตอนนี้: <b>${esc((LEG_MODES.find(x=>x[0]===mode)||["","",""])[2])} · ${fm(min)}</b>${cur!=null?" (ตั้งเอง)":""}</p>
+  return `<div class="sk">วิธีเดินทาง</div><h2>${esc(P[from]?P[from][0]:"")} → ${esc(P[to]?P[to][0]:"")}</h2><p>ตอนนี้: <b>${esc((LEG_MODES.find(x=>x[0]===mode)||["","",""])[2])} · ${fm(min)}</b>${sq?" (ตามเวลาระหว่างรูป)":cur!=null?" (ตั้งเอง)":""}</p>
+  ${pg?`<p class="leg-pg">📷 รูปสุดท้ายที่ ${esc(pg.a)} <b>${fmtMin(pg.t1)}</b> · รูปแรกที่ ${esc(pg.b)} <b>${fmtMin(pg.t2)}</b><br>มีเวลาเดินทางไม่เกิน <b>${pg.gap>=0?fm(Math.max(1,pg.gap)):"—"}</b>${sq?` · เวลาที่ประมาณไว้ (${fm(pg.leg._est)}) เกินช่วงนี้ แอปจึงใช้เวลาตามรูปให้`:pg.gap>=0&&min>pg.gap?` · เวลาที่ประมาณไว้เกินช่วงนี้ <button class="lnk" data-act="leg-usegap" data-g="${Math.max(1,pg.gap)}">ใช้ ${fm(Math.max(1,pg.gap))}</button>`:""}</p>`:""}
   <label class="fl">ไปด้วย</label><div class="leg-modes" role="radiogroup">${LEG_MODES.map(([v,ic,n])=>`<label class="leg-m"><input type="radio" name="leg-m" value="${v}"${v===mode?" checked":""}><span>${ic} ${esc(n)}</span></label>`).join("")}</div>
   <label class="fl" for="leg-min">ใช้เวลา</label><select id="leg-min" class="inp"><option value="">ประมาณให้ตามวิธีเดินทางและระยะทาง</option>${opts.map(m=>`<option value="${m}"${cur!=null&&m===cur?" selected":""}>${fm(m)}</option>`).join("")}</select>
   <p class="tiny" style="margin:6px 0 0">ดูเวลาจริงได้จาก Google Maps แล้วเลือกที่นี่ แผนทั้งวันจะเลื่อนตาม</p>
@@ -2465,10 +2475,11 @@ document.addEventListener("click",ev=>{
   if(a==="cs-reset"){ delete edits[curDay]; saveEdits(); renderPlan(); drawCustoms(); return; }
   if(a==="cs-lmode"){ const ed=materialize(curDay); ed.lmode=ed.lmode||{}; ed.lmode[b.dataset.from+">"+b.dataset.to]=b.dataset.m; saveEdits(); renderPlan(); if(map&&curTab==="map") drawMap(false); return; }
   if(a==="cs-leg"){ openSheet(legSheet(b.dataset.from,b.dataset.to,+b.dataset.min,b.dataset.key||"",b.dataset.m||"")); return; }
+  if(a==="leg-usegap"){ const sel=$("#leg-min"), g=+b.dataset.g; if(sel){ if(![...sel.options].some(o=>+o.value===g)){ const o=document.createElement("option"); o.value=g; o.textContent=g+" นาที"; sel.insertBefore(o,sel.options[1]); } sel.value=String(g); } return; }
   if(a==="cs-legsave"||a==="cs-legclear"){ const ed=materialize(curDay); const k=b.dataset.from+">"+b.dataset.to, save=a==="cs-legsave";
     const r=$("input[name=leg-m]:checked"), m=save&&r?r.value:"", v=save?($("#leg-min")||{}).value:"", changed=m&&m!==b.dataset.m;
     if(b.dataset.key){ const nd=ed.list.find(x=>x.key===b.dataset.key); if(nd){ if(!save){ delete nd.lm; delete nd.dur; } else { if(m) nd.lm=m; if(v) nd.dur=+v; } } }   /* a planned journey keeps its own time unless a new one is chosen */
-    else { ed.legs=ed.legs||{}; ed.lmode=ed.lmode||{};
+    else { ed.legs=ed.legs||{}; ed.lmode=ed.lmode||{}; if(ed.lsq0) delete ed.lsq0[k];   /* your own choice now: auto-time keeps it (it may still shorten it when photos leave less time) */
       if(!save){ delete ed.legs[k]; delete ed.lmode[k]; }
       else { if(changed) ed.lmode[k]=m; if(v) ed.legs[k]=+v; else delete ed.legs[k]; } }
     saveEdits(); closeSheet(); renderPlan(); if(map&&curTab==="map") drawMap(false); return; }
@@ -5544,7 +5555,7 @@ function actualTimes(di){ const out=[]; planItems(di).forEach(it=>{ if(it.k==="d
     const T=phMeta.filter(m=>m.day===di&&m.key===it._i&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name")&&jstDate(m.takenAt)===DAYS[di].date&&!(m.stray&&m.auto!==false)).map(m=>jstMin(m.takenAt)).sort((a,b)=>a-b);
     if(!T.length) return; const gapMax=isAirportName((P[it.p]||[])[0]||it.n)?300:90; const runs=[[T[0]]]; for(let i=1;i<T.length;i++){ if(T[i]-T[i-1]>gapMax) runs.push([]); runs[runs.length-1].push(T[i]); }
     const main=runs.sort((a,b)=>(b[b.length-1]-b[0]+b.length)-(a[a.length-1]-a[0]+a.length))[0]; const a=r5d(main[0]-5), b=r5u(main[main.length-1]+10);
-    const x={it,n:T.length,a,dur:Math.max(15,b-a),pa:toMin(it._t0||it.t),pe:(it._e0||it.e)?toMin(it._e0||it.e):null,k:di+"|"+it._i};
+    const x={it,n:T.length,a,f:main[0],l:main[main.length-1],dur:Math.max(15,b-a),pa:toMin(it._t0||it.t),pe:(it._e0||it.e)?toMin(it._e0||it.e):null,k:di+"|"+it._i};
     const late=x.a-x.pa; x.warn=Math.abs(late)>120?`ต่างจากแผน ${Math.round(Math.abs(late)/60*10)/10} ชม. รูปอาจอยู่ผิดจุด`:x.n<3?`มีรูปแค่ ${x.n} รูป เวลาอาจสั้นเกินจริง`:""; out.push(x); });
   return out; }
 var actSel=null, actSnapped=false;
@@ -5566,14 +5577,17 @@ async function splitOutliers(di){ let n=0; for(const it of planItems(di)){ if(it
 function actSqueeze(di){ const ed=materialize(di); ed.legs=ed.legs||{};
   for(let pass=0;pass<40;pass++){ const its=planItems(di); const i=its.findIndex(x=>x._n&&x._n.act&&x._n.at&&toMin(x.t)>toMin(x._n.at)); if(i<0) return;
     let over=toMin(its[i].t)-toMin(its[i]._n.at), did=false; const back=[]; let prevA=null; for(let j=i-1;j>=0;j--){ const x=its[j]; if(x._n&&x._n.act){ prevA=x; break; } back.push(x); }
+    /* the guessed margins go first, so the travel keeps its usual time: this stay's lead-in before its first photo, then the stay before ending at its last photo */
+    { const n=its[i]._n; if(n.pf!=null){ const give=Math.min(over,n.pf-toMin(n.at)); if(give>0){ n.at=hhmm(toMin(n.at)+give); n.dur=Math.max(1,(n.dur||0)-give); over-=give; did=true; } } }
+    if(over>0&&prevA&&prevA._n.pl!=null&&prevA._n.at){ const n=prevA._n, d=n.dur!=null?n.dur:origDur(prevA), keep=Math.max(1,n.pl-toMin(n.at)+1), cut=Math.min(over,d-keep); if(cut>0){ if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=d-cut; over-=cut; did=true; } }
     /* first the stops without photos (never under 10 minutes), then the travel before it (never under 5): the photos say we were already there */
     for(const x of back){ if(over<=0) break; if(x.k==="drive"||x.k==="train"||x.k==="opt"||x.k==="night"||x.fix||!x._n) continue;
       const n=x._n, d=n.dur!=null?n.dur:origDur(x), cut=Math.min(over,d-10); if(cut<=0) continue; if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=d-cut; over-=cut; did=true; }
-    for(const x of back){ if(over<=0) break; if(!(x.k==="drive"||x.k==="train")||!x.min) continue; const cut=Math.min(over,x.min-5); if(cut<=0) continue;
+    for(const x of back){ if(over<=0) break; if(!(x.k==="drive"||x.k==="train")||!x.min) continue; const cut=Math.min(over,x.min-1); if(cut<=0) continue;
       if(x._n){ const n=x._n; if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=x.min-cut; }
       else if(x.from&&x.to){ const k=x.from+">"+x.to; ed.lsq0=ed.lsq0||{}; if(!(k in ed.lsq0)) ed.lsq0[k]=ed.legs[k]!=null?ed.legs[k]:null; ed.legs[k]=x.min-cut; } else continue;
       over-=cut; did=true; }
-    if(over>0&&prevA){ const n=prevA._n, d=n.dur!=null?n.dur:origDur(prevA), cut=Math.min(over,d-10); if(cut>0){ if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=d-cut; over-=cut; did=true; } }   /* the stay before ends when this one's photos begin */
+    if(over>0&&prevA){ const n=prevA._n, d=n.dur!=null?n.dur:origDur(prevA), keep=n.pl!=null&&n.at?Math.max(1,n.pl-toMin(n.at)+1):10, cut=Math.min(over,d-keep); if(cut>0){ if(!("sq0" in n)) n.sq0=n.dur!=null?n.dur:null; n.dur=d-cut; over-=cut; did=true; } }   /* the stay before ends when this one's photos begin */
     if(!did) its[i]._n.at=its[i].t; } }   /* nothing left to give: it starts when it can, and the next late stop is looked at */
 /* a past day from its photos. Photos taken close together in time and place are one visit. Each visit belongs to the planned stop it is at
    (within that stop's reach); a stop keeps one stay (visits with nothing else between them join up), a second stay elsewhere in the day
@@ -5648,7 +5662,16 @@ function actualHtml(busy){ if(busy) return `<div class="sk">แผนราย�
   :`<p><b>ยังไม่มีรูปที่มีเวลาถ่ายอยู่ในจุดไหนเลย</b></p>`}</div>`; }
 function applyActual(di){ const L=actualTimes(di).filter(x=>!actSel||actSel.has(x.k)); const ed=edits[di]; if(!L.length&&!(ed&&ed.list.some(n=>n.act))) return 0; const e2=materialize(di); const its=planItems(di);
   e2.list.forEach(n=>{ if(n.act&&!L.some(x=>x.it._i===n.key)){ const it=its.find(x=>x._i===n.key); delete n.at; n.at=""; if(it&&n.kind==="base") n.dur=origDur(Object.assign({},it,{t:it._t0||it.t,e:it._e0||it.e})); delete n.act; } });   /* a stop whose photos moved away goes back to flowing with the plan */
-  L.forEach(x=>{ const n=e2.list.find(y=>y.key===x.it._i); if(!n) return; n.at=hhmm(x.a); n.dur=x.dur; n.pre=0; n.act=true; }); return L.length; }
+  actFit(di,L);
+  L.forEach(x=>{ const n=e2.list.find(y=>y.key===x.it._i); if(!n) return; n.at=hhmm(x.a); n.dur=x.dur; n.pre=0; n.act=true; n.pf=x.f; n.pl=x.l; }); return L.length; }
+/* photo stays next to each other: a stay starts at its first photo when the one before ran up to it (no 5-minute lead-in into someone else's photos),
+   and ends early enough to leave the planned travel before the next stay — but never before its own last photo. Places passed in a train a minute apart
+   no longer push the rest of the day later */
+function actFit(di,L){ const its=planItems(di), ord=new Map(its.map((x,i)=>[x._i,i])); const A=L.filter(x=>ord.has(x.it._i)).sort((p,q)=>ord.get(p.it._i)-ord.get(q.it._i));
+  for(let i=1;i<A.length;i++){ const x=A[i], pv=A[i-1]; if(x.a<pv.l) x.a=x.f>=pv.l?Math.max(pv.l,x.f-5):x.f; }
+  for(let i=0;i<A.length;i++){ const x=A[i], nx=A[i+1]; x.dur=Math.max(x.dur,x.l-x.a+1);
+    if(nx){ const a=ord.get(x.it._i), b=ord.get(nx.it._i); let need=0; for(let j=a+1;j<b;j++){ const y=its[j]; if(y.k==="opt") continue; need+=y.k==="drive"||y.k==="train"?(y.min||0):(y._n&&y._n.dur!=null?y._n.dur:origDur(y)); }
+      const room=nx.a-need; if(x.a+x.dur>room) x.dur=Math.max(x.l-x.a+1,room-x.a,1); } } }
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-autooff'],[data-act='act-autoon']"); if(!b) return; ev.stopPropagation();
   if(b.dataset.act==="act-autooff"){ store.set("actAuto",false); renderPlan(); } else { store.set("actAuto",true); actAutoRun().then(()=>renderPlan()); } },true);
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='act-open'],[data-act='act-apply'],[data-act='act-all']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
