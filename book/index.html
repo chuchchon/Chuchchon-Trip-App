@@ -7,14 +7,14 @@
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#14191E">
 <title>Tripbook</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
+
+
 <style>
 :root{--ink:#1C2228;--mute:#69737D;--line:#DDE3E0;--acc:#2F6FB3;--err:#C0392B;--ok:#1E8E3E}
 [hidden]{display:none!important}
 #book .tb-dt{table-layout:fixed}
 #book .tb-run span:last-child{flex:0 1 auto;min-width:0;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-html,body{margin:0;background:#14191E;color:var(--ink);font-family:"IBM Plex Sans Thai Looped",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+html,body{margin:0;background:#14191E;color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif;-webkit-text-size-adjust:100%}
 #lock{position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;color:#fff;transition:opacity .45s}
 #lock.out{opacity:0}
 .bg{position:absolute;inset:0;background:radial-gradient(120% 80% at 20% 0%,#3B5A70 0%,#1C2228 65%) center/cover no-repeat;transform:scale(1.02);transition:opacity .6s}
@@ -28,11 +28,11 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
 .card .hi{margin:0 0 2px;font-size:17px;font-weight:700}
 .card .lo{margin:0 0 12px;font-size:13.5px;color:var(--mute);line-height:1.5}
 .field{display:flex;gap:8px}
-.card input[type=text]{flex:1;min-width:0;box-sizing:border-box;font:700 22px/1.2 "IBM Plex Sans Thai Looped",ui-monospace,monospace;letter-spacing:.12em;text-align:center;padding:13px 10px;border:1.5px solid var(--line);border-radius:14px;outline:none;color:var(--ink);background:#F7F9F8}
+.card input[type=text]{flex:1;min-width:0;box-sizing:border-box;font:700 22px/1.2 system-ui,ui-monospace,monospace;letter-spacing:.12em;text-align:center;padding:13px 10px;border:1.5px solid var(--line);border-radius:14px;outline:none;color:var(--ink);background:#F7F9F8}
 .card input[type=text]:focus{border-color:var(--acc);background:#fff;box-shadow:0 0 0 3px rgba(47,111,179,.16)}
 .card input.shake{animation:shake .35s}
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;font:700 16px "IBM Plex Sans Thai Looped",system-ui,sans-serif;padding:14px;border:0;border-radius:14px;background:var(--acc);color:#fff;cursor:pointer}
+.go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;font:700 16px system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif;padding:14px;border:0;border-radius:14px;background:var(--acc);color:#fff;cursor:pointer}
 .go:disabled{opacity:.75}
 .spin{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -57,7 +57,7 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:700;text-shadow:0 2px 14
 .tc-s{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px 54px}
 .tc-s a{font-size:13px;padding:5px 10px;border-radius:999px;background:#F3F6F4;color:#3D4650}
 .tc-s a b{color:var(--dc);margin-right:5px}
-#tocb{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;border:0;border-radius:999px;padding:12px 16px;background:#1C2228;color:#fff;font:600 14.5px "IBM Plex Sans Thai Looped",system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);cursor:pointer}
+#tocb{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;border:0;border-radius:999px;padding:12px 16px;background:#1C2228;color:#fff;font:600 14.5px system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.3);cursor:pointer}
 .tc-back{margin:4px 0 26px;text-align:center}
 .tc-back a{display:inline-block;padding:8px 16px;border-radius:999px;background:#F3F6F4;color:#2F6FB3;font-weight:600;font-size:14px;text-decoration:none}
 figure .spr{position:absolute;inset:0;background-size:800% 100%;background-repeat:no-repeat;animation:spr 6s steps(8,jump-none) infinite;pointer-events:none}
