@@ -1639,7 +1639,7 @@ function renderPlan(soft){
   navMode=curDay>=CARFREE_DAY?"transit":"driving";
   if(d.hotel&&P[d.hotel]) h+=`<div class="dh-hotel">${I.bed}<span>คืนนี้พัก <b>${esc(d.hotelName)}</b></span><button class="lnk" data-act="booking" data-id="${d.hotel}">ใบจอง</button><a class="lnk" href="${esc(dirUrl(pointTarget(d.hotel)))}" target="_blank" rel="noopener">นำทาง</a></div>`;
   h+=`<div class="dh-actions"><button class="btn small primary" data-act="gmroute">${I.route}เส้นทางทั้งวันใน Google Maps</button><button class="btn small" data-act="daymap">${I.map}แผนที่</button><button class="btn small" data-act="addstop">${I.plus}เพิ่มจุด</button><button class="btn small" data-act="reorder" aria-pressed="${document.body.classList.contains("reorder")}">${I.sort}จัดลำดับ</button>${phMeta.some(m=>m.day===curDay&&m.key&&m.takenAt&&(m.tsrc==="meta"||m.tsrc==="name"))?`<button class="btn small" data-act="act-open">🕘 ปรับเวลาตามรูป</button>`:""}</div>`;
-  h+=freshBanner();
+  h+=phLoadBanner(); h+=freshBanner();
   { const dp=phMeta.filter(m=>m.day===curDay); h+=`<div class="dh-ph"><button class="dh-ph-main" data-act="ph-sheet">${I.camera}<span><b>รูปของเรา</b>${dp.length?`วันนี้ ${mediaWord(dp)} · ทั้งทริป ${phMeta.length}`:phMeta.length?`ทั้งทริป ${mediaWord(phMeta)}`:"ดึงรูปและวิดีโอจากมือถือมาวางตามจุด"}${phMeta.length&&!store.get("lastBackup",0)?`<em class="dh-ph-warn">ยังไม่ได้สำรอง</em>`:""}<em class="dh-ph-prog">${phImport?impShort(phImport):""}</em></span></button>${dp.length?`<span class="dh-ph-th">${dp.slice(-3).map(m=>`<img data-phid="${m.id}" alt="">`).join("")}</span>`:""}<button class="btn small" data-act="ph-pick">${I.plus}เพิ่มรูป</button><button class="btn small" data-act="tb-open">${I.book}Tripbook</button></div>`; }
   h+=`<p class="dh-tip">กดค้างที่การ์ดประมาณครึ่งวินาที แล้วลากขึ้นลงเพื่อสลับลำดับ หรือใช้ปุ่ม ▲▼</p>`;
   if(edits[curDay]) h+=`<p class="dh-edited">แผนวันนี้แก้ไขแล้ว เวลาเดิมแสดงขีดฆ่าไว้ <button class="lnk" data-act="cs-reset">กลับไปแผนเดิม</button></p>`;
@@ -1680,7 +1680,7 @@ function renderPlan(soft){
   h+=`</ol>`;
   if(curDay===DAYS.length-1) h+=`<section class="tb-cta"><div><b>จบทริปแล้ว ทำ Tripbook กัน</b><span>รวมรูปของเราทุกวัน เรียงตามเส้นทาง พร้อมบันทึกเป็นไฟล์หรือ PDF</span></div><button class="btn small primary" data-act="tb-open">${I.book}เปิด Tripbook</button></section>`;
   if(curDay===2) h+=`<p class="day-foot">วันนี้ขับขึ้นเขาสูง ถ้าเช้ามีน้ำแข็งบนถนน ขับช้าและเว้นระยะ พระอาทิตย์ตกราว 16:50 ควรถึงโจซังเคก่อนมืด</p>`;
-  navMode="driving";
+  navMode="driving"; if(phLoadErr) setTimeout(phEstPaint,30);
   if(soft&&el._h===h&&el._f&&el._f===el.firstElementChild) return;   /* a background refresh with nothing new: leave the cards (and their pictures) alone */
   el.innerHTML=h; el._h=h; el._f=el.firstElementChild; hydratePhotos(el); hydrateThumbs(el); hydrateMyPhotos(el); if(map&&curTab==="map") drawMap(false);
 }
@@ -3542,7 +3542,7 @@ async function unzipGet(file,e,type){ const h=new DataView(await file.slice(e.lo
 /* ===================== trip photos: stored on this phone (IndexedDB), sorted into stops by when/where they were taken ===================== */
 const PDB={db:null,
   open(){ return this.db?Promise.resolve(this.db):new Promise((res,rej)=>{ let r; try{ r=indexedDB.open(this.dbn||"hkd26photos",1); }catch(e){ return rej(e); }
-    r.onupgradeneeded=()=>{ const db=r.result; if(!db.objectStoreNames.contains("meta")) db.createObjectStore("meta",{keyPath:"id"}); if(!db.objectStoreNames.contains("blob")) db.createObjectStore("blob",{keyPath:"id"}); };
+    r.onupgradeneeded=()=>{ const db=r.result; this.fresh=true; if(!db.objectStoreNames.contains("meta")) db.createObjectStore("meta",{keyPath:"id"}); if(!db.objectStoreNames.contains("blob")) db.createObjectStore("blob",{keyPath:"id"}); };
     r.onsuccess=()=>{ this.db=r.result; res(this.db); }; r.onerror=()=>rej(r.error); }); },
   async tx(store,mode,fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction(store,mode); const s=t.objectStore(store); const q=fn(s); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); },
   all(){ return this.tx("meta","readonly",s=>s.getAll()); },
@@ -3552,7 +3552,27 @@ const PDB={db:null,
   del(id){ phChanged(); return Promise.all([this.tx("meta","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id)),this.tx("blob","readwrite",s=>s.delete(id+"~s")),this.tx("blob","readwrite",s=>s.delete(id+"~p"))]); } };
 var phMeta=[], phReady=false; var phURL={}, phURLfull={};
 if(VIEW){ PDB.all=()=>vgGet(VIEW.id+":p").then(p=>((p&&p.ph)||[]).map(m=>Object.assign({},m))); PDB.putMeta=()=>Promise.resolve(); PDB.putBlob=()=>Promise.resolve(); PDB.getBlob=()=>Promise.resolve(null); PDB.del=()=>Promise.resolve(); }
-PDB.all().then(l=>{ phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); setTimeout(actAutoKick,1500); if(phMeta.length||looksFresh()) renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); }).catch(()=>{ phReady=true; if(looksFresh()) renderPlan(); });
+/* loading our photos. If the phone cannot read them (most often: the phone's storage is full), say so and try again later —
+   never carry on as if there were no photos: the plan's photo times, the shared link and the photo count must not be rewritten from an empty list */
+var phLoadErr=null, phLoadTry=0;
+function phLoad(){ PDB.all().then(l=>{ const L=l||[]; const had=store.get("phN",0)||(Object.values(edits).some(ed=>ed&&ed.list&&ed.list.some(n=>n.act))||store.get("actAutoSnap",0)?-1:0);   /* times set from photos = there were photos */
+    if(!L.length&&had>0&&!VIEW){ phLoadErr={gone:had,fresh:!!PDB.fresh}; renderPlan(); return; }   /* photos were here before: never treat their absence as "no photos" */
+    phLoadErr=null; phMeta=L.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(!VIEW) store.set("phN",phMeta.length);
+    setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); setTimeout(actAutoKick,1500); renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); })
+  .catch(e=>{ try{ if(PDB.db){ PDB.db.close(); } }catch(x){} PDB.db=null; phLoadTry++;
+    if(phLoadTry<3) return setTimeout(phLoad,phLoadTry*1200);
+    phLoadErr={msg:(e&&(e.name||"")+(e&&e.message?": "+e.message:""))||String(e)}; renderPlan(); }); }
+phLoad();
+function phLoadBanner(){ const E=phLoadErr; if(!E) return "";
+  return `<div class="fresh ph-err" role="alert"><b>${E.gone?`ยังไม่เห็นรูป${E.gone>0?" "+E.gone.toLocaleString()+" ไฟล์":""}ที่เคยมีในทริปนี้`:"เปิดรูปที่เก็บในเครื่องไม่ได้ตอนนี้"}</b>
+    <p>${E.gone?(E.fresh?"ที่เก็บรูปของทริปนี้ในเครื่องว่างเปล่า (เบราว์เซอร์อาจลบไปตอนพื้นที่เครื่องเหลือน้อย) · แผนและการแก้ไขยังอยู่ครบ":"ที่เก็บรูปเปิดได้แต่ยังว่าง · แผนและการแก้ไขยังอยู่ครบ"):"รูปยังไม่หาย แต่เบราว์เซอร์อ่านไม่ได้ ส่วนใหญ่เกิดจาก<b>พื้นที่ในเครื่องเต็ม</b> · ลบไฟล์/แอปที่ไม่ใช้ให้มีที่ว่างสัก 1–2 GB แล้วกด ลองใหม่"}
+    ${E.msg?`<br><span class="tiny mono">${esc(E.msg)}</span>`:""}<br><span class="tiny" id="ph-est"></span></p>
+    <div class="c-actions"><button class="btn small primary" data-act="ph-reload">ลองใหม่</button>${E.gone?`<button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button><button class="btn small" data-act="ph-gone-ok">ใช้ต่อโดยไม่มีรูป</button>`:""}</div></div>`; }
+async function phEstPaint(){ try{ const el=$("#ph-est"); if(!el||!navigator.storage||!navigator.storage.estimate) return; const e=await navigator.storage.estimate(); const g=x=>(x/1073741824).toFixed(2)+" GB";
+  el.textContent=`ที่เก็บของแอปนี้: ใช้ ${g(e.usage||0)} จากที่ใช้ได้ ${g(e.quota||0)}`; }catch(e){} }
+document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='ph-reload'],[data-act='ph-gone-ok']"); if(!b) return; ev.stopPropagation();
+  if(b.dataset.act==="ph-gone-ok"){ store.set("phN",0); phLoadErr=null; phLoad(); return; }
+  phLoadTry=0; phLoadErr=null; b.disabled=true; b.textContent="กำลังเปิด…"; try{ if(PDB.db) PDB.db.close(); }catch(e){} PDB.db=null; phLoad(); },true);
 /* the phone's storage for this site is full (every trip and the Hokkaido app share it): drop caches that can be fetched again, then try once more.
    If even that fails for the plan itself, say so — a change that silently is not kept comes back as the old one after a refresh */
 const LS_CACHE=new RegExp("^(hkd"+"26:|tp:[^:]+:)(photos|routes|autoRecs|gpl|wikiImg|plSug|phUndo|gnophoto|wx|rates)$");   /* every trip on this phone, and the Hokkaido app */
@@ -3569,7 +3589,7 @@ function lsFull(write,k){ const cache=LS_CACHE.test("tp:x:"+k); if(cache) return
 /* the installed app and a Chrome tab on the same phone share one storage. When the other copy changes the plan or photos, reload here,
    so this copy never writes an old plan back (that is how a removed stop could come back) */
 var TAB_ID=Math.random().toString(36).slice(2), phRevSeen=(store.get("phRev",null)||{}).t||0, phSyncT=null;
-function phChanged(){ vsDirty(); actAutoKick(); clearTimeout(phSyncT); phSyncT=setTimeout(()=>{ const r={t:Date.now(),by:TAB_ID}; phRevSeen=r.t; store.set("phRev",r); },600); }
+function phChanged(){ if(phReady&&!VIEW) setTimeout(()=>{ try{ store.set("phN",phMeta.length); }catch(e){} },1500); vsDirty(); actAutoKick(); clearTimeout(phSyncT); phSyncT=setTimeout(()=>{ const r={t:Date.now(),by:TAB_ID}; phRevSeen=r.t; store.set("phRev",r); },600); }
 async function reloadPhotos(){ const r=store.get("phRev",null); if(!r||r.by===TAB_ID||r.t<=phRevSeen||!phReady||(phImport&&!phImport.end)) return; phRevSeen=r.t;
   try{ const l=await PDB.all(); phMeta=(l||[]).sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); refreshPhotoViews(); if(map&&curTab==="map") drawMap(false); }catch(e){} }
 function reloadStored(){ let ch=false; const e=store.get("edits",{}); if(JSON.stringify(e)!==JSON.stringify(edits)){ edits=e; ch=true; } const v=store.get("visited",{}); if(JSON.stringify(v)!==JSON.stringify(visited)){ visited=v; ch=true; }
