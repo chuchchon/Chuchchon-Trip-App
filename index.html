@@ -5289,7 +5289,7 @@ document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-a
   if(a==="ph-strip"){ const d=+b.dataset.d, k=b.dataset.k; if(photosFor(d,k).length>=GAL_MIN){ galState={day:d,key:k,all:false,sel:new Set()}; galPaint(true); } else openMyPhoto(b.dataset.id); return; }
   if(a==="ph-galsort"){ if(galState){ galState.byTime=b.dataset.t==="1"; galPaint(); } return; }
   if(a==="ph-galscope"){ if(galState){ galState.all=b.dataset.all==="1"; galState.flash=""; galPaint(); } return; }
-  if(a==="ph-galopen"){ if(!galState) return; if(galState.swallow){ galState.swallow=false; return; }
+  if(a==="ph-galopen"){ if(!galState) return; const sw=galState.swallow; galState.swallow=null; if(sw&&sw.id===b.dataset.id&&(!sw.t||Date.now()-sw.t<600)) return;   /* only the click of the long press itself: a tap on another photo always counts */
     if(galSelOn()){ const s2=galState.sel, id=b.dataset.id; s2.has(id)?s2.delete(id):s2.add(id); if(!s2.size) galState.picking=false; galPaint(); return; }
     openMyPhoto(b.dataset.id,galLists().list.map(m=>m.id)); return; }
   if(a==="ph-galsel"){ if(!galState) return; const on=galSelOn(); galState.selMode=!on; if(on){ galState.sel.clear(); galState.picking=false; } galPaint(); return; }
@@ -5800,7 +5800,7 @@ async function srtMove(ids,day,key,pgId){ await movePhotosTo(ids,day,key,pgId);
 document.addEventListener("change",ev=>{ if(ev.target.id==="srt-range"&&srt){ srt.range=ev.target.checked; srt.anchor=null; } });
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='srt-']"); if(!b) return; ev.stopPropagation(); if(!srt&&b.dataset.act!=="srt-open") return; const a=b.dataset.act;
   if(a==="srt-open"){ sorterOpen(); return; }
-  if(a==="srt-t"){ if(srt.swallow){ srt.swallow=false; return; } const id=b.dataset.id; const order=srt.runs.flatMap(r=>r.list.map(m=>m.id));
+  if(a==="srt-t"){ { const sw=srt.swallow; srt.swallow=null; if(sw&&sw.id===b.dataset.id&&(!sw.t||Date.now()-sw.t<600)) return; } const id=b.dataset.id; const order=srt.runs.flatMap(r=>r.list.map(m=>m.id));
     if(!srt.sel.size&&!srt.range){ openMyPhoto(id,order); return; }   /* not selecting: tap shows it big */
     if(srt.range&&srt.anchor&&srt.anchor!==id){ const i=order.indexOf(srt.anchor), j=order.indexOf(id); const [lo,hi]=i<j?[i,j]:[j,i]; order.slice(lo,hi+1).forEach(x=>srt.sel.add(x)); srt.anchor=null; }
     else { srt.sel.has(id)?srt.sel.delete(id):srt.sel.add(id); srt.anchor=srt.sel.has(id)?id:null; }
@@ -5813,12 +5813,17 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='s
   if(a==="srt-to"){ srtMove([...srt.sel],b.dataset.d,b.dataset.k||null,b.dataset.pg||null); return; }
   if(a==="srt-more"){ srt.more=true; sorterPaint(); return; } },true);
 /* long-press a photo in the gallery to select it */
-(()=>{ let t=null; const start=e=>{ const c=e.target.closest&&e.target.closest("#gal-root [data-act='ph-galopen']"); if(!c||!galState) return; clearTimeout(t); t=setTimeout(()=>{ if(!galState) return; galState.swallow=true; try{ navigator.vibrate&&navigator.vibrate(15); }catch(err){} galState.sel.add(c.dataset.id); galPaint(); },450); };
-  const stop=()=>clearTimeout(t); document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",stop,{passive:true}); document.addEventListener("touchend",stop); document.addEventListener("mousedown",start); document.addEventListener("mouseup",stop);
+/* the long press marks the photo at once but redraws only when the finger lifts: redrawing under the finger lost the lift, and the tap that should have chosen the 2nd photo was eaten instead */
+(()=>{ let t=null, fired=false; const start=e=>{ const c=e.target.closest&&e.target.closest("#gal-root [data-act='ph-galopen']"); if(!c||!galState) return; clearTimeout(t); fired=false;
+    t=setTimeout(()=>{ if(!galState) return; fired=c.dataset.id; galState.swallow={id:c.dataset.id,t:0}; try{ navigator.vibrate&&navigator.vibrate(15); }catch(err){} galState.sel.add(c.dataset.id); c.classList.add("sel"); c.setAttribute("aria-pressed","true"); },450); };
+  const lift=()=>{ clearTimeout(t); if(!fired) return; const id=fired; fired=false; if(galState){ galState.swallow={id,t:Date.now()}; setTimeout(()=>{ if(galState&&$("#gal-root")) galPaint(); },0); } };
+  document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",()=>clearTimeout(t),{passive:true}); document.addEventListener("touchend",lift); document.addEventListener("touchcancel",lift); document.addEventListener("mousedown",start); document.addEventListener("mouseup",lift);
   document.addEventListener("contextmenu",e=>{ if(e.target.closest&&e.target.closest("#gal-root")) e.preventDefault(); }); })();
 /* long-press a photo in the sorter to select it (then tap others to add) */
-(()=>{ let t=null; const start=e=>{ const c=e.target.closest&&e.target.closest("#srt-root [data-act='srt-t']"); if(!c) return; clearTimeout(t); t=setTimeout(()=>{ if(!srt) return; srt.swallow=true; try{ navigator.vibrate&&navigator.vibrate(15); }catch(err){} srt.sel.add(c.dataset.id); srt.anchor=c.dataset.id; sorterPaint(); },450); };
-  const stop=()=>clearTimeout(t); document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",stop,{passive:true}); document.addEventListener("touchend",stop); document.addEventListener("mousedown",start); document.addEventListener("mouseup",stop);
+(()=>{ let t=null, fired=false; const start=e=>{ const c=e.target.closest&&e.target.closest("#srt-root [data-act='srt-t']"); if(!c) return; clearTimeout(t); fired=false;
+    t=setTimeout(()=>{ if(!srt) return; fired=c.dataset.id; srt.swallow={id:c.dataset.id,t:0}; try{ navigator.vibrate&&navigator.vibrate(15); }catch(err){} srt.sel.add(c.dataset.id); srt.anchor=c.dataset.id; c.classList.add("sel"); },450); };
+  const lift=()=>{ clearTimeout(t); if(!fired) return; const id=fired; fired=false; if(srt){ srt.swallow={id,t:Date.now()}; setTimeout(()=>{ if(srt&&$("#srt-root")) sorterPaint(); },0); } };
+  document.addEventListener("touchstart",start,{passive:true}); document.addEventListener("touchmove",()=>clearTimeout(t),{passive:true}); document.addEventListener("touchend",lift); document.addEventListener("touchcancel",lift); document.addEventListener("mousedown",start); document.addEventListener("mouseup",lift);
   document.addEventListener("contextmenu",e=>{ if(e.target.closest&&e.target.closest("#srt-root")) e.preventDefault(); }); })();
 
 /* ===================== real photos and details for a place (Google with your key; otherwise Wikimedia when the name matches) ===================== */
