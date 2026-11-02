@@ -14,7 +14,7 @@
 <script>document.documentElement.setAttribute("data-theme","light")</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: one-screen app — sticky trip header, scrolling panel, bottom tab bar like a car head unit */
 :root{
@@ -442,13 +442,13 @@ body.exploring .map-legend{display:none}
 
 /* ===== v2 skin: an itinerary that reads like a travel app, not a dashboard =====
    palette: mist #F2F4F6 · white · ink #1C2228 · slate #69737D · road-sign blue #1D4E9E · maple #D2462A (now/today only)
-   one family (Anuphan) with tabular figures; the numbered day-coloured pin is the one bold element and it matches the map */
+   Mitr for headings, IBM Plex Sans Thai Looped for reading, tabular figures; the numbered day-coloured pin is the one bold element and it matches the map */
 :root{
   --bg:#F2F4F6; --surface:#FFFFFF; --surface-2:#F5F7F9; --ink:#1C2228; --muted:#69737D; --line:#E2E6EA;
   --accent:#1D4E9E; --accent-ink:#FFFFFF; --maple:#D2462A;
-  --font-display:"Anuphan", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-body:"Anuphan", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono:"Anuphan", system-ui, sans-serif;
+  --font-display:"Mitr", "IBM Plex Sans Thai Looped", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body:"IBM Plex Sans Thai Looped", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:"IBM Plex Sans Thai Looped", system-ui, sans-serif;
   --shadow:0 10px 30px rgba(20,32,48,.16);
 }
 body{font-family:var(--font-body);font-size:16px;line-height:1.5;letter-spacing:0}
@@ -4096,7 +4096,8 @@ async function tripbookHtml(mode){ /* mode "app" → object URLs, "export" → i
   tbRegGroup="x"; h+=await tbExtras(mode);
   h+=`<footer class="tb-end"><p>ฮอกไกโด ตุลาคม 2026</p></footer>`;
   return h; }
-const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"Anuphan",system-ui,sans-serif}
+const TB_CSS=`.tb{background:#fff;color:#1C2228;font-family:"IBM Plex Sans Thai Looped",system-ui,sans-serif}
+.tb h1,.tb h2,.tb h3{font-family:"Mitr","IBM Plex Sans Thai Looped",system-ui,sans-serif;font-weight:600}
 .tb-cover{position:relative;min-height:88vh;display:flex;align-items:flex-end;background:#1C2228;color:#fff;overflow:hidden}
 .tb-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.78}
 .tb-cv{position:relative;padding:28px 22px 34px;width:100%;background:linear-gradient(transparent,rgba(0,0,0,.55) 40%)}
@@ -4196,7 +4197,7 @@ async function openTripbook(){ let r=$("#tbRoot"); if(!r){ r=document.createElem
     if(a==="save-x"){ tbAsk=null; tbProgPaint(); return; } }; }
 async function tbSaveFile(b,withV){ if(tbSaving) return; tbSaving=true; try{ if(tbShotBusy||tbStoryBusy){ b.textContent=tbShotBusy?"รอแผนที่ให้เสร็จก่อน…":"รอเรื่องเล่าท้ายเล่ม…"; try{ await tbShotBusy; await Promise.race([tbStoryBusy,tbSleep(15000)]); }catch(e){} } b.textContent="กำลังเตรียมไฟล์…"; tbExpVids=null; tbExpVidUsed=new Set(); if(withV) await tbPrepVideos();
       tbExp={busy:true,i:0,n:phMeta.filter(m=>!m.tbHide&&m.kind!=="video").length,t:0}; tbProgPaint(); let body=""; try{ body=await tripbookHtml("export"); } finally{ tbExp.busy=false; tbProgPaint(); }
-      const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ฮอกไกโด 2026</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
+      const doc=`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tripbook ฮอกไกโด 2026</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&display=swap"><style>body{margin:0}${TB_CSS}</style></head><body><div class="tb">${body}</div></body></html>`;
       const parts=[doc.slice(0,doc.lastIndexOf("</body>"))];
       if(tbExpVids&&tbExpVidUsed.size){ tbVidPrep={stage:"pack",i:0,n:tbExpVidUsed.size}; for(const id of tbExpVidUsed){ tbVidPrep.i++; tbProgPaint(); const vb=tbExpVids.get(id);
           parts.push(`<script type="application/octet-stream" id="tbv-${id}" data-mime="${esc(vb.type||"video/mp4")}">`); for(const c of await tbB64Parts(vb)) parts.push(c); parts.push("<\/script>"); } parts.push(TB_PLAYER); }
@@ -4807,7 +4808,7 @@ async function vgLoad(id,pass,old){ const R=vgRepo(); if(!R) throw new Error("li
   if(!old||old.pf!==mf.p){ const p=await vgOpen(key,await vgFile(R,ref,id,mf.p)); await vgPut(id+":p",p); }
   localStorage.setItem("view:"+id,JSON.stringify({pass,at:mf.at,pf:mf.p,s,pub:mf.pub})); return true; }
 function vgLock(id){ const st=document.createElement("style");
-  st.textContent=`body.vg-lock>*:not(#vg){display:none!important}#vg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,#2C5E9E,#13325F);font-family:"Anuphan",system-ui,sans-serif;z-index:99999}#vg form{background:#fff;border-radius:22px;padding:26px 22px 20px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35);text-align:center;color:#1C2228}#vg .ic{font-size:42px;line-height:1}#vg h1{font-size:22px;margin:10px 0 4px;line-height:1.3}#vg p{margin:4px 0;color:#5A6670;font-size:14px;line-height:1.5}#vg input{width:100%;box-sizing:border-box;font:600 20px inherit;padding:12px;border:1.5px solid #CBD5D0;border-radius:12px;text-align:center;margin:16px 0 6px;letter-spacing:.06em}#vg input:focus{outline:none;border-color:#2C5E9E}#vg .e{color:#C0392B;min-height:22px;font-size:13.5px}#vg button{width:100%;padding:14px;border:0;border-radius:12px;background:#1D4E9E;color:#fff;font:600 16px inherit;cursor:pointer}#vg button:disabled{opacity:.6}#vg small{display:block;margin-top:12px;color:#8A949C;font-size:12px}#vg .sh{animation:vgsh .35s}@keyframes vgsh{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}`;
+  st.textContent=`body.vg-lock>*:not(#vg){display:none!important}#vg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,#2C5E9E,#13325F);font-family:"IBM Plex Sans Thai Looped",system-ui,sans-serif;z-index:99999}#vg form{background:#fff;border-radius:22px;padding:26px 22px 20px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35);text-align:center;color:#1C2228}#vg .ic{font-size:42px;line-height:1}#vg h1{font-size:22px;margin:10px 0 4px;line-height:1.3}#vg p{margin:4px 0;color:#5A6670;font-size:14px;line-height:1.5}#vg input{width:100%;box-sizing:border-box;font:600 20px inherit;padding:12px;border:1.5px solid #CBD5D0;border-radius:12px;text-align:center;margin:16px 0 6px;letter-spacing:.06em}#vg input:focus{outline:none;border-color:#2C5E9E}#vg .e{color:#C0392B;min-height:22px;font-size:13.5px}#vg button{width:100%;padding:14px;border:0;border-radius:12px;background:#1D4E9E;color:#fff;font:600 16px inherit;cursor:pointer}#vg button:disabled{opacity:.6}#vg small{display:block;margin-top:12px;color:#8A949C;font-size:12px}#vg .sh{animation:vgsh .35s}@keyframes vgsh{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}`;
   document.head.appendChild(st); document.body.classList.add("vg-lock");
   const el=document.createElement("div"); el.id="vg";
   el.innerHTML=`<form><div class="ic">👀</div><h1 id="vgT">ทริปที่แชร์ให้ดู</h1><p id="vgS">กำลังโหลด…</p><input id="vgP" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ใส่รหัสเปิด" aria-label="รหัสเปิด"><p class="e" id="vgE"></p><button id="vgGo" type="submit">เปิดดูทริป</button><small>ดูได้อย่างเดียว · ไม่ยุ่งกับข้อมูลในเครื่องนี้</small></form>`;
@@ -4997,7 +4998,7 @@ function tbCircle(ctx,x,y,r,img,col,label,sc){ ctx.save(); ctx.shadowColor="rgba
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=img?"#fff":col; ctx.fill(); ctx.restore();
   if(img){ ctx.save(); ctx.beginPath(); ctx.arc(x,y,r-1.5*sc,0,Math.PI*2); ctx.clip(); const iw=img.width, ih=img.height, s=Math.max(2*r/iw,2*r/ih); ctx.drawImage(img,x-iw*s/2,y-ih*s/2,iw*s,ih*s); ctx.restore(); }
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.lineWidth=Math.max(3*sc,r*.13); ctx.strokeStyle=col; ctx.stroke();
-  if(label){ const fs=Math.round(11.5*sc), bw=Math.max(20*sc,ctx.measureText?0:0); ctx.font=`700 ${fs}px "Anuphan", system-ui, sans-serif`; const tw=ctx.measureText(label).width; const w=Math.max(20*sc,tw+10*sc), h=20*sc;
+  if(label){ const fs=Math.round(11.5*sc), bw=Math.max(20*sc,ctx.measureText?0:0); ctx.font=`700 ${fs}px "IBM Plex Sans Thai Looped", system-ui, sans-serif`; const tw=ctx.measureText(label).width; const w=Math.max(20*sc,tw+10*sc), h=20*sc;
     const bx=img?x+r*.72-w/2+4*sc:x-w/2, by=img?y-r*.72-h/2-2*sc:y-h/2; if(!img&&r<14*sc){ ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(label,x,y+.5*sc); return; }
     if(img){ ctx.beginPath(); const rr=h/2; ctx.moveTo(bx+rr,by); ctx.arcTo(bx+w,by,bx+w,by+h,rr); ctx.arcTo(bx+w,by+h,bx,by+h,rr); ctx.arcTo(bx,by+h,bx,by,rr); ctx.arcTo(bx,by,bx+w,by,rr); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.lineWidth=2*sc; ctx.strokeStyle="#fff"; ctx.stroke(); }
     ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(label,bx+w/2,by+h/2+.5*sc); } }
@@ -5037,7 +5038,7 @@ async function tbMapPic(spec,W,H,web){ const DPR=2, CW=W*DPR, CH=H*DPR, sc=DPR; 
     ctx.beginPath(); ctx.arc(c.ax,c.ay,4*sc,0,Math.PI*2); ctx.fillStyle=c.m.col; ctx.fill(); ctx.lineWidth=1.5*sc; ctx.strokeStyle="#fff"; ctx.stroke(); } });
   C.sort((a,b)=>a.y-b.y).forEach(c=>tbCircle(ctx,c.x,c.y,c.R,pics[c.i],c.m.col,c.m.label,sc));
   /* credit */
-  const cr=missing?"เส้นทางโดยประมาณ (โหลดพื้นแผนที่ไม่ครบ)":"© OpenStreetMap contributors"; ctx.font=`500 ${11*sc}px "Anuphan", system-ui, sans-serif`; const tw=ctx.measureText(cr).width;
+  const cr=missing?"เส้นทางโดยประมาณ (โหลดพื้นแผนที่ไม่ครบ)":"© OpenStreetMap contributors"; ctx.font=`500 ${11*sc}px "IBM Plex Sans Thai Looped", system-ui, sans-serif`; const tw=ctx.measureText(cr).width;
   ctx.fillStyle="rgba(255,255,255,.85)"; ctx.fillRect(CW-tw-14*sc,CH-20*sc,tw+14*sc,20*sc); ctx.fillStyle="#3D4650"; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText(cr,CW-tw-7*sc,CH-10*sc);
   const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",.88)); pics.forEach(p=>{ try{ p&&p.close&&p.close(); }catch(e){} });
   return {blob,missing,need}; }
@@ -5169,7 +5170,7 @@ async function tbExtras(mode){ const app=mode!=="export"; let h=`<section class=
 /* ===================== Tripbook as a PDF, made here page by page: a phone's print preview chokes on a book with this many photos ===================== */
 const TBP={W:595.28,H:841.89,S:2.5,ML:40,MR:40,MT:50,MB:46};
 var tbPdfBusy=false, tbPdfV={i:0,n:0,msg:""}, tbPdfOut=null;
-const TBP_FF='"Anuphan","Noto Sans Thai","Sarabun","Leelawadee UI",system-ui,sans-serif';
+const TBP_FF='"IBM Plex Sans Thai Looped","Noto Sans Thai","Sarabun","Leelawadee UI",system-ui,sans-serif';
 const tbpSeg=(()=>{ try{ return new Intl.Segmenter("th",{granularity:"word"}); }catch(e){ return null; } })();
 const tbpGra=(()=>{ try{ return new Intl.Segmenter("th",{granularity:"grapheme"}); }catch(e){ return null; } })();
 let tbpMC=null;
@@ -5304,7 +5305,7 @@ function tbpDraw(ctx,o,bm){ ctx.save(); if(o.alpha!=null) ctx.globalAlpha=o.alph
     if(o.vid){ ctx.font=tbpFont(8.5,600); const tw=ctx.measureText(o.vid).width; tbpRR(ctx,o.x+6,o.y+o.h-20,tw+12,14,7); ctx.fillStyle="rgba(0,0,0,.55)"; ctx.fill(); ctx.fillStyle="#fff"; ctx.textBaseline="middle"; ctx.textAlign="left"; ctx.fillText(o.vid,o.x+12,o.y+o.h-13); } }
   ctx.restore(); }
 async function tbpLoad(u){ if(!u) return null; try{ const b=await (await fetch(u)).blob(); return await createImageBitmap(b); }catch(e){ return await tbLoadImg(u,8000); } }
-async function tbpFonts(){ try{ if(document.fonts&&document.fonts.load) await Promise.race([Promise.all([400,600,700].map(w=>document.fonts.load(`${w} 16px Anuphan`,"ทริป abc 123"))),tbSleep(4000)]); }catch(e){} }
+async function tbpFonts(){ try{ if(document.fonts&&document.fonts.load) await Promise.race([Promise.all([400,600,700].map(w=>document.fonts.load(`${w} 16px "IBM Plex Sans Thai Looped"`,"ทริป abc 123"))),tbSleep(4000)]); }catch(e){} }
 /* each page drawn on one canvas, kept only as a JPEG, so memory stays small however long the book is */
 async function tbpRender(doc,prog){ const S=TBP.S, cw=Math.round(TBP.W*S), ch=Math.round(TBP.H*S), cv=document.createElement("canvas"); cv.width=cw; cv.height=ch; const ctx=cv.getContext("2d"), out=[], n=doc.pages.length;
   for(let i=0;i<n;i++){ if(!document.body.classList.contains("tb-open")) throw new Error("closed"); prog(i+1,n); const pg=doc.pages[i];
