@@ -877,6 +877,10 @@ body.tb-open .lb{z-index:1450}
 .cs-mvph-row{display:flex;gap:4px;overflow-x:auto;align-items:center}
 .cs-mvph-row img{width:52px;height:52px;object-fit:cover;border-radius:7px;flex:none;background:#ddd}
 .cs-mvph-row span{flex:none;font-size:12.5px;color:var(--muted,#667);padding:0 6px}
+
+.ph-stores{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ph-stores li{border:1px solid var(--line,#e2e4e8);border-radius:12px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
+.ph-stores li.cur{border-color:var(--accent,#C2361F)}.ph-stores li span{font-size:13px;color:var(--muted,#667)}.ph-stores li .btn{align-self:flex-start;margin-top:4px}
 </style>
 
 <div class="app">
@@ -3556,18 +3560,51 @@ if(VIEW){ PDB.all=()=>vgGet(VIEW.id+":p").then(p=>((p&&p.ph)||[]).map(m=>Object.
    never carry on as if there were no photos: the plan's photo times, the shared link and the photo count must not be rewritten from an empty list */
 var phLoadErr=null, phLoadTry=0;
 function phLoad(){ PDB.all().then(l=>{ const L=l||[]; const had=store.get("phN",0)||(Object.values(edits).some(ed=>ed&&ed.list&&ed.list.some(n=>n.act))||store.get("actAutoSnap",0)?-1:0);   /* times set from photos = there were photos */
-    if(!L.length&&had>0&&!VIEW){ phLoadErr={gone:had,fresh:!!PDB.fresh}; renderPlan(); return; }   /* photos were here before: never treat their absence as "no photos" */
-    phLoadErr=null; phMeta=L.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(!VIEW) store.set("phN",phMeta.length);
+    if(!L.length&&had&&!VIEW){ phLoadErr={gone:had,fresh:!!PDB.fresh}; renderPlan(); phElseCheck(); return; }   /* photos were here before: never treat their absence as "no photos" */
+    phLoadErr=null; phMeta=L.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(!VIEW) store.set("phN",phMeta.length); if(!L.length&&!VIEW) phElseCheck();
     setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); setTimeout(actAutoKick,1500); renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); })
   .catch(e=>{ try{ if(PDB.db){ PDB.db.close(); } }catch(x){} PDB.db=null; phLoadTry++;
     if(phLoadTry<3) return setTimeout(phLoad,phLoadTry*1200);
     phLoadErr={msg:(e&&(e.name||"")+(e&&e.message?": "+e.message:""))||String(e)}; renderPlan(); }); }
 phLoad();
-function phLoadBanner(){ const E=phLoadErr; if(!E) return "";
+/* ---- this trip's photos kept in another photo store on this phone (another copy of the trip, the Hokkaido app, a store left from before) ---- */
+var phElse=null, phCopy=null; const HK_PDB="hkd"+"26photos";   /* the Hokkaido app's photo store */
+function phDbName(){ return PDB.dbn||(typeof TRIP_ID!=="undefined"?"tp-"+TRIP_ID+"-photos":HK_PDB); }
+function phStoreLabel(dbn){ if(dbn===HK_PDB) return "แอปฮอกไกโด"; const id=(dbn.match(/^tp-(.+)-photos$/)||[])[1]; if(!id) return dbn; if(id==="example-hokkaido") return "ทริปตัวอย่าง";
+  try{ const t=(JSON.parse(localStorage.getItem("tp:trips")||"[]")||[]).find(x=>x.id===id); if(t) return `ทริป “${t.name}”`; }catch(e){} return `ที่เก็บรูปที่ไม่มีทริปแล้ว (${id})`; }
+function phIdbOpen(dbn){ return new Promise((res,rej)=>{ let q; try{ q=indexedDB.open(dbn); }catch(e){ return rej(e); } q.onerror=()=>rej(q.error); q.onupgradeneeded=()=>{ try{ q.transaction.abort(); }catch(e){} }; q.onsuccess=()=>res(q.result); }); }
+async function phStores(){ let names=[]; try{ if(indexedDB.databases) names=(await indexedDB.databases()).map(d=>d.name).filter(n=>n&&(/^tp-.+-photos$/.test(n)||n===HK_PDB)); }catch(e){}
+  const a=DAYS[0].date, z=DAYS[DAYS.length-1].date, out=[];
+  for(const dbn of names){ try{ const db=await phIdbOpen(dbn); if(!db.objectStoreNames.contains("meta")){ db.close(); continue; }
+      const L=await new Promise((res,rej)=>{ const g=db.transaction("meta","readonly").objectStore("meta").getAll(); g.onsuccess=()=>res(g.result||[]); g.onerror=()=>rej(g.error); }); db.close();
+      const inR=L.filter(m=>m.takenAt&&jstDate(m.takenAt)>=a&&jstDate(m.takenAt)<=z); const ts=L.map(m=>m.takenAt).filter(Boolean);
+      out.push({dbn,label:phStoreLabel(dbn),n:L.length,inRange:inR.length,cur:dbn===phDbName(),from:ts.length?jstDate(Math.min(...ts)):"",to:ts.length?jstDate(Math.max(...ts)):""}); }catch(e){ out.push({dbn,label:phStoreLabel(dbn),err:(e&&e.name)||"error"}); } }
+  return out; }
+async function phElseCheck(){ try{ const S=await phStores(); const c=S.filter(x=>!x.cur&&x.inRange>0).sort((a,b)=>b.inRange-a.inRange); phElse=c.length?c:null; if(phElse) renderPlan(); }catch(e){} }
+function phElseBanner(){ if(!phElse||phMeta.length) return ""; const best=phElse[0];
+  return `<div class="fresh ph-err" role="status"><b>เจอรูปช่วงวันที่ของทริปนี้ ${best.inRange.toLocaleString()} ไฟล์ ใน${esc(best.label)}</b><p>ที่เก็บรูปของทริปนี้ยังว่าง แต่ในเครื่องนี้มีรูปที่ถ่ายระหว่างวันที่ของทริปนี้เก็บอยู่อีกที่ ดึงมาใส่ทริปนี้ได้ (ของเดิมไม่ถูกลบ) แล้วแอปจะจัดเข้าจุดตามเวลาและตำแหน่งให้${phElse.length>1?`<br><span class="tiny">ที่อื่นอีก: ${phElse.slice(1).map(x=>esc(x.label)+" "+x.inRange).join(" · ")}</span>`:""}</p>
+    ${phCopy?`<p><b>กำลังดึงรูป ${phCopy.i.toLocaleString()} / ${phCopy.n.toLocaleString()}</b></p>`:`<div class="c-actions"><button class="btn small primary" data-act="ph-else-copy" data-dbn="${esc(best.dbn)}">ดึงรูป ${best.inRange.toLocaleString()} ไฟล์มาใส่ทริปนี้</button><button class="btn small" data-act="ph-stores">ดูที่เก็บรูปทั้งหมด</button></div>`}</div>`; }
+async function phCopyFrom(dbn){ if(phCopy) return; const a=DAYS[0].date, z=DAYS[DAYS.length-1].date; let src;
+  try{ src=await phIdbOpen(dbn); const L=await new Promise((res,rej)=>{ const g=src.transaction("meta","readonly").objectStore("meta").getAll(); g.onsuccess=()=>res(g.result||[]); g.onerror=()=>rej(g.error); });
+    const have=new Set(phMeta.map(m=>m.id)); const pick=L.filter(m=>m.takenAt&&jstDate(m.takenAt)>=a&&jstDate(m.takenAt)<=z&&!have.has(m.id)); phCopy={i:0,n:pick.length}; renderPlan();
+    const get=k=>new Promise(res=>{ const g=src.transaction("blob","readonly").objectStore("blob").get(k); g.onsuccess=()=>res(g.result||null); g.onerror=()=>res(null); });
+    for(const m of pick){ for(const k of [m.id,m.id+"~s",m.id+"~p"]){ const b=await get(k); if(b) await PDB.putBlob(b); }
+      const c=Object.assign({},m); c.day=null; c.key=null; c.place=null; c.auto=true; c.byTime=false; c.bySess=false; delete c.stray; delete c.cover; await PDB.putMeta(c); phCopy.i++; if(phCopy.i%10===0) renderPlan(); }
+    src.close(); }
+  catch(e){ try{ src&&src.close(); }catch(x){} phCopy=null; phElse=null; phLoadErr={msg:"ดึงรูปไม่สำเร็จ: "+((e&&e.message)||e)}; renderPlan(); return; }
+  phCopy=null; phElse=null; phLoadErr=null; phLoadTry=0; try{ if(PDB.db) PDB.db.close(); }catch(e){} PDB.db=null;
+  const l=await PDB.all(); phMeta=(l||[]).sort((x,y)=>(x.takenAt||0)-(y.takenAt||0)); phReady=true; store.set("phN",phMeta.length);
+  try{ await resortPhotos(true,true); }catch(e){} renderPlan(); actAutoKick(); }
+function phStoresHtml(S){ return `<div class="sk">รูปของเรา</div><h2>ที่เก็บรูปในเครื่องนี้</h2><p class="tiny">แต่ละทริปเก็บรูปแยกกันในเบราว์เซอร์ของเครื่องนี้ · ทริปนี้ใช้ <span class="mono">${esc(phDbName())}</span></p>
+  ${S==null?`<p>กำลังตรวจ…</p>`:!S.length?`<p>เบราว์เซอร์นี้ไม่บอกรายชื่อที่เก็บ หรือยังไม่มีที่เก็บรูปเลย</p>`:`<ul class="ph-stores">${S.map(x=>`<li${x.cur?' class="cur"':""}><b>${esc(x.label)}${x.cur?" · ทริปนี้":""}</b><span>${x.err?"เปิดไม่ได้ ("+esc(x.err)+")":`${x.n.toLocaleString()} ไฟล์${x.from?` · ถ่าย ${esc(x.from)} – ${esc(x.to)}`:""}${!x.cur&&x.inRange?` · ตรงวันที่ทริปนี้ ${x.inRange.toLocaleString()}`:""}`}</span>${!x.cur&&x.inRange&&!phCopy?`<button class="btn small" data-act="ph-else-copy" data-dbn="${esc(x.dbn)}">ดึง ${x.inRange.toLocaleString()} ไฟล์มาใส่ทริปนี้</button>`:""}</li>`).join("")}</ul>`}`; }
+document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act='ph-else-copy'],[data-act='ph-stores']"); if(!b) return; ev.stopPropagation(); if(VIEW) return;
+  if(b.dataset.act==="ph-stores"){ openSheet(phStoresHtml(null)); const S=await phStores(); if($("#sheetRoot .ph-stores")||$("#sheetRoot h2")) renderSheet(phStoresHtml(S)); return; }
+  try{ closeSheet(); }catch(e){} phCopyFrom(b.dataset.dbn); },true);
+function phLoadBanner(){ const E=phLoadErr; if(!E) return phElseBanner();
   return `<div class="fresh ph-err" role="alert"><b>${E.gone?`ยังไม่เห็นรูป${E.gone>0?" "+E.gone.toLocaleString()+" ไฟล์":""}ที่เคยมีในทริปนี้`:"เปิดรูปที่เก็บในเครื่องไม่ได้ตอนนี้"}</b>
     <p>${E.gone?(E.fresh?"ที่เก็บรูปของทริปนี้ในเครื่องว่างเปล่า (เบราว์เซอร์อาจลบไปตอนพื้นที่เครื่องเหลือน้อย) · แผนและการแก้ไขยังอยู่ครบ":"ที่เก็บรูปเปิดได้แต่ยังว่าง · แผนและการแก้ไขยังอยู่ครบ"):"รูปยังไม่หาย แต่เบราว์เซอร์อ่านไม่ได้ ส่วนใหญ่เกิดจาก<b>พื้นที่ในเครื่องเต็ม</b> · ลบไฟล์/แอปที่ไม่ใช้ให้มีที่ว่างสัก 1–2 GB แล้วกด ลองใหม่"}
     ${E.msg?`<br><span class="tiny mono">${esc(E.msg)}</span>`:""}<br><span class="tiny" id="ph-est"></span></p>
-    <div class="c-actions"><button class="btn small primary" data-act="ph-reload">ลองใหม่</button>${E.gone?`<button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button><button class="btn small" data-act="ph-gone-ok">ใช้ต่อโดยไม่มีรูป</button>`:""}</div></div>`; }
+    <div class="c-actions"><button class="btn small primary" data-act="ph-reload">ลองใหม่</button><button class="btn small" data-act="ph-stores">ดูที่เก็บรูปในเครื่อง</button>${E.gone?`<button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button><button class="btn small" data-act="ph-gone-ok">ใช้ต่อโดยไม่มีรูป</button>`:""}</div></div>`+phElseBanner(); }
 async function phEstPaint(){ try{ const el=$("#ph-est"); if(!el||!navigator.storage||!navigator.storage.estimate) return; const e=await navigator.storage.estimate(); const g=x=>(x/1073741824).toFixed(2)+" GB";
   el.textContent=`ที่เก็บของแอปนี้: ใช้ ${g(e.usage||0)} จากที่ใช้ได้ ${g(e.quota||0)}`; }catch(e){} }
 document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act='ph-reload'],[data-act='ph-gone-ok']"); if(!b) return; ev.stopPropagation();
