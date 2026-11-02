@@ -3160,13 +3160,15 @@ if(VIEW){ PDB.all=()=>vgGet(VIEW.id+":p").then(p=>((p&&p.ph)||[]).map(m=>Object.
 /* loading our photos. If the phone cannot read them (most often: the phone's storage is full), say so and try again later —
    never carry on as if there were no photos: the plan's photo times, the shared link and the photo count must not be rewritten from an empty list */
 var phLoadErr=null, phLoadTry=0;
-function phLoad(){ PDB.all().then(l=>{ const L=l||[]; const had=store.get("phN",0)||(Object.values(edits).some(ed=>ed&&ed.list&&ed.list.some(n=>n.act))||store.get("actAutoSnap",0)?-1:0);   /* times set from photos = there were photos */
+function phLoad(){ phTimeout(PDB.all(),20000,"read").then(l=>{ const L=l||[]; const had=store.get("phN",0)||(Object.values(edits).some(ed=>ed&&ed.list&&ed.list.some(n=>n.act))||store.get("actAutoSnap",0)?-1:0);   /* times set from photos = there were photos */
     if(!L.length&&had&&!VIEW){ phLoadErr={gone:had,fresh:!!PDB.fresh}; renderPlan(); phElseCheck(); return; }   /* photos were here before: never treat their absence as "no photos" */
     phLoadErr=null; phMeta=L.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); phReady=true; if(!VIEW) store.set("phN",phMeta.length); if(!L.length&&!VIEW) phElseCheck();
     setTimeout(()=>fixOrphans().then(n=>{ if(n) renderPlan(); }),800); setTimeout(fillSuggestions,1500); setTimeout(vpRepairKick,4000); setTimeout(gdResumeKick,700); setTimeout(tbDrvLoad,500); setTimeout(actAutoKick,1500); renderPlan(); if(phMeta.length&&map&&curTab==="map") drawMap(false); })
   .catch(e=>{ try{ if(PDB.db){ PDB.db.close(); } }catch(x){} PDB.db=null; phLoadTry++;
+    const slow=!!(e&&/ช้าเกิน/.test(e.name||""));
+    if(slow){ phLoadErr={msg:"อ่านที่เก็บรูปไม่เสร็จใน 20 วินาที",stuck:true}; renderPlan(); if(phLoadTry<12) setTimeout(phLoad,15000); return; }   /* keep trying quietly: it opens by itself once the other window lets go */
     if(phLoadTry<3) return setTimeout(phLoad,phLoadTry*1200);
-    phLoadErr={msg:(e&&(e.name||"")+(e&&e.message?": "+e.message:""))||String(e)}; renderPlan(); }); }
+    phLoadErr={msg:(e&&(e.name||"")+(e&&e.message?": "+e.message:""))||String(e),stuck:!!(e&&/ช้าเกิน/.test(e.name||""))}; renderPlan(); }); }
 phLoad();
 /* ---- this trip's photos kept in another photo store on this phone (another copy of the trip, the Hokkaido app, a store left from before) ---- */
 var phElse=null, phCopy=null; const HK_PDB="hkd"+"26photos";   /* the Hokkaido app's photo store */
@@ -3209,7 +3211,7 @@ document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-a
   try{ closeSheet(); }catch(e){} phCopyFrom(b.dataset.dbn); },true);
 function phLoadBanner(){ const E=phLoadErr; if(!E) return phElseBanner();
   return `<div class="fresh ph-err" role="alert"><b>${E.gone?`ยังไม่เห็นรูป${E.gone>0?" "+E.gone.toLocaleString()+" ไฟล์":""}ที่เคยมีในทริปนี้`:"เปิดรูปที่เก็บในเครื่องไม่ได้ตอนนี้"}</b>
-    <p>${E.gone?(E.fresh?"ที่เก็บรูปของทริปนี้ในเครื่องว่างเปล่า (เบราว์เซอร์อาจลบไปตอนพื้นที่เครื่องเหลือน้อย) · แผนและการแก้ไขยังอยู่ครบ":"ที่เก็บรูปเปิดได้แต่ยังว่าง · แผนและการแก้ไขยังอยู่ครบ"):"รูปยังไม่หาย แต่เบราว์เซอร์อ่านไม่ได้ ส่วนใหญ่เกิดจาก<b>พื้นที่ในเครื่องเต็ม</b> · ลบไฟล์/แอปที่ไม่ใช้ให้มีที่ว่างสัก 1–2 GB แล้วกด ลองใหม่"}
+    <p>${E.gone?(E.fresh?"ที่เก็บรูปของทริปนี้ในเครื่องว่างเปล่า (เบราว์เซอร์อาจลบไปตอนพื้นที่เครื่องเหลือน้อย) · แผนและการแก้ไขยังอยู่ครบ":"ที่เก็บรูปเปิดได้แต่ยังว่าง · แผนและการแก้ไขยังอยู่ครบ"):E.stuck?"เบราว์เซอร์อ่านที่เก็บรูปไม่เสร็จ มักเกิดจากมีแอปนี้หรือแอปฮอกไกโด<b>เปิดค้างอยู่อีกหน้าต่าง</b>แล้วล็อกที่เก็บไว้ · ปิดทุกหน้าต่างของแอป หรือ <b>บังคับหยุด Chrome</b> (ตั้งค่า › แอป › Chrome › บังคับหยุด) แล้วเปิดแอปใหม่ · ไม่ต้องล้างข้อมูล":"รูปยังไม่หาย แต่เบราว์เซอร์อ่านไม่ได้ · ลองปิดแล้วเปิดแอปใหม่ ถ้ายังไม่ได้ให้บังคับหยุด Chrome แล้วเปิดใหม่ (ไม่ต้องล้างข้อมูล)"}
     ${E.msg?`<br><span class="tiny mono">${esc(E.msg)}</span>`:""}<br><span class="tiny" id="ph-est"></span></p>
     <div class="c-actions"><button class="btn small primary" data-act="ph-reload">ลองใหม่</button><button class="btn small" data-act="ph-stores">ดูที่เก็บรูปในเครื่อง</button>${E.gone?`<button class="btn small" data-act="bk-file-open">เปิดไฟล์สำรอง</button><button class="btn small" data-act="ph-gone-ok">ใช้ต่อโดยไม่มีรูป</button>`:""}</div></div>`+phElseBanner(); }
 async function phEstPaint(){ try{ const el=$("#ph-est"); if(!el||!navigator.storage||!navigator.storage.estimate) return; const e=await navigator.storage.estimate(); const g=x=>(x/1073741824).toFixed(2)+" GB";
