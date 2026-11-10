@@ -886,6 +886,8 @@ body.tb-open .lb{z-index:1450}
 .my-ph-c .ph-tm{top:3px;right:3px;bottom:auto;font-size:9.5px;padding:0 4px;border-radius:5px;line-height:1.45}
 
 .leg-pg{background:var(--surface-2,#f4f5f7);border-radius:10px;padding:8px 10px;font-size:13.5px;line-height:1.5;margin:6px 0 4px}
+
+.ph-loosemsg{background:var(--surface-2,#f4f5f7);border-radius:10px;padding:8px 11px;font-size:14px;margin:4px 0 8px}
 </style>
 
 <div class="app">
@@ -3887,7 +3889,28 @@ function photoSheetHtml(){
     <div class="c-actions"><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${u?`<button class="btn small" data-act="ph-undo">ย้อน: ${esc(u.label||"จัดใหม่")}</button>`:""}<button class="btn small" data-act="dup-open">หารูปซ้ำ</button><button class="btn small" data-act="phx-open">ดาวน์โหลดรูปทั้งหมด</button><button class="btn small" data-act="backup">สำรองทั้งหมด</button></div>
     <p class="tiny">"จัดใหม่" วางรูปใหม่ตามแผนล่าสุด รูปที่คุณจัดเองไม่ถูกแตะ เว้นแต่จุดนั้นถูกลบไปแล้ว · "ย้อน" กลับไปก่อนการจัดครั้งล่าสุด</p></details>`:""}
   ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน · การ์ดเดียวกันนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map(groupCardHtml).join("")}`:""}
-  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">รูปที่ยังไม่อยู่ในจุดไหน: ไม่มีวันเวลาที่ถ่าย ถ่ายนอกช่วงทริป หรือจุดเดิมถูกลบ</p><div class="ph-grid">${loose.slice(0,16).map(cell).join("")}</div><div class="c-actions"><button class="btn small primary" data-act="srt-open">ดูทั้งหมดและย้ายทีละหลายรูป (${loose.length})</button></div>`:""}</div>`; }
+  ${loose.length||looseMsg?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3>${looseMsg?`<p class="ph-loosemsg">${looseMsg}</p>`:""}${loose.length?`<p class="tiny">${looseWhy(loose)}</p>${(()=>{ const n=loose.filter(m=>m.takenAt&&m.tsrc!=="file"&&!(m.auto===false&&m.day!=null)&&DAYS.some(d=>d.date===jstDate(m.takenAt))).length; return n||looseBusy?`<div class="c-actions"><button class="btn small primary" data-act="ph-sortloose" ${looseBusy?"disabled":""}>${looseBusy?"กำลังจัด…":`จัดเข้าแผนให้ (${n.toLocaleString()} รูปที่จัดได้)`}</button></div>`:""; })()}<div class="ph-grid">${loose.slice(0,16).map(cell).join("")}</div><div class="c-actions"><button class="btn small" data-act="srt-open">ดูทั้งหมดและย้ายทีละหลายรูป (${loose.length})</button></div>`:""}`:""}</div>`; }
+/* why the unsorted ones are unsorted: told in counts, so it is clear what a re-sort can and cannot do */
+function looseWhy(L){ const inTrip=m=>DAYS.some(d=>d.date===jstDate(m.takenAt)), mine=L.filter(m=>m.auto===false&&m.day!=null).length;
+  const noT=L.filter(m=>!m.takenAt||m.tsrc==="file").length, out=L.filter(m=>m.takenAt&&m.tsrc!=="file"&&!inTrip(m)).length, rest=L.length-noT-out-mine;
+  if(mine) return [rest?`มีวันเวลาในช่วงทริป ${rest.toLocaleString()} (จัดให้ได้)`:"",`คุณวางไว้จัดทีหลัง ${mine.toLocaleString()} (ไม่แตะ)`,out?`ถ่ายนอกช่วงวันทริป ${out.toLocaleString()}`:"",noT?`ไม่มีวันเวลาที่ถ่ายจริง ${noT.toLocaleString()}`:""].filter(Boolean).join(" · ");
+  return [rest?`มีวันเวลาในช่วงทริป ${rest.toLocaleString()} (จัดให้ได้)`:"",out?`ถ่ายนอกช่วงวันทริป ${out.toLocaleString()}`:"",noT?`ไม่มีวันเวลาที่ถ่ายจริง ${noT.toLocaleString()} (เช่น ภาพแคปหน้าจอ หรือรูปที่ส่งผ่านแชต)`:""].filter(Boolean).join(" · "); }
+var looseBusy=false, looseMsg="";
+/* place only the unsorted photos — e.g. after an import that was closed half-way, before it could sort what it brought in.
+   The photos already placed, and the ones you put somewhere yourself, are not touched; "ย้อน" undoes it */
+async function sortLoose(){ if(looseBusy) return; looseBusy=true; looseMsg=""; photoSheetPaint();
+  try{ const L0=looseList(); const ids=new Set(L0.map(m=>m.id)); phSnap("จัดรูปที่ยังไม่ได้จัด");
+    const twins=await mergeTwins();   /* the same file brought in twice by the interrupted import */
+    for(const m of phMeta){ if(!ids.has(m.id)||m.auto===false&&m.day!=null) continue; const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; if(m.auto==null) m.auto=true; await PDB.putMeta(m); }
+    phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); await roadStops(); await sessionFix();
+    /* still loose but taken on a day of the trip: the stop (or the drive) going on at that time */
+    for(let di=0;di<DAYS.length;di++){ const rest=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&m.auto!==false&&m.day===di&&m.takenAt&&m.tsrc!=="file"); if(rest.length) await looseByTime(di,rest); }
+    const kept=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&m.auto===false&&m.day!=null).length, left=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&!(m.auto===false&&m.day!=null)).length, gone=L0.length-phMeta.filter(m=>ids.has(m.id)).length, placed=L0.length-left-gone-kept;
+    const sugg=phMeta.filter(m=>ids.has(m.id)&&!m.key&&m.place).length;
+    looseMsg=`จัดเข้าแผนแล้ว <b>${(placed-sugg).toLocaleString()}</b> รูป${sugg?` · เป็นจุดแนะนำใหม่ (ที่ที่ไม่อยู่ในแผน) ${sugg.toLocaleString()}`:""}${gone?` · รวมรูปซ้ำ ${gone.toLocaleString()}`:""}${left?` · ยังจัดไม่ได้ ${left.toLocaleString()}`:""} <button class="lnk" data-act="ph-undo">ย้อน</button>`;
+    fillSuggestions(); renderPlan(); phChanged(); try{ actAutoKick(); }catch(e){} }
+  catch(e){ looseMsg="จัดไม่สำเร็จ: "+esc((e&&e.message)||String(e)); }
+  finally{ looseBusy=false; if($("#ph-root")) photoSheetPaint(); } }
 function photoSheetPaint(first){ const fresh=first||!$("#ph-root"); const old=$("#sheetRoot .sheet"), top=old&&!fresh?old.scrollTop:0;
   if(fresh) openSheet(photoSheetHtml()); else renderSheet(photoSheetHtml());
   if(top){ const s=$("#sheetRoot .sheet"); if(s) s.scrollTop=top; } setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
@@ -4820,7 +4843,7 @@ function vgLock(id){ const st=document.createElement("style");
     try{ await vgLoad(id,p,null); location.reload(); }
     catch(e){ b.disabled=false; b.textContent="เปิดดูทริป"; $e("#vgE").textContent=e.bad?"รหัสไม่ถูกต้อง ลองใหม่อีกครั้งนะ":e.gone?"เจ้าของทริปหยุดแชร์ลิงก์นี้แล้ว":"โหลดไม่ได้ตอนนี้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"; if(e.bad){ const f=$e("form"); f.classList.remove("sh"); void f.offsetWidth; f.classList.add("sh"); } } };
   setTimeout(()=>{ try{ $e("#vgP").focus(); }catch(e){} },300); }
-const VG_HIDE=["ph-addmenu","ph-pick","ph-pick-files","ph-add","ph-addstop","tb-open","backup","addstop","srt-open","ph-resort","ph-undo","dup-open","phx-open","cs-edit","rec-add","rec-hide","ex-add","reorder","dshift","dstop","bk-restore","bk-import","act-apply","act-open","gk-open","cs-recplus"];
+const VG_HIDE=["ph-addmenu","ph-sortloose","ph-pick","ph-pick-files","ph-add","ph-addstop","tb-open","backup","addstop","srt-open","ph-resort","ph-undo","dup-open","phx-open","cs-edit","rec-add","rec-hide","ex-add","reorder","dshift","dstop","bk-restore","bk-import","act-apply","act-open","gk-open","cs-recplus"];
 const VG_BLOCK=/^(addstop|visit|reorder|dshift|dstop|rec-add|rec-hide|ex-add|ph-pick|ph-pick-files|ph-add|ph-addmenu|ph-addstop|ph-gmv|ph-undo|ph-resort|ph-strip|ph-justno|ph-galsel|ph-galundo|ph-gpick|ph-gname|srt-.*|cs-(edit|save|reset|del|ins|time|qt.*|leg.*|mv|moveday|promote|pick.*|noplace|here|fradd|recplus|atclear|reloc|hit)|backup|bk-.*|tb-open|pool-.*|gp-.*|gk-.*|act-apply|act-all|dup-.*|phx-.*|vs-.*)$/;
 function vgToast(t){ let el=$("#vgToast"); if(!el){ el=document.createElement("div"); el.id="vgToast"; document.body.appendChild(el); } el.textContent=t; el.classList.add("on"); clearTimeout(vgToast.t); vgToast.t=setTimeout(()=>el.classList.remove("on"),1800); }
 function vgBarPaint(){ const b=$("#vgBar"); if(!b) return; const c=VIEW.c, d=new Date(c.at||0), today=d.toDateString()===new Date().toDateString();
@@ -5386,7 +5409,8 @@ document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-a
     openAddStopForPhotos(ps.find(m=>m.lat!=null)||ps[0],ps.map(m=>m.id)); return; }
   if(a==="ph-galundo"){ if(galState) galState.flash=""; await undoResort(); return; }
   if(a==="ph-resort"){ resortPhotos(); return; }
-  if(a==="ph-undo"){ undoResort(); return; }
+  if(a==="ph-sortloose"){ sortLoose(); return; }
+  if(a==="ph-undo"){ looseMsg=""; undoResort(); return; }
   if(a==="tb-open"){ const had=!!(history.state&&history.state.sheet)&&!!$("#sheetRoot").innerHTML; tbReturn=!!$("#ph-root"); closeSheet(); if(!had){ openTripbook(); return; }
     let done=false; const go=()=>{ if(done) return; done=true; removeEventListener("popstate",hp); openTripbook(); }; const hp=()=>setTimeout(go,0); addEventListener("popstate",hp); setTimeout(go,600); return; }
 },true);
