@@ -758,6 +758,10 @@ body.tb-open{overflow:hidden}
 .cs-hit b em.src{font-style:normal;font-weight:600;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:4px;vertical-align:1px;background:var(--line);color:var(--muted)}
 .cs-hit b em.s-mine{background:color-mix(in srgb,var(--gold,#C9A227) 22%,var(--surface));color:var(--ink)}
 .cs-hit b em.s-google{background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--accent)}
+.cs-dist{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:500;padding:2px 8px;border-radius:999px;background:var(--line);color:var(--muted)}
+.cs-dist.near{background:color-mix(in srgb,#2F6B45 14%,var(--surface));color:#2F6B45}
+.cs-dist.mid{background:color-mix(in srgb,#B26B00 14%,var(--surface));color:#8A5300}
+.cs-hit.cs-closest{border-color:#2F6B45}
 .cs-hit b em.s-plan{background:color-mix(in srgb,var(--ok) 15%,var(--surface));color:var(--ok)}
 .cs-foot{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
 .gk-steps{padding-left:20px;margin:6px 0 8px}.gk-steps li{margin:0 0 8px;font-size:14.5px}
@@ -2385,10 +2389,14 @@ async function reverseName(ll){ try{ const r=await fetch(`https://photon.komoot.
 document.addEventListener("input",ev=>{
   if(ev.target.id!=="cs-q") return; const q=ev.target.value.trim(); clearTimeout(searchT);
   const box=$("#cs-res"); if(q.length<2){ box.innerHTML=""; return; } box.innerHTML=`<div class="tiny">กำลังค้นหา…</div>`;
-  searchT=setTimeout(async()=>{ const res=await geoSearch(q); if(!$("#cs-res")||($("#cs-q")&&$("#cs-q").value.trim()!==q)) return;
+  searchT=setTimeout(async()=>{ let res=await geoSearch(q); if(!$("#cs-res")||($("#cs-q")&&$("#cs-q").value.trim()!==q)) return;
     if(res==null){ $("#cs-res").innerHTML=`<div class="tiny">ค้นหาไม่ได้ตอนนี้${GKEY&&gErr?" ("+esc(gErr.replace(/^net:/,""))+")":""} ลองใช้ "แตะเลือกบนแผนที่" หรือวางพิกัด</div>`+geoFoot(q); return; }
     const SRC={mine:"ในลิสต์ของฉัน",plan:"ในทริป",google:"Google",osm:"OSM",ll:"พิกัด"};
-    lastRes=res; $("#cs-res").innerHTML=(res.length?res.map((r,i)=>`<button class="cs-hit" data-act="cs-hit" data-i="${i}"><b>${esc(r.name)} <em class="src s-${r.src||"osm"}">${SRC[r.src]||""}</em></b><span class="tiny">${esc(r.sub||"")}</span></button>`).join(""):`<div class="tiny">ไม่พบ "${esc(q)}"${geoSrc==="osm"?" ใน OpenStreetMap":""}</div>`)+geoFoot(q);
+    /* moving photos that know where they were taken: how far each result is from that spot, so the right branch is easy to pick */
+    const PL=draft&&draft.photoLL; if(PL){ const near=r=>r.lat!=null&&r.lng!=null&&km(PL,[+r.lat,+r.lng])<2?0:1; res=res.map((r,i)=>[r,i]).sort((a,b)=>near(a[0])-near(b[0])||a[1]-b[1]).map(x=>x[0]); }   /* places within 2 km of the photos come first */
+    const ds=res.map(r=>PL&&r.lat!=null&&r.lng!=null?km(PL,[+r.lat,+r.lng]):null), dk=ds.filter(x=>x!=null), dmin=dk.length?Math.min(...dk):null;
+    const distTag=d=>d==null?"":`<span class="cs-dist ${d<0.3?"near":d<2?"mid":"far"}">📷 ${dk.length>1&&d===dmin?"<b>ใกล้ที่ถ่ายรูปที่สุด</b> · ":""}ห่างจากที่ถ่ายรูป ${fmtDist(d)}</span>`;
+    lastRes=res; $("#cs-res").innerHTML=(res.length?res.map((r,i)=>`<button class="cs-hit${ds[i]!=null&&dk.length>1&&ds[i]===dmin?" cs-closest":""}" data-act="cs-hit" data-i="${i}"><b>${esc(r.name)} <em class="src s-${r.src||"osm"}">${SRC[r.src]||""}</em></b><span class="tiny">${esc(r.sub||"")}</span>${distTag(ds[i])}</button>`).join(""):`<div class="tiny">ไม่พบ "${esc(q)}"${geoSrc==="osm"?" ใน OpenStreetMap":""}</div>`)+geoFoot(q);
   },GKEY?650:450);
 });
 document.addEventListener("change",ev=>{ if(ev.target.id==="burst-tg") store.set("burst",!!ev.target.checked); });
