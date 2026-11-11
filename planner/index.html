@@ -885,6 +885,16 @@ body.tb-open .lb{z-index:1450}
 .ph-addopt{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;min-height:48px}
 .ph-addopt b{display:block;font-size:15px}.ph-addopt span{display:block;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
 .ph-addopt:active{background:var(--surface-2)}
+.ph-main .ph-morebtn{min-width:44px;font-size:20px;line-height:1;padding-left:10px;padding-right:10px;margin-left:auto}
+.ph-moremenu .ph-addopt b svg{width:16px;height:16px;vertical-align:-3px;margin-right:4px}
+.ph-twnote{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,#B26B00 35%,var(--line));background:color-mix(in srgb,#B26B00 8%,var(--surface));font-size:14px}
+.ph-twnote span{flex:1 1 180px}
+.tw-list{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.tw-p{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.tw-at{display:block;margin-top:4px;font-size:12.5px;color:var(--muted);line-height:1.35}
+.srt-dup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 8px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,#B26B00 8%,var(--surface))}
+.srt-dup .tiny{flex:1 1 180px}
+.srt-guess .btn{white-space:normal;text-align:left;max-width:100%;height:auto;min-height:36px;line-height:1.35;padding-top:6px;padding-bottom:6px}
 .ph-days-h{font-size:12.5px;color:var(--muted);margin:12px 0 0}
 .ph-day{border:1px solid color-mix(in srgb,var(--dc) 35%,var(--line));font:inherit;font-size:13px;padding:5px 11px;min-height:34px;border-radius:999px;background:color-mix(in srgb,var(--dc) 10%,var(--surface));color:var(--ink);cursor:pointer}
 .ph-day b{color:var(--dc)}
@@ -3469,7 +3479,8 @@ function keyLabel(di,key){ if(di==null) return "ยังไม่ได้จ�
   if(key.startsWith("leg:")){ const l=its.find(x=>x._i===key.slice(4)); return `D${DAYS[di].n} · ระหว่างทาง${l&&l.walk?"เดิน":""}ไป ${l?P[l.to][0]:""}`; }
   const it=its.find(x=>x._i===key); const n=stopNumMap(di)[key]; return `D${DAYS[di].n} · ${n?n+". ":""}${it?it.n:"จุดที่ถูกลบ"}`; }
 function zipHow(){ return `<details class="zip-how"><summary>เอาตำแหน่งกลับมา (ส่งเป็นไฟล์ ZIP)</summary><ol><li>เปิดแอป My Files (ไฟล์ของฉัน) ไปที่ DCIM › Camera</li><li>กดค้างเลือกรูปของทริป › เมนู ⋮ › บีบอัด (Compress) เป็น .zip</li><li>กลับมาที่นี่ กด <button class="lnk" data-act="ph-pick-files">เลือกผ่านแอปไฟล์</button> แล้วเลือกไฟล์ .zip</li></ol><p>ไฟล์ใน ZIP ไม่ถูกตัดตำแหน่ง รูปที่มีอยู่แล้วจะถูกเติมตำแหน่งและจัดที่ใหม่ ไม่เพิ่มรูปซ้ำ รูปที่คุณย้ายเองอยู่ที่เดิม</p></details>`; }
-var phAddOpen=false;
+var phAddOpen=false, phMoreOpen=false;
+document.addEventListener("click",ev=>{ if(ev.target.closest&&ev.target.closest(".ph-moremenu [data-act]")) phMoreOpen=false; },true);   /* a menu item closes the ⋯ menu */
 function groupCardHtml(g){ const cell=m=>`<button class="ph-cell" data-act="ph-open" data-id="${m.id}"><img data-phid="${m.id}" alt="">${phBadge(m)}</button>`; const st=placeNameState(g.place);
   return `<div class="pg${isJust(g)?" just":""}" data-sug="${esc(g.id)}" data-pgm="${esc(grpOf(g).join(","))}"><div class="pg-h"><b>D${DAYS[g.day].n} · ${esc(placeLabel(g.place))}</b><span class="tiny">${g.place.fid!=null?"ร้านในลิสต์ของฉัน · ":g.place.picked?"ชื่อที่คุณเลือก · ":g.place.guess&&g.place.name?"ชื่อจากตำแหน่งที่ถ่าย · ":""}${g.list[0].takenAt?fmtMin(jstMin(g.list[0].takenAt)):""} · ${mediaWord(g.list)}</span>${st?`<span class="tiny">${esc(st)}</span>`:""}</div>
   <div class="ph-grid">${g.list.slice(0,8).map(cell).join("")}</div>
@@ -3481,17 +3492,16 @@ function photoSheetHtml(){
   const noLoc=phMeta.filter(m=>m.kind!=="video"&&m.lat==null).length;
   return `<div id="ph-root"><div class="sk">รูปทริป</div><h2>รูปและวิดีโอของเรา ${phMeta.length?`<span class="muted" style="font-weight:500">${mediaWord(phMeta)}</span>`:""}</h2>
   <p class="ph-intro">แอปวางรูปเข้าจุดในแผนจากตำแหน่งที่ถ่าย ถ้ารูปไม่มีตำแหน่งจะดูจากเวลาที่ถ่าย · แตะรูปเพื่อดูใหญ่และย้าย · ไฟล์อยู่ในเครื่องนี้เท่านั้น</p>
-  <div class="c-actions ph-main"><button class="btn small primary" data-act="ph-addmenu" aria-expanded="${phAddOpen}">${I.plus}เพิ่มรูป/วิดีโอ</button>${loose.length?`<button class="btn small" data-act="srt-open">จัดรูปที่ยังไม่ได้จัด (${loose.length})</button>`:""}${phMeta.length?`<button class="btn small" data-act="tb-open">${I.book}Tripbook</button>`:""}</div>
+  <div class="c-actions ph-main"><button class="btn small primary" data-act="ph-addmenu" aria-expanded="${phAddOpen}">${I.plus}เพิ่มรูป/วิดีโอ</button>${loose.length?`<button class="btn small primary ph-sortall" data-act="ph-sortloose" ${looseBusy?"disabled":""}>${looseBusy?"กำลังจัด…":"จัดรูปทั้งหมด"}</button>`:""}${phMeta.length?`<button class="btn small ph-morebtn" data-act="ph-more" aria-expanded="${phMoreOpen}" aria-label="เมนูอื่นๆ">⋯</button>`:""}</div>
   ${phAddOpen?`<div class="ph-addmenu"><button class="ph-addopt" data-act="ph-pick"><b>เลือกจากรูปในมือถือ</b><span>เร็วที่สุด แต่มือถือบางรุ่นตัดตำแหน่งที่ถ่ายออก แอปจะจัดตามเวลาแทน</span></button><button class="ph-addopt" data-act="gp-pick"><b>จาก Google Photos</b><span>เลือกจากคลัง Google Photos ได้เลย · Google ตัดตำแหน่งที่ถ่ายออก แอปจะจัดตามเวลาที่ถ่าย</span></button><button class="ph-addopt" data-act="ph-pick-files"><b>ไฟล์ ZIP</b><span>ได้ตำแหน่งที่ถ่ายครบ · รูปที่มีอยู่แล้วจะถูกเติมตำแหน่ง ไม่เพิ่มซ้ำ</span></button>${zipHow()}<label class="burst-tg"><input type="checkbox" id="burst-tg"${store.get("burst",true)?" checked":""}> รูปที่กดรัวห่างกันไม่เกิน 3 วินาที (กล้องเดียวกัน) เก็บไว้รูปเดียวที่คมชัดที่สุด</label></div>`:""}
+  ${phMoreOpen&&phMeta.length?`<div class="ph-addmenu ph-moremenu">${loose.length?`<button class="ph-addopt" data-act="srt-open"><b>เลือกจุดให้รูปที่ยังไม่ได้จัดเอง</b><span>ดูเป็นชุดตามอัลบั้ม แอปเดาจุดให้ แล้วย้ายทีละหลายรูป</span></button>`:""}<button class="ph-addopt" data-act="tb-open"><b>${I.book}Tripbook</b><span>สมุดภาพทริปจากรูปในแผน</span></button><button class="ph-addopt" data-act="dup-open"><b>หารูปซ้ำ</b><span>รวมรูปที่ถ่ายรัวหรือนำเข้ามาซ้ำ ให้เหลือรูปเดียว</span></button><button class="ph-addopt" data-act="ph-resort"><b>จัดรูปใหม่ตามแผนล่าสุด</b><span>วางรูปใหม่ทั้งหมดตามแผนตอนนี้ รูปที่คุณย้ายเองไม่ถูกแตะ</span></button>${u?`<button class="ph-addopt" data-act="ph-undo"><b>ย้อน</b><span>กลับไปก่อน: ${esc(u.label||"จัดใหม่")}</span></button>`:""}<button class="ph-addopt" data-act="phx-open"><b>ดาวน์โหลดรูปทั้งหมด</b><span>บันทึกรูปและวิดีโอลงเครื่อง</span></button><button class="ph-addopt" data-act="backup"><b>สำรองข้อมูล</b><span>สำรองแผนและรูปไว้ใน Google Drive หรือเป็นไฟล์</span></button></div>`:""}
+  ${looseMsg?`<p class="ph-loosemsg">${looseMsg}</p>`:""}
   ${gpHtml()}${poolHtml()}
   ${prog}
   ${!imp&&noLoc>=5&&noLoc>phMeta.length/2?`<div class="ph-geo-note"><b>${noLoc} รูปไม่มีตำแหน่งที่ถ่าย</b> จึงจัดได้แค่ตามเวลา · ถ้ามีไฟล์ต้นฉบับ นำเข้าเป็น ZIP อีกครั้งเพื่อเติมตำแหน่ง (ไม่เพิ่มซ้ำ)</div>`:""}
   ${phMeta.length?`<p class="ph-days-h">แตะวันเพื่อดูรูปในแผนของวันนั้น</p><div class="ph-days" role="group" aria-label="ดูรูปในแผนของวัน" style="margin-top:6px">${DAYS.map((d,i)=>`<button class="ph-day${byDay[i]?"":" z"}" data-act="ph-goday" data-d="${i}" style="--dc:var(--d${d.n})"><b>D${d.n}</b> ${byDay[i]}</button>`).join("")}</div>`:""}
-  ${phMeta.length?`<details class="ph-tools"><summary>เครื่องมือ: จัดใหม่ · ย้อน · หารูปซ้ำ · ดาวน์โหลด · สำรอง</summary>
-    <div class="c-actions"><button class="btn small" data-act="ph-resort">จัดใหม่ตามแผนล่าสุด</button>${u?`<button class="btn small" data-act="ph-undo">ย้อน: ${esc(u.label||"จัดใหม่")}</button>`:""}<button class="btn small" data-act="dup-open">หารูปซ้ำ</button><button class="btn small" data-act="phx-open">ดาวน์โหลดรูปทั้งหมด</button><button class="btn small" data-act="backup">สำรองทั้งหมด</button></div>
-    <p class="tiny">"จัดใหม่" วางรูปใหม่ตามแผนล่าสุด รูปที่คุณจัดเองไม่ถูกแตะ เว้นแต่จุดนั้นถูกลบไปแล้ว · "ย้อน" กลับไปก่อนการจัดครั้งล่าสุด</p></details>`:""}
   ${groups.length?`<h3 class="sp-h">ถ่ายที่ที่ไม่อยู่ในแผน</h3><p class="tiny">ตำแหน่งในรูปไม่ตรงกับจุดไหนในแผน · การ์ดเดียวกันนี้ขึ้นในแผนรายวันตรงเวลาที่ถ่ายด้วย</p>${groups.map(groupCardHtml).join("")}`:""}
-  ${loose.length||looseMsg?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3>${looseMsg?`<p class="ph-loosemsg">${looseMsg}</p>`:""}${loose.length?`<p class="tiny">${looseWhy(loose)}</p>${(()=>{ const n=loose.filter(m=>m.takenAt&&m.tsrc!=="file"&&!(m.auto===false&&m.day!=null)&&DAYS.some(d=>d.date===jstDate(m.takenAt))).length; return n||looseBusy?`<div class="c-actions"><button class="btn small primary" data-act="ph-sortloose" ${looseBusy?"disabled":""}>${looseBusy?"กำลังจัด…":`จัดเข้าแผนให้ (${n.toLocaleString()} รูปที่จัดได้)`}</button></div>`:""; })()}<div class="ph-grid">${loose.slice(0,16).map(cell).join("")}</div><div class="c-actions"><button class="btn small" data-act="srt-open">ดูทั้งหมดและย้ายทีละหลายรูป (${loose.length})</button></div>`:""}`:""}</div>`; }
+  ${loose.length?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3><p class="tiny">${looseWhy(loose)}</p>${(()=>{ const n=twPairs().length; return n?`<div class="ph-twnote"><span><b>🔁 ${n.toLocaleString()} รูปซ้ำกับที่อยู่ในแผนแล้ว</b> ไม่ต้องจัดซ้ำ</span><button class="btn small" data-act="tw-open">ดูและลบสำเนา</button></div>`:""; })()}<div class="ph-grid">${loose.slice(0,16).map(cell).join("")}</div><div class="c-actions"><button class="btn small" data-act="srt-open">ดูทั้งหมด และเลือกจุดเอง (${loose.length})</button></div>`:""}</div>`; }
 /* why the unsorted ones are unsorted: told in counts, so it is clear what a re-sort can and cannot do */
 function looseWhy(L){ const inTrip=m=>DAYS.some(d=>d.date===jstDate(m.takenAt)), mine=L.filter(m=>m.auto===false&&m.day!=null).length;
   const noT=L.filter(m=>!m.takenAt||m.tsrc==="file").length, outL=L.filter(m=>m.takenAt&&m.tsrc!=="file"&&!inTrip(m)), out=outL.length, rest=L.length-noT-out-mine;
@@ -3505,13 +3515,19 @@ var looseBusy=false, looseMsg="";
 async function sortLoose(){ if(looseBusy) return; looseBusy=true; looseMsg=""; photoSheetPaint();
   try{ const L0=looseList(); const ids=new Set(L0.map(m=>m.id)); phSnap("จัดรูปที่ยังไม่ได้จัด");
     const twins=await mergeTwins()+await mergeCopies();   /* the same file brought in twice, and copies of a photo that lost its location on the way */
-    for(const m of phMeta){ if(!ids.has(m.id)||m.auto===false&&m.day!=null) continue; const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; m.auto=true; await PDB.putMeta(m); }
+    await ensureHashes(); const TW=looseTwins(), dupIds=new Set(); let twinN=0;
+    for(const m of phMeta){ if(!ids.has(m.id)||m.auto===false&&m.day!=null) continue; const tw=TW.get(m.id);
+      if(tw&&tw.exact){ dupIds.add(m.id); continue; }   /* already in the plan: left for you to remove, not placed a second time */
+      if(tw&&tw.h<=6&&m.lat==null){ const r=tw.r; m.day=r.day; m.key=r.key||null; m.place=r.place?Object.assign({},r.place):null; m.byTime=false; m.bySess=false; m.auto=true; await PDB.putMeta(m); twinN++; continue; }   /* no location of its own: the next frame of a photo in the plan goes with it, whatever its time says */
+      const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; m.auto=true; await PDB.putMeta(m); }
     phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); await roadStops(); await sessionFix();
     /* still loose but taken on a day of the trip: the stop (or the drive) going on at that time */
-    for(let di=0;di<DAYS.length;di++){ const rest=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&m.auto!==false&&m.day===di&&m.takenAt&&m.tsrc!=="file"); if(rest.length) await looseByTime(di,rest); }
+    for(let di=0;di<DAYS.length;di++){ const rest=phMeta.filter(m=>ids.has(m.id)&&!dupIds.has(m.id)&&isLoose(m)&&m.auto!==false&&m.day===di&&m.takenAt&&m.tsrc!=="file"); if(rest.length) await looseByTime(di,rest); }
+    for(const m of phMeta){ if(dupIds.has(m.id)&&!isLoose(m)){ m.key=null; m.place=null; await PDB.putMeta(m); } }
+    const dupN=phMeta.filter(m=>dupIds.has(m.id)).length;
     const kept=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&m.auto===false&&m.day!=null).length, left=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&!(m.auto===false&&m.day!=null)).length, gone=L0.length-phMeta.filter(m=>ids.has(m.id)).length, placed=L0.length-left-gone-kept;
     const sugg=phMeta.filter(m=>ids.has(m.id)&&!m.key&&m.place).length;
-    looseMsg=`จัดเข้าแผนแล้ว <b>${(placed-sugg).toLocaleString()}</b> รูป${sugg?` · เป็นจุดแนะนำใหม่ (ที่ที่ไม่อยู่ในแผน) ${sugg.toLocaleString()}`:""}${gone?` · รวมรูปซ้ำ ${gone.toLocaleString()} (เก็บรูปที่มีตำแหน่งไว้)`:""}${left?` · ยังจัดไม่ได้ ${left.toLocaleString()} (ดูเหตุผลด้านล่าง)`:""}${placed>0?` <button class="lnk" data-act="ph-undo">ย้อน</button>`:""}`;
+    looseMsg=`จัดเข้าแผนแล้ว <b>${(placed-sugg).toLocaleString()}</b> รูป${twinN?` (${twinN.toLocaleString()} รูปวางตามรูปที่เกือบเหมือนกันในแผน)`:""}${sugg?` · เป็นจุดแนะนำใหม่ (ที่ที่ไม่อยู่ในแผน) ${sugg.toLocaleString()}`:""}${gone?` · รวมรูปซ้ำ ${gone.toLocaleString()} (เก็บรูปที่มีตำแหน่งไว้)`:""}${dupN?` · <b>รูปซ้ำกับที่อยู่ในแผนแล้ว ${dupN.toLocaleString()}</b> <button class="lnk" data-act="tw-open">ดูและลบสำเนา</button>`:""}${left-dupN>0?` · ยังจัดไม่ได้ ${(left-dupN).toLocaleString()} (ดูเหตุผลด้านล่าง)`:""}${placed>0?` <button class="lnk" data-act="ph-undo">ย้อน</button>`:""}`;
     fillSuggestions(); renderPlan(); phChanged(); try{ actAutoKick(); }catch(e){} }
   catch(e){ looseMsg="จัดไม่สำเร็จ: "+esc((e&&e.message)||String(e)); }
   finally{ looseBusy=false; if($("#ph-root")) photoSheetPaint(); } }
@@ -4447,8 +4463,8 @@ function vgLock(id){ const st=document.createElement("style");
     try{ await vgLoad(id,p,null); location.reload(); }
     catch(e){ b.disabled=false; b.textContent="เปิดดูทริป"; $e("#vgE").textContent=e.bad?"รหัสไม่ถูกต้อง ลองใหม่อีกครั้งนะ":e.gone?"เจ้าของทริปหยุดแชร์ลิงก์นี้แล้ว":"โหลดไม่ได้ตอนนี้ ตรวจอินเทอร์เน็ตแล้วลองใหม่"; if(e.bad){ const f=$e("form"); f.classList.remove("sh"); void f.offsetWidth; f.classList.add("sh"); } } };
   setTimeout(()=>{ try{ $e("#vgP").focus(); }catch(e){} },300); }
-const VG_HIDE=["ph-addmenu","ph-sortloose","ph-pick","ph-pick-files","ph-add","ph-addstop","tb-open","backup","addstop","srt-open","ph-resort","ph-undo","dup-open","phx-open","cs-edit","rec-add","rec-hide","ex-add","reorder","dshift","dstop","bk-restore","bk-import","act-apply","act-open","gk-open","cs-recplus"];
-const VG_BLOCK=/^(addstop|visit|reorder|dshift|dstop|rec-add|rec-hide|ex-add|ph-pick|ph-pick-files|ph-add|ph-addmenu|ph-addstop|ph-gmv|ph-undo|ph-resort|ph-strip|ph-justno|ph-galsel|ph-galundo|ph-gpick|ph-gname|srt-.*|cs-(edit|save|reset|del|ins|time|qt.*|leg.*|mv|moveday|promote|pick.*|noplace|here|fradd|recplus|atclear|reloc|hit)|backup|bk-.*|tb-open|pool-.*|gp-.*|gk-.*|act-apply|act-all|dup-.*|phx-.*|vs-.*)$/;
+const VG_HIDE=["ph-addmenu","ph-sortloose","ph-more","tw-open","srt-deldup","ph-pick","ph-pick-files","ph-add","ph-addstop","tb-open","backup","addstop","srt-open","ph-resort","ph-undo","dup-open","phx-open","cs-edit","rec-add","rec-hide","ex-add","reorder","dshift","dstop","bk-restore","bk-import","act-apply","act-open","gk-open","cs-recplus"];
+const VG_BLOCK=/^(tw-.*|ph-more|ph-sortloose|addstop|visit|reorder|dshift|dstop|rec-add|rec-hide|ex-add|ph-pick|ph-pick-files|ph-add|ph-addmenu|ph-addstop|ph-gmv|ph-undo|ph-resort|ph-strip|ph-justno|ph-galsel|ph-galundo|ph-gpick|ph-gname|srt-.*|cs-(edit|save|reset|del|ins|time|qt.*|leg.*|mv|moveday|promote|pick.*|noplace|here|fradd|recplus|atclear|reloc|hit)|backup|bk-.*|tb-open|pool-.*|gp-.*|gk-.*|act-apply|act-all|dup-.*|phx-.*|vs-.*)$/;
 function vgToast(t){ let el=$("#vgToast"); if(!el){ el=document.createElement("div"); el.id="vgToast"; document.body.appendChild(el); } el.textContent=t; el.classList.add("on"); clearTimeout(vgToast.t); vgToast.t=setTimeout(()=>el.classList.remove("on"),1800); }
 function vgBarPaint(){ const b=$("#vgBar"); if(!b) return; const c=VIEW.c, d=new Date(c.at||0), today=d.toDateString()===new Date().toDateString();
   const t=c.at?(today?"":d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})+" ")+d.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}):"";
@@ -4977,8 +4993,9 @@ async function tbMakePdf(btn){ if(tbPdfBusy) return; tbPdfBusy=true; tbPdfOut=nu
 addEventListener("popstate",()=>{ if(!popSelf&&document.body.classList.contains("tb-open")){ closeTripbook(); setTimeout(tbReopen,0); } });
 document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='ph-'],[data-act^='tb-'],[data-act='visit']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
   if(a==="visit"){ toggleVisited(curDay,b.dataset.key); return; }
-  if(a==="ph-sheet"){ phAddOpen=false; photoSheetPaint(true); return; }
-  if(a==="ph-addmenu"){ phAddOpen=!phAddOpen; photoSheetPaint(); return; }
+  if(a==="ph-sheet"){ phAddOpen=false; phMoreOpen=false; photoSheetPaint(true); return; }
+  if(a==="ph-addmenu"){ phAddOpen=!phAddOpen; phMoreOpen=false; photoSheetPaint(); return; }
+  if(a==="ph-more"){ phMoreOpen=!phMoreOpen; phAddOpen=false; photoSheetPaint(); return; }
   if(a==="ph-goday"){ const d=+b.dataset.d; closeSheet(); if(curTab!=="plan") showTab("plan"); selectDay(d); window.scrollTo&&window.scrollTo(0,0); return; }
   if(a==="ph-pick"){ phAddOpen=false; pickPhotos(null); return; }
   if(a==="ph-pick-files"){ phAddOpen=false; pickPhotos(null,true); return; }
@@ -5013,7 +5030,7 @@ document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-a
     openAddStopForPhotos(ps.find(m=>m.lat!=null)||ps[0],ps.map(m=>m.id)); return; }
   if(a==="ph-galundo"){ if(galState) galState.flash=""; await undoResort(); return; }
   if(a==="ph-resort"){ resortPhotos(); return; }
-  if(a==="ph-sortloose"){ sortLoose(); return; }
+  if(a==="ph-sortloose"){ phAddOpen=false; phMoreOpen=false; sortLoose(); return; }
   if(a==="ph-undo"){ looseMsg=""; undoResort(); return; }
   if(a==="tb-open"){ const had=!!(history.state&&history.state.sheet)&&!!$("#sheetRoot").innerHTML; tbReturn=!!$("#ph-root"); closeSheet(); if(!had){ openTripbook(); return; }
     let done=false; const go=()=>{ if(done) return; done=true; removeEventListener("popstate",hp); openTripbook(); }; const hp=()=>setTimeout(go,0); addEventListener("popstate",hp); setTimeout(go,600); return; }
@@ -5479,6 +5496,47 @@ async function mergeCopies(){ const has=phMeta.filter(m=>m.kind!=="video"&&m.dh&
     if(m.cover) k.cover=true; await PDB.putMeta(k); await PDB.del(m.id); phMeta=phMeta.filter(x=>x!==m); n++; }
   return n; }
 function hamming(a,b){ if(!a||!b) return 99; let n=0; for(let k=0;k<16;k+=8){ let x=(parseInt(a.slice(k,k+8),16)^parseInt(b.slice(k,k+8),16))>>>0; while(x){ x&=x-1; n++; } } return n; }
+/* an unsorted photo that is (nearly) the same picture as one already in the plan: the best hint of where it goes —
+   and when it is the very same picture (imported twice, or a copy saved from a chat with a different time), a copy to remove.
+   exact: dHash within 2 bits and the same shape; near: within 10 bits and the same shape (the next frame of the same scene) */
+function pop32(x){ x=x-((x>>>1)&0x55555555); x=(x&0x33333333)+((x>>>2)&0x33333333); return (((x+(x>>>4))&0x0F0F0F0F)*0x01010101)>>>24; }
+var twinMemo={k:"",v:new Map()};
+function looseTwins(){ const ok=m=>m.kind!=="video"&&m.dh&&!flatHash(m.dh);
+  const L=phMeta.filter(m=>isLoose(m)&&ok(m)), R=phMeta.filter(m=>!isLoose(m)&&m.day!=null&&ok(m));
+  const key=phMeta.length+"|"+L.length+"|"+R.length+"|"+dupIgnore.size; if(twinMemo.k===key) return twinMemo.v;
+  const ints=h=>[parseInt(h.slice(0,8),16)>>>0,parseInt(h.slice(8,16),16)>>>0], RI=R.map(r=>ints(r.dh)), out=new Map();
+  const shape=(a,b)=>!(a.w&&a.h&&b.w&&b.h)||Math.abs(a.w/a.h-b.w/b.h)<=0.02*(b.w/b.h);
+  for(const m of L){ const [a0,a1]=ints(m.dh); let bi=-1,bh=99;
+    for(let i=0;i<R.length;i++){ const h=pop32(a0^RI[i][0])+pop32(a1^RI[i][1]); if(h<bh&&shape(m,R[i])){ bh=h; bi=i; if(!h) break; } }
+    if(bi<0||bh>10) continue; const r=R[bi]; out.set(m.id,{r,h:bh,exact:bh<=2&&!dupIgnore.has(pairKey(m.id,r.id))}); }
+  twinMemo={k:key,v:out}; return out; }
+/* remove unsorted copies of photos already in the plan; the one in the plan stays where it is and takes the location if only the copy had it */
+async function delTwins(pairs){ let n=0; const touched=new Set();
+  for(const [m,k] of pairs){ if(!phMeta.includes(m)||!phMeta.includes(k)) continue;
+    if(k.lat==null&&m.lat!=null){ k.lat=m.lat; k.lng=m.lng; touched.add(k); } if(m.cover){ k.cover=true; touched.add(k); }
+    await PDB.del(m.id); phMeta=phMeta.filter(x=>x!==m); n++; }
+  for(const k of touched) await PDB.putMeta(k); twinMemo.k=""; return n; }
+var twState=null;
+function twPairs(){ const TW=looseTwins(); return [...TW.entries()].filter(([,t])=>t.exact).map(([id,t])=>[phMeta.find(x=>x.id===id),t.r]).filter(p=>p[0]); }
+function twHtml(){ const s=twState||{}; let body="";
+  if(s.done) body=`<div class="ph-prog done"><p><b>ลบสำเนาแล้ว ${s.removed} รูป</b></p><ul class="imp-rows"><li>รูปในแผนยังอยู่ครบเหมือนเดิม</li><li>ตอนนี้มี ${mediaWord(phMeta)}</li></ul></div>`;
+  else { const P=s.pairs||[], n=P.filter(([m])=>s.sel.has(m.id)).length;
+    body=P.length?`<p class="tiny">รูปทางซ้ายยังไม่ได้จัด แต่เป็น<b>รูปเดียวกับรูปทางขวาที่อยู่ในแผนแล้ว</b> (เช่น นำเข้าซ้ำ หรือเป็นสำเนาที่บันทึกจากแชตเลยได้เวลาใหม่) · ลบสำเนาทางซ้าย รูปในแผนยังอยู่เหมือนเดิม · ถ้าไม่ใช่รูปเดียวกัน แตะ "✓ เก็บ"</p>
+      <div class="c-actions"><button class="btn small ${s.confirm?"danger":"primary"}" data-act="tw-go"${n?"":" disabled"}>${s.confirm?`แตะอีกครั้ง ลบ ${n} รูป`:`ลบสำเนา ${n} รูป`}</button></div>
+      <div class="tw-list">${P.slice(0,s.all?P.length:80).map(([m,k])=>{ const del=s.sel.has(m.id); return `<div class="tw-p"><div class="dup-c${del?" drop":" keep"}"><button class="ph-cell" data-act="ph-open" data-id="${m.id}" data-list="${m.id},${k.id}" aria-label="ดูรูปใหญ่"><img data-phid="${m.id}" alt="">${phBadge(m)}</button><button class="dup-kbtn" data-act="tw-t" data-id="${m.id}" aria-pressed="${!del}">${del?"✕ ลบ":"✓ เก็บ"}</button></div>
+        <div class="dup-c keep"><button class="ph-cell" data-act="ph-open" data-id="${k.id}" data-list="${m.id},${k.id}" aria-label="ดูรูปใหญ่"><img data-phid="${k.id}" alt="">${phBadge(k)}</button><span class="tw-at">ในแผน: ${esc(tgtLabel(k.day,k.key,k.place))}</span></div></div>`; }).join("")}</div>${P.length>80&&!s.all?`<button class="btn small" data-act="tw-more">ดูอีก ${P.length-80} คู่</button>`:""}`
+      :`<p><b>ไม่พบรูปซ้ำกับรูปในแผน</b> ✓</p>`; }
+  return `<div id="tw-root">${PH_BACK}<div class="sk">รูปทริป</div><h2>รูปซ้ำกับที่อยู่ในแผนแล้ว</h2>${body}</div>`; }
+function twPaint(first){ const sc=$("#sheetRoot .sheet"), top=sc&&!first?sc.scrollTop:0; if(first||!$("#tw-root")) openFromPhotos(twHtml()); else renderSheet(twHtml()); const s2=$("#sheetRoot .sheet"); if(s2&&top) s2.scrollTop=top; setTimeout(()=>hydrateMyPhotos($("#sheetRoot")),20); }
+document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act='tw-open'],[data-act='tw-t'],[data-act='tw-go'],[data-act='tw-more']"); if(!b) return; ev.stopPropagation(); const a=b.dataset.act;
+  if(a==="tw-open"){ phMoreOpen=false; const P=twPairs(); twState={pairs:P,sel:new Set(P.map(p=>p[0].id))}; twPaint(true); return; }
+  if(!twState||!twState.pairs) return;
+  if(a==="tw-t"){ const id=b.dataset.id; twState.sel.has(id)?twState.sel.delete(id):twState.sel.add(id); twState.confirm=false; twPaint(); return; }
+  if(a==="tw-more"){ twState.all=true; twPaint(); return; }
+  if(!twState.confirm){ twState.confirm=true; twPaint(); return; }
+  const P=twState.pairs, del=P.filter(([m])=>twState.sel.has(m.id)), keep=P.filter(([m])=>!twState.sel.has(m.id));
+  if(keep.length){ keep.forEach(([m,k])=>dupIgnore.add(pairKey(m.id,k.id))); store.set("dupIgnore",[...dupIgnore]); }   /* you said these are not the same: never ask again */
+  const removed=await delTwins(del); looseMsg=""; twState={done:true,removed}; twPaint(); renderPlan(); phChanged(); },true);
 async function ensureHashes(tick){ const need=phMeta.filter(m=>!m.dh); let i=0; for(const m of need){ const b=await PDB.getBlob(m.id); const src=b&&(b.thumb||(m.kind!=="video"?b.full:null)); if(src){ const h=await dHash(src); if(h){ m.dh=h; await PDB.putMeta(m); } } i++; tick&&tick(i,need.length); } }
 const realTime=m=>m.takenAt&&m.tsrc!=="file";
 var dupIgnore=new Set(store.get("dupIgnore",[]));
@@ -5556,7 +5614,7 @@ function srtTargets(){ const T=[], by={}; DAYS.forEach((d,di)=>{ planItems(di).f
 /* where each unsorted photo probably belongs, learning from what is already sorted:
    1) album order: sorted photos just before and after it in the same import fence it in (a photo between two at Lake Hill Farm is at Lake Hill Farm);
    2) look: which sorted photos it resembles, counting photos you placed yourself and photos from the same import more */
-function srtLearn(L){ const B=importBatches(); const {T,by}=srtTargets(); const posOf=m=>{ const t=by[tgtKey(m)]; return t&&t.pos!=null?t:null; };
+function srtLearn(L){ const B=importBatches(); const {T,by}=srtTargets(); const TW=looseTwins(); const posOf=m=>{ const t=by[tgtKey(m)]; return t&&t.pos!=null?t:null; };
   const refs=phMeta.filter(m=>!isLoose(m)&&m.day!=null&&m.cf&&by[tgtKey(m)]);
   const rk={}; T.filter(t=>t.pos!=null).sort((a,b)=>a.pos-b.pos).forEach((t,i)=>{ rk[t.id]=i; });
   L.forEach(m=>{ const bt=B[m._b]||[]; let A=null,Bn=null,da=0,dn=0;
@@ -5571,7 +5629,10 @@ function srtLearn(L){ const B=importBatches(); const {T,by}=srtTargets(); const 
     const look={}; if(m.cf){ for(const r of refs){ const d=lookDist(m.cf,r.cf); const w=(r._b===m._b?2:1)*(r.auto===false?1.5:1); const s=Math.exp(-d*4)*w; const k=tgtKey(r); const a=look[k]||(look[k]=[]); a.push(s); } }
     const lk=id=>{ const a=look[id]; if(!a) return 0; a.sort((x,y)=>y-x); const top=a.slice(0,3); return top.reduce((s,v)=>s+v,0)/3; };
     let best=[], sum=0; T.forEach(t=>{ const p=prior(t); if(p<0.01&&!look[t.id]) return; const sc=p*((A||Bn?0.25:0.01)+lk(t.id)); if(sc<=0) return; sum+=sc; best.push([t,sc,lk(t.id)]); });
-    best.sort((a,b)=>b[1]-a[1]); m._g=best.slice(0,4).map(([t,sc,l])=>({t,sc,p:sum?sc/sum:0,look:l})); m._gsum=sum; });
+    best.sort((a,b)=>b[1]-a[1]); m._g=best.slice(0,4).map(([t,sc,l])=>({t,sc,p:sum?sc/sum:0,look:l})); m._gsum=sum;
+    /* the same (or nearly the same) picture is already in the plan: that place wins over album order and colours */
+    const tw=TW.get(m.id), tt=tw&&by[tgtKey(tw.r)]; m._twin=tt?tw:null;
+    if(tt){ const pw=tw.h<=6?0.95:0.8; m._g=[{t:tt,sc:1,p:pw,look:1,twin:true}].concat(m._g.filter(g=>g.t.id!==tt.id).slice(0,3).map(g=>Object.assign({},g,{p:g.p*(1-pw)}))); } });
   return {T,by}; }
 /* runs: unsorted photos next to each other in the album, between the same sorted neighbours, that look alike or are guessed to the same place */
 function looseRuns(L){ const runs=[]; let cur=null; L.forEach((m,i)=>{ const prev=L[i-1]; const d=prev?lookDist(prev.cf,m.cf):9; const g0=m._g&&m._g[0], gp=prev&&prev._g&&prev._g[0];
@@ -5584,8 +5645,9 @@ function looseRuns(L){ const runs=[]; let cur=null; L.forEach((m,i)=>{ const pre
 function runGuess(run){ const acc={}; let n=0; run.list.forEach(m=>{ (m._g||[]).forEach(g=>{ const a=acc[g.t.id]||(acc[g.t.id]={t:g.t,w:0,look:0}); a.w+=g.p; a.look=Math.max(a.look,g.look); }); n++; });
   const m0=run.list[0], fence=run.list.every(m=>m._fence==="in")?"in":run.list.some(m=>m._fence==="between")?"between":run.list.some(m=>m._fence==="near")?"near":"none";
   return Object.values(acc).sort((a,b)=>b.w-a.w).slice(0,2).map((a,j)=>{ const pct=n?Math.round(a.w/n*100):0;
-    const conf=(fence==="in"&&j===0)||(pct>=70&&a.look>0.35&&fence==="between")||(pct>=80&&a.look>0.45)?"sure":pct>=30&&(a.look>0.25||fence!=="none")?"maybe":"weak";
-    const why=fence==="in"&&j===0?"อยู่ระหว่างรูปที่จัดไว้ที่นี่":fence==="between"?"อยู่ช่วงนี้ในอัลบั้ม"+(a.look>0.3?" และหน้าตาคล้าย":""):fence==="near"?"ติดกับรูปที่จัดแล้ว"+(a.look>0.3?" และหน้าตาคล้าย":""):a.look>0.3?"หน้าตาคล้ายรูปที่จัดไว้":"";
+    const tw=run.list.filter(m=>m._twin&&m._g&&m._g[0]&&m._g[0].t.id===a.t.id), twOK=j===0&&tw.length*2>=n;
+    const conf=twOK||(fence==="in"&&j===0)||(pct>=70&&a.look>0.35&&fence==="between")||(pct>=80&&a.look>0.45)?"sure":pct>=30&&(a.look>0.25||fence!=="none")?"maybe":"weak";
+    const why=twOK?(tw.every(m=>m._twin.exact)?"รูปเดียวกันมีอยู่ที่นี่แล้ว":tw.some(m=>m._twin.exact)?"มีรูปเดียวกันและรูปคล้ายกันอยู่ที่นี่แล้ว":"เกือบเหมือนรูปที่อยู่ที่นี่แล้ว"):fence==="in"&&j===0?"อยู่ระหว่างรูปที่จัดไว้ที่นี่":fence==="between"?"อยู่ช่วงนี้ในอัลบั้ม"+(a.look>0.3?" และหน้าตาคล้าย":""):fence==="near"?"ติดกับรูปที่จัดแล้ว"+(a.look>0.3?" และหน้าตาคล้าย":""):a.look>0.3?"หน้าตาคล้ายรูปที่จัดไว้":"";
     return {t:a.t,pct,conf,why}; }).filter(v=>v.pct>=15||v.conf==="sure"); }
 var srt=null;
 function srtTargetsHtml(){ const di=srt.pickDay??srt.lastDay??0; const its=planItems(di); const nums=stopNumMap(di);
@@ -5601,6 +5663,8 @@ function sorterHtml(){ const s=srt||{};
   ${!L.length?`<p><b>จัดครบแล้ว</b> ✓</p>`:""}
   <div class="srt-runs">${shownRuns.map((r,ri)=>{ const g=r.guess||[]; return `<section class="srt-run"><header><b>ชุดที่ ${ri+1}</b><span class="tiny">${mediaWord(r.list)}</span><button class="lnk" data-act="srt-selrun" data-r="${ri}">${r.list.every(m=>sel.has(m.id))?"เลิกเลือกชุดนี้":"เลือกทั้งชุด"}</button></header>
     ${g.length?`<div class="srt-guess">${g.map(x=>`<button class="btn small${x.conf==="sure"?" sure":x.conf==="weak"?" weak":""}" data-act="srt-guess" data-r="${ri}" data-d="${x.t.day}" data-k="${esc(x.t.key||"")}" data-pg="${esc(x.t.pgId||"")}">ย้ายทั้งชุดไป ${esc(tgtLabel(x.t.day,x.t.key,x.t.place))} <span class="tiny">${x.conf==="sure"?"น่าจะใช่":x.conf==="weak"?"ไม่ค่อยแน่ใจ":"อาจจะ"}${x.why?` · ${esc(x.why)}`:""}</span></button>`).join("")}</div>`:""}
+    ${(()=>{ const ex=r.list.filter(m=>m._twin&&m._twin.exact); if(!ex.length) return ""; const at=[...new Set(ex.map(m=>tgtLabel(m._twin.r.day,m._twin.r.key,m._twin.r.place)))];
+      return `<div class="srt-dup"><span class="tiny">🔁 ${ex.length===r.list.length?"ทั้งชุดนี้":ex.length+" รูปในชุดนี้"}เป็นรูปเดียวกับที่อยู่ใน ${esc(at.slice(0,2).join(", "))}${at.length>2?" …":""} แล้ว · ไม่ต้องจัดซ้ำ ลบสำเนาได้เลย</span><button class="btn small${s.delArm===ri?" danger":""}" data-act="srt-deldup" data-r="${ri}">${s.delArm===ri?`แตะอีกครั้ง ลบ ${ex.length} รูป`:`ลบสำเนา ${ex.length} รูป`}</button></div>`; })()}
     <div class="srt-grid">${r.list.map(m=>`<button class="ph-cell${sel.has(m.id)?" sel":""}" data-act="srt-t" data-id="${m.id}"><img data-lazy="${m.id}" alt="">${phBadge(m)}</button>`).join("")}</div></section>`; }).join("")}
   ${runs.length>shownRuns.length?`<button class="btn small" data-act="srt-more">ดูอีก ${runs.length-shownRuns.length} ชุด</button>`:""}</div>
   ${sel.size?`<div class="srt-bar"><div class="srt-bar-h"><b>เลือก ${sel.size}</b><button class="btn small" data-act="srt-clear">ล้าง</button><button class="btn small primary" data-act="srt-pickopen">${s.picking?"ปิด":"ย้ายไปจุด…"}</button></div>${s.picking?srtTargetsHtml():""}</div>`:""}</div>`; }
@@ -5627,6 +5691,9 @@ document.addEventListener("click",ev=>{ const b=ev.target.closest("[data-act^='s
     else { srt.sel.has(id)?srt.sel.delete(id):srt.sel.add(id); srt.anchor=srt.sel.has(id)?id:null; }
     sorterPaint(); return; }
   if(a==="srt-selrun"){ const r=srt.runs[+b.dataset.r]; const all=r.list.every(m=>srt.sel.has(m.id)); r.list.forEach(m=>all?srt.sel.delete(m.id):srt.sel.add(m.id)); sorterPaint(); return; }
+  if(a==="srt-deldup"){ const ri=+b.dataset.r, r=srt.runs[ri]; if(!r) return; if(srt.delArm!==ri){ srt.delArm=ri; sorterPaint(); return; } srt.delArm=null;
+    const ex=r.list.filter(m=>m._twin&&m._twin.exact); (async()=>{ await delTwins(ex.map(m=>[m,m._twin.r])); ex.forEach(m=>srt.sel.delete(m.id)); srtRecompute(); sorterPaint(); renderPlan(); phChanged(); })(); return; }
+  if(a!=="srt-deldup"&&srt.delArm!=null) srt.delArm=null;
   if(a==="srt-guess"){ const r=srt.runs[+b.dataset.r]; srtMove(r.list.map(m=>m.id),b.dataset.d,b.dataset.k,b.dataset.pg||null); return; }
   if(a==="srt-clear"){ srt.sel.clear(); srt.picking=false; srt.anchor=null; sorterPaint(); return; }
   if(a==="srt-pickopen"){ srt.picking=!srt.picking; sorterPaint(); return; }
