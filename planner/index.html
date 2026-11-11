@@ -3423,15 +3423,16 @@ async function importPhotos(files,forKey){ looseMsg="";
       const id=(vid?"v":"p")+Date.now().toString(36)+Math.random().toString(36).slice(2,7); let rec, m;
       if(vid){ const pv=await videoPoster(f); rec={id,full:f,thumb:pv&&pv.blob||null}; m={id,sig,name:it.name,kind:"video",pv:2,mime:f.type||"video/mp4",ext:((it.name||"").match(/\.(\w+)$/)||[,"mp4"])[1].toLowerCase(),size:it.size,dur:pv&&pv.dur||null,w:pv&&pv.w||null,h:pv&&pv.h||null}; phImport.vid++; }
       else { const full=await shrink(f,1600,.82), th=await shrink(f,420,.78); rec={id,full:full.blob,thumb:th.blob}; m={id,sig,name:it.name,w:full.w,h:full.h,dh:await dHash(th.blob)};
-        const probe=Object.assign({},m,{takenAt:takenAt||null,tsrc,model:x.model||undefined}); const same=m.dh&&phMeta.find(o=>o.kind!=="video"&&o.dh&&isDupPair(probe,o));
-        if(same){ if(same.lat==null&&x.lat!=null){ same.lat=x.lat; same.lng=x.lng; if(same.auto){ const r=matchPhoto(same); same.day=r.day; same.key=r.key; same.place=r.place||null; same.byTime=!!r.byTime; } await PDB.putMeta(same); phImport.fix++; phImport.geo++; } else { phImport.dup++; unCount(); } phImport.done++; phTick(); continue; } }
+        const probe=Object.assign({},m,{takenAt:takenAt||null,tsrc,model:x.model||undefined,lat:x.lat??null,lng:x.lng??null}); const same=m.dh&&phMeta.find(o=>o.kind!=="video"&&o.dh&&(isDupPair(probe,o)||isCopyPair(probe,o)));
+        if(same){ if(same.lat==null&&x.lat!=null){ same.lat=x.lat; same.lng=x.lng; if(tsrc==="meta"&&takenAt&&(same.tsrc!=="meta"||Math.abs((same.takenAt||0)-takenAt)>60e3)){ same.takenAt=takenAt; same.tsrc="meta"; if(x.model) same.model=x.model; }   /* the camera's own time, not the day the copy was saved */
+          if(same.auto!==false){ same.auto=true; const r=matchPhoto(same); same.day=r.day; same.key=r.key; same.place=r.place||null; same.byTime=!!r.byTime; } await PDB.putMeta(same); phImport.fix++; phImport.geo++; } else { phImport.dup++; unCount(); } phImport.done++; phTick(); continue; } }
       Object.assign(m,{takenAt:takenAt||null,lat:x.lat??null,lng:x.lng??null,added:Date.now(),imp:phImport.id,src:"device",tsrc}); if(x.model) m.model=x.model; if(m.lat!=null) phImport.geo++;
       if(forKey){ m.day=di0; m.key=forKey; m.auto=false; phImport.manual++; } else { const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.auto=true; }
       await PDB.putBlob(rec); await PDB.putMeta(m); phMeta.push(m); mine.push(m); }
     catch(e){ const nm=(it&&it.name)||""; if(e&&(e.name==="QuotaExceededError"||/quota|space|storage/i.test(e.message||""))) phImport.full=(phImport.full||0)+1; else if(/\.(heic|heif)$/i.test(nm)) phImport.heic=(phImport.heic||0)+1; else phImport.skip++; }
     phImport.done++; phTick(); }
   phImport.stage="finish"; phTick(true);
-  phImport.merged=await mergeTwins();
+  phImport.merged=await mergeTwins(); phImport.merged+=await mergeCopies();
   phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); if(!forKey){ await roadStops(); await sessionFix(); }
   const live=mine.filter(m=>phMeta.includes(m)); phImport.added=live.length; phImport.auto=live.filter(m=>m.key&&m.auto).length; phImport.off=live.filter(m=>!m.key&&m.place).length; phImport.none=live.filter(m=>!m.key&&!m.place).length;
   phImport.end=true; ensurePersist(); fillSuggestions(); if($("#ph-root")) photoSheetPaint(); renderPlan(); if(map&&curTab==="map") drawMap(false); }
@@ -3503,14 +3504,14 @@ var looseBusy=false, looseMsg="";
    The photos already placed, and the ones you put somewhere yourself, are not touched; "ย้อน" undoes it */
 async function sortLoose(){ if(looseBusy) return; looseBusy=true; looseMsg=""; photoSheetPaint();
   try{ const L0=looseList(); const ids=new Set(L0.map(m=>m.id)); phSnap("จัดรูปที่ยังไม่ได้จัด");
-    const twins=await mergeTwins();   /* the same file brought in twice by the interrupted import */
+    const twins=await mergeTwins()+await mergeCopies();   /* the same file brought in twice, and copies of a photo that lost its location on the way */
     for(const m of phMeta){ if(!ids.has(m.id)||m.auto===false&&m.day!=null) continue; const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; m.auto=true; await PDB.putMeta(m); }
     phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); await roadStops(); await sessionFix();
     /* still loose but taken on a day of the trip: the stop (or the drive) going on at that time */
     for(let di=0;di<DAYS.length;di++){ const rest=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&m.auto!==false&&m.day===di&&m.takenAt&&m.tsrc!=="file"); if(rest.length) await looseByTime(di,rest); }
     const kept=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&m.auto===false&&m.day!=null).length, left=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&!(m.auto===false&&m.day!=null)).length, gone=L0.length-phMeta.filter(m=>ids.has(m.id)).length, placed=L0.length-left-gone-kept;
     const sugg=phMeta.filter(m=>ids.has(m.id)&&!m.key&&m.place).length;
-    looseMsg=`จัดเข้าแผนแล้ว <b>${(placed-sugg).toLocaleString()}</b> รูป${sugg?` · เป็นจุดแนะนำใหม่ (ที่ที่ไม่อยู่ในแผน) ${sugg.toLocaleString()}`:""}${gone?` · รวมรูปซ้ำ ${gone.toLocaleString()}`:""}${left?` · ยังจัดไม่ได้ ${left.toLocaleString()} (ดูเหตุผลด้านล่าง)`:""}${placed>0?` <button class="lnk" data-act="ph-undo">ย้อน</button>`:""}`;
+    looseMsg=`จัดเข้าแผนแล้ว <b>${(placed-sugg).toLocaleString()}</b> รูป${sugg?` · เป็นจุดแนะนำใหม่ (ที่ที่ไม่อยู่ในแผน) ${sugg.toLocaleString()}`:""}${gone?` · รวมรูปซ้ำ ${gone.toLocaleString()} (เก็บรูปที่มีตำแหน่งไว้)`:""}${left?` · ยังจัดไม่ได้ ${left.toLocaleString()} (ดูเหตุผลด้านล่าง)`:""}${placed>0?` <button class="lnk" data-act="ph-undo">ย้อน</button>`:""}`;
     fillSuggestions(); renderPlan(); phChanged(); try{ actAutoKick(); }catch(e){} }
   catch(e){ looseMsg="จัดไม่สำเร็จ: "+esc((e&&e.message)||String(e)); }
   finally{ looseBusy=false; if($("#ph-root")) photoSheetPaint(); } }
@@ -5467,6 +5468,16 @@ async function dHash(blob){ try{ const bm=await createImageBitmap(blob,{resizeWi
     return parseInt(bits.slice(0,32),2).toString(16).padStart(8,"0")+parseInt(bits.slice(32),2).toString(16).padStart(8,"0"); }catch(e){ return null; } }
 /* a near-flat picture (night sky, black frame, plain wall) has an almost empty hash: it says nothing about which picture it is */
 function flatHash(h){ if(!h) return true; let n=0; for(let k=0;k<16;k+=8){ let x=parseInt(h.slice(k,k+8),16)>>>0; while(x){ x&=x-1; n++; } } return n<8||n>56; }
+/* the same picture twice where one copy lost its location (sent through a chat, saved again, a screenshot of it): the time on that copy is when it
+   was saved, not when it was taken, so time cannot tell them apart — only a near-identical image of the same shape can */
+function isCopyPair(a,b){ if(a.kind==="video"||b.kind==="video"||!a.dh||!b.dh) return false; if((a.lat==null)===(b.lat==null)) return false;
+  if(a.id&&b.id&&dupIgnore.has(pairKey(a.id,b.id))) return false; if(flatHash(a.dh)||flatHash(b.dh)) return false; if(hamming(a.dh,b.dh)>2) return false;
+  if(a.w&&a.h&&b.w&&b.h&&Math.abs(a.w/a.h-b.w/b.h)>0.02*(a.w/a.h)) return false; return true; }
+/* keep the copy that knows where it was taken; the other one goes */
+async function mergeCopies(){ const has=phMeta.filter(m=>m.kind!=="video"&&m.dh&&m.lat!=null&&!flatHash(m.dh)); let n=0;
+  for(const m of phMeta.filter(m=>m.kind!=="video"&&m.dh&&m.lat==null)){ const k=has.find(o=>isCopyPair(m,o)); if(!k) continue;
+    if(m.cover) k.cover=true; await PDB.putMeta(k); await PDB.del(m.id); phMeta=phMeta.filter(x=>x!==m); n++; }
+  return n; }
 function hamming(a,b){ if(!a||!b) return 99; let n=0; for(let k=0;k<16;k+=8){ let x=(parseInt(a.slice(k,k+8),16)^parseInt(b.slice(k,k+8),16))>>>0; while(x){ x&=x-1; n++; } } return n; }
 async function ensureHashes(tick){ const need=phMeta.filter(m=>!m.dh); let i=0; for(const m of need){ const b=await PDB.getBlob(m.id); const src=b&&(b.thumb||(m.kind!=="video"?b.full:null)); if(src){ const h=await dHash(src); if(h){ m.dh=h; await PDB.putMeta(m); } } i++; tick&&tick(i,need.length); } }
 const realTime=m=>m.takenAt&&m.tsrc!=="file";
