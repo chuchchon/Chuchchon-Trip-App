@@ -3389,7 +3389,7 @@ function phTick(force){ const now=Date.now(); if(!force&&now-phPaintT<300) retur
 function nameTime(n){ const m=String(n||"").match(/(?:^|[^0-9])(20\d{2})(\d{2})(\d{2})[_\-\s]?(\d{2})(\d{2})(\d{2})/); if(!m) return null;
   const [y,mo,d,h,mi,se]=m.slice(1).map(Number); if(mo<1||mo>12||d<1||d>31||h>23||mi>59||se>59) return null;
   const utc=/^PXL_/i.test(n); return Date.UTC(y,mo-1,d,h,mi,se)-(utc?0:tpWallOffMin(y,mo,d,h,mi)*6e4); }
-async function importPhotos(files,forKey){
+async function importPhotos(files,forKey){ looseMsg="";
   phImport={id:Date.now(),n:0,notime:0,done:0,stage:"open",sd:0,sn:0,skip:0,dup:0,auto:0,manual:0,none:0,geo:0,vid:0,off:0,fix:0,burst:0,pics:0,gz:0,gn:0,zip:files.some(isZip),merged:0}; zipErr=""; photoSheetPaint(true);
   let items=[];
   for(const f of files){ if(!isZip(f)){ items.push(srcOf(f)); continue; }
@@ -3493,7 +3493,9 @@ function photoSheetHtml(){
   ${loose.length||looseMsg?`<h3 class="sp-h">ยังไม่ได้จัด ${loose.length}</h3>${looseMsg?`<p class="ph-loosemsg">${looseMsg}</p>`:""}${loose.length?`<p class="tiny">${looseWhy(loose)}</p>${(()=>{ const n=loose.filter(m=>m.takenAt&&m.tsrc!=="file"&&!(m.auto===false&&m.day!=null)&&DAYS.some(d=>d.date===jstDate(m.takenAt))).length; return n||looseBusy?`<div class="c-actions"><button class="btn small primary" data-act="ph-sortloose" ${looseBusy?"disabled":""}>${looseBusy?"กำลังจัด…":`จัดเข้าแผนให้ (${n.toLocaleString()} รูปที่จัดได้)`}</button></div>`:""; })()}<div class="ph-grid">${loose.slice(0,16).map(cell).join("")}</div><div class="c-actions"><button class="btn small" data-act="srt-open">ดูทั้งหมดและย้ายทีละหลายรูป (${loose.length})</button></div>`:""}`:""}</div>`; }
 /* why the unsorted ones are unsorted: told in counts, so it is clear what a re-sort can and cannot do */
 function looseWhy(L){ const inTrip=m=>DAYS.some(d=>d.date===jstDate(m.takenAt)), mine=L.filter(m=>m.auto===false&&m.day!=null).length;
-  const noT=L.filter(m=>!m.takenAt||m.tsrc==="file").length, out=L.filter(m=>m.takenAt&&m.tsrc!=="file"&&!inTrip(m)).length, rest=L.length-noT-out-mine;
+  const noT=L.filter(m=>!m.takenAt||m.tsrc==="file").length, outL=L.filter(m=>m.takenAt&&m.tsrc!=="file"&&!inTrip(m)), out=outL.length, rest=L.length-noT-out-mine;
+  const span=outL.length?(()=>{ const ds=outL.map(m=>jstDate(m.takenAt)).sort(), f=x=>{ const d=new Date(x+"T00:00:00Z"); return d.getUTCDate()+" "+["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."][d.getUTCMonth()]+" "+d.getUTCFullYear(); }; return ds[0]===ds[ds.length-1]?f(ds[0]):f(ds[0])+" – "+f(ds[ds.length-1]); })():"";
+  if(out) return [rest?`มีวันเวลาในช่วงทริป ${rest.toLocaleString()} (จัดให้ได้)`:"",mine?`คุณวางไว้จัดทีหลัง ${mine.toLocaleString()} (ไม่แตะ)`:"",`ถ่ายนอกช่วงวันทริป ${out.toLocaleString()} (ถ่าย ${span} · ทริปนี้ ${DAYS[0].date} ถึง ${DAYS[DAYS.length-1].date})`,noT?`ไม่มีวันเวลาที่ถ่ายจริง ${noT.toLocaleString()}`:""].filter(Boolean).join(" · ");
   if(mine) return [rest?`มีวันเวลาในช่วงทริป ${rest.toLocaleString()} (จัดให้ได้)`:"",`คุณวางไว้จัดทีหลัง ${mine.toLocaleString()} (ไม่แตะ)`,out?`ถ่ายนอกช่วงวันทริป ${out.toLocaleString()}`:"",noT?`ไม่มีวันเวลาที่ถ่ายจริง ${noT.toLocaleString()}`:""].filter(Boolean).join(" · ");
   return [rest?`มีวันเวลาในช่วงทริป ${rest.toLocaleString()} (จัดให้ได้)`:"",out?`ถ่ายนอกช่วงวันทริป ${out.toLocaleString()}`:"",noT?`ไม่มีวันเวลาที่ถ่ายจริง ${noT.toLocaleString()} (เช่น ภาพแคปหน้าจอ หรือรูปที่ส่งผ่านแชต)`:""].filter(Boolean).join(" · "); }
 var looseBusy=false, looseMsg="";
@@ -3502,13 +3504,13 @@ var looseBusy=false, looseMsg="";
 async function sortLoose(){ if(looseBusy) return; looseBusy=true; looseMsg=""; photoSheetPaint();
   try{ const L0=looseList(); const ids=new Set(L0.map(m=>m.id)); phSnap("จัดรูปที่ยังไม่ได้จัด");
     const twins=await mergeTwins();   /* the same file brought in twice by the interrupted import */
-    for(const m of phMeta){ if(!ids.has(m.id)||m.auto===false&&m.day!=null) continue; const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; if(m.auto==null) m.auto=true; await PDB.putMeta(m); }
+    for(const m of phMeta){ if(!ids.has(m.id)||m.auto===false&&m.day!=null) continue; const r=matchPhoto(m); m.day=r.day; m.key=r.key; m.place=r.place||null; m.byTime=!!r.byTime; m.bySess=false; m.auto=true; await PDB.putMeta(m); }
     phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); await roadStops(); await sessionFix();
     /* still loose but taken on a day of the trip: the stop (or the drive) going on at that time */
     for(let di=0;di<DAYS.length;di++){ const rest=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&m.auto!==false&&m.day===di&&m.takenAt&&m.tsrc!=="file"); if(rest.length) await looseByTime(di,rest); }
     const kept=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&m.auto===false&&m.day!=null).length, left=phMeta.filter(m=>ids.has(m.id)&&isLoose(m)&&!(m.auto===false&&m.day!=null)).length, gone=L0.length-phMeta.filter(m=>ids.has(m.id)).length, placed=L0.length-left-gone-kept;
     const sugg=phMeta.filter(m=>ids.has(m.id)&&!m.key&&m.place).length;
-    looseMsg=`จัดเข้าแผนแล้ว <b>${(placed-sugg).toLocaleString()}</b> รูป${sugg?` · เป็นจุดแนะนำใหม่ (ที่ที่ไม่อยู่ในแผน) ${sugg.toLocaleString()}`:""}${gone?` · รวมรูปซ้ำ ${gone.toLocaleString()}`:""}${left?` · ยังจัดไม่ได้ ${left.toLocaleString()}`:""} <button class="lnk" data-act="ph-undo">ย้อน</button>`;
+    looseMsg=`จัดเข้าแผนแล้ว <b>${(placed-sugg).toLocaleString()}</b> รูป${sugg?` · เป็นจุดแนะนำใหม่ (ที่ที่ไม่อยู่ในแผน) ${sugg.toLocaleString()}`:""}${gone?` · รวมรูปซ้ำ ${gone.toLocaleString()}`:""}${left?` · ยังจัดไม่ได้ ${left.toLocaleString()} (ดูเหตุผลด้านล่าง)`:""}${placed>0?` <button class="lnk" data-act="ph-undo">ย้อน</button>`:""}`;
     fillSuggestions(); renderPlan(); phChanged(); try{ actAutoKick(); }catch(e){} }
   catch(e){ looseMsg="จัดไม่สำเร็จ: "+esc((e&&e.message)||String(e)); }
   finally{ looseBusy=false; if($("#ph-root")) photoSheetPaint(); } }
