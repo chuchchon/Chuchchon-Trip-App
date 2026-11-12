@@ -2744,6 +2744,8 @@ function openEditItem(key){
   const di=curDay; const ed=materialize(di); const n=ed.list.find(x=>x.key===key); if(!n) return;
   const it=planItems(di).find(x=>x._i===key)||{};
   draft={mode:"edit",day:di,key,kind:n.kind,name:n.name||"",lat:n.lat??null,lng:n.lng??null,note:n.note||"",dur:n.dur!=null?n.dur:origDur(it),at:n.at||"",title:it.n,baseName:n.kind==="base"?(DAYS[di].items[n.src]||{}).n:"",canReloc:n.kind==="base"&&!/^(train|drive|flight)$/.test(it.k||"")&&!it.from,baseP:n.kind==="base"?it.p||null:null,isOpt:n.kind==="base"&&DAYS[di].items[n.src].k==="opt",promote:n.promote};
+  /* photos at this stop that know where they were taken: a new search shows how far each result is from them (the middle of them, so one stray photo does not pull it away) */
+  try{ const wl=photosFor(di,key).filter(m=>m.lat!=null&&m.lng!=null); if(wl.length){ const med=a=>{ a=a.slice().sort((x,y)=>x-y); const h=a.length>>1; return a.length%2?a[h]:(a[h-1]+a[h])/2; }; draft.photoLL=[med(wl.map(m=>m.lat)),med(wl.map(m=>m.lng))]; } }catch(e){}
   renderAddStop();
 }
 function readDraft(){ const g=id=>$("#"+id); if(!g("cs-dur")) return; draft.dur=+g("cs-dur").value; draft.at=g("cs-at").value; if(g("cs-name")) draft.name=g("cs-name").value.trim(); if(g("cs-note")) draft.note=g("cs-note").value.trim(); }
