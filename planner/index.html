@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="th" data-theme="light">
 <head>
+<script>(function(){var h=location.hash||"";if(/(access_token|error)=/.test(h)&&/state=life~/.test(h))location.replace("../life/"+h);})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
@@ -5052,7 +5053,14 @@ document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-a
    ข้อมูลแผน.json has the same shape as a backup file's data.json, so a restore needs nothing else. */
 const BKD_ROOT="Momiji App", BKD_KEYS=["edits","visited","checks","wxLog","actAuto","recHidden","gpAlbum","dupIgnore"];
 var bkdS={busy:false,dirty:false,msg:"",n:0,i:0,err:"",t:null,wait:""};
-function bkdGet(){ return store.get("bkd",null); }
+/* one switch for every trip on this phone (the Hokkaido app too): on once Google is set up, unless it was turned off.
+   A trip stopped by hand (off) stays stopped; a trip switched on by the shared switch (auto) follows it. */
+function bkdAll(){ try{ return JSON.parse(localStorage.getItem("tp:bkdAll")||"null"); }catch(e){ return null; } }
+function bkdAllSet(o){ try{ localStorage.setItem("tp:bkdAll",JSON.stringify(o)); }catch(e){} }
+function bkdAllOn(){ if(!gdClientId()) return false; try{ if(typeof TRIP!=="undefined"&&TRIP&&TRIP.example) return false; }catch(e){} const A=bkdAll(); return !A||A.on!==false; }
+function bkdGet(){ const B=store.get("bkd",null); if(B&&B.off) return B; if(B&&B.on&&!B.auto) return B;
+  if(!bkdAllOn()) return B&&B.auto?Object.assign({},B,{on:false}):B;
+  const A=bkdAll()||{}; return Object.assign({},B||{},{on:true,vid:B&&B.vid!=null?!!B.vid:!!A.vid,up:(B&&B.up)||{},auto:true}); }
 function bkdSet(o){ store.set("bkd",o); }
 function bkdTripKey(){ return typeof TRIP_ID!=="undefined"?TRIP_ID:"hokkaido-app"; }
 function bkdTripName(){ try{ if(typeof TRIP!=="undefined"&&TRIP.trip) return (TRIP.trip.trip_name||TRIP_ID)+" · "+TRIP_ID; }catch(e){} return "ฮอกไกโด ใบไม้แดง 2026 · แอปฮอกไกโด"; }
@@ -5100,17 +5108,17 @@ function bkdAgo(t){ if(!t) return "ยังไม่เคย"; const m=Math.ro
 function bkdBoxHtml(){ const B=bkdGet()||{}, S=bkdS, z=bkdSize(); const left=phMeta.filter(m=>!(B.up||{})[m.id]&&(m.kind!=="video"||B.vid)).length;
   let h=`<div class="box bkd" id="bkdBox"><h3>☁️ สำรองอัตโนมัติไป Google Drive</h3>`;
   if(!gdClientId()) return h+`<p style="margin:0">ต้องตั้งค่า Google ก่อน (ครั้งเดียว): เปิด Tripbook › แชร์ลิงก์ › Google Drive ของฉัน</p></div>`;
-  if(!B.on){ return h+`<p style="margin:0 0 6px">สำรองทริปนี้ไปไว้ในโฟลเดอร์ <b>${BKD_ROOT}</b> ใน Google Drive ของคุณ ทุกครั้งที่แก้แผน (ภายใน 1 นาที) และส่งรูปใหม่ขึ้นไปตอนต่อ Wi-Fi · ทำงานตอนเปิดแอปอยู่</p>
+  if(!B.on){ return h+`<p style="margin:0 0 6px">${B.off?"ทริปนี้ถูกหยุดสำรองไว้ · ":""}สำรอง<b>ทุกทริป</b>ไปไว้ในโฟลเดอร์ <b>${BKD_ROOT}</b> ใน Google Drive ของคุณ ทุกครั้งที่แก้แผน (ภายใน 1 นาที) และส่งรูปใหม่ขึ้นไปตอนต่อ Wi-Fi · แต่ละทริปสำรองตอนเปิดทริปนั้นในแอป</p>
     <p class="tiny" style="margin:0 0 8px">ขนาด: รูป ${z.np.toLocaleString()} ไฟล์ ~${bkdMB(z.ph)}${z.nv?` · วิดีโอ ${z.nv.toLocaleString()} ไฟล์ ~${bkdMB(z.vd)}`:""} · ส่งครั้งแรกครั้งเดียว ต่อไปส่งเฉพาะของใหม่</p>
     ${z.nv?`<label class="check" style="margin:0 0 8px"><input type="checkbox" id="bkd-vid" checked> รวมวิดีโอด้วย (~${bkdMB(z.vd)})</label>`:""}
-    <div class="c-actions"><button class="btn small primary" data-act="bkd-on">เริ่มสำรองอัตโนมัติ</button><button class="btn small" data-act="bkd-restore">กู้คืนจาก Google Drive</button></div></div>`; }
+    <div class="c-actions"><button class="btn small primary" data-act="bkd-on">เริ่มสำรองอัตโนมัติทุกทริป</button><button class="btn small" data-act="bkd-restore">กู้คืนจาก Google Drive</button></div></div>`; }
   const st=S.busy?`${esc(S.msg||"กำลังสำรอง…")}${S.n?` ${S.i.toLocaleString()} / ${S.n.toLocaleString()}`:""}`:S.wait==="login"?"รอเข้าสู่ระบบ Google (หมดเวลาทุก 1 ชม.)":S.wait==="wifi"?`แผนสำรองแล้ว · รูป/วิดีโอ ${left.toLocaleString()} ไฟล์รอต่อ Wi-Fi`:S.wait==="offline"?"ไม่มีอินเทอร์เน็ต · จะสำรองเมื่อออนไลน์":S.err||B.err?"สำรองไม่สำเร็จ: "+esc(S.err||B.err):left?`รอส่งรูป/วิดีโออีก ${left.toLocaleString()} ไฟล์`:"สำรองครบแล้ว ✓";
-  return h+`<p style="margin:0 0 4px"><b>${st}</b></p><p class="tiny" style="margin:0 0 8px">แผนล่าสุด ${bkdAgo(B.lastPlan)} · ส่งแล้ว ${Object.keys(B.up||{}).length.toLocaleString()} ไฟล์ · โฟลเดอร์ ${BKD_ROOT} › ${esc(bkdTripName())}${B.vid?" · รวมวิดีโอ":" · ไม่รวมวิดีโอ"}</p>
+  return h+`<p style="margin:0 0 4px"><b>${st}</b></p><p class="tiny" style="margin:0 0 8px">แผนล่าสุด ${bkdAgo(B.lastPlan)} · ส่งแล้ว ${Object.keys(B.up||{}).length.toLocaleString()} ไฟล์ · โฟลเดอร์ ${BKD_ROOT} › ${esc(bkdTripName())}${B.vid?" · รวมวิดีโอ":" · ไม่รวมวิดีโอ"}${B.auto?" · เปิดให้ทุกทริป":""}</p>
     <div class="c-actions">${S.wait==="login"||!gdToken()?`<button class="btn small primary" data-act="bkd-login">เข้าสู่ระบบ Google เพื่อสำรองต่อ</button>`:`<button class="btn small" data-act="bkd-now" ${S.busy?"disabled":""}>สำรองเดี๋ยวนี้${left&&!bkdWifi()?" (ใช้เน็ตมือถือ)":""}</button>`}
-    ${B.trip?`<a class="btn small" href="https://drive.google.com/drive/folders/${esc(B.trip)}" target="_blank" rel="noopener">เปิดใน Drive</a>`:""}<button class="btn small" data-act="bkd-vid">${B.vid?"ไม่รวมวิดีโอ":"รวมวิดีโอด้วย"}</button><button class="btn small" data-act="bkd-off">หยุดสำรองอัตโนมัติ</button><button class="btn small" data-act="bkd-restore">กู้คืนจาก Google Drive</button></div></div>`; }
+    ${B.trip?`<a class="btn small" href="https://drive.google.com/drive/folders/${esc(B.trip)}" target="_blank" rel="noopener">เปิดใน Drive</a>`:""}<button class="btn small" data-act="bkd-vid">${B.vid?"ไม่รวมวิดีโอ":"รวมวิดีโอด้วย"}</button><button class="btn small" data-act="bkd-off">หยุดเฉพาะทริปนี้</button>${B.auto?`<button class="btn small" data-act="bkd-alloff">หยุดสำรองทุกทริป</button>`:""}<button class="btn small" data-act="bkd-restore">กู้คืนจาก Google Drive</button></div></div>`; }
 function bkdPaint(){ const el=$("#bkdBox"); if(el) el.outerHTML=bkdBoxHtml(); const c=$("#p-plan .dh-bkd"), n=bkdLine(); if(c){ if(n) c.outerHTML=n; else c.remove(); } else if(n&&curTab==="plan"&&!$("#sheetRoot").innerHTML) renderPlan(true); }
 /* a quiet line on the day's header only when the backup needs a tap */
-function bkdLine(){ const B=bkdGet(); if(!B||!B.on||VIEW) return ""; if(bkdS.wait==="login"&&(bkdS.dirty||phMeta.some(m=>!(B.up||{})[m.id]&&(m.kind!=="video"||B.vid))))
+function bkdLine(){ const B=bkdGet(); if(!B||!B.on||VIEW) return ""; if(bkdS.wait==="login"&&(bkdS.dirty||!B.data||phMeta.some(m=>!(B.up||{})[m.id]&&(m.kind!=="video"||B.vid))))
     return `<p class="dh-edited dh-bkd">☁️ มีของที่ยังไม่ได้สำรองไป Google Drive <button class="lnk" data-act="bkd-login">เข้าสู่ระบบเพื่อสำรอง</button></p>`; return ""; }
 /* restore: the trips in Momiji App, then this trip's plan and its photos (nothing on the phone is deleted or overwritten) */
 var bkdR=null;
@@ -5133,8 +5141,9 @@ async function bkdRestore(folder,out){ const say=t=>{ if(out) out.textContent=t;
   phMeta.sort((a,b)=>(a.takenAt||0)-(b.takenAt||0)); store.set("phN",phMeta.length); renderPlan(); drawCustoms&&drawCustoms();
   say(`กู้คืนแล้ว · แผน: ${er.added.length?"เพิ่ม "+er.added.length+" วัน":"ไม่มีวันใหม่"}${er.kept.length?` (${er.kept.length} วันในเครื่องนี้ต่างจากที่สำรองไว้ จึงเก็บของเครื่องนี้)`:""} · รูปและวิดีโอ ${add.toLocaleString()} ไฟล์${skip?` (ข้าม ${skip} ที่มีอยู่แล้วหรือหาไม่เจอ)`:""}`); }
 document.addEventListener("click",async ev=>{ const b=ev.target.closest("[data-act^='bkd-']"); if(!b) return; ev.stopPropagation(); if(VIEW) return; const a=b.dataset.act; let B=bkdGet()||{};
-  if(a==="bkd-on"){ B=Object.assign(B,{on:true,vid:!!($("#bkd-vid")&&$("#bkd-vid").checked),up:B.up||{}}); bkdSet(B); bkdS.dirty=true; if(!gdToken()) return gdSignIn("bk"); bkdPaint(); return bkdRun(true); }
-  if(a==="bkd-off"){ B.on=false; bkdSet(B); clearTimeout(bkdS.t); return bkdPaint(); }
+  if(a==="bkd-on"){ const vid=!!($("#bkd-vid")&&$("#bkd-vid").checked); bkdAllSet({on:true,vid}); B=Object.assign(B,{on:true,off:false,auto:true,vid,up:B.up||{}}); bkdSet(B); bkdS.dirty=true; if(!gdToken()) return gdSignIn("bk"); bkdPaint(); return bkdRun(true); }
+  if(a==="bkd-off"){ B.on=false; B.off=true; B.auto=false; bkdSet(B); clearTimeout(bkdS.t); return bkdPaint(); }
+  if(a==="bkd-alloff"){ bkdAllSet(Object.assign(bkdAll()||{},{on:false})); B.on=false; B.off=false; B.auto=true; bkdSet(B); clearTimeout(bkdS.t); return bkdPaint(); }
   if(a==="bkd-vid"){ B.vid=!B.vid; bkdSet(B); bkdPaint(); return bkdKick(1000); }
   if(a==="bkd-login") return gdSignIn("bk");
   if(a==="bkd-now") return bkdRun(true);
