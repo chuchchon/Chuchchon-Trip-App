@@ -301,10 +301,14 @@ details summary::-webkit-details-marker{display:none}
         <details><summary>ขั้นสูง</summary><label style="margin-top:8px">Google Client ID<input data-k="clientId" spellcheck="false"></label></details>
       </div>
       <div class="panel" style="display:grid;gap:10px">
-        <h3 style="font-size:18px">อ่านนามบัตรอัตโนมัติ (Claude API)</h3>
-        <p class="muted" style="margin:0">วาง API key จาก platform.claude.com ครั้งเดียว key เก็บในเครื่องนี้และใน Google Drive ของคุณเท่านั้น</p>
-        <label>Anthropic API key<input data-k="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
-        <label>Model<input data-k="model" spellcheck="false"></label>
+        <h3 style="font-size:18px">อ่านนามบัตรอัตโนมัติ</h3>
+        <p class="muted" style="margin:0">วาง API key ครั้งเดียว key เก็บในเครื่องนี้และในไฟล์ข้อมูลใน Google Drive ของคุณเท่านั้น ไม่ขึ้น GitHub</p>
+        <label>ใช้ตัวอ่าน<select data-k="ocrProvider"><option value="gemini">Google Gemini (ฟรี)</option><option value="claude">Claude API</option></select></label>
+        <label>Gemini API key (จาก aistudio.google.com)<input data-k="geminiKey" type="password" autocomplete="off" spellcheck="false" placeholder="วาง key ที่นี่"></label>
+        <label>Gemini model<input data-k="geminiModel" spellcheck="false"></label>
+        <details><summary>Claude API (ถ้าจะใช้แทน)</summary>
+        <label style="margin-top:8px">Anthropic API key<input data-k="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
+        <label style="margin-top:8px">Claude model<input data-k="model" spellcheck="false"></label></details>
         <button type="button" class="btn small" id="testKey">ทดสอบ key</button>
         <p class="muted" id="keyMsg" style="margin:0"></p>
       </div>
@@ -395,7 +399,7 @@ const DEF = {
   mailDefault: true, driveOn: true, sheetOn: true,
   account: "chuchchon@360truck.co", clientId: "935886786333-g79hk4e4htmqh2dggggfpd8jertf0g5g.apps.googleusercontent.com",
   sheetId: "1q3IqRcuVLpKRvl7NJ2UxVdBZLiTUiWRqOrKTaFjjWec", sheetTab: "Namecards",
-  apiKey: "", model: "claude-sonnet-5-5", cardLink: "", cardLinkKey: ""
+  ocrProvider: "gemini", geminiKey: "", geminiModel: "gemini-flash-latest", apiKey: "", model: "claude-sonnet-5-5", cardLink: "", cardLinkKey: ""
 };
 const clone = o => JSON.parse(JSON.stringify(o));
 /* D = what is kept on this phone and copied to Google Drive; L = this phone only */
@@ -774,8 +778,20 @@ async function claude(content, maxTokens){
   if (!r.ok) throw { code: r.status === 401 ? "badkey" : r.status === 429 ? "rate" : r.status === 400 && /credit/i.test(JSON.stringify(j)) ? "credit" : "api", message: (j.error && j.error.message) || ("HTTP " + r.status) };
   return (j.content || []).filter(x => x.type === "text").map(x => x.text).join("");
 }
+async function gemini(parts, json){
+  if (!S.geminiKey) throw { code: "nokey" };
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${enc(S.geminiModel || DEF.geminiModel)}:generateContent`, { method: "POST",
+    headers: { "content-type": "application/json", "x-goog-api-key": S.geminiKey },
+    body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: json ? { responseMimeType: "application/json" } : {} }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const m = (j.error && j.error.message) || ("HTTP " + r.status); throw { code: r.status === 429 ? "rate" : (r.status === 400 || r.status === 403) && /key/i.test(m) ? "badkey" : r.status === 404 ? "model" : "api", message: m }; }
+  return ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || "").join("");
+}
 async function ocr(blob){
-  const t = await claude([{ type: "image", source: { type: "base64", media_type: "image/jpeg", data: await blobB64(blob) } }, { type: "text", text: OCR_PROMPT }]);
+  const data = await blobB64(blob);
+  const t = (S.ocrProvider || "gemini") === "claude"
+    ? await claude([{ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: OCR_PROMPT }])
+    : await gemini([{ inline_data: { mime_type: "image/jpeg", data } }, { text: OCR_PROMPT }], true);
   const m = t.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : {};
 }
 let ocrBusy = false;
@@ -787,12 +803,12 @@ async function pumpOcr(){
   if (cur === d) { fillFromOcr(d); drawOcr(); } else if (!cur) openDraft(d);
   pumpOcr();
 }
-const OCR_ERR = { nokey: "ยังไม่ได้ใส่ Claude API key (ตั้งค่า) — กรอกเองได้", badkey: "API key ไม่ถูกต้อง — ตรวจในหน้าตั้งค่า", credit: "เครดิต Claude API หมด — เติมที่ platform.claude.com", rate: "ใช้งานถี่เกินไป รอสักครู่" };
+const OCR_ERR = { model: "ไม่พบ model นี้ — แก้ชื่อ model ในตั้งค่า", nokey: "ยังไม่ได้ใส่ API key สำหรับอ่านนามบัตร (ตั้งค่า) — กรอกเองได้", badkey: "API key ไม่ถูกต้อง — ตรวจในหน้าตั้งค่า", credit: "เครดิต Claude API หมด — เติมที่ platform.claude.com", rate: "เกินโควตาฟรีชั่วคราว รอสักครู่แล้วลองใหม่" };
 function drawOcr(){
   const st = $("#ocrStatus"), d = cur;
   if (!d || !d.status || d.status === "ready" || d.status === "edit") { st.hidden = true; return; }
   st.hidden = false; st.querySelector(".dot").style.animation = d.status === "error" ? "none" : "";
-  $("#ocrText").textContent = d.status === "error" ? (OCR_ERR[d.err] || "อ่านนามบัตรไม่สำเร็จ — กรอกเองได้" + (d.errMsg ? " (" + d.errMsg + ")" : "")) : d.status === "waiting" ? "รอคิวอ่าน…" : "กำลังอ่านนามบัตร… (5–20 วินาที)";
+  $("#ocrText").textContent = d.status === "error" ? (OCR_ERR[d.err] || "อ่านนามบัตรไม่สำเร็จ — กรอกเองได้" + (d.errMsg ? " (" + d.errMsg + ")" : "")) : d.status === "waiting" ? "รอคิวอ่าน…" : "กำลังอ่านนามบัตร… (3–15 วินาที)";
 }
 
 /* ================= drafts / queue ================= */
@@ -1028,7 +1044,7 @@ $("#qrUp").addEventListener("change", async e => { const f = e.target.files[0]; 
 $("#cardUp").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const b = await shrink(f, 1800, .92); await blobPut("set:card", b); urlCache.delete("set:card"); pendCard = "local"; $("#setCard").src = await photoUrl("set:card"); });
 $("#qrReset").addEventListener("click", () => { pendQr = null; $("#setQr").src = DEF_QR; });
 $("#cardReset").addEventListener("click", () => { pendCard = null; $("#setCard").src = DEF_CARD; });
-$("#setDefaults").addEventListener("click", e => { const b = e.currentTarget; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "แตะอีกครั้งเพื่อยืนยัน"; return; } b.dataset.sure = ""; b.textContent = "คืนค่าเริ่มต้นทั้งหมด"; const k = S.apiKey; S = clone(DEF); S.apiKey = k; fillSettings(); toast("คืนค่าเริ่มต้นแล้ว กดบันทึกเพื่อใช้"); });
+$("#setDefaults").addEventListener("click", e => { const b = e.currentTarget; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "แตะอีกครั้งเพื่อยืนยัน"; return; } b.dataset.sure = ""; b.textContent = "คืนค่าเริ่มต้นทั้งหมด"; const k = [S.apiKey, S.geminiKey]; S = clone(DEF); [S.apiKey, S.geminiKey] = k; fillSettings(); toast("คืนค่าเริ่มต้นแล้ว กดบันทึกเพื่อใช้"); });
 $("#setForm").addEventListener("submit", async e => {
   e.preventDefault();
   const n = clone(S);
@@ -1039,11 +1055,13 @@ $("#setForm").addEventListener("submit", async e => {
   D.settings = n; S = n; await persist(); applySettings(); toast("บันทึกการตั้งค่าแล้ว"); syncSoon();
 });
 $("#testKey").addEventListener("click", async () => {
-  const el = $("#keyMsg"), k = $('#setForm [data-k="apiKey"]').value.trim(), m = $('#setForm [data-k="model"]').value.trim();
-  const keep = [S.apiKey, S.model]; S.apiKey = k; S.model = m || DEF.model; el.textContent = "กำลังทดสอบ…";
-  try { const t = await claude([{ type: "text", text: "Reply with the single word: OK" }], 10); el.textContent = "ใช้ได้ ✓ (" + t.trim().slice(0, 20) + ") — กดบันทึกการตั้งค่าด้านล่าง"; }
+  const el = $("#keyMsg"), v = k => $(`#setForm [data-k="${k}"]`).value.trim();
+  const keep = clone(S); Object.assign(S, { ocrProvider: v("ocrProvider"), geminiKey: v("geminiKey"), geminiModel: v("geminiModel") || DEF.geminiModel, apiKey: v("apiKey"), model: v("model") || DEF.model });
+  el.textContent = "กำลังทดสอบ…";
+  try { const t = S.ocrProvider === "claude" ? await claude([{ type: "text", text: "Reply with the single word: OK" }], 10) : await gemini([{ text: "Reply with the single word: OK" }], false);
+    el.textContent = "ใช้ได้ ✓ (" + t.trim().slice(0, 20) + ") — กดบันทึกการตั้งค่าด้านล่าง"; }
   catch (x) { el.textContent = (OCR_ERR[x.code] || "ใช้ไม่ได้") + (x.message ? " · " + x.message : ""); }
-  [S.apiKey, S.model] = keep;
+  Object.assign(S, keep);
 });
 function applySettings(){ fillSettings(); drawLinks(); renderCard(); $("#mailFrom").value = S.account || S.email; paintCloud(); }
 
